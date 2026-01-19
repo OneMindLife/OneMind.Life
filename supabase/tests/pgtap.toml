@@ -1,0 +1,3 @@
+# pgTAP test configuration
+[test]
+schema = "public"

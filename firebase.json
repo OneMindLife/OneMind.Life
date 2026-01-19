@@ -1,0 +1,37 @@
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "onemindsaas",
+          "appId": "1:87402995206:android:a82601ce3fb59bc3fdad87",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "onemindsaas",
+          "configurations": {
+            "android": "1:87402995206:android:a82601ce3fb59bc3fdad87",
+            "ios": "1:87402995206:ios:a8d5f941c20093affdad87",
+            "web": "1:87402995206:web:c75fb27754a75bdcfdad87"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

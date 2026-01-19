@@ -1,0 +1,268 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "OneMind",
+
+  "discover": "Discover",
+  "discoverPublicChats": "Discover public chats",
+  "discoverChats": "Discover Chats",
+
+  "joinWithCode": "Join with Code",
+  "joinAnExistingChatWithInviteCode": "Join an existing chat with invite code",
+  "joinChat": "Join Chat",
+  "join": "Join",
+  "findChat": "Find Chat",
+  "requestToJoin": "Request to Join",
+
+  "createChat": "Create Chat",
+  "createANewChat": "Create a new chat",
+  "chatCreated": "Chat Created!",
+
+  "cancel": "Cancel",
+  "continue_": "Continue",
+  "retry": "Retry",
+  "yes": "Yes",
+  "no": "No",
+
+  "officialOneMind": "Official OneMind",
+  "official": "OFFICIAL",
+  "pending": "PENDING",
+  "pendingRequests": "Pending Requests",
+  "yourChats": "Your Chats",
+
+  "cancelRequest": "Cancel Request",
+  "cancelRequestQuestion": "Cancel your request to join \"{chatName}\"?",
+  "@cancelRequestQuestion": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "yesCancel": "Yes, Cancel",
+  "requestCancelled": "Request cancelled",
+  "waitingForHostApproval": "Waiting for host approval",
+  "hostApprovalRequired": "Host approval required to join",
+
+  "noChatsYet": "No chats yet",
+  "discoverPublicChatsJoinOrCreate": "Discover public chats, join with a code, or create your own",
+  "discoverPublicChatsButton": "Discover Public Chats",
+  "noActiveChatsYet": "No active chats yet. Your approved chats will appear here.",
+
+  "loadingChats": "Loading chats",
+  "failedToLoadChats": "Failed to load chats",
+
+  "chatNotFound": "Chat not found",
+  "failedToLookupChat": "Failed to lookup chat",
+  "failedToJoinChat": "Failed to join chat: {error}",
+  "@failedToJoinChat": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "enterInviteCode": "Enter the 6-character invite code:",
+  "pleaseEnterSixCharCode": "Please enter a 6-character code",
+  "inviteCodeHint": "ABC123",
+
+  "hostedBy": "Hosted by {hostName}",
+  "@hostedBy": {
+    "placeholders": {
+      "hostName": {"type": "String"}
+    }
+  },
+
+  "thisChatsRequiresInvite": "This chat requires an invite",
+  "enterEmailForInvite": "Enter the email your invite was sent to:",
+  "yourEmailHint": "your@email.com",
+  "pleaseEnterEmailAddress": "Please enter your email address",
+  "pleaseEnterValidEmail": "Please enter a valid email address",
+  "noInviteFoundForEmail": "No invite found for this email address",
+  "failedToValidateInvite": "Failed to validate invite",
+  "pleaseVerifyEmailFirst": "Please verify your email first",
+  "verifyEmail": "Verify Email",
+  "emailVerified": "Email verified: {email}",
+  "@emailVerified": {
+    "placeholders": {
+      "email": {"type": "String"}
+    }
+  },
+
+  "enterDisplayName": "Enter your display name:",
+  "yourName": "Your name",
+  "yourNamePlaceholder": "Your Name",
+  "displayName": "Display name",
+  "enterYourName": "Enter your name",
+  "pleaseEnterYourName": "Please enter your name",
+  "yourDisplayName": "Your display name",
+  "yourNameVisibleToAll": "Your name will be visible to all participants",
+  "usingSavedName": "Using your saved name",
+
+  "joinRequestSent": "Join request sent. Waiting for host approval.",
+
+  "searchPublicChats": "Search public chats...",
+  "noChatsFoundFor": "No chats found for \"{query}\"",
+  "@noChatsFoundFor": {
+    "placeholders": {
+      "query": {"type": "String"}
+    }
+  },
+  "noPublicChatsAvailable": "No public chats available",
+  "beFirstToCreate": "Be the first to create one!",
+  "failedToLoadPublicChats": "Failed to load public chats: {error}",
+  "@failedToLoadPublicChats": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "participantCount": "{count} participant",
+  "@participantCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "participantsCount": "{count} participants",
+  "@participantsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "enterYourNameTitle": "Enter Your Name",
+  "anonymous": "Anonymous",
+
+  "timerWarning": "Timer Warning",
+  "timerWarningMessage": "Your phase timers are longer than the {minutes}-minute schedule window.\n\nPhases may extend beyond the scheduled time, or pause when the window closes.\n\nConsider using shorter timers (5 min or 30 min) for scheduled sessions.",
+  "@timerWarningMessage": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "adjustSettings": "Adjust Settings",
+  "continueAnyway": "Continue Anyway",
+
+  "chatNowPublic": "Your chat is now public!",
+  "anyoneCanJoinFrom": "Anyone can find and join \"{chatName}\" from the Discover page.",
+  "@anyoneCanJoinFrom": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+
+  "invitesSent": "{count} invite sent!",
+  "@invitesSent": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "invitesSentPlural": "{count} invites sent!",
+  "@invitesSentPlural": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noInvitesSent": "No invites sent",
+  "onlyInvitedUsersCanJoin": "Only invited users can join this chat.",
+
+  "shareCodeWithParticipants": "Share this code with participants:",
+  "inviteCodeCopied": "Invite code copied to clipboard",
+  "tapToCopy": "Tap to copy",
+  "showQrCode": "Show QR Code",
+
+  "addEmailForInviteOnly": "Add at least one email address for invite-only mode",
+
+  "settings": "Settings",
+  "language": "Language",
+  "english": "English",
+  "spanish": "Espanol",
+
+  "rankPropositions": "Rank Propositions",
+  "placing": "Placing: ",
+  "rankedSuccessfully": "Ranked {count} propositions successfully!",
+  "@rankedSuccessfully": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "failedToSaveRankings": "Failed to save rankings",
+  "chatPausedByHost": "Chat was paused by host",
+  "goBack": "Go Back",
+  "ratePropositions": "Rate Propositions",
+  "submitRatings": "Submit Ratings",
+  "failedToSubmitRatings": "Failed to submit ratings: {error}",
+  "@failedToSubmitRatings": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "roundResults": "Round {roundNumber} Results",
+  "@roundResults": {
+    "placeholders": {
+      "roundNumber": {"type": "int"}
+    }
+  },
+  "noPropositionsToDisplay": "No propositions to display",
+  "noPreviousWinner": "No previous winner",
+  "roundWinner": "Round {roundNumber} Winner",
+  "@roundWinner": {
+    "placeholders": {
+      "roundNumber": {"type": "int"}
+    }
+  },
+  "roundWinners": "Round {roundNumber} Winners",
+  "@roundWinners": {
+    "placeholders": {
+      "roundNumber": {"type": "int"}
+    }
+  },
+  "unknownProposition": "Unknown proposition",
+  "score": "Score: {score}",
+  "@score": {
+    "placeholders": {
+      "score": {"type": "String"}
+    }
+  },
+  "soleWinsProgress": "Sole wins: {current}/{required}",
+  "@soleWinsProgress": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "required": {"type": "int"}
+    }
+  },
+  "tiedWinNoConsensus": "Tied win (does not count toward consensus)",
+  "seeAllResults": "See All Results",
+  "startPhase": "Start Phase",
+  "waiting": "Waiting",
+  "waitingForHostToStart": "Waiting for host to start...",
+  "roundNumber": "Round {roundNumber}",
+  "@roundNumber": {
+    "placeholders": {
+      "roundNumber": {"type": "int"}
+    }
+  },
+  "viewAllPropositions": "View all propositions",
+  "chatIsPaused": "Chat is paused...",
+  "shareYourIdea": "Share your idea...",
+  "addAnotherIdea": "Add another idea...",
+  "submit": "Submit",
+  "addProposition": "Add Proposition",
+  "waitingForRatingPhase": "Waiting for rating phase...",
+  "endProposingStartRating": "End Proposing & Start Rating",
+  "proposingComplete": "Proposing Complete",
+  "reviewPropositionsStartRating": "Review propositions and start rating when ready.",
+  "waitingForHostToStartRating": "Waiting for host to start the rating phase.",
+  "startRatingPhase": "Start Rating Phase",
+  "ratingComplete": "Rating Complete",
+  "waitingForRatingPhaseEnd": "Waiting for rating phase to end.",
+  "rateAllPropositions": "Rate all {count} propositions",
+  "@rateAllPropositions": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "continueRating": "Continue Rating",
+  "startRating": "Start Rating",
+  "endRatingStartNextRound": "End Rating & Start Next Round",
+  "chatPaused": "Chat Paused",
+  "chatPausedByHostTitle": "Chat Paused by Host",
+  "timerStoppedTapResume": "The timer is stopped. Tap Resume in the app bar to continue.",
+  "hostPausedPleaseWait": "The host has paused this chat. Please wait for them to resume."
+}
