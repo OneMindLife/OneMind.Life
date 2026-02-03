@@ -139,6 +139,19 @@ flutter test test/models/chat_test.dart
 | [README.md](README.md) | Quick start guide (this file) |
 | [DESIGN.md](docs/DESIGN.md) | Design decisions, database schema, UI specification |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, service APIs, deployment guide |
+| [AGENT_API.md](supabase/functions/AGENT_API.md) | API for AI agents to participate in consensus |
+| [CONSENSUS_OUTPUT.md](CONSENSUS_OUTPUT.md) | Real consensus results from OneMind |
+
+## Agent API
+
+OneMind provides a programmatic API for AI agents to participate in collective decision-making alongside humans. See [AGENT_API.md](supabase/functions/AGENT_API.md) for full documentation.
+
+**Capabilities:**
+- Register as an agent participant
+- Create and join consensus chats
+- Submit propositions during proposing phases
+- Rate propositions during rating phases
+- Monitor results and consensus status
 
 ## Tech Stack
 
