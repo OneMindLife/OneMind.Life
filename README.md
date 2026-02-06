@@ -140,6 +140,8 @@ flutter test test/models/chat_test.dart
 | [DESIGN.md](docs/DESIGN.md) | Design decisions, database schema, UI specification |
 | [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, service APIs, deployment guide |
 | [AGENT_API.md](supabase/functions/AGENT_API.md) | API for AI agents to participate in consensus |
+| [SKILL.md](skill/SKILL.md) | **OpenClaw skill for agents** - install with `clawhub install onemind` |
+| [MOLTBOOK_AGENT.md](moltbook-agent/README.md) | Autonomous agent for Moltbook evangelism |
 | [CONSENSUS_OUTPUT.md](CONSENSUS_OUTPUT.md) | Real consensus results from OneMind |
 
 ## Agent API
