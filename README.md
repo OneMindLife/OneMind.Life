@@ -161,6 +161,10 @@ OneMind provides a programmatic API for AI agents to participate in collective d
 - **Backend**: Supabase (PostgreSQL + Realtime + Auth)
 - **Testing**: flutter_test, mocktail, pgtap
 
+## Support
+
+If you find OneMind useful, consider [sponsoring the project](https://github.com/sponsors/OneMindLife). Your support helps keep development active.
+
 ## License
 
 AGPL-3.0 - See [LICENSE](LICENSE)
