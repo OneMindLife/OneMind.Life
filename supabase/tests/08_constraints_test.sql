@@ -1,7 +1,7 @@
 -- Constraints and foreign key tests
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(18);
+SELECT plan(17);
 
 -- =============================================================================
 -- SETUP (Anonymous chats only - no users table dependency)
@@ -226,16 +226,9 @@ SELECT throws_ok(
   'Chat name is required'
 );
 
--- Test 16: Chat initial_message required
-SELECT throws_ok(
-  $$INSERT INTO chats (name, initial_message, creator_session_token)
-    VALUES ('Name', NULL, gen_random_uuid())$$,
-  '23502',
-  NULL,
-  'Chat initial_message is required'
-);
+-- initial_message is now nullable (migration 20260201204821), so no NOT NULL test
 
--- Test 17: Proposition content required
+-- Test 16: Proposition content required
 SELECT throws_ok(
   $$INSERT INTO propositions (round_id, participant_id, content)
     VALUES ($$ || current_setting('test.round_id') || $$, $$ || current_setting('test.participant_id') || $$, NULL)$$,
@@ -248,7 +241,7 @@ SELECT throws_ok(
 -- SESSION TOKEN TYPE CONSTRAINT
 -- =============================================================================
 
--- Test 18: Session token must be valid UUID
+-- Test 17: Session token must be valid UUID
 SELECT throws_ok(
   $$INSERT INTO chats (name, initial_message, creator_session_token)
     VALUES ('Bad Session Chat', 'Test', 'not-a-valid-uuid')$$,

@@ -1,4 +1,6 @@
 -- Official OneMind chat tests
+-- NOTE: Migration 20260131105423 creates the official chat at DB reset time,
+-- so these tests work with the pre-existing official chat rather than creating one.
 BEGIN;
 SET search_path TO public, extensions;
 SELECT plan(12);
@@ -18,17 +20,15 @@ SELECT is(
   'Regular chat has is_official = FALSE'
 );
 
--- Test 2: Create official chat
-INSERT INTO chats (name, initial_message, creator_session_token, is_official)
-VALUES ('Official OneMind', 'Humanity''s public square', gen_random_uuid(), TRUE);
-
+-- Test 2: Official chat already exists (created by migration)
 SELECT is(
-  (SELECT is_official FROM chats WHERE name = 'Official OneMind'),
+  (SELECT is_official FROM chats WHERE is_official = TRUE LIMIT 1),
   TRUE,
   'Official chat has is_official = TRUE'
 );
 
 -- Test 3: Only one official chat can exist (unique partial index)
+-- The migration already created one, so any new INSERT with is_official=TRUE should fail
 SELECT throws_ok(
   $$INSERT INTO chats (name, initial_message, creator_session_token, is_official)
     VALUES ('Fake Official', 'Trying to be official', gen_random_uuid(), TRUE)$$,
@@ -59,10 +59,10 @@ SELECT is(
 -- OFFICIAL CHAT PROPERTIES
 -- =============================================================================
 
--- Test 6: Official chat should have specific name (application-level, not DB enforced)
+-- Test 6: Official chat should have specific name (created by migration)
 SELECT is(
   (SELECT name FROM chats WHERE is_official = TRUE),
-  'Official OneMind',
+  'Welcome to OneMind',
   'Official chat has expected name'
 );
 
