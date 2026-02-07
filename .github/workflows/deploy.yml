@@ -33,7 +33,7 @@ jobs:
       flutter: ${{ steps.filter.outputs.flutter }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Check for changes
         uses: dorny/paths-filter@v3
@@ -63,7 +63,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v1
@@ -137,7 +137,7 @@ jobs:
     environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -178,7 +178,7 @@ jobs:
     if: success()
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
