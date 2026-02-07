@@ -36,10 +36,10 @@ class EnvConfig {
   );
 
   /// Web app base URL for deep links and QR codes
-  /// Set via: --dart-define=WEB_APP_URL=https://YOUR_DOMAIN
+  /// Set via: --dart-define=WEB_APP_URL=https://onemind.life
   static const String webAppUrl = String.fromEnvironment(
     'WEB_APP_URL',
-    defaultValue: 'https://YOUR_DOMAIN',
+    defaultValue: 'https://onemind.life',
   );
 
   /// Whether we're in production mode

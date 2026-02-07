@@ -73,13 +73,14 @@ lib/
 ├── providers/       # Riverpod providers
 │   ├── providers.dart         # Service providers
 │   ├── chat_providers.dart    # Screen state providers
-│   └── notifiers/             # State notifiers (MyChats, PublicChats, ChatDetail, GridRanking)
+│   └── notifiers/             # State notifiers (MyChats, PublicChats, ChatDetail, Rating)
 ├── screens/         # UI screens
 │   ├── chat/        # Chat room
 │   ├── create/      # Create chat flow
 │   ├── discover/    # Public chat discovery
 │   ├── home/        # Home screen
-│   └── join/        # Join chat dialog
+│   ├── join/        # Join chat dialog
+│   └── tutorial/    # Onboarding tutorial
 ├── services/        # Business logic & API calls
 │   ├── chat_service.dart         # Chats, cycles, rounds
 │   ├── participant_service.dart  # Join, kick, approvals
@@ -88,6 +89,7 @@ lib/
 │   ├── invite_service.dart       # Email invitations
 │   ├── analytics_service.dart    # Firebase Analytics
 │   ├── billing_service.dart      # Stripe payments
+│   ├── tutorial_service.dart     # Tutorial completion state
 │   └── winner_calculator.dart    # Consensus calculation
 └── widgets/         # Reusable widgets (error views, grid ranking, etc.)
 
@@ -103,7 +105,7 @@ test/
 
 supabase/
 ├── functions/       # Edge Functions with tests
-└── tests/           # pgtap database tests (614 tests)
+└── tests/           # pgtap database tests (~1064 tests)
 ```
 
 ## Testing
@@ -119,29 +121,14 @@ flutter test --coverage
 flutter test test/models/chat_test.dart
 ```
 
-### Test Coverage
-
-| Layer | Tests | Coverage |
-|-------|-------|----------|
-| pgtap Database | 614 | Schema, RLS, triggers, consensus, billing |
-| Edge Functions | 57 | Auth, validation, CORS, rate limiting |
-| Flutter Total | 1035 | Comprehensive |
-| - Models | 40+ | Chat, Round, Proposition, etc. |
-| - Services | 60+ | All services with mocked Supabase |
-| - Providers/Notifiers | 44 | MyChats, PublicChats, ChatDetail, GridRanking |
-| - Screens | 200+ | Widget tests for all screens |
-| - Core/API | 50+ | Error handling, API client |
-
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
 | [README.md](README.md) | Quick start guide (this file) |
-| [DESIGN.md](docs/DESIGN.md) | Design decisions, database schema, UI specification |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, service APIs, deployment guide |
+| [CLAUDE.md](CLAUDE.md) | Architecture guide for Claude Code |
 | [AGENT_API.md](supabase/functions/AGENT_API.md) | API for AI agents to participate in consensus |
-| [SKILL.md](skill/SKILL.md) | **OpenClaw skill for agents** - install with `clawhub install onemind` |
-| [MOLTBOOK_AGENT.md](moltbook-agent/README.md) | Autonomous agent for Moltbook evangelism |
+| [SKILL.md](skill/SKILL.md) | OpenClaw skill for agents |
 | [CONSENSUS_OUTPUT.md](CONSENSUS_OUTPUT.md) | Real consensus results from OneMind |
 
 ## Agent API

@@ -3,12 +3,14 @@ import 'package:flutter/material.dart';
 
 /// Settings for phase timers
 class TimerSettings extends Equatable {
+  final bool useSameDuration; // When true, proposing and rating use same duration
   final String proposingPreset;
   final String ratingPreset;
   final int proposingDuration;
   final int ratingDuration;
 
   const TimerSettings({
+    required this.useSameDuration,
     required this.proposingPreset,
     required this.ratingPreset,
     required this.proposingDuration,
@@ -16,6 +18,7 @@ class TimerSettings extends Equatable {
   });
 
   factory TimerSettings.defaults() => const TimerSettings(
+        useSameDuration: true, // Default to same duration for both phases
         proposingPreset: '1day',
         ratingPreset: '1day',
         proposingDuration: 86400,
@@ -23,12 +26,14 @@ class TimerSettings extends Equatable {
       );
 
   TimerSettings copyWith({
+    bool? useSameDuration,
     String? proposingPreset,
     String? ratingPreset,
     int? proposingDuration,
     int? ratingDuration,
   }) {
     return TimerSettings(
+      useSameDuration: useSameDuration ?? this.useSameDuration,
       proposingPreset: proposingPreset ?? this.proposingPreset,
       ratingPreset: ratingPreset ?? this.ratingPreset,
       proposingDuration: proposingDuration ?? this.proposingDuration,
@@ -38,6 +43,7 @@ class TimerSettings extends Equatable {
 
   @override
   List<Object?> get props => [
+        useSameDuration,
         proposingPreset,
         ratingPreset,
         proposingDuration,
@@ -94,13 +100,17 @@ class AutoAdvanceSettings extends Equatable {
     required this.ratingThresholdCount,
   });
 
+  /// Smart defaults: end phases early when participation is complete.
+  /// - Proposing: ends when 100% of participants have acted (submitted OR skipped)
+  /// - Rating: ends when 100% of eligible raters have rated (capped to participants-1
+  ///   since users can't rate their own propositions)
   factory AutoAdvanceSettings.defaults() => const AutoAdvanceSettings(
-        enableProposing: false,
-        proposingThresholdPercent: 80,
-        proposingThresholdCount: 3,
-        enableRating: false,
-        ratingThresholdPercent: 80,
-        ratingThresholdCount: 2,
+        enableProposing: true,
+        proposingThresholdPercent: 100, // End when all participants have acted
+        proposingThresholdCount: 3, // Minimum propositions (same as proposing_minimum)
+        enableRating: true,
+        ratingThresholdPercent: 100, // End when all eligible raters have rated
+        ratingThresholdCount: 2, // Minimum ratings per proposition
       );
 
   AutoAdvanceSettings copyWith({
@@ -181,6 +191,8 @@ class AdaptiveDurationSettings extends Equatable {
 }
 
 /// AI participant settings
+/// AI is always enabled by default and generates 1 proposition per round.
+/// The UI section is hidden - this is controlled at the database level.
 class AISettings extends Equatable {
   final bool enabled;
   final int propositionCount;
@@ -191,8 +203,8 @@ class AISettings extends Equatable {
   });
 
   factory AISettings.defaults() => const AISettings(
-        enabled: false,
-        propositionCount: 3,
+        enabled: true,  // AI always enabled by default
+        propositionCount: 1,  // One thoughtful proposition per round
       );
 
   AISettings copyWith({

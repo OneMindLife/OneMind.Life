@@ -14,7 +14,7 @@ SELECT cron.schedule(
     '* * * * *',  -- Every minute
     $$
     SELECT net.http_post(
-        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/process-timers',
+        url := 'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/process-timers',
         headers := '{"Content-Type": "application/json", "X-Cron-Secret": "process-timers-cron-secret"}'::jsonb,
         body := '{}'::jsonb
     );

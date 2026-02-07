@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/router.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
@@ -30,6 +32,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   bool _isLoading = true;
   bool _isJoining = false;
   String? _error;
+  bool _needsName = true;
 
   // Token-based invite data
   InviteTokenResult? _inviteResult;
@@ -41,7 +44,10 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   void initState() {
     super.initState();
     _loadDisplayName();
-    _initializeInvite();
+    // Defer initialization to after the frame is built to allow context access
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeInvite();
+    });
   }
 
   void _loadDisplayName() {
@@ -49,6 +55,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
     final name = authService.displayName;
     if (name != null && name.isNotEmpty) {
       _nameController.text = name;
+      _needsName = false;
     }
   }
 
@@ -58,23 +65,51 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
     } else if (widget.code != null) {
       await _lookupByCode();
     } else {
-      setState(() {
-        _error = 'No invite token or code provided';
-        _isLoading = false;
-      });
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() {
+          _error = l10n.noTokenOrCode;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _validateToken() async {
     try {
       final inviteService = ref.read(inviteServiceProvider);
+      final participantService = ref.read(participantServiceProvider);
+      final chatService = ref.read(chatServiceProvider);
       final result = await inviteService.validateInviteToken(widget.token!);
 
       if (result == null || !result.isValid) {
-        setState(() {
-          _error = 'This invite link is invalid or has expired';
-          _isLoading = false;
-        });
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          setState(() {
+            _error = l10n.invalidExpiredInvite;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Check if user is already a participant in this chat
+      final existingParticipant = await participantService.getMyParticipant(result.chatId);
+
+      if (existingParticipant != null && existingParticipant.status == ParticipantStatus.active) {
+        // User is already in this chat - redirect to home then push chat
+        final chat = await chatService.getChatById(result.chatId);
+        if (mounted && chat != null) {
+          // Go to home first, then push chat on top (so back button works)
+          context.go('/');
+          // Wait for home to mount, then push chat
+          await Future.delayed(const Duration(milliseconds: 100));
+          rootNavigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(chat: chat),
+            ),
+          );
+        }
         return;
       }
 
@@ -83,10 +118,13 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Failed to validate invite';
-        _isLoading = false;
-      });
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() {
+          _error = l10n.failedToValidateInvite;
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -94,13 +132,36 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
     try {
       final chatService = ref.read(chatServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
+      final participantService = ref.read(participantServiceProvider);
       final chat = await chatService.getChatByCode(widget.code!);
 
       if (chat == null) {
-        setState(() {
-          _error = 'Chat not found';
-          _isLoading = false;
-        });
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          setState(() {
+            _error = l10n.chatNotFound;
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+
+      // Check if user is already a participant in this chat
+      final existingParticipant = await participantService.getMyParticipant(chat.id);
+
+      if (existingParticipant != null && existingParticipant.status == ParticipantStatus.active) {
+        // User is already in this chat - redirect to home then push chat
+        if (mounted) {
+          // Go to home first, then push chat on top (so back button works)
+          context.go('/');
+          // Wait for home to mount, then push chat
+          await Future.delayed(const Duration(milliseconds: 100));
+          rootNavigatorKey.currentState?.push(
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(chat: chat),
+            ),
+          );
+        }
         return;
       }
 
@@ -108,10 +169,13 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       // since they need to enter their email to validate access
       final inviteOnly = await inviteService.isInviteOnly(chat.id);
       if (inviteOnly) {
-        setState(() {
-          _error = 'This chat requires an email invite. Please use the invite link sent to your email.';
-          _isLoading = false;
-        });
+        if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
+          setState(() {
+            _error = l10n.inviteOnlyError;
+            _isLoading = false;
+          });
+        }
         return;
       }
 
@@ -120,17 +184,21 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Failed to find chat';
-        _isLoading = false;
-      });
+      if (mounted) {
+        final l10n = AppLocalizations.of(context)!;
+        setState(() {
+          _error = l10n.failedToLookupChat;
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _joinChat() async {
+    final l10n = AppLocalizations.of(context)!;
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Please enter your name');
+      setState(() => _error = l10n.pleaseEnterYourName);
       return;
     }
 
@@ -152,7 +220,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       final chatId = _inviteResult?.chatId ?? _foundChat?.id;
       if (chatId == null) {
         setState(() {
-          _error = 'No chat found';
+          _error = l10n.chatNotFound;
           _isJoining = false;
         });
         return;
@@ -171,10 +239,14 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           displayName: name,
         );
 
+        // Track that user requested to join this chat
+        // Used to navigate directly to chat after tutorial if approved
+        ref.read(pendingJoinChatIdProvider.notifier).state = chatId;
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Join request sent. Waiting for host approval.'),
+            SnackBar(
+              content: Text(l10n.joinRequestSent),
             ),
           );
           context.go('/');
@@ -198,6 +270,13 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         // Refresh chat list
         ref.read(myChatsProvider.notifier).refresh();
 
+        // Log analytics event
+        final joinMethod = widget.token != null ? 'deep_link' : 'invite_code';
+        ref.read(analyticsServiceProvider).logChatJoined(
+          chatId: chatId.toString(),
+          joinMethod: joinMethod,
+        );
+
         // Get full chat object for navigation
         final chat = _foundChat ?? await chatService.getChatById(chatId);
 
@@ -216,7 +295,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       }
     } catch (e) {
       setState(() {
-        _error = 'Failed to join chat: $e';
+        _error = l10n.failedToJoinChat(e.toString());
         _isJoining = false;
       });
     }
@@ -230,9 +309,10 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Join Chat'),
+        title: Text(l10n.joinScreenTitle),
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => context.go('/'),
@@ -247,6 +327,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   }
 
   Widget _buildErrorState() {
+    final l10n = AppLocalizations.of(context)!;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -260,12 +341,12 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Invalid Invite',
+              l10n.invalidInviteTitle,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             Text(
-              _error ?? 'This invite link is not valid.',
+              _error ?? l10n.invalidInviteDefault,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Colors.grey.shade600,
                   ),
@@ -274,7 +355,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             const SizedBox(height: 24),
             FilledButton(
               onPressed: () => context.go('/'),
-              child: const Text('Go Home'),
+              child: Text(l10n.goHome),
             ),
           ],
         ),
@@ -283,6 +364,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   }
 
   Widget _buildJoinForm() {
+    final l10n = AppLocalizations.of(context)!;
     final chatName = _inviteResult?.chatName ?? _foundChat?.name ?? 'Chat';
     final chatMessage = _inviteResult?.chatInitialMessage ??
         _foundChat?.initialMessage ??
@@ -326,7 +408,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              "You're invited to join",
+                              l10n.invitedToJoin,
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                             const SizedBox(height: 4),
@@ -338,7 +420,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                                 hostDisplayName.isNotEmpty) ...[
                               const SizedBox(height: 4),
                               Text(
-                                'Hosted by $hostDisplayName',
+                                l10n.hostedBy(hostDisplayName),
                                 style: Theme.of(context)
                                     .textTheme
                                     .bodySmall
@@ -367,30 +449,31 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 24),
-
-          // Name input
-          Text(
-            'Enter your name to join:',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              hintText: 'Your display name',
+          // Name input - only show if name not already set
+          if (_needsName) ...[
+            const SizedBox(height: 24),
+            Text(
+              l10n.enterNameToJoin,
+              style: Theme.of(context).textTheme.titleMedium,
             ),
-            textCapitalization: TextCapitalization.words,
-            enabled: !_isJoining,
-            onSubmitted: (_) => _joinChat(),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'This name will be visible to other participants.',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.grey.shade600,
-                ),
-          ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _nameController,
+              decoration: InputDecoration(
+                hintText: l10n.yourDisplayName,
+              ),
+              textCapitalization: TextCapitalization.words,
+              enabled: !_isJoining,
+              onSubmitted: (_) => _joinChat(),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              l10n.nameVisibleNotice,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Colors.grey.shade600,
+                  ),
+            ),
+          ],
 
           // Approval notice
           if (requireApproval) ...[
@@ -408,7 +491,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'This chat requires host approval to join.',
+                      l10n.requiresApprovalNotice,
                       style: TextStyle(color: Colors.orange.shade800),
                     ),
                   ),
@@ -437,7 +520,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                     height: 20,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : Text(requireApproval ? 'Request to Join' : 'Join Chat'),
+                : Text(requireApproval ? l10n.requestToJoinButton : l10n.joinChatButton),
           ),
 
           const SizedBox(height: 12),
@@ -445,7 +528,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           // Cancel button
           TextButton(
             onPressed: _isJoining ? null : () => context.go('/'),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
         ],
       ),

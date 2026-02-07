@@ -276,11 +276,11 @@ SELECT is(
 -- AI PARTICIPANT SETTINGS
 -- =============================================================================
 
--- Test 20: Default AI disabled
+-- Test 20: Default AI enabled (changed from disabled to match schema default)
 SELECT is(
   (SELECT enable_ai_participant FROM chats WHERE id = current_setting('test.default_chat_id')::INT),
-  FALSE,
-  'AI participant disabled by default'
+  TRUE,
+  'AI participant enabled by default'
 );
 
 -- Create chat with AI enabled

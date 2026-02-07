@@ -61,6 +61,10 @@ void main() {
 
     // Mock LanguageService behavior
     when(() => mockLanguageService.getCurrentLanguage()).thenReturn('en');
+
+    // Default participant service behavior - user is not a participant
+    when(() => mockParticipantService.getMyParticipant(any()))
+        .thenAnswer((_) async => null);
   });
 
   Widget createTestWidget({
@@ -144,18 +148,18 @@ void main() {
       testWidgets('allows entering code', (tester) async {
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         // Text appears in both EditableText and TextField, use findsWidgets
-        expect(find.text('ABC123'), findsWidgets);
+        expect(find.text('TEST01'), findsWidgets);
       });
 
       testWidgets('converts lowercase to uppercase', (tester) async {
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'abc123');
+        await tester.enterText(find.byType(TextField), 'test01');
         // The UpperCaseTextFormatter should convert to uppercase
         // Text appears in both EditableText and TextField, use findsWidgets
-        expect(find.text('ABC123'), findsWidgets);
+        expect(find.text('TEST01'), findsWidgets);
       });
 
       testWidgets('limits input to 6 characters', (tester) async {
@@ -187,7 +191,7 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pump();
 
@@ -224,7 +228,7 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
@@ -244,7 +248,7 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
@@ -262,12 +266,12 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
         expect(find.text('Request to Join'), findsOneWidget);
-        expect(find.text('Host approval required to join'), findsOneWidget);
+        expect(find.text('Host must approve each request'), findsOneWidget);
       });
     });
 
@@ -282,7 +286,7 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
@@ -300,7 +304,7 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
@@ -327,11 +331,137 @@ void main() {
 
         await openDialog(tester);
 
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.enterText(find.byType(TextField), 'TEST01');
         await tester.tap(find.text('Find Chat'));
         await tester.pumpAndSettle();
 
         expect(find.text('Failed to lookup chat'), findsOneWidget);
+      });
+    });
+
+    group('Already a Participant', () {
+      testWidgets('redirects to chat when user is already an active participant',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final existingParticipant = Participant(
+          id: 1,
+          chatId: chat.id,
+          userId: 'test-user-id',
+          displayName: 'Test User',
+          isHost: false,
+          isAuthenticated: true,
+          status: ParticipantStatus.active,
+          createdAt: DateTime.now(),
+        );
+
+        Chat? joinedChat;
+
+        when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(chat.id))
+            .thenAnswer((_) async => existingParticipant);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              chatServiceProvider.overrideWithValue(mockChatService),
+              inviteServiceProvider.overrideWithValue(mockInviteService),
+              participantServiceProvider.overrideWithValue(mockParticipantService),
+              authServiceProvider.overrideWithValue(mockAuthService),
+              sharedPreferencesProvider.overrideWithValue(mockSharedPreferences),
+              languageServiceProvider.overrideWithValue(mockLanguageService),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              locale: const Locale('en'),
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (_) => JoinDialog(
+                            onJoined: (c) => joinedChat = c,
+                          ),
+                        );
+                      },
+                      child: const Text('Open Dialog'),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open Dialog'));
+        await tester.pumpAndSettle();
+
+        await tester.enterText(find.byType(TextField), 'TEST01');
+        await tester.tap(find.text('Find Chat'));
+        await tester.pumpAndSettle();
+
+        // Dialog should be closed
+        expect(find.byType(AlertDialog), findsNothing);
+        // onJoined should have been called with the chat
+        expect(joinedChat, isNotNull);
+        expect(joinedChat!.id, chat.id);
+      });
+
+      testWidgets('shows join form when user is not a participant',
+          (tester) async {
+        final chat = ChatFixtures.model();
+
+        when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(chat.id))
+            .thenAnswer((_) async => null);
+        when(() => mockInviteService.isInviteOnly(chat.id))
+            .thenAnswer((_) async => false);
+
+        await openDialog(tester);
+
+        await tester.enterText(find.byType(TextField), 'TEST01');
+        await tester.tap(find.text('Find Chat'));
+        await tester.pumpAndSettle();
+
+        // Dialog should still be open with join button
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Join'), findsOneWidget);
+      });
+
+      testWidgets('shows join form when user was kicked (not active)',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final kickedParticipant = Participant(
+          id: 1,
+          chatId: chat.id,
+          userId: 'test-user-id',
+          displayName: 'Test User',
+          isHost: false,
+          isAuthenticated: true,
+          status: ParticipantStatus.kicked,
+          createdAt: DateTime.now(),
+        );
+
+        when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(chat.id))
+            .thenAnswer((_) async => kickedParticipant);
+        when(() => mockInviteService.isInviteOnly(chat.id))
+            .thenAnswer((_) async => false);
+
+        await openDialog(tester);
+
+        await tester.enterText(find.byType(TextField), 'TEST01');
+        await tester.tap(find.text('Find Chat'));
+        await tester.pumpAndSettle();
+
+        // Dialog should still be open (kicked users can rejoin)
+        expect(find.byType(AlertDialog), findsOneWidget);
+        expect(find.text('Join'), findsOneWidget);
       });
     });
   });
@@ -343,12 +473,12 @@ void main() {
       final result = formatter.formatEditUpdate(
         const TextEditingValue(text: ''),
         const TextEditingValue(
-          text: 'abc123',
+          text: 'test01',
           selection: TextSelection.collapsed(offset: 6),
         ),
       );
 
-      expect(result.text, 'ABC123');
+      expect(result.text, 'TEST01');
       expect(result.selection.baseOffset, 6);
     });
 

@@ -179,7 +179,7 @@ Depending on your location, you may have the right to:
 - Object to processing of your information
 - Export your data in a portable format
 
-To exercise these rights, contact us at your-email@YOUR_DOMAIN.
+To exercise these rights, contact us at joel@onemind.life.
 ''',
     ),
     LegalSection(
@@ -199,7 +199,7 @@ We may update this privacy policy from time to time. We will notify you of any c
       content: '''
 If you have questions about this Privacy Policy, please contact us at:
 OneMind.Life LLC
-your-email@YOUR_DOMAIN
+joel@onemind.life
 ''',
     ),
   ],
@@ -311,7 +311,7 @@ Continued use after changes constitutes acceptance of the new terms.
       content: '''
 For questions about these Terms of Service, contact us at:
 OneMind.Life LLC
-your-email@YOUR_DOMAIN
+joel@onemind.life
 ''',
     ),
   ],

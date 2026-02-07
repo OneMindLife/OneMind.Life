@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:onemind_app/core/l10n/language_service.dart';
 import 'package:onemind_app/core/l10n/locale_provider.dart';
-import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/providers/providers.dart';
 import 'package:onemind_app/providers/chat_providers.dart';
 import 'package:onemind_app/providers/notifiers/my_chats_notifier.dart';
@@ -15,6 +14,7 @@ import 'package:onemind_app/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../fixtures/chat_fixtures.dart';
+import '../../fixtures/join_request_fixtures.dart';
 import '../../mocks/mock_supabase_client.dart';
 
 class MockChatService extends Mock implements ChatService {}
@@ -354,6 +354,119 @@ void main() {
         // Should NOT create additional channels (no new calls after the auth event)
         verifyNever(() => mockSupabase.channel('my_participants'));
         verifyNever(() => mockSupabase.channel('my_join_requests'));
+      });
+    });
+
+    group('approvedChatStream', () {
+      test('emits chat when pending request becomes active chat', () async {
+        // Initial state: pending request for chat 5
+        final pendingRequest = JoinRequestFixtures.model(
+          id: 1,
+          chatId: 5,
+          chatName: 'Pending Chat',
+        );
+
+        when(() => mockChatService.getMyChats(languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => []);
+        when(() => mockParticipantService.getMyPendingRequests())
+            .thenAnswer((_) async => [pendingRequest]);
+
+        container = createContainer();
+        await waitForData(container);
+
+        // Verify initial state has pending request
+        final initialState = container.read(myChatsProvider).valueOrNull;
+        expect(initialState?.pendingRequests.length, equals(1));
+        expect(initialState?.chats.length, equals(0));
+
+        // Set up stream listener before triggering refresh
+        final approvedChats = <int>[];
+        final subscription = container
+            .read(myChatsProvider.notifier)
+            .approvedChatStream
+            .listen((chat) {
+          approvedChats.add(chat.id);
+        });
+
+        // Now the request is approved - chat 5 appears in chats list
+        final approvedChat = ChatFixtures.model(id: 5, name: 'Pending Chat');
+        when(() => mockChatService.getMyChats(languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => [approvedChat]);
+        when(() => mockParticipantService.getMyPendingRequests())
+            .thenAnswer((_) async => []); // No more pending requests
+
+        // Trigger refresh
+        await container.read(myChatsProvider.notifier).refresh();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Verify the stream emitted the approved chat
+        expect(approvedChats, contains(5));
+
+        await subscription.cancel();
+      });
+
+      test('does not emit when chat was already in chats list', () async {
+        // Chat 5 already exists
+        final existingChat = ChatFixtures.model(id: 5, name: 'Existing Chat');
+
+        when(() => mockChatService.getMyChats(languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => [existingChat]);
+        when(() => mockParticipantService.getMyPendingRequests())
+            .thenAnswer((_) async => []);
+
+        container = createContainer();
+        await waitForData(container);
+
+        // Set up stream listener
+        final approvedChats = <int>[];
+        final subscription = container
+            .read(myChatsProvider.notifier)
+            .approvedChatStream
+            .listen((chat) {
+          approvedChats.add(chat.id);
+        });
+
+        // Refresh with same data (no change)
+        await container.read(myChatsProvider.notifier).refresh();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Should not emit anything since chat was already there
+        expect(approvedChats, isEmpty);
+
+        await subscription.cancel();
+      });
+
+      test('does not emit when new chat was not in pending requests', () async {
+        // No pending requests initially
+        when(() => mockChatService.getMyChats(languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => []);
+        when(() => mockParticipantService.getMyPendingRequests())
+            .thenAnswer((_) async => []);
+
+        container = createContainer();
+        await waitForData(container);
+
+        // Set up stream listener
+        final approvedChats = <int>[];
+        final subscription = container
+            .read(myChatsProvider.notifier)
+            .approvedChatStream
+            .listen((chat) {
+          approvedChats.add(chat.id);
+        });
+
+        // New chat appears but it was never in pending requests (e.g., host created it)
+        final newChat = ChatFixtures.model(id: 10, name: 'New Chat');
+        when(() => mockChatService.getMyChats(languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => [newChat]);
+
+        await container.read(myChatsProvider.notifier).refresh();
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Should not emit - this chat was not in pending requests
+        expect(approvedChats, isEmpty);
+
+        await subscription.cancel();
       });
     });
   });

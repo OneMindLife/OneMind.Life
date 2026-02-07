@@ -1,8 +1,32 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:onemind_app/core/l10n/language_service.dart';
+import 'package:onemind_app/core/l10n/locale_provider.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/providers/providers.dart';
 import '../mocks/mocks.dart';
+
+/// Mock LanguageService for testing
+class _MockLanguageService extends Mock implements LanguageService {
+  @override
+  String getCurrentLanguage() => 'en';
+
+  @override
+  Future<String> initializeLanguage() async => 'en';
+
+  @override
+  Future<bool> updateLanguage(String languageCode) async => true;
+}
+
+/// Test LocaleNotifier that uses mock LanguageService
+class _TestLocaleNotifier extends LocaleNotifier {
+  _TestLocaleNotifier() : super(_MockLanguageService());
+}
 
 /// Extension on WidgetTester to simplify widget testing with mocked providers
 extension PumpApp on WidgetTester {
@@ -30,6 +54,8 @@ extension PumpApp on WidgetTester {
     NavigatorObserver? navigatorObserver,
   }) async {
     final overrides = <Override>[
+      // Always provide a test locale notifier to avoid needing LanguageService
+      localeProvider.overrideWith((ref) => _TestLocaleNotifier()),
       if (chatService != null)
         chatServiceProvider.overrideWithValue(chatService),
       if (participantService != null)
@@ -46,6 +72,13 @@ extension PumpApp on WidgetTester {
         overrides: overrides,
         child: MaterialApp(
           theme: theme ?? ThemeData.light(),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
           home: widget,
           navigatorObservers: [
             if (navigatorObserver != null) navigatorObserver,

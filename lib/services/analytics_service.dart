@@ -6,10 +6,10 @@ import 'package:flutter/foundation.dart';
 /// Wraps Firebase Analytics with typed methods for OneMind-specific events.
 /// All methods fail gracefully if Firebase Analytics is not available.
 ///
-/// TODO: Firebase Analytics fails on YOUR_DOMAIN domain. Need to configure:
-/// 1. Add YOUR_DOMAIN to GA4 property (G-WZS2WCVXRQ) data stream
-/// 2. Or check App Check settings in onemindsaas Firebase project
-/// See: https://analytics.google.com → Admin → Data Streams
+/// GA4 Configuration:
+/// - Measurement ID: G-BMGWEGECWY
+/// - Data Stream: onemind_app (web) - onemind.life
+/// - GA Property: onemindsaas (owned by joel@onemind.life)
 class AnalyticsService {
   FirebaseAnalytics? _analytics;
   bool _isAvailable = false;
@@ -62,12 +62,13 @@ class AnalyticsService {
     required bool autoAdvanceProposing,
     required bool autoAdvanceRating,
   }) async {
+    // Firebase Analytics requires string or number values, not booleans
     await _logEvent('chat_created', {
       'chat_id': chatId,
-      'has_ai_participant': hasAiParticipant,
+      'has_ai_participant': hasAiParticipant ? 1 : 0,
       'confirmation_rounds': confirmationRounds,
-      'auto_advance_proposing': autoAdvanceProposing,
-      'auto_advance_rating': autoAdvanceRating,
+      'auto_advance_proposing': autoAdvanceProposing ? 1 : 0,
+      'auto_advance_rating': autoAdvanceRating ? 1 : 0,
     });
   }
 

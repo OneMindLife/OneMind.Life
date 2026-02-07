@@ -7,7 +7,7 @@ class PublicChatSummaryFixtures {
     int id = 1,
     String name = 'Test Public Chat',
     String? description = 'A test public chat',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
     int participantCount = 5,
     DateTime? createdAt,
     DateTime? lastActivityAt,
@@ -36,7 +36,7 @@ class PublicChatSummaryFixtures {
     int id = 1,
     String name = 'Test Public Chat',
     String? description = 'A test public chat',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
     int participantCount = 5,
     DateTime? createdAt,
     DateTime? lastActivityAt,
@@ -99,7 +99,7 @@ class PublicChatSummaryFixtures {
     int id = 1,
     String name = 'Test Chat',
     String? description = 'Test Description',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
   }) {
     return model(
       id: id,
@@ -119,7 +119,7 @@ class PublicChatSummaryFixtures {
     int id = 1,
     String name = 'Original Name',
     String? description = 'Original Description',
-    String initialMessage = 'Original Message',
+    String? initialMessage = 'Original Message',
     required String nameTranslated,
     String? descriptionTranslated,
     required String initialMessageTranslated,
@@ -143,7 +143,7 @@ class PublicChatSummaryFixtures {
     int id = 1,
     String name = 'Test Chat',
     String? description = 'Test Description',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
   }) {
     return json(
       id: id,

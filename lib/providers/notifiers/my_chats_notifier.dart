@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/models.dart';
@@ -50,6 +51,10 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   StreamSubscription<AuthState>? _authSubscription;
   Timer? _debounceTimer;
   DateTime? _lastRefreshTime;
+
+  /// Stream that emits when a join request is approved (chat becomes accessible)
+  final _approvedChatController = StreamController<Chat>.broadcast();
+  Stream<Chat> get approvedChatStream => _approvedChatController.stream;
 
   static const _debounceDuration = Duration(milliseconds: 150);
   static const _minRefreshInterval = Duration(seconds: 1);
@@ -109,6 +114,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     _authSubscription?.cancel();
     _participantChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
+    _approvedChatController.close();
     disposeLanguageSupport();
     super.dispose();
   }
@@ -205,12 +211,29 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         _participantService.getMyPendingRequests(),
       ]);
 
-      final chats = results[0] as List<Chat>;
-      final pendingRequests = results[1] as List<JoinRequest>;
+      final newChats = results[0] as List<Chat>;
+      final newPendingRequests = results[1] as List<JoinRequest>;
+
+      // Detect approved join requests:
+      // A pending request was approved if its chatId now appears in chats
+      // but wasn't there before
+      final oldChatIds = currentState.chats.map((c) => c.id).toSet();
+      final oldPendingChatIds =
+          currentState.pendingRequests.map((r) => r.chatId).toSet();
+
+      for (final chat in newChats) {
+        // Chat is new (wasn't in old chats) AND was in pending requests
+        if (!oldChatIds.contains(chat.id) &&
+            oldPendingChatIds.contains(chat.id)) {
+          debugPrint(
+              '[MyChatsNotifier] Join request approved for chat ${chat.id}: ${chat.name}');
+          _approvedChatController.add(chat);
+        }
+      }
 
       state = AsyncData(MyChatsState(
-        chats: chats,
-        pendingRequests: pendingRequests,
+        chats: newChats,
+        pendingRequests: newPendingRequests,
       ));
     } catch (e) {
       // Silent failure - keep existing data on refresh error
@@ -220,8 +243,48 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   /// Manual refresh (pull-to-refresh)
   Future<void> refresh() async {
     _debounceTimer?.cancel();
+    // Store previous state for approval detection
+    final previousState = state.valueOrNull;
     state = const AsyncLoading();
-    await _loadAndSubscribe();
+    await _loadAndSubscribeWithApprovalCheck(previousState);
+  }
+
+  /// Load and subscribe, checking for approved requests against previous state
+  Future<void> _loadAndSubscribeWithApprovalCheck(MyChatsState? previousState) async {
+    try {
+      final results = await Future.wait([
+        _chatService.getMyChats(languageCode: languageCode),
+        _participantService.getMyPendingRequests(),
+      ]);
+
+      final chats = results[0] as List<Chat>;
+      final pendingRequests = results[1] as List<JoinRequest>;
+
+      // Detect approved join requests if we have previous state
+      if (previousState != null) {
+        final oldChatIds = previousState.chats.map((c) => c.id).toSet();
+        final oldPendingChatIds =
+            previousState.pendingRequests.map((r) => r.chatId).toSet();
+
+        for (final chat in chats) {
+          if (!oldChatIds.contains(chat.id) &&
+              oldPendingChatIds.contains(chat.id)) {
+            debugPrint(
+                '[MyChatsNotifier] Join request approved for chat ${chat.id}: ${chat.name}');
+            _approvedChatController.add(chat);
+          }
+        }
+      }
+
+      state = AsyncData(MyChatsState(
+        chats: chats,
+        pendingRequests: pendingRequests,
+      ));
+
+      _setupSubscriptions();
+    } catch (e, st) {
+      state = AsyncError(e, st);
+    }
   }
 
   /// Cancel a pending join request with optimistic update

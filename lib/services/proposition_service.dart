@@ -1,6 +1,27 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
 
+/// Exception thrown when attempting to submit a duplicate proposition.
+///
+/// The Edge Function detects duplicates by comparing normalized English
+/// translations of propositions in the same round. Normalization uses
+/// `toLowerCase().trim()` to handle case and whitespace variations.
+class DuplicatePropositionException implements Exception {
+  /// The ID of the existing proposition that matches the submitted content.
+  final int duplicatePropositionId;
+
+  /// Human-readable error message.
+  final String message;
+
+  DuplicatePropositionException({
+    required this.duplicatePropositionId,
+    this.message = 'A proposition with the same content already exists in this round',
+  });
+
+  @override
+  String toString() => 'DuplicatePropositionException: $message (duplicate_id: $duplicatePropositionId)';
+}
+
 /// Service for proposition and rating operations
 class PropositionService {
   final SupabaseClient _client;
@@ -114,25 +135,52 @@ class PropositionService {
     }
   }
 
-  /// Submit a proposition
+  /// Submit a proposition with duplicate detection.
+  ///
+  /// Uses the `submit-proposition` Edge Function which:
+  /// 1. Translates content to English using Claude Haiku
+  /// 2. Normalizes: `toLowerCase().trim()`
+  /// 3. Checks for duplicates in current round
+  /// 4. If unique: inserts proposition and translations
+  ///
+  /// Throws [DuplicatePropositionException] if a proposition with the same
+  /// normalized English translation already exists in the round.
   Future<Proposition> submitProposition({
     required int roundId,
     required int participantId,
     required String content,
   }) async {
-    final response = await _client.from('propositions').insert({
-      'round_id': roundId,
-      'participant_id': participantId,
-      'content': content,
-    }).select().single();
+    try {
+      final response = await _client.functions.invoke(
+        'submit-proposition',
+        body: {
+          'round_id': roundId,
+          'participant_id': participantId,
+          'content': content,
+        },
+      );
 
-    final proposition = Proposition.fromJson(response);
+      // Parse successful response
+      final data = response.data as Map<String, dynamic>;
+      final propositionData = data['proposition'] as Map<String, dynamic>;
 
-    // NOTE: Translation is now triggered automatically by database trigger
-    // (translate_proposition_on_insert) which calls the translate Edge Function via pg_net.
-    // This is more reliable than fire-and-forget from client.
+      return Proposition.fromJson(propositionData);
+    } on FunctionException catch (e) {
+      // Handle duplicate detection (HTTP 409 Conflict)
+      if (e.status == 409) {
+        final details = e.details as Map<String, dynamic>?;
+        if (details != null && details['code'] == 'DUPLICATE_PROPOSITION') {
+          throw DuplicatePropositionException(
+            duplicatePropositionId: details['duplicate_proposition_id'] as int,
+            message: details['error'] as String? ??
+                'A proposition with the same content already exists in this round',
+          );
+        }
+      }
 
-    return proposition;
+      // Re-throw other FunctionExceptions
+      rethrow;
+    }
   }
 
   /// Delete a proposition (host only, during proposing phase only)
@@ -620,5 +668,102 @@ class PropositionService {
     final remaining = allIds.difference(excludeSet);
 
     return remaining.length;
+  }
+
+  /// Get user round ranks for leaderboard display.
+  /// Returns all users sorted by rank descending (highest first).
+  Future<List<UserRoundRank>> getUserRoundRanks({
+    required int roundId,
+    required int myParticipantId,
+  }) async {
+    final response = await _client
+        .from('user_round_ranks')
+        .select('*, participants!inner(display_name)')
+        .eq('round_id', roundId);
+
+    final allRanks = (response as List)
+        .map((json) => UserRoundRank.fromJson(json))
+        .toList();
+
+    if (allRanks.isEmpty) {
+      return [];
+    }
+
+    // Sort by rank descending (highest first)
+    allRanks.sort((a, b) => b.rank.compareTo(a.rank));
+
+    return allRanks;
+  }
+
+  // ==========================================================================
+  // Skip Proposing Methods
+  // ==========================================================================
+
+  /// Skip proposing for the current round.
+  /// User must not have already submitted a proposition.
+  /// Skip quota must not be exceeded.
+  Future<RoundSkip> skipProposing({
+    required int roundId,
+    required int participantId,
+  }) async {
+    final response = await _client.from('round_skips').insert({
+      'round_id': roundId,
+      'participant_id': participantId,
+    }).select().single();
+
+    return RoundSkip.fromJson(response);
+  }
+
+  /// Get all skips for a round
+  Future<List<RoundSkip>> getSkipsForRound(int roundId) async {
+    final response = await _client
+        .from('round_skips')
+        .select()
+        .eq('round_id', roundId);
+
+    return (response as List).map((json) => RoundSkip.fromJson(json)).toList();
+  }
+
+  /// Get skip count for a round
+  Future<int> getSkipCount(int roundId) async {
+    final response = await _client
+        .from('round_skips')
+        .select('id')
+        .eq('round_id', roundId);
+
+    return (response as List).length;
+  }
+
+  /// Check if a participant has skipped this round
+  Future<bool> hasSkipped(int roundId, int participantId) async {
+    final response = await _client
+        .from('round_skips')
+        .select('id')
+        .eq('round_id', roundId)
+        .eq('participant_id', participantId)
+        .maybeSingle();
+
+    return response != null;
+  }
+
+  /// Subscribe to skip changes for a round
+  RealtimeChannel subscribeToSkips(
+    int roundId,
+    void Function() onUpdate,
+  ) {
+    return _client
+        .channel('round_skips:$roundId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'round_skips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'round_id',
+            value: roundId,
+          ),
+          callback: (_) => onUpdate(),
+        )
+        .subscribe();
   }
 }

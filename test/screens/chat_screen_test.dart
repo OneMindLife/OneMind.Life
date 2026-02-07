@@ -64,6 +64,10 @@ class FakeMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   @override
   Future<void> cancelRequest(int requestId) async {}
 
+  // Stream for approved chats - no-op for tests
+  @override
+  Stream<Chat> get approvedChatStream => const Stream.empty();
+
   // LanguageAwareMixin methods - no-op for tests
   @override
   String get languageCode => 'en';
@@ -170,6 +174,9 @@ class FakeChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   @override
   Future<void> resumeChat() async {}
+
+  @override
+  Future<void> skipProposing() async {}
 }
 
 void main() {
@@ -451,8 +458,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show proposing panel elements - round number
-        expect(find.text('Round 1'), findsOneWidget);
+        // Should show proposing panel elements - submit button
+        expect(find.text('Submit'), findsOneWidget);
       });
 
       testWidgets('shows text field for proposition input', (tester) async {
@@ -482,18 +489,23 @@ void main() {
         final participant = ParticipantFixtures.model();
 
         // Best practice: use pre-loaded state
+        // NOTE: hasStartedRating=true prevents auto-navigation to rating screen
+        // (which happens when phase=rating, hasStartedRating=false, hasRated=false)
+        // The button shows "Continue Rating" when hasStartedRating is true
         final state = createTestState(
           chat: chat,
           round: round,
           propositions: propositions,
           myParticipant: participant,
+          hasStartedRating: true, // Prevent auto-navigation to rating screen
         );
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show rating-related UI - round number
-        expect(find.text('Round 1'), findsOneWidget);
+        // Should show rating-related UI - Continue Rating button
+        // (when hasStartedRating=true, button text is "Continue Rating")
+        expect(find.text('Continue Rating'), findsOneWidget);
       });
     });
 
@@ -768,7 +780,7 @@ void main() {
         ));
 
         final round = RoundFixtures.waiting();
-        final hostParticipant = ParticipantFixtures.host(); // Host sees "Start Phase"
+        final hostParticipant = ParticipantFixtures.host();
 
         // Best practice: use pre-loaded state
         final state = createTestState(
@@ -780,8 +792,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show WaitingStatePanel content (host view)
-        expect(find.text('Start Phase'), findsWidgets);
+        // Should show WaitingStatePanel (identified by its key)
+        expect(find.byKey(const Key('waiting-state-panel')), findsOneWidget);
 
         // Should NOT show ScheduledWaitingPanel content
         expect(find.text('Chat is outside schedule window'), findsNothing);
@@ -821,13 +833,10 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // BUG: Currently shows "Start Rating Phase" because propositions.isNotEmpty
-        // EXPECTED: Should show "Start Phase" because no NEW propositions exist
-        // The round needs to go through proposing phase first to collect new submissions
-
-        // Should show WaitingStatePanel (proposing hasn't started)
-        expect(find.text('Start Phase'), findsWidgets,
-            reason: 'Should show Start Phase button for host to start proposing');
+        // Should show WaitingStatePanel (identified by key) because only carried forward
+        // propositions exist - no NEW propositions for rating
+        expect(find.byKey(const Key('waiting-state-panel')), findsOneWidget,
+            reason: 'Should show WaitingStatePanel when only carried forward propositions exist');
 
         // Should NOT show WaitingForRatingPanel
         expect(find.text('Start Rating Phase'), findsNothing,
@@ -906,12 +915,13 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show Previous Winner content (auto-switched)
+        // Should show Previous Winner content (simplified UI)
         expect(find.text('Winning proposition'), findsOneWidget);
-        expect(find.text('Score: 85.0'), findsOneWidget);
+        // Winner tab should be visible
+        expect(find.text('Winner'), findsOneWidget);
       });
 
-      testWidgets('displays sole win progress indicator',
+      testWidgets('shows winner content in panel',
           (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.proposing(customId: 3); // Round 3
@@ -936,15 +946,77 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show Previous Winner content with sole win tracking
+        // Should show Previous Winner content (simplified UI)
         expect(find.text('Strong proposition'), findsOneWidget);
-        expect(find.text('Score: 92.0'), findsOneWidget);
-        // Sole wins progress - chat.confirmationRoundsRequired defaults to 3
-        expect(find.textContaining('Sole wins:'), findsOneWidget);
+      });
+
+      testWidgets('hides Winner tab during rating phase', (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.rating(customId: 2); // Rating phase
+        final participant = ParticipantFixtures.model();
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1, // Previous round
+          content: 'Winning proposition',
+          globalScore: 85.0,
+        );
+
+        // State with previous round winners but in rating phase
+        // hasStartedRating=true prevents auto-navigation to rating screen
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          myParticipant: participant,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+          hasStartedRating: true, // Prevent auto-navigation
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Winner tab should be HIDDEN during rating phase
+        expect(find.text('Winner'), findsNothing,
+            reason: 'Winner tab should be hidden during rating phase');
+
+        // Rate tab should still be visible (the phase-specific tab label)
+        expect(find.text('Rate'), findsOneWidget);
+      });
+
+      testWidgets('shows Winner tab during proposing phase with previous winners',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 2); // Proposing phase
+        final participant = ParticipantFixtures.model();
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1, // Previous round
+          content: 'Winning proposition',
+          globalScore: 85.0,
+        );
+
+        // State with previous round winners in proposing phase
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          myParticipant: participant,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Winner tab should be VISIBLE during proposing phase
+        expect(find.text('Winner'), findsOneWidget,
+            reason: 'Winner tab should be visible during proposing phase');
       });
     });
 
-    group('Host Propositions Modal - Carried Forward Protection', () {
+    // Feature intentionally hidden - host cannot view all propositions to preserve anonymity
+    group('Host Propositions Modal - Carried Forward Protection', skip: 'Feature hidden for anonymity', () {
       testWidgets('delete button is hidden for carried forward propositions',
           (tester) async {
         final chat = ChatFixtures.model();
@@ -1108,12 +1180,13 @@ void main() {
     });
 
     group('Host Pause', () {
-      testWidgets('host sees pause button when chat is not paused',
+      // Note: Pause/Resume button is currently hidden in the UI
+      // These tests verify the button is NOT shown (matching current behavior)
+      testWidgets('host does not see pause button (feature hidden)',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: false);
         final hostParticipant = ParticipantFixtures.host();
 
-        // Best practice: use pre-loaded state
         final state = createTestState(
           chat: chat,
           myParticipant: hostParticipant,
@@ -1126,17 +1199,16 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pumpAndSettle();
 
-        // Host should see "Pause Chat" option in menu
-        expect(find.text('Pause Chat'), findsOneWidget);
+        // Pause/Resume buttons are hidden
+        expect(find.text('Pause Chat'), findsNothing);
         expect(find.text('Resume Chat'), findsNothing);
       });
 
-      testWidgets('host sees play button when chat is paused',
+      testWidgets('host does not see resume button when paused (feature hidden)',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: true);
         final hostParticipant = ParticipantFixtures.host();
 
-        // Best practice: use pre-loaded state
         final state = createTestState(
           chat: chat,
           myParticipant: hostParticipant,
@@ -1149,8 +1221,8 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pumpAndSettle();
 
-        // Host should see "Resume Chat" option in menu
-        expect(find.text('Resume Chat'), findsOneWidget);
+        // Pause/Resume buttons are hidden
+        expect(find.text('Resume Chat'), findsNothing);
         expect(find.text('Pause Chat'), findsNothing);
       });
 

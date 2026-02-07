@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import 'email_invite_section.dart';
 import 'form_inputs.dart';
@@ -28,20 +29,21 @@ class VisibilitySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('Visibility'),
+        SectionHeader(l10n.visibility),
         const SizedBox(height: 8),
         Text(
-          'Who can find and join this chat?',
+          l10n.whoCanJoin,
           style: Theme.of(context).textTheme.bodySmall,
         ),
         const SizedBox(height: 16),
         _AccessMethodCard(
           method: AccessMethod.public,
-          title: 'Public',
-          description: 'Anyone can discover and join',
+          title: l10n.accessPublic,
+          description: l10n.accessPublicDesc,
           icon: Icons.public,
           isSelected: accessMethod == AccessMethod.public,
           onTap: () => onAccessMethodChanged(AccessMethod.public),
@@ -49,8 +51,8 @@ class VisibilitySection extends StatelessWidget {
         const SizedBox(height: 8),
         _AccessMethodCard(
           method: AccessMethod.code,
-          title: 'Invite Code',
-          description: 'Share a 6-character code to join',
+          title: l10n.accessCode,
+          description: l10n.accessCodeDesc,
           icon: Icons.tag,
           isSelected: accessMethod == AccessMethod.code,
           onTap: () => onAccessMethodChanged(AccessMethod.code),
@@ -58,8 +60,8 @@ class VisibilitySection extends StatelessWidget {
         const SizedBox(height: 8),
         _AccessMethodCard(
           method: AccessMethod.inviteOnly,
-          title: 'Email Invite Only',
-          description: 'Only invited email addresses can join',
+          title: l10n.accessEmail,
+          description: l10n.accessEmailDesc,
           icon: Icons.email,
           isSelected: accessMethod == AccessMethod.inviteOnly,
           onTap: () => onAccessMethodChanged(AccessMethod.inviteOnly),
@@ -84,10 +86,10 @@ class VisibilitySection extends StatelessWidget {
         // ),
         if (accessMethod != AccessMethod.public)
           SwitchListTile(
-            title: const Text('Require approval'),
+            title: Text(l10n.requireApproval),
             subtitle: Text(requireApproval
-                ? 'Host must approve each request'
-                : 'Users join instantly'),
+                ? l10n.hostApprovalRequired
+                : l10n.instantJoin),
             value: requireApproval,
             onChanged: onRequireApprovalChanged,
           ),

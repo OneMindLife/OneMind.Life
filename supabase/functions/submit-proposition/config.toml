@@ -1,0 +1,7 @@
+# Configuration for submit-proposition Edge Function
+#
+# verify_jwt = true: Supabase gateway verifies JWT signatures before the
+# function is invoked. The function then validates participant ownership.
+
+[function]
+verify_jwt = true

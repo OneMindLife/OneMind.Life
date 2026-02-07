@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../models/user_credits.dart';
 import '../../services/billing_service.dart';
 
@@ -94,9 +95,10 @@ class _CreditsScreenState extends State<CreditsScreen> {
       if (updated != null) {
         setState(() => _credits = updated);
         if (mounted) {
+          final l10n = AppLocalizations.of(context)!;
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(enabled ? 'Auto-refill enabled' : 'Auto-refill disabled'),
+              content: Text(enabled ? l10n.autoRefillEnabled : l10n.autoRefillDisabled),
             ),
           );
         }
@@ -120,12 +122,13 @@ class _CreditsScreenState extends State<CreditsScreen> {
   Future<void> _updateAutoRefillSettings() async {
     if (_credits == null) return;
 
+    final l10n = AppLocalizations.of(context)!;
     final threshold = int.tryParse(_thresholdController.text) ?? 50;
     final amount = int.tryParse(_amountController.text) ?? 500;
 
     if (amount <= threshold) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Refill amount must be greater than threshold')),
+        SnackBar(content: Text(l10n.refillAmountMustBeGreater)),
       );
       return;
     }
@@ -143,7 +146,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
         setState(() => _credits = updated);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Auto-refill settings updated')),
+            SnackBar(content: Text(l10n.autoRefillSettingsUpdated)),
           );
         }
       }
@@ -212,9 +215,10 @@ class _CreditsScreenState extends State<CreditsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Credits'),
+        title: Text(l10n.creditsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -225,7 +229,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text('Error: $_error'))
+              ? Center(child: Text(l10n.error(_error!)))
               : RefreshIndicator(
                   onRefresh: _loadData,
                   child: SingleChildScrollView(
@@ -249,6 +253,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildBalanceCard() {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -256,7 +261,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Your Balance',
+              l10n.yourBalance,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),
@@ -264,7 +269,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
               children: [
                 Expanded(
                   child: _buildBalanceItem(
-                    'Paid Credits',
+                    l10n.paidCredits,
                     '${_credits?.creditBalance ?? 0}',
                     Icons.account_balance_wallet,
                     Colors.green,
@@ -273,7 +278,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: _buildBalanceItem(
-                    'Free This Month',
+                    l10n.freeThisMonth,
                     '${_credits?.freeTierRemaining ?? UserCredits.freeTierMonthlyLimit}',
                     Icons.card_giftcard,
                     Colors.blue,
@@ -288,11 +293,11 @@ class _CreditsScreenState extends State<CreditsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total Available',
+                  l10n.totalAvailable,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 Text(
-                  '${_credits?.totalAvailable ?? UserCredits.freeTierMonthlyLimit} user-rounds',
+                  '${_credits?.totalAvailable ?? UserCredits.freeTierMonthlyLimit} ${l10n.userRounds}',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -301,7 +306,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Free tier resets ${_credits?.freeTierResetAt != null ? _formatResetDate(_credits!.freeTierResetAt) : 'next month'}',
+              l10n.freeTierResets(_credits?.freeTierResetAt != null ? _formatResetDate(_credits!.freeTierResetAt) : 'next month'),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey,
                   ),
@@ -336,6 +341,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildPurchaseCard() {
+    final l10n = AppLocalizations.of(context)!;
     final cost = BillingService.calculateCostDollars(_purchaseCredits);
 
     return Card(
@@ -345,12 +351,12 @@ class _CreditsScreenState extends State<CreditsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Buy Credits',
+              l10n.buyCredits,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
             Text(
-              '1 credit = 1 user-round = \$0.01',
+              l10n.pricingInfo,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey,
                   ),
@@ -421,7 +427,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Total',
+                  l10n.total,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 Text(
@@ -445,7 +451,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.payment),
-                label: Text(_isPurchasing ? 'Processing...' : 'Purchase with Stripe'),
+                label: Text(_isPurchasing ? l10n.processing : l10n.purchaseWithStripe),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
@@ -458,6 +464,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildAutoRefillCard() {
+    final l10n = AppLocalizations.of(context)!;
     final hasPaymentMethod = _credits?.hasPaymentMethod ?? false;
     final autoRefillEnabled = _credits?.autoRefillEnabled ?? false;
     final lastError = _credits?.autoRefillLastError;
@@ -476,7 +483,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Auto-Refill',
+                  l10n.autoRefillTitle,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
@@ -497,7 +504,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Automatically purchase credits when balance falls below threshold',
+              l10n.autoRefillDesc,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey,
                   ),
@@ -516,7 +523,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Last error: $lastError',
+                        l10n.lastError(lastError),
                         style: TextStyle(color: Colors.red.shade700, fontSize: 12),
                       ),
                     ),
@@ -538,7 +545,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Auto-refill setup coming soon. For now, purchase credits manually above.',
+                        l10n.autoRefillComingSoon,
                         style: TextStyle(color: Colors.blue.shade700),
                       ),
                     ),
@@ -551,10 +558,10 @@ class _CreditsScreenState extends State<CreditsScreen> {
                   Expanded(
                     child: TextField(
                       controller: _thresholdController,
-                      decoration: const InputDecoration(
-                        labelText: 'When below',
-                        suffixText: 'credits',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.whenBelow,
+                        suffixText: l10n.credits,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -564,10 +571,10 @@ class _CreditsScreenState extends State<CreditsScreen> {
                   Expanded(
                     child: TextField(
                       controller: _amountController,
-                      decoration: const InputDecoration(
-                        labelText: 'Refill to',
-                        suffixText: 'credits',
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: l10n.refillTo,
+                        suffixText: l10n.credits,
+                        border: const OutlineInputBorder(),
                       ),
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -581,7 +588,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _isUpdatingAutoRefill ? null : _updateAutoRefillSettings,
-                      child: const Text('Save Settings'),
+                      child: Text(l10n.saveSettings),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -589,19 +596,19 @@ class _CreditsScreenState extends State<CreditsScreen> {
                     onPressed: () async {
                       final confirm = await showDialog<bool>(
                         context: context,
-                        builder: (context) => AlertDialog(
-                          title: const Text('Remove Payment Method?'),
-                          content: const Text(
-                            'This will disable auto-refill. You can add a new payment method later.',
+                        builder: (dialogContext) => AlertDialog(
+                          title: Text(l10n.removePaymentMethodQuestion),
+                          content: Text(
+                            l10n.disableAutoRefillMessage,
                           ),
                           actions: [
                             TextButton(
-                              onPressed: () => Navigator.pop(context, false),
-                              child: const Text('Cancel'),
+                              onPressed: () => Navigator.pop(dialogContext, false),
+                              child: Text(l10n.cancel),
                             ),
                             TextButton(
-                              onPressed: () => Navigator.pop(context, true),
-                              child: const Text('Remove'),
+                              onPressed: () => Navigator.pop(dialogContext, true),
+                              child: Text(l10n.remove),
                             ),
                           ],
                         ),
@@ -612,7 +619,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
                       }
                     },
                     icon: const Icon(Icons.delete_outline, size: 18),
-                    label: const Text('Remove Card'),
+                    label: Text(l10n.removeCard),
                     style: TextButton.styleFrom(foregroundColor: Colors.red),
                   ),
                 ],
@@ -625,6 +632,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildTransactionHistory() {
+    final l10n = AppLocalizations.of(context)!;
     if (_transactions == null || _transactions!.isEmpty) {
       return Card(
         child: Padding(
@@ -634,7 +642,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
               Icon(Icons.history, size: 48, color: Colors.grey.shade400),
               const SizedBox(height: 8),
               Text(
-                'No transaction history',
+                l10n.noTransactionHistory,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.grey,
                     ),
@@ -652,7 +660,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Recent Transactions',
+              l10n.recentTransactions,
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 16),

@@ -292,7 +292,7 @@ Deno.test("translate edge function - auth validation logic", async (t) => {
   });
 
   await t.step("rejects production URLs without auth", () => {
-    const prodUrl = "https://YOUR_PROJECT_REF.supabase.co";
+    const prodUrl = "https://example-project.supabase.co";
 
     const isLocalDev = prodUrl.includes("localhost") ||
                        prodUrl.includes("127.0.0.1") ||

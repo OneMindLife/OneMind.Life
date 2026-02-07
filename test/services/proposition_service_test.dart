@@ -6,8 +6,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../fixtures/fixtures.dart';
 import '../mocks/mock_supabase_client.dart';
 
+/// Mock FunctionResponse for testing Edge Function calls
+class MockFunctionResponse extends Mock implements FunctionResponse {}
+
 void main() {
   late MockSupabaseClient mockClient;
+  late MockFunctionsClient mockFunctionsClient;
   late PropositionService propositionService;
 
   setUpAll(() {
@@ -21,6 +25,8 @@ void main() {
 
   setUp(() {
     mockClient = MockSupabaseClient();
+    mockFunctionsClient = MockFunctionsClient();
+    when(() => mockClient.functions).thenReturn(mockFunctionsClient);
     propositionService = PropositionService(mockClient);
   });
 
@@ -132,6 +138,174 @@ void main() {
         expect(channel, isNotNull);
         verify(() => mockClient.channel('global_scores:10')).called(1);
         verify(() => mockChannel.subscribe()).called(1);
+      });
+    });
+
+    group('submitProposition', () {
+      test('returns Proposition on successful 200 response', () async {
+        // Arrange
+        final mockResponse = FunctionResponse(
+          status: 200,
+          data: {
+            'proposition': {
+              'id': 123,
+              'round_id': 1,
+              'participant_id': 5,
+              'content': 'Test proposition',
+              'created_at': '2026-01-25T12:00:00.000Z',
+            },
+          },
+        );
+
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenAnswer((_) async => mockResponse);
+
+        // Act
+        final result = await propositionService.submitProposition(
+          roundId: 1,
+          participantId: 5,
+          content: 'Test proposition',
+        );
+
+        // Assert
+        expect(result, isA<Proposition>());
+        expect(result.id, 123);
+        expect(result.roundId, 1);
+        expect(result.participantId, 5);
+        expect(result.content, 'Test proposition');
+      });
+
+      test('throws DuplicatePropositionException on 409 response', () async {
+        // Arrange - Supabase client throws FunctionException on non-2xx responses
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenThrow(FunctionException(
+          status: 409,
+          details: {
+            'error': 'A proposition with the same content already exists in this round',
+            'code': 'DUPLICATE_PROPOSITION',
+            'duplicate_proposition_id': 99,
+          },
+        ));
+
+        // Act & Assert
+        expect(
+          () => propositionService.submitProposition(
+            roundId: 1,
+            participantId: 5,
+            content: 'Duplicate content',
+          ),
+          throwsA(isA<DuplicatePropositionException>()),
+        );
+      });
+
+      test('DuplicatePropositionException contains duplicate proposition ID', () async {
+        // Arrange - Supabase client throws FunctionException on non-2xx responses
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenThrow(FunctionException(
+          status: 409,
+          details: {
+            'error': 'Duplicate detected',
+            'code': 'DUPLICATE_PROPOSITION',
+            'duplicate_proposition_id': 42,
+          },
+        ));
+
+        // Act & Assert
+        try {
+          await propositionService.submitProposition(
+            roundId: 1,
+            participantId: 5,
+            content: 'Duplicate content',
+          );
+          fail('Expected DuplicatePropositionException');
+        } on DuplicatePropositionException catch (e) {
+          expect(e.duplicatePropositionId, 42);
+          expect(e.message, 'Duplicate detected');
+        }
+      });
+
+      test('rethrows FunctionException on 500 error response', () async {
+        // Arrange - Supabase client throws FunctionException on non-2xx responses
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenThrow(FunctionException(
+          status: 500,
+          details: {
+            'error': 'Internal server error',
+          },
+        ));
+
+        // Act & Assert - FunctionException is rethrown for non-duplicate errors
+        expect(
+          () => propositionService.submitProposition(
+            roundId: 1,
+            participantId: 5,
+            content: 'Test content',
+          ),
+          throwsA(isA<FunctionException>()),
+        );
+      });
+
+      test('rethrows FunctionException on 400 validation error', () async {
+        // Arrange - Supabase client throws FunctionException on non-2xx responses
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenThrow(FunctionException(
+          status: 400,
+          details: {
+            'error': 'Validation error: content is required',
+          },
+        ));
+
+        // Act & Assert - FunctionException is rethrown for non-duplicate errors
+        expect(
+          () => propositionService.submitProposition(
+            roundId: 1,
+            participantId: 5,
+            content: '',
+          ),
+          throwsA(isA<FunctionException>()),
+        );
+      });
+
+      test('invokes Edge Function with correct parameters', () async {
+        // Arrange
+        final mockResponse = FunctionResponse(
+          status: 200,
+          data: {
+            'proposition': PropositionFixtures.json(id: 1),
+          },
+        );
+
+        when(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: any(named: 'body'),
+            )).thenAnswer((_) async => mockResponse);
+
+        // Act
+        await propositionService.submitProposition(
+          roundId: 10,
+          participantId: 20,
+          content: 'My idea',
+        );
+
+        // Assert
+        verify(() => mockFunctionsClient.invoke(
+              'submit-proposition',
+              body: {
+                'round_id': 10,
+                'participant_id': 20,
+                'content': 'My idea',
+              },
+            )).called(1);
       });
     });
   });

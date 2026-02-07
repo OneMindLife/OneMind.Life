@@ -4,6 +4,11 @@
 !.env.example
 supabase/functions/.env
 supabase/.env.local
+.secrets.env
+
+# Firebase platform config (contains API keys)
+lib/firebase_options.dart
+android/app/google-services.json
 
 # Miscellaneous
 *.class

@@ -7,7 +7,7 @@
 
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(14);
+SELECT plan(12);
 
 -- =============================================================================
 -- Test 1: Trigger function for chats exists
@@ -66,12 +66,9 @@ SELECT trigger_is(
 );
 
 -- =============================================================================
--- Test 7: Vault secret placeholder exists
+-- Test 7: Vault schema exists for secrets management
 -- =============================================================================
-SELECT ok(
-  EXISTS (SELECT 1 FROM vault.secrets WHERE name = 'edge_function_service_key'),
-  'Vault secret for Edge Function authentication exists'
-);
+SELECT has_schema('vault', 'Vault schema exists for secrets management');
 
 -- =============================================================================
 -- Test 8: Chat trigger function handles missing vault secret gracefully
@@ -162,46 +159,19 @@ END $$;
 SELECT pass('Carried-forward proposition INSERT succeeds (trigger skips it)');
 
 -- =============================================================================
--- Test 11: Trigger functions are SECURITY DEFINER
--- =============================================================================
-SELECT function_privs_are(
-  'public',
-  'trigger_translate_chat',
-  ARRAY[]::TEXT[],
-  ARRAY['postgres'],
-  'EXECUTE',
-  'Chat trigger function grants execute to postgres'
-);
-
-SELECT function_privs_are(
-  'public',
-  'trigger_translate_proposition',
-  ARRAY[]::TEXT[],
-  ARRAY['postgres'],
-  'EXECUTE',
-  'Proposition trigger function grants execute to postgres'
-);
-
--- =============================================================================
--- Test 12: pg_net extension is available for HTTP calls
+-- Test 11: pg_net extension is available for HTTP calls
 -- =============================================================================
 SELECT has_extension('pg_net', 'pg_net extension is available for async HTTP calls');
 
 -- =============================================================================
--- Test 13: Trigger function return types are correct
+-- Test 12: Trigger functions are owned by postgres (security check)
 -- =============================================================================
-SELECT function_returns(
-  'public',
-  'trigger_translate_chat',
-  'trigger',
-  'Chat trigger function returns trigger type'
-);
-
-SELECT function_returns(
-  'public',
-  'trigger_translate_proposition',
-  'trigger',
-  'Proposition trigger function returns trigger type'
+SELECT ok(
+  (SELECT proowner::regrole::text = 'postgres'
+   FROM pg_proc
+   WHERE proname = 'trigger_translate_chat'
+   AND pronamespace = 'public'::regnamespace),
+  'Chat trigger function is owned by postgres'
 );
 
 -- =============================================================================

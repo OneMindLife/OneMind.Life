@@ -17,73 +17,85 @@ void main() {
   }
 
   group('WaitingStatePanel', () {
-    testWidgets('shows host controls when isHost is true', (tester) async {
-      var startCalled = false;
-
+    testWidgets('shows waiting for more participants with default auto-start',
+        (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          WaitingStatePanel(
-            isHost: true,
-            participantCount: 5,
-            onStartPhase: () => startCalled = true,
+          const WaitingStatePanel(
+            participantCount: 1,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Start Phase'), findsNWidgets(2)); // Title and button
-      expect(find.text('5 participants have joined'), findsOneWidget);
-      expect(find.byType(ElevatedButton), findsOneWidget);
-
-      await tester.tap(find.byType(ElevatedButton));
-      expect(startCalled, isTrue);
-    });
-
-    testWidgets('shows waiting message when not host', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          WaitingStatePanel(
-            isHost: false,
-            participantCount: 5,
-            onStartPhase: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
+      // Default auto-start is 3, so with 1 participant need 2 more
       expect(find.text('Waiting'), findsOneWidget);
-      expect(find.text('Waiting for host to start...'), findsOneWidget);
+      expect(find.textContaining('2'), findsOneWidget);
+      // No start button - phase auto-starts
       expect(find.byType(ElevatedButton), findsNothing);
     });
 
-    testWidgets('displays correct participant count', (tester) async {
+    testWidgets('shows waiting for 1 more when close to auto-start',
+        (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          WaitingStatePanel(
-            isHost: true,
-            participantCount: 10,
-            onStartPhase: () {},
+          const WaitingStatePanel(
+            participantCount: 2,
+            autoStartParticipantCount: 3,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('10 participants have joined'), findsOneWidget);
+      // With 2 participants and auto-start at 3, need 1 more
+      expect(find.text('Waiting'), findsOneWidget);
+      expect(find.textContaining('1'), findsOneWidget);
     });
 
-    testWidgets('displays singular participant for count of 1', (tester) async {
+    testWidgets('shows waiting for 0 when at or above auto-start threshold',
+        (tester) async {
       await tester.pumpWidget(
         createTestWidget(
-          WaitingStatePanel(
-            isHost: true,
-            participantCount: 1,
-            onStartPhase: () {},
+          const WaitingStatePanel(
+            participantCount: 5,
+            autoStartParticipantCount: 3,
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('1 participants have joined'), findsOneWidget);
+      // With 5 participants and auto-start at 3, remaining is 0
+      expect(find.text('Waiting'), findsOneWidget);
+      expect(find.textContaining('0'), findsOneWidget);
+    });
+
+    testWidgets('uses custom auto-start participant count', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          const WaitingStatePanel(
+            participantCount: 2,
+            autoStartParticipantCount: 5,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // With 2 participants and auto-start at 5, need 3 more
+      expect(find.text('Waiting'), findsOneWidget);
+      expect(find.textContaining('3'), findsOneWidget);
+    });
+
+    testWidgets('has correct key for testing', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          const WaitingStatePanel(
+            participantCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('waiting-state-panel')), findsOneWidget);
     });
   });
 
@@ -105,7 +117,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Round 1'), findsOneWidget);
+      // Simplified UI: shows submission count only when propositionsPerUser > 1
       expect(find.text('0/3 submitted'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Share your idea...'), findsOneWidget);
@@ -133,7 +145,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Round 2'), findsOneWidget);
+      // Shows submitted propositions and waiting message
       expect(find.text('First idea'), findsOneWidget);
       expect(find.text('Second idea'), findsOneWidget);
       expect(find.text('Waiting for rating phase...'), findsOneWidget);
@@ -232,7 +244,8 @@ void main() {
       expect(find.text('2'), findsOneWidget);
     });
 
-    testWidgets('host sees badge icon when propositions exist', (tester) async {
+    // Feature intentionally hidden - host should not see propositions to preserve anonymity
+    testWidgets('host does NOT see badge icon (feature hidden)', (tester) async {
       final controller = TextEditingController();
       final myProps = [PropositionFixtures.model(id: 1, content: 'My idea')];
 
@@ -252,10 +265,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Host should see badge with count
-      expect(find.byIcon(Icons.list_alt), findsOneWidget);
-      expect(find.byType(Badge), findsOneWidget);
-      expect(find.text('3'), findsOneWidget); // Badge shows total count
+      // Host should NOT see badge - feature is hidden to preserve anonymity
+      expect(find.byIcon(Icons.list_alt), findsNothing);
+      expect(find.byType(Badge), findsNothing);
     });
 
     testWidgets('non-host does not see badge icon', (tester) async {
@@ -281,7 +293,7 @@ void main() {
       expect(find.byType(Badge), findsNothing);
     });
 
-    testWidgets('host can still submit while having access to all propositions',
+    testWidgets('host can still submit propositions',
         (tester) async {
       final controller = TextEditingController();
       final myProps = [PropositionFixtures.model(id: 1, content: 'My first')];
@@ -302,17 +314,16 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Host should see both: input field AND badge icon
+      // Host should see input field (badge is hidden for anonymity)
       expect(find.byType(TextField), findsOneWidget);
-      expect(find.byIcon(Icons.list_alt), findsOneWidget);
       expect(find.text('1/3 submitted'), findsOneWidget);
     });
 
-    testWidgets('tapping badge calls onViewAllPropositions callback',
+    // Feature intentionally hidden - badge does not exist so callback cannot be tested
+    testWidgets('badge is hidden so callback is not accessible',
         (tester) async {
       final controller = TextEditingController();
       final myProps = [PropositionFixtures.model(id: 1, content: 'My idea')];
-      var viewAllCalled = false;
 
       await tester.pumpWidget(
         createTestWidget(
@@ -324,18 +335,14 @@ void main() {
             propositionController: controller,
             onSubmit: () {},
             isHost: true,
-            onViewAllPropositions: () => viewAllCalled = true,
+            onViewAllPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Tap the badge icon
-      await tester.tap(find.byIcon(Icons.list_alt));
-      await tester.pumpAndSettle();
-
-      // Callback should be called (bottom sheet is now handled by parent)
-      expect(viewAllCalled, isTrue);
+      // Badge icon should not exist - feature hidden for anonymity
+      expect(find.byIcon(Icons.list_alt), findsNothing);
     });
 
     testWidgets('disables text field and button when isPaused is true',
@@ -463,10 +470,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Rate Propositions'), findsOneWidget);
-      expect(find.text('Round 3'), findsOneWidget);
-      expect(find.text('Rate all 5 propositions'), findsOneWidget);
+      // Simplified UI: just shows the button with timer
       expect(find.text('Start Rating'), findsOneWidget);
+      expect(find.byType(ElevatedButton), findsOneWidget);
 
       await tester.tap(find.text('Start Rating'));
       expect(startRatingCalled, isTrue);
@@ -485,18 +491,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Rating Complete'), findsOneWidget);
-      expect(find.text('Round 3'), findsOneWidget);
+      // Shows waiting message and no button when already rated
       expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
       expect(find.byType(ElevatedButton), findsNothing);
     });
 
-    testWidgets('displays correct round number', (tester) async {
+    testWidgets('shows Continue Rating when hasStartedRating is true', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
           RatingStatePanel(
             roundCustomId: 7,
             hasRated: false,
+            hasStartedRating: true,
             propositionCount: 3,
             onStartRating: () {},
           ),
@@ -504,23 +510,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Round 7'), findsOneWidget);
-    });
-
-    testWidgets('displays correct proposition count', (tester) async {
-      await tester.pumpWidget(
-        createTestWidget(
-          RatingStatePanel(
-            roundCustomId: 1,
-            hasRated: false,
-            propositionCount: 10,
-            onStartRating: () {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Rate all 10 propositions'), findsOneWidget);
+      expect(find.text('Continue Rating'), findsOneWidget);
     });
 
     testWidgets('disables rating button when isPaused is true', (tester) async {
@@ -539,11 +529,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show paused message instead of proposition count
-      expect(find.text('Chat is paused...'), findsOneWidget);
-      expect(find.text('Rate all 5 propositions'), findsNothing);
-
-      // Button should be disabled
+      // Button should be disabled when paused
       final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull);
 
@@ -568,9 +554,6 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show normal proposition count
-      expect(find.text('Rate all 5 propositions'), findsOneWidget);
-
       // Button should be enabled
       final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNotNull);
@@ -578,6 +561,386 @@ void main() {
       // Tapping button should call onStartRating
       await tester.tap(find.byType(ElevatedButton));
       expect(startRatingCalled, isTrue);
+    });
+  });
+
+  group('ProposingStatePanel - Duplicate Submission Prevention', () {
+    testWidgets('disables submit button when isSubmitting is true',
+        (tester) async {
+      final controller = TextEditingController();
+      var submitCallCount = 0;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () => submitCallCount++,
+            isSubmitting: true, // Submission in progress
+          ),
+        ),
+      );
+      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
+      // animates continuously and will never "settle"
+      await tester.pump();
+
+      // Button should be disabled when submitting
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNull,
+          reason: 'Submit button should be disabled when isSubmitting is true');
+
+      // Tapping disabled button should not call onSubmit
+      await tester.tap(find.byType(ElevatedButton));
+      expect(submitCallCount, 0,
+          reason: 'onSubmit should not be called when button is disabled');
+    });
+
+    testWidgets('shows loading spinner when isSubmitting is true',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isSubmitting: true, // Submission in progress
+          ),
+        ),
+      );
+      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
+      // animates continuously and will never "settle"
+      await tester.pump();
+
+      // Should show loading indicator instead of text
+      expect(find.byType(CircularProgressIndicator), findsOneWidget,
+          reason: 'Should show loading spinner when isSubmitting is true');
+
+      // Should NOT show "Submit" text when submitting
+      expect(find.text('Submit'), findsNothing,
+          reason: 'Submit text should be hidden while loading spinner shows');
+    });
+
+    testWidgets('shows submit text when isSubmitting is false',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isSubmitting: false, // Not submitting
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show "Submit" text
+      expect(find.text('Submit'), findsOneWidget,
+          reason: 'Should show Submit text when not submitting');
+
+      // Should NOT show loading indicator
+      expect(find.byType(CircularProgressIndicator), findsNothing,
+          reason: 'Should not show loading spinner when not submitting');
+    });
+
+    testWidgets('enables submit button when isSubmitting is false',
+        (tester) async {
+      final controller = TextEditingController();
+      var submitCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () => submitCalled = true,
+            isSubmitting: false, // Not submitting
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Button should be enabled
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNotNull,
+          reason: 'Submit button should be enabled when isSubmitting is false');
+
+      // Tapping button should call onSubmit
+      await tester.tap(find.byType(ElevatedButton));
+      expect(submitCalled, isTrue,
+          reason: 'onSubmit should be called when button is tapped');
+    });
+
+    testWidgets('disables both submit and skip buttons when isSubmitting',
+        (tester) async {
+      final controller = TextEditingController();
+      var submitCalled = false;
+      var skipCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () => submitCalled = true,
+            onSkip: () => skipCalled = true,
+            canSkip: true,
+            maxSkips: 3,
+            isSubmitting: true, // Submission in progress
+          ),
+        ),
+      );
+      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
+      // animates continuously and will never "settle"
+      await tester.pump();
+
+      // Submit button should be disabled
+      final submitButton = tester.widget<ElevatedButton>(
+        find.byType(ElevatedButton),
+      );
+      expect(submitButton.onPressed, isNull,
+          reason: 'Submit button should be disabled when isSubmitting');
+
+      // Skip button should also be disabled
+      final skipButton = tester.widget<OutlinedButton>(
+        find.byType(OutlinedButton),
+      );
+      expect(skipButton.onPressed, isNull,
+          reason: 'Skip button should be disabled when isSubmitting');
+
+      // Tapping either should not call the callbacks
+      await tester.tap(find.byType(ElevatedButton));
+      await tester.tap(find.byType(OutlinedButton));
+      expect(submitCalled, isFalse);
+      expect(skipCalled, isFalse);
+    });
+
+    testWidgets('isSubmitting takes precedence over isPaused for button state',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isPaused: false,
+            isSubmitting: true, // Even when not paused, submitting disables
+          ),
+        ),
+      );
+      // Use pump() instead of pumpAndSettle() because CircularProgressIndicator
+      // animates continuously and will never "settle"
+      await tester.pump();
+
+      // Button should be disabled due to isSubmitting
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNull,
+          reason: 'isSubmitting should disable button even when not paused');
+
+      // Should show loading spinner
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
+
+    testWidgets('default isSubmitting value is false', (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            // isSubmitting not specified - should default to false
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Button should be enabled by default
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
+      expect(button.onPressed, isNotNull,
+          reason: 'Button should be enabled when isSubmitting defaults to false');
+
+      // Should show "Submit" text, not loading spinner
+      expect(find.text('Submit'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+  });
+
+  group('ProposingStatePanel - Countdown Timer After Submission', () {
+    testWidgets('shows countdown timer after submitting all propositions',
+        (tester) async {
+      final controller = TextEditingController();
+      final propositions = [
+        PropositionFixtures.model(id: 1, content: 'My idea'),
+      ];
+      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 5));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: propositions,
+            propositionController: controller,
+            onSubmit: () {},
+            phaseEndsAt: phaseEndsAt,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Should show the waiting text and countdown timer
+      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // Timer should be present (showing minutes)
+      expect(find.textContaining('m'), findsWidgets);
+    });
+
+    testWidgets('shows countdown timer after skipping',
+        (tester) async {
+      final controller = TextEditingController();
+      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 3));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            hasSkipped: true,
+            phaseEndsAt: phaseEndsAt,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Should show skipped indicator
+      expect(find.byKey(const Key('skipped-indicator')), findsOneWidget);
+      // Should show waiting text with countdown
+      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // Timer should be present (showing minutes)
+      expect(find.textContaining('m'), findsWidgets);
+    });
+
+    testWidgets('does not show countdown timer when phaseEndsAt is null after submission',
+        (tester) async {
+      final controller = TextEditingController();
+      final propositions = [
+        PropositionFixtures.model(id: 1, content: 'My idea'),
+      ];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: propositions,
+            propositionController: controller,
+            onSubmit: () {},
+            phaseEndsAt: null, // No deadline
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show waiting text without timer parentheses
+      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // Should not have parentheses for timer
+      expect(find.text('('), findsNothing);
+    });
+  });
+
+  group('RatingStatePanel - Countdown Timer After Rating', () {
+    testWidgets('shows countdown timer after completing rating',
+        (tester) async {
+      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 2));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: true,
+            propositionCount: 5,
+            onStartRating: () {},
+            phaseEndsAt: phaseEndsAt,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Should show the rating complete indicator
+      expect(find.byKey(const Key('rating-complete-indicator')), findsOneWidget);
+      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // Timer should be present (showing minutes)
+      expect(find.textContaining('m'), findsWidgets);
+    });
+
+    testWidgets('does not show countdown timer when phaseEndsAt is null after rating',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: true,
+            propositionCount: 5,
+            onStartRating: () {},
+            phaseEndsAt: null, // No deadline
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show waiting text
+      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // No countdown timer widget should be present in the rating-complete-indicator
+      final container = find.byKey(const Key('rating-complete-indicator'));
+      expect(container, findsOneWidget);
+    });
+
+    testWidgets('passes onPhaseExpired to CountdownTimer after rating',
+        (tester) async {
+      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 5));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: true,
+            propositionCount: 5,
+            onStartRating: () {},
+            phaseEndsAt: phaseEndsAt,
+            onPhaseExpired: () {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Verify CountdownTimer is rendered in the rating-complete-indicator
+      // The actual expiration callback behavior is tested in countdown_timer_test.dart
+      expect(find.byKey(const Key('rating-complete-indicator')), findsOneWidget);
+      expect(find.textContaining('m'), findsWidgets);
     });
   });
 }

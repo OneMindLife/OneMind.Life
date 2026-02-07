@@ -7,7 +7,7 @@ import 'notifiers/chat_detail_notifier.dart';
 
 export 'notifiers/my_chats_notifier.dart';
 export 'notifiers/public_chats_notifier.dart';
-export 'notifiers/grid_ranking_notifier.dart';
+export 'notifiers/rating_notifier.dart';
 export 'notifiers/chat_detail_notifier.dart';
 
 /// Provider for the user's chat list (HomeScreen)

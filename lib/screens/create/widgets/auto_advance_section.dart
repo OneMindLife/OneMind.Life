@@ -1,63 +1,78 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../models/create_chat_state.dart';
 import 'form_inputs.dart';
+import 'setting_input_card.dart';
 
-/// Auto-advance section for early phase advancement
+/// Auto-advance section for early phase advancement.
+/// Simplified: just count-based thresholds, no confusing percentage.
 class AutoAdvanceSection extends StatelessWidget {
   final AutoAdvanceSettings settings;
   final void Function(AutoAdvanceSettings) onChanged;
+
+  /// Auto-start count (kept for compatibility but not used for max limits)
+  final int? autoStartCount;
 
   const AutoAdvanceSection({
     super.key,
     required this.settings,
     required this.onChanged,
+    this.autoStartCount,
   });
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('Auto-Advance At'),
+        SectionHeader(l10n.autoAdvanceAt),
         Text(
-          'Skip timer early when thresholds are reached',
-          style: Theme.of(context).textTheme.bodySmall,
+          l10n.skipTimerEarly,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
         ),
         const SizedBox(height: 16),
+        // Proposing threshold toggle
         SwitchListTile(
-          title: const Text('Enable auto-advance (proposing)'),
+          title: Text(l10n.enableAutoAdvanceProposing),
           value: settings.enableProposing,
           onChanged: (v) => onChanged(settings.copyWith(enableProposing: v)),
+          contentPadding: EdgeInsets.zero,
         ),
         if (settings.enableProposing) ...[
-          LabeledSlider(
-            label:
-                'When ${settings.proposingThresholdPercent}% of participants submit',
-            value: settings.proposingThresholdPercent.toDouble(),
-            onChanged: (v) =>
-                onChanged(settings.copyWith(proposingThresholdPercent: v.round())),
-          ),
-          NumberInput(
-            label: 'Minimum propositions required',
+          const SizedBox(height: 8),
+          SettingInputCard(
+            label: l10n.minParticipantsSubmit,
+            description:
+                l10n.proposingThresholdPreviewSimple(settings.proposingThresholdCount),
             value: settings.proposingThresholdCount,
-            min: 3, // Must match proposing_minimum
             onChanged: (v) =>
                 onChanged(settings.copyWith(proposingThresholdCount: v)),
+            min: 3,
+            max: 100,
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: 16),
+        // Rating threshold toggle
         SwitchListTile(
-          title: const Text('Enable auto-advance (rating)'),
+          title: Text(l10n.enableAutoAdvanceRating),
           value: settings.enableRating,
           onChanged: (v) => onChanged(settings.copyWith(enableRating: v)),
+          contentPadding: EdgeInsets.zero,
         ),
         if (settings.enableRating) ...[
-          NumberInput(
-            label: 'Minimum avg raters per proposition',
+          const SizedBox(height: 8),
+          SettingInputCard(
+            label: l10n.minAvgRaters,
+            description: l10n.ratingThresholdPreview(settings.ratingThresholdCount),
             value: settings.ratingThresholdCount,
-            min: 2, // Must match rating_minimum
             onChanged: (v) =>
                 onChanged(settings.copyWith(ratingThresholdCount: v)),
+            min: 2,
+            max: 100,
           ),
         ],
       ],

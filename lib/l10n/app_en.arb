@@ -2,6 +2,7 @@
   "@@locale": "en",
 
   "appTitle": "OneMind",
+  "howItWorks": "How it works",
 
   "discover": "Discover",
   "discoverPublicChats": "Discover public chats",
@@ -23,6 +24,15 @@
   "retry": "Retry",
   "yes": "Yes",
   "no": "No",
+  "delete": "Delete",
+  "leave": "Leave",
+  "kick": "Kick",
+  "pause": "Pause",
+  "resume": "Resume",
+  "remove": "Remove",
+  "clear": "Clear",
+  "done": "Done",
+  "save": "Save",
 
   "officialOneMind": "Official OneMind",
   "official": "OFFICIAL",
@@ -167,11 +177,15 @@
   "showQrCode": "Show QR Code",
 
   "addEmailForInviteOnly": "Add at least one email address for invite-only mode",
+  "emailAlreadyAdded": "Email already added",
 
   "settings": "Settings",
   "language": "Language",
   "english": "English",
   "spanish": "Espanol",
+  "portuguese": "Portugues",
+  "french": "Francais",
+  "german": "Deutsch",
 
   "rankPropositions": "Rank Propositions",
   "placing": "Placing: ",
@@ -183,6 +197,7 @@
   },
   "failedToSaveRankings": "Failed to save rankings",
   "chatPausedByHost": "Chat was paused by host",
+  "ratingPhaseEnded": "Rating phase has ended",
   "goBack": "Go Back",
   "ratePropositions": "Rate Propositions",
   "submitRatings": "Submit Ratings",
@@ -264,5 +279,709 @@
   "chatPaused": "Chat Paused",
   "chatPausedByHostTitle": "Chat Paused by Host",
   "timerStoppedTapResume": "The timer is stopped. Tap Resume in the app bar to continue.",
-  "hostPausedPleaseWait": "The host has paused this chat. Please wait for them to resume."
+  "hostPausedPleaseWait": "The host has paused this chat. Please wait for them to resume.",
+
+  "previousWinner": "Winner",
+  "yourProposition": "Your Proposition",
+  "yourPropositions": "Your Propositions",
+  "rate": "Rate",
+
+  "participants": "Participants",
+  "chatInfo": "Chat Info",
+  "shareQrCode": "Share QR Code",
+  "joinRequests": "Join Requests",
+  "resumeChat": "Resume Chat",
+  "pauseChat": "Pause Chat",
+  "leaveChat": "Leave Chat",
+  "deleteChat": "Delete Chat",
+  "host": "Host",
+
+  "deletePropositionQuestion": "Delete Proposition?",
+  "areYouSureDeleteProposition": "Are you sure you want to delete this proposition?",
+  "deleteChatQuestion": "Delete Chat?",
+  "leaveChatQuestion": "Leave Chat?",
+  "kickParticipantQuestion": "Kick Participant?",
+  "pauseChatQuestion": "Pause Chat?",
+  "removePaymentMethodQuestion": "Remove Payment Method?",
+
+  "propositionDeleted": "Proposition deleted",
+  "chatDeleted": "Chat deleted",
+  "youHaveLeftChat": "You have left the chat",
+  "youHaveBeenRemoved": "You have been removed from this chat",
+  "chatHasBeenDeleted": "This chat has been deleted",
+  "participantRemoved": "{name} has been removed",
+  "@participantRemoved": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "chatPausedSuccess": "Chat paused",
+  "requestApproved": "Request approved",
+  "requestDenied": "Request denied",
+
+  "failedToSubmit": "Failed to submit: {error}",
+  "@failedToSubmit": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "duplicateProposition": "This proposition already exists in this round",
+  "@duplicateProposition": {
+    "description": "Error shown when user tries to submit a duplicate proposition"
+  },
+  "failedToStartPhase": "Failed to start phase: {error}",
+  "@failedToStartPhase": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToAdvancePhase": "Failed to advance phase: {error}",
+  "@failedToAdvancePhase": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToCompleteRating": "Failed to complete rating: {error}",
+  "@failedToCompleteRating": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDelete": "Failed to delete: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDeleteChat": "Failed to delete chat: {error}",
+  "@failedToDeleteChat": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToLeaveChat": "Failed to leave chat: {error}",
+  "@failedToLeaveChat": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToKickParticipant": "Failed to kick participant: {error}",
+  "@failedToKickParticipant": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToPauseChat": "Failed to pause chat: {error}",
+  "@failedToPauseChat": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "error": "Error: {error}",
+  "@error": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "noPendingRequests": "No pending requests",
+  "newRequestsWillAppear": "New requests will appear here",
+  "participantsJoined": "{count} participants have joined",
+  "@participantsJoined": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "waitingForMoreParticipants": "Waiting for {count} more participant(s) to join",
+  "@waitingForMoreParticipants": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "scheduled": "Scheduled",
+  "chatOutsideSchedule": "Chat is outside schedule window",
+  "nextWindowStarts": "Next window starts {dateTime}",
+  "@nextWindowStarts": {
+    "placeholders": {
+      "dateTime": {"type": "String"}
+    }
+  },
+  "scheduleWindows": "Schedule windows:",
+  "scheduledToStart": "Scheduled to start",
+  "chatWillAutoStart": "The chat will automatically start at the scheduled time.",
+  "submittedCount": "{submitted}/{total} submitted",
+  "@submittedCount": {
+    "placeholders": {
+      "submitted": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
+  "propositionCollected": "{count} proposition collected",
+  "@propositionCollected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "propositionsCollected": "{count} propositions collected",
+  "@propositionsCollected": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "timeExpired": "Time expired",
+  "noDataAvailable": "No data available",
+  "tryAgain": "Try Again",
+
+  "requireApproval": "Require approval",
+  "requireAuthentication": "Require authentication",
+  "showPreviousResults": "Show full results from past rounds",
+  "enableAdaptiveDuration": "Enable adaptive duration",
+  "enableOneMindAI": "Enable OneMind AI",
+  "enableAutoAdvanceProposing": "Enable auto-advance (proposing)",
+  "enableAutoAdvanceRating": "Enable auto-advance (rating)",
+  "hideWhenOutsideSchedule": "Hide when outside schedule",
+  "chatVisibleButPaused": "Chat visible but paused outside schedule",
+  "chatHiddenUntilNext": "Chat hidden until next scheduled window",
+  "timezone": "Timezone",
+  "scheduleType": "Schedule Type",
+  "oneTime": "One-time",
+  "recurring": "Recurring",
+  "startDateTime": "Start Date & Time",
+  "scheduleWindowsLabel": "Schedule Windows",
+  "addWindow": "Add Window",
+  "searchTimezone": "Search timezone...",
+  "manual": "Manual",
+  "auto": "Auto",
+
+  "credits": "Credits",
+  "refillAmountMustBeGreater": "Refill amount must be greater than threshold",
+  "autoRefillSettingsUpdated": "Auto-refill settings updated",
+  "autoRefillEnabled": "Auto-refill enabled",
+  "autoRefillDisabled": "Auto-refill disabled",
+  "saveSettings": "Save Settings",
+  "removeCard": "Remove Card",
+  "purchaseWithStripe": "Purchase with Stripe",
+  "processing": "Processing...",
+
+  "pageNotFound": "Page Not Found",
+  "goHome": "Go Home",
+
+  "allPropositionsCount": "All Propositions ({count})",
+  "@allPropositionsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "hostCanModerateContent": "As host, you can moderate content. Submitter identity is hidden.",
+  "yourPropositionLabel": "(Your proposition)",
+  "previousWinnerLabel": "(Previous winner)",
+  "cannotBeUndone": "This action cannot be undone.",
+  "deleteChatConfirmation": "Are you sure you want to delete \"{chatName}\"?\n\nThis will permanently delete all propositions, ratings, and history. This action cannot be undone.",
+  "@deleteChatConfirmation": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "leaveChatConfirmation": "Are you sure you want to leave \"{chatName}\"?\n\nYou will no longer see this chat in your list.",
+  "@leaveChatConfirmation": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "kickParticipantConfirmation": "Are you sure you want to remove \"{participantName}\" from this chat?\n\nThey will not be able to rejoin without approval.",
+  "@kickParticipantConfirmation": {
+    "placeholders": {
+      "participantName": {"type": "String"}
+    }
+  },
+  "pauseChatConfirmation": "This will pause the current phase timer. Participants will see that the chat is paused by the host.",
+  "approveOrDenyRequests": "Approve or deny requests to join this chat.",
+  "signedIn": "Signed in",
+  "guest": "Guest",
+  "approve": "Approve",
+  "deny": "Deny",
+  "initialMessage": "Initial Message",
+  "consensusNumber": "Consensus #{number}",
+  "@consensusNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "kickParticipant": "Kick participant",
+
+  "propositions": "Propositions",
+  "leaderboard": "Leaderboard",
+  "noLeaderboardData": "No leaderboard data available",
+
+  "skip": "Skip",
+  "skipped": "Skipped",
+  "skipsRemaining": "{remaining} skips remaining",
+  "@skipsRemaining": {
+    "placeholders": {
+      "remaining": {"type": "int"}
+    }
+  },
+
+  "createChatTitle": "Create Chat",
+  "yourName": "Your Name",
+  "enterYourNameLabel": "Enter your name",
+  "nameVisibleToAll": "Your name will be visible to all participants",
+
+  "basicInfo": "Basic Info",
+  "chatNameRequired": "Chat Name *",
+  "chatNameHint": "e.g., Team Lunch Friday",
+  "required": "Required",
+  "initialMessageRequired": "Initial Message *",
+  "initialMessageOptional": "Initial Message (Optional)",
+  "initialMessageHint": "The opening topic or question",
+  "initialMessageHelperText": "Participants will know you wrote this since you created the chat",
+  "descriptionOptional": "Description (Optional)",
+  "descriptionHint": "Additional context",
+
+  "visibility": "Visibility",
+  "whoCanJoin": "Who can find and join this chat?",
+  "accessPublic": "Public",
+  "accessPublicDesc": "Anyone can discover and join",
+  "accessCode": "Invite Code",
+  "accessCodeDesc": "Share a 6-character code to join",
+  "accessEmail": "Email Invite Only",
+  "accessEmailDesc": "Only invited email addresses can join",
+  "hostApprovalRequired": "Host must approve each request",
+  "instantJoin": "Users join instantly",
+
+  "inviteByEmail": "Invite by Email",
+  "inviteEmailOnly": "Only invited email addresses can join this chat",
+  "emailAddress": "Email address",
+  "emailHint": "user@example.com",
+  "invalidEmail": "Please enter a valid email address",
+  "addEmailToSend": "Add at least one email to send invites",
+
+  "facilitationMode": "How Phases Run",
+  "facilitationDesc": "Choose between manual control or automatic timers for phase transitions.",
+  "modeManual": "Manual",
+  "modeAuto": "Auto",
+  "modeManualDesc": "You control when each phase starts and ends. No timers.",
+  "modeAutoDesc": "Timers run automatically. You can still end phases early.",
+  "autoStartParticipants": "Start when this many join",
+  "ratingStartMode": "Rating Start Mode",
+  "ratingStartModeDesc": "Controls how the rating phase begins after proposing ends.",
+  "ratingAutoDesc": "Rating starts immediately after proposing ends or threshold is met.",
+  "ratingManualDesc": "After proposing ends, you choose when to start rating (e.g., the next day).",
+  "phaseFlowExplanation": "Each phase runs for up to {duration}, but ends early if {threshold} people participate. Won't end until at least {minimum} ideas exist (timer extends if needed).",
+  "@phaseFlowExplanation": {
+    "placeholders": {
+      "duration": {"type": "String"},
+      "threshold": {"type": "int"},
+      "minimum": {"type": "int"}
+    }
+  },
+  "enableSchedule": "Enable Schedule",
+  "restrictChatRoom": "Restrict when the chat room is open",
+
+  "timers": "Timers",
+  "useSameDuration": "Same duration for both phases",
+  "useSameDurationDesc": "Use the same time limit for proposing and rating",
+  "phaseDuration": "Phase Duration",
+  "proposing": "Proposing",
+  "rating": "Rating",
+  "preset5min": "5 min",
+  "preset30min": "30 min",
+  "preset1hour": "1 hour",
+  "preset1day": "1 day",
+  "presetCustom": "Custom",
+  "duration1min": "1 min",
+  "duration2min": "2 min",
+  "duration10min": "10 min",
+  "duration2hours": "2 hours",
+  "duration4hours": "4 hours",
+  "duration8hours": "8 hours",
+  "duration12hours": "12 hours",
+  "hours": "Hours",
+  "minutes": "Minutes",
+  "max24h": "(max 24h)",
+
+  "minimumToAdvance": "Required Participation",
+  "timeExtendsAutomatically": "Phase won't end until requirements are met",
+  "proposingMinimum": "Ideas needed",
+  "proposingMinimumDesc": "Phase won't end until {count} ideas are submitted",
+  "@proposingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ratingMinimum": "Ratings needed",
+  "ratingMinimumDesc": "Phase won't end until each idea has {count} ratings",
+  "@ratingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "autoAdvanceAt": "End Phase Early",
+  "skipTimerEarly": "Phase can end early when thresholds are reached",
+  "enableAutoAdvanceProposing": "Enable for ideas",
+  "whenPercentSubmit": "When {percent}% of participants submit",
+  "@whenPercentSubmit": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "minParticipantsSubmit": "Ideas needed",
+  "enableAutoAdvanceRating": "Enable for ratings",
+  "minAvgRaters": "Ratings needed",
+  "proposingThresholdPreview": "Phase ends early when {threshold} of {participants} participants submit ideas ({percent}%)",
+  "@proposingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "participants": {"type": "int"},
+      "percent": {"type": "int"}
+    }
+  },
+  "proposingThresholdPreviewSimple": "Phase ends early when {threshold} ideas are submitted",
+  "@proposingThresholdPreviewSimple": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "ratingThresholdPreview": "Phase ends early when each idea has {threshold} ratings",
+  "@ratingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+
+  "consensusSettings": "Consensus Settings",
+  "confirmationRounds": "Confirmation rounds",
+  "firstWinnerConsensus": "First winner reaches consensus immediately",
+  "mustWinConsecutive": "Same proposition must win {count} rounds in a row",
+  "@mustWinConsecutive": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "showFullResults": "Show full results from past rounds",
+  "seeAllPropositions": "Users see all propositions and ratings",
+  "seeWinningOnly": "Users only see the winning proposition",
+
+  "propositionLimits": "Proposition Limits",
+  "propositionsPerUser": "Propositions per user",
+  "onePropositionPerRound": "Each user can submit 1 proposition per round",
+  "nPropositionsPerRound": "Each user can submit up to {count} propositions per round",
+  "@nPropositionsPerRound": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+
+  "adaptiveDuration": "Adaptive Duration",
+  "adjustDurationDesc": "Auto-adjust phase duration based on participation",
+  "durationAdjusts": "Duration adjusts based on participation",
+  "fixedDurations": "Fixed phase durations",
+  "usesThresholds": "Uses early advance thresholds to determine participation",
+  "adjustmentPercent": "Adjustment: {percent}%",
+  "@adjustmentPercent": {
+    "placeholders": {
+      "percent": {"type": "int"}
+    }
+  },
+  "minDuration": "Minimum duration",
+  "maxDuration": "Maximum duration",
+
+  "aiParticipant": "AI Participant",
+  "enableAI": "Enable OneMind AI",
+  "aiPropositionsPerRound": "AI propositions per round",
+
+  "scheduleTypeLabel": "Schedule Type",
+  "scheduleOneTime": "One-time",
+  "scheduleRecurring": "Recurring",
+  "hideOutsideSchedule": "Hide when outside schedule",
+  "visiblePaused": "Chat visible but paused outside schedule",
+  "hiddenUntilWindow": "Chat hidden until next scheduled window",
+  "timezoneLabel": "Timezone",
+  "startDateTime": "Start Date & Time",
+  "scheduleWindowsTitle": "Schedule Windows",
+  "addWindowButton": "Add Window",
+  "scheduleWindowsDesc": "Define when the chat is active. Supports overnight windows (e.g., 11pm to 1am next day).",
+  "windowNumber": "Window {n}",
+  "@windowNumber": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "removeWindow": "Remove window",
+  "startDay": "Start Day",
+  "endDay": "End Day",
+  "daySun": "Sun",
+  "dayMon": "Mon",
+  "dayTue": "Tue",
+  "dayWed": "Wed",
+  "dayThu": "Thu",
+  "dayFri": "Fri",
+  "daySat": "Sat",
+
+  "timerWarningTitle": "Timer Warning",
+  "timerWarningContent": "Your phase timers are longer than the {minutes}-minute schedule window.\n\nPhases may extend beyond the scheduled time, or pause when the window closes.\n\nConsider using shorter timers (5 min or 30 min) for scheduled sessions.",
+  "@timerWarningContent": {
+    "placeholders": {
+      "minutes": {"type": "int"}
+    }
+  },
+  "adjustSettingsButton": "Adjust Settings",
+  "continueAnywayButton": "Continue Anyway",
+
+  "chatCreatedTitle": "Chat Created!",
+  "chatNowPublicTitle": "Your chat is now public!",
+  "anyoneCanJoinDiscover": "Anyone can find and join \"{name}\" from the Discover page.",
+  "@anyoneCanJoinDiscover": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "invitesSentTitle": "{count} invites sent!",
+  "@invitesSentTitle": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noInvitesSentTitle": "No invites sent",
+  "inviteOnlyMessage": "Only invited users can join this chat.",
+  "shareCodeInstruction": "Share this code with participants:",
+  "codeCopied": "Invite code copied to clipboard",
+
+  "joinScreenTitle": "Join Chat",
+  "noTokenOrCode": "No invite token or code provided",
+  "invalidExpiredInvite": "This invite link is invalid or has expired",
+  "inviteOnlyError": "This chat requires an email invite. Please use the invite link sent to your email.",
+  "invalidInviteTitle": "Invalid Invite",
+  "invalidInviteDefault": "This invite link is not valid.",
+  "invitedToJoin": "You're invited to join",
+  "enterNameToJoin": "Enter your name to join:",
+  "nameVisibleNotice": "This name will be visible to other participants.",
+  "requiresApprovalNotice": "This chat requires host approval to join.",
+  "requestToJoinButton": "Request to Join",
+  "joinChatButton": "Join Chat",
+
+  "creditsTitle": "Credits",
+  "yourBalance": "Your Balance",
+  "paidCredits": "Paid Credits",
+  "freeThisMonth": "Free This Month",
+  "totalAvailable": "Total Available",
+  "userRounds": "user-rounds",
+  "freeTierResets": "Free tier resets {date}",
+  "@freeTierResets": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+  "buyCredits": "Buy Credits",
+  "pricingInfo": "1 credit = 1 user-round = $0.01",
+  "total": "Total",
+  "autoRefillTitle": "Auto-Refill",
+  "autoRefillDesc": "Automatically purchase credits when balance falls below threshold",
+  "lastError": "Last error: {error}",
+  "@lastError": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "autoRefillComingSoon": "Auto-refill setup coming soon. For now, purchase credits manually above.",
+  "whenBelow": "When below",
+  "refillTo": "Refill to",
+  "disableAutoRefillMessage": "This will disable auto-refill. You can add a new payment method later.",
+  "recentTransactions": "Recent Transactions",
+  "noTransactionHistory": "No transaction history",
+
+  "chatSettingsTitle": "Chat Settings",
+  "accessVisibility": "Access & Visibility",
+  "accessMethod": "Access Method",
+  "facilitation": "Facilitation",
+  "startMode": "Start Mode",
+  "autoStartThreshold": "Auto-Start Threshold",
+  "nParticipants": "{n} participants",
+  "@nParticipants": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "proposingDuration": "Proposing Duration",
+  "ratingDuration": "Rating Duration",
+  "nSeconds": "{n} seconds",
+  "@nSeconds": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "nMinutes": "{n} minutes",
+  "@nMinutes": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "nHours": "{n} hours",
+  "@nHours": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "nDays": "{n} days",
+  "@nDays": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "minimumRequirements": "Minimum Requirements",
+  "nPropositions": "{n} propositions",
+  "@nPropositions": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "nAvgRaters": "{n} avg raters per proposition",
+  "@nAvgRaters": {
+    "placeholders": {
+      "n": {"type": "double"}
+    }
+  },
+  "earlyAdvanceThresholds": "Early Advance Thresholds",
+  "proposingThreshold": "Proposing Threshold",
+  "ratingThreshold": "Rating Threshold",
+  "nConsecutiveWins": "{n} consecutive wins",
+  "@nConsecutiveWins": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "enabled": "Enabled",
+  "nPerRound": "{n} per round",
+  "@nPerRound": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "scheduledStart": "Scheduled Start",
+  "windows": "Windows",
+  "nConfigured": "{n} configured",
+  "@nConfigured": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "visibleOutsideSchedule": "Visible Outside Schedule",
+
+  "chatSettings": "Chat Settings",
+  "chatName": "Name",
+  "chatDescription": "Description",
+  "accessAndVisibility": "Access & Visibility",
+  "autoMode": "Auto",
+  "avgRatersPerProposition": "avg raters per proposition",
+  "nAvgRaters": "{n} avg raters",
+  "@nAvgRaters": {
+    "placeholders": {
+      "n": {"type": "double"}
+    }
+  },
+  "consensus": "Consensus",
+  "nConsecutiveWins": "{n} consecutive wins",
+  "@nConsecutiveWins": {
+    "placeholders": {
+      "n": {"type": "int"}
+    }
+  },
+  "aiPropositions": "AI Propositions",
+  "perRound": "per round",
+  "schedule": "Schedule",
+  "configured": "configured",
+  "publicAccess": "Public",
+  "inviteCodeAccess": "Invite Code",
+  "inviteOnlyAccess": "Invite Only",
+
+  "privacyPolicyTitle": "Privacy Policy",
+  "termsOfServiceTitle": "Terms of Service",
+  "legalDocuments": "Legal",
+  "byContinuingYouAgree": "By continuing, you agree to our",
+  "andText": "and",
+  "lastUpdated": "Last updated: {date}",
+  "@lastUpdated": {
+    "placeholders": {
+      "date": {"type": "String"}
+    }
+  },
+
+  "shareLinkTitle": "Share link to join {chatName}",
+  "@shareLinkTitle": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "shareButton": "Share",
+  "copyLinkButton": "Copy Link",
+  "linkCopied": "Link copied to clipboard",
+  "enterCodeManually": "Or enter code manually:",
+  "shareNotSupported": "Share not available - link copied instead",
+  "orScan": "or scan",
+
+  "tutorialWelcomeTitle": "Welcome to OneMind",
+  "tutorialWelcomeSubtitle": "Learn how groups reach consensus together",
+  "tutorialWhatYoullLearn": "In this tutorial, you'll:",
+  "tutorialBullet1": "Submit your ideas anonymously",
+  "tutorialBullet2": "Rate ideas from others",
+  "tutorialBullet3": "See how consensus is reached",
+  "tutorialTheQuestion": "The question:",
+  "tutorialQuestion": "What do we value?",
+  "tutorialStartButton": "Start Tutorial",
+  "tutorialSkipButton": "Skip tutorial",
+  "tutorialConsensusReached": "Consensus Reached!",
+  "tutorialWonTwoRounds": "\"{proposition}\" won 2 rounds in a row.",
+  "@tutorialWonTwoRounds": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialAddedToChat": "It's now added to the chat above.",
+  "tutorialFinishButton": "Finish Tutorial",
+  "tutorialRound1Result": "'Success' won this round! To become a permanent answer, it must win again next round.",
+  "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
+  "tutorialProposingHintWithWinner": "Can you think of something better? Submit an idea to challenge the current winner.",
+  "tutorialRatingHint": "To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.",
+  "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round, it will be permanently added to the chat.",
+  "@tutorialRound2Result": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialRound2Prompt": "Seeing 'Success' as the group's current answer - what do you think we REALLY value?",
+  "tutorialPropSuccess": "Success",
+  "tutorialPropAdventure": "Adventure",
+  "tutorialPropGrowth": "Growth",
+  "tutorialPropHarmony": "Harmony",
+  "tutorialPropInnovation": "Innovation",
+  "tutorialPropFreedom": "Freedom",
+  "tutorialPropSecurity": "Security",
+  "tutorialPropStability": "Stability",
+  "tutorialDuplicateProposition": "This idea already exists in this round. Try something different!",
+  "tutorialShareTitle": "Share Your Chat",
+  "tutorialShareExplanation": "To invite others to join your chat, tap the share button at the top of your screen.",
+  "tutorialShareTryIt": "Try it now!",
+  "tutorialShareButtonHint": "Tap the share button in the top right ↗",
+  "tutorialSkipMenuItem": "Skip Tutorial",
+  "tutorialSkipConfirmTitle": "Skip Tutorial?",
+  "tutorialSkipConfirmMessage": "You can always access the tutorial later from the home screen.",
+  "tutorialSkipConfirmYes": "Yes, Skip",
+  "tutorialSkipConfirmNo": "Continue Tutorial",
+  "tutorialShareTooltip": "Share Chat",
+  "tutorialYourIdea": "Your idea",
+  "tutorialRateIdeas": "Rate Ideas",
+  "tutorialSeeResultsHint": "Tap below to see how all ideas ranked.",
+  "tutorialSeeResultsContinueHint": "Great! Now you understand how the ranking works. Continue to try again in Round 2.",
+  "tutorialResultsBackHint": "Press the back arrow when done viewing the results.",
+
+  "wizardStep1Title": "What do you want to talk about?",
+  "wizardStep1Subtitle": "This is the heart of your chat",
+  "wizardStep2Title": "Set the pace",
+  "wizardStep2Subtitle": "How long for each phase?",
+  "wizardOneLastThing": "One last thing...",
+  "wizardProposingLabel": "Proposing (submit ideas)",
+  "wizardRatingLabel": "Rating (rank ideas)",
+  "back": "Back"
 }

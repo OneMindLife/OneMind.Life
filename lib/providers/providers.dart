@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../core/l10n/locale_provider.dart';
 import '../services/services.dart';
 import '../services/analytics_service.dart';
+import '../services/tutorial_service.dart';
 
 // =============================================================================
 // AUTH SERVICE (JWT-based authentication via Supabase Anonymous Auth)
@@ -75,3 +77,26 @@ final billingServiceProvider = Provider<BillingService>((ref) {
   final client = ref.watch(supabaseProvider);
   return BillingService(client);
 });
+
+// =============================================================================
+// TUTORIAL SERVICE
+// =============================================================================
+
+/// Tutorial service provider - tracks tutorial completion state
+final tutorialServiceProvider = Provider<TutorialService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return TutorialService(prefs);
+});
+
+/// Check if user has completed tutorial
+final hasCompletedTutorialProvider = Provider<bool>((ref) {
+  return ref.watch(tutorialServiceProvider).hasCompletedTutorial;
+});
+
+// =============================================================================
+// JOIN FLOW TRACKING
+// =============================================================================
+
+/// Tracks the chat ID that user requested to join via invite link.
+/// Used to navigate directly to the chat after tutorial if request was approved.
+final pendingJoinChatIdProvider = StateProvider<int?>((ref) => null);

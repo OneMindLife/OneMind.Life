@@ -138,12 +138,6 @@ void main() {
     return result;
   }
 
-  /// Helper to wait for async operations to complete
-  Future<void> pumpEventQueue() async {
-    // Allow multiple event loop iterations for async operations
-    await Future.delayed(const Duration(milliseconds: 100));
-  }
-
   group('PublicChatsNotifier', () {
     group('build()', () {
       test('loads public chats on initialization', () async {

@@ -55,20 +55,13 @@ void main() {
                     color: Colors.blue.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'ABC123',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 6,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Icon(Icons.copy, size: 20),
-                    ],
+                  child: const Text(
+                    'ABC123',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 6,
+                    ),
                   ),
                 ),
               ),
@@ -77,29 +70,6 @@ void main() {
         );
 
         expect(find.text('ABC123'), findsOneWidget);
-        expect(find.byIcon(Icons.copy), findsOneWidget);
-      });
-
-      testWidgets('displays instruction text', (tester) async {
-        await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: Column(
-                children: [
-                  Text('Scan to join instantly'),
-                  Text('or'),
-                  Text('Enter code manually:'),
-                  Text('Tap to copy'),
-                ],
-              ),
-            ),
-          ),
-        );
-
-        expect(find.text('Scan to join instantly'), findsOneWidget);
-        expect(find.text('or'), findsOneWidget);
-        expect(find.text('Enter code manually:'), findsOneWidget);
-        expect(find.text('Tap to copy'), findsOneWidget);
       });
 
       testWidgets('displays done button', (tester) async {
@@ -118,17 +88,17 @@ void main() {
         expect(find.byType(TextButton), findsOneWidget);
       });
 
-      testWidgets('displays QR icon in title', (tester) async {
+      testWidgets('displays share icon in title', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
               body: Row(
                 children: [
-                  const Icon(Icons.qr_code_2),
+                  const Icon(Icons.share),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Join Test Chat',
+                      'Share link to join Test Chat',
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
@@ -138,47 +108,120 @@ void main() {
           ),
         );
 
-        expect(find.byIcon(Icons.qr_code_2), findsOneWidget);
-        expect(find.text('Join Test Chat'), findsOneWidget);
+        expect(find.byIcon(Icons.share), findsOneWidget);
+        expect(find.text('Share link to join Test Chat'), findsOneWidget);
       });
     });
 
-    group('Copy Functionality', () {
-      testWidgets('copy gesture detector is tappable', (tester) async {
-        var tapped = false;
-
+    group('Share Button', () {
+      testWidgets('share button with icon is displayed', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body: GestureDetector(
-                onTap: () => tapped = true,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  child: const Text('ABC123'),
+              body: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share'),
                 ),
               ),
             ),
           ),
         );
 
-        await tester.tap(find.text('ABC123'));
+        expect(find.text('Share'), findsOneWidget);
+        expect(find.byIcon(Icons.share), findsOneWidget);
+      });
+
+      testWidgets('share button is tappable', (tester) async {
+        var tapped = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => tapped = true,
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Share'));
         expect(tapped, isTrue);
+      });
+
+      testWidgets('share button copies to clipboard and tries native share',
+          (tester) async {
+        // This test verifies the button behavior concept:
+        // 1. Always copies to clipboard
+        // 2. Also tries native share (works on mobile, no-op on desktop)
+        var actionTriggered = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: ElevatedButton.icon(
+                onPressed: () => actionTriggered = true,
+                icon: const Icon(Icons.share),
+                label: const Text('Share'),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Share'));
+        expect(actionTriggered, isTrue);
+      });
+    });
+
+    group('URL Display', () {
+      testWidgets('full URL is displayed in selectable text', (tester) async {
+        const testUrl = 'https://onemind.life/join/ABC123';
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: SelectableText(
+                  testUrl,
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text(testUrl), findsOneWidget);
+        expect(find.byType(SelectableText), findsOneWidget);
       });
     });
 
     group('URL Generation', () {
-      test('default URL format uses YOUR_DOMAIN domain', () {
-        // The _qrData getter constructs the URL
+      test('default URL format uses onemind.life domain', () {
+        // The _fullUrl getter constructs the URL
         // Since it's private, we test the expected behavior through documentation
-        // Default format: https://YOUR_DOMAIN/join/{inviteCode}
-        const expectedFormat = 'https://YOUR_DOMAIN/join/ABC123';
-        expect(expectedFormat, contains('YOUR_DOMAIN'));
+        // Default format: https://onemind.life/join/{inviteCode}
+        const expectedFormat = 'https://onemind.life/join/ABC123';
+        expect(expectedFormat, contains('onemind.life'));
         expect(expectedFormat, contains('ABC123'));
       });
 
       test('custom deepLinkUrl overrides default URL', () {
         const customUrl = 'https://custom.app/join/CODE';
-        const defaultUrl = 'https://YOUR_DOMAIN/join/CODE';
+        const defaultUrl = 'https://onemind.life/join/CODE';
 
         // When deepLinkUrl is provided, it should be used instead of default
         expect(customUrl, isNot(equals(defaultUrl)));
@@ -214,6 +257,76 @@ void main() {
         );
 
         expect(find.text('Dark Theme Test'), findsOneWidget);
+      });
+    });
+
+    group('Layout Structure', () {
+      testWidgets('single share button spans full width', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.share),
+                  label: const Text('Share'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Share'), findsOneWidget);
+        expect(find.byIcon(Icons.share), findsOneWidget);
+      });
+
+      testWidgets('or scan divider is displayed', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Row(
+                children: [
+                  const Expanded(child: Divider()),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text('or scan'),
+                  ),
+                  const Expanded(child: Divider()),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('or scan'), findsOneWidget);
+        expect(find.byType(Divider), findsNWidgets(2));
+      });
+
+      testWidgets('manual code fallback text is displayed', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Or enter code manually:'),
+                  const SizedBox(height: 4),
+                  Text(
+                    'ABC123',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('Or enter code manually:'), findsOneWidget);
+        expect(find.text('ABC123'), findsOneWidget);
       });
     });
   });

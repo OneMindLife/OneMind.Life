@@ -73,19 +73,20 @@ void main() {
     test('defaults() returns correct default values', () {
       final settings = AutoAdvanceSettings.defaults();
 
-      expect(settings.enableProposing, false);
-      expect(settings.proposingThresholdPercent, 80);
+      // Smart defaults: 100% participation triggers early advance
+      expect(settings.enableProposing, true);
+      expect(settings.proposingThresholdPercent, 100);
       expect(settings.proposingThresholdCount, 3);
-      expect(settings.enableRating, false);
-      expect(settings.ratingThresholdPercent, 80);
+      expect(settings.enableRating, true);
+      expect(settings.ratingThresholdPercent, 100);
       expect(settings.ratingThresholdCount, 2);
     });
 
     test('copyWith updates specified fields only', () {
       final settings = AutoAdvanceSettings.defaults();
-      final updated = settings.copyWith(enableProposing: true);
+      final updated = settings.copyWith(enableProposing: false);
 
-      expect(updated.enableProposing, true);
+      expect(updated.enableProposing, false);
       expect(updated.proposingThresholdPercent, settings.proposingThresholdPercent);
       expect(updated.proposingThresholdCount, settings.proposingThresholdCount);
       expect(updated.enableRating, settings.enableRating);
@@ -94,15 +95,15 @@ void main() {
     test('copyWith updates multiple fields', () {
       final settings = AutoAdvanceSettings.defaults();
       final updated = settings.copyWith(
-        enableProposing: true,
+        enableProposing: false,
         proposingThresholdPercent: 60,
-        enableRating: true,
+        enableRating: false,
         ratingThresholdCount: 10,
       );
 
-      expect(updated.enableProposing, true);
+      expect(updated.enableProposing, false);
       expect(updated.proposingThresholdPercent, 60);
-      expect(updated.enableRating, true);
+      expect(updated.enableRating, false);
       expect(updated.ratingThresholdCount, 10);
     });
   });
@@ -147,8 +148,9 @@ void main() {
     test('defaults() returns correct default values', () {
       final settings = AISettings.defaults();
 
-      expect(settings.enabled, false);
-      expect(settings.propositionCount, 3);
+      // AI is always enabled by default with 1 proposition per round
+      expect(settings.enabled, true);
+      expect(settings.propositionCount, 1);
     });
 
     test('copyWith updates specified fields only', () {

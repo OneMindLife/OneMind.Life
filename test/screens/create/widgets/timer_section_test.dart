@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart';
 import 'package:onemind_app/screens/create/widgets/timer_section.dart';
 
@@ -8,6 +9,9 @@ void main() {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
               settings: TimerSettings.defaults(),
@@ -20,12 +24,36 @@ void main() {
       expect(find.text('Timers'), findsOneWidget);
     });
 
-    testWidgets('displays proposing and rating presets', (tester) async {
+    testWidgets('displays phase duration when useSameDuration is true (default)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
               settings: TimerSettings.defaults(),
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      // With useSameDuration: true (default), shows single "Phase Duration" label
+      expect(find.text('Phase Duration'), findsOneWidget);
+      // Toggle should be present
+      expect(find.text('Same duration for both phases'), findsOneWidget);
+    });
+
+    testWidgets('displays proposing and rating when useSameDuration is false', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: TimerSection(
+              settings: TimerSettings.defaults().copyWith(useSameDuration: false),
               onChanged: (_) {},
             ),
           ),
@@ -39,16 +67,19 @@ void main() {
     testWidgets('displays timer preset options including Custom', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
-              settings: TimerSettings.defaults(),
+              settings: TimerSettings.defaults().copyWith(useSameDuration: false),
               onChanged: (_) {},
             ),
           ),
         ),
       );
 
-      // Each preset section shows these options (max is 1 day now)
+      // With separate timers, each preset section shows these options (max is 1 day now)
       expect(find.text('5 min'), findsNWidgets(2));
       expect(find.text('30 min'), findsNWidgets(2));
       expect(find.text('1 hour'), findsNWidgets(2));
@@ -61,9 +92,12 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
-              settings: TimerSettings.defaults(),
+              settings: TimerSettings.defaults().copyWith(useSameDuration: false),
               onChanged: (v) => updatedSettings = v,
             ),
           ),
@@ -84,9 +118,12 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
-              settings: TimerSettings.defaults(),
+              settings: TimerSettings.defaults().copyWith(useSameDuration: false),
               onChanged: (v) => updatedSettings = v,
             ),
           ),
@@ -105,9 +142,13 @@ void main() {
     testWidgets('highlights selected presets', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerSection(
               settings: const TimerSettings(
+                useSameDuration: false,
                 proposingPreset: '1hour',
                 ratingPreset: '1day',
                 proposingDuration: 3600,
@@ -142,6 +183,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: StatefulBuilder(
@@ -175,6 +219,7 @@ void main() {
 
     testWidgets('custom duration calculates correctly from hours and minutes', (tester) async {
       TimerSettings settings = const TimerSettings(
+        useSameDuration: false,
         proposingPreset: 'custom',
         ratingPreset: '1day',
         proposingDuration: 300, // 5 minutes
@@ -183,6 +228,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: StatefulBuilder(
@@ -213,6 +261,7 @@ void main() {
 
     testWidgets('custom duration respects minimum of 1 minute', (tester) async {
       TimerSettings settings = const TimerSettings(
+        useSameDuration: false,
         proposingPreset: 'custom',
         ratingPreset: '1day',
         proposingDuration: 300,
@@ -221,6 +270,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: StatefulBuilder(

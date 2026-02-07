@@ -95,14 +95,15 @@ void main() {
           autoAdvanceRating: false,
         );
 
+        // Note: booleans are converted to 1/0 for Firebase Analytics compatibility
         verify(() => mockAnalytics.logEvent(
               name: 'chat_created',
               parameters: {
                 'chat_id': 'chat-123',
-                'has_ai_participant': true,
+                'has_ai_participant': 1,
                 'confirmation_rounds': 2,
-                'auto_advance_proposing': true,
-                'auto_advance_rating': false,
+                'auto_advance_proposing': 1,
+                'auto_advance_rating': 0,
               },
             )).called(1);
       });

@@ -6,7 +6,7 @@ SELECT cron.schedule(
     '* * * * *',  -- Every minute
     $$
     SELECT extensions.http_post(
-        'https://YOUR_PROJECT_REF.supabase.co/functions/v1/process-timers',
+        'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/process-timers',
         '{}',
         'application/json'
     );

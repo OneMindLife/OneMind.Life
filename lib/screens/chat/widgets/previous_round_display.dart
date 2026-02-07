@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../grid_ranking/read_only_grid_results_screen.dart';
+import '../../../widgets/proposition_content_card.dart';
+import '../../rating/read_only_results_screen.dart';
 
 /// Displays the previous round winner(s) with support for tied winners.
 class PreviousWinnerPanel extends StatelessWidget {
@@ -19,6 +20,21 @@ class PreviousWinnerPanel extends StatelessWidget {
   /// All propositions from the previous round (needed for grid view)
   final List<Proposition>? previousRoundResults;
 
+  /// Current user's participant ID (for leaderboard display)
+  final int? myParticipantId;
+
+  /// Previous round ID (for leaderboard data fetching)
+  final int? previousRoundId;
+
+  /// Previous round number (1-indexed) for display purposes
+  final int? previousRoundNumber;
+
+  /// Callback when user views the results grid and returns
+  final VoidCallback? onResultsViewed;
+
+  /// Whether to show tutorial hint on the results screen
+  final bool showTutorialHintOnResults;
+
   const PreviousWinnerPanel({
     super.key,
     required this.previousRoundWinners,
@@ -30,19 +46,33 @@ class PreviousWinnerPanel extends StatelessWidget {
     required this.onWinnerIndexChanged,
     this.showResultsButton = false,
     this.previousRoundResults,
+    this.myParticipantId,
+    this.previousRoundId,
+    this.previousRoundNumber,
+    this.onResultsViewed,
+    this.showTutorialHintOnResults = false,
   });
 
   void _navigateToResultsGrid(BuildContext context) {
     if (previousRoundResults == null || previousRoundResults!.isEmpty) return;
 
+    // Use explicit previousRoundNumber if provided, otherwise calculate from currentRoundCustomId
+    final roundNum = previousRoundNumber ?? ((currentRoundCustomId ?? 2) - 1);
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ReadOnlyGridResultsScreen(
+        builder: (context) => ReadOnlyResultsScreen(
           propositions: previousRoundResults!,
-          roundNumber: (currentRoundCustomId ?? 1) - 1,
+          roundNumber: roundNum,
+          roundId: previousRoundId,
+          myParticipantId: myParticipantId,
+          showTutorialHint: showTutorialHintOnResults,
         ),
       ),
-    );
+    ).then((_) {
+      // Call the callback when user returns from grid view
+      onResultsViewed?.call();
+    });
   }
 
   @override
@@ -57,115 +87,67 @@ class PreviousWinnerPanel extends StatelessWidget {
 
     final hasMultipleWinners = previousRoundWinners.length > 1;
     final currentWinner = previousRoundWinners[currentWinnerIndex];
-    final previousRoundNumber = (currentRoundCustomId ?? 1) - 1;
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header with tie indicator
-          Row(
-            children: [
-              Text(
-                hasMultipleWinners
-                    ? l10n.roundWinners(previousRoundNumber)
-                    : l10n.roundWinner(previousRoundNumber),
+          // Tie indicator (only shown for multiple winners)
+          if (hasMultipleWinners) ...[
+            TieBadge(count: previousRoundWinners.length),
+            const SizedBox(height: 8),
+          ],
+
+          // Winner index (for multiple winners)
+          if (hasMultipleWinners)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text(
+                '${currentWinnerIndex + 1} of ${previousRoundWinners.length}',
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
-              if (hasMultipleWinners) ...[
-                const SizedBox(width: 8),
-                TieBadge(count: previousRoundWinners.length),
-              ],
+            ),
+
+          // Winner card with navigation arrows
+          Row(
+            children: [
+              // Left arrow (for multiple winners)
+              if (hasMultipleWinners)
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: currentWinnerIndex > 0
+                      ? () => onWinnerIndexChanged(currentWinnerIndex - 1)
+                      : null,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  iconSize: 24,
+                ),
+
+              // Winner content using PropositionContentCard
+              Expanded(
+                child: PropositionContentCard(
+                  content: currentWinner.displayContent ?? l10n.unknownProposition,
+                  maxHeight: 100,
+                  borderColor: hasMultipleWinners ? Colors.orange.shade300 : null,
+                  borderWidth: hasMultipleWinners ? 2 : 1,
+                ),
+              ),
+
+              // Right arrow (for multiple winners)
+              if (hasMultipleWinners)
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: currentWinnerIndex < previousRoundWinners.length - 1
+                      ? () => onWinnerIndexChanged(currentWinnerIndex + 1)
+                      : null,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  iconSize: 24,
+                ),
             ],
-          ),
-          const SizedBox(height: 8),
-
-          // Winner card with navigation
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(8),
-              border: hasMultipleWinners
-                  ? Border.all(color: Colors.orange.shade300, width: 2)
-                  : null,
-            ),
-            child: Row(
-              children: [
-                // Left arrow (for multiple winners)
-                if (hasMultipleWinners)
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: currentWinnerIndex > 0
-                        ? () => onWinnerIndexChanged(currentWinnerIndex - 1)
-                        : null,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    iconSize: 24,
-                  ),
-
-                // Winner content
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (hasMultipleWinners)
-                        Text(
-                          '${currentWinnerIndex + 1} of ${previousRoundWinners.length}',
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                      const SizedBox(height: 4),
-                      Text(currentWinner.displayContent ?? l10n.unknownProposition),
-                      if (currentWinner.globalScore != null)
-                        Text(
-                          l10n.score(currentWinner.globalScore!.toStringAsFixed(1)),
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
-                        ),
-                    ],
-                  ),
-                ),
-
-                // Right arrow (for multiple winners)
-                if (hasMultipleWinners)
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: currentWinnerIndex < previousRoundWinners.length - 1
-                        ? () => onWinnerIndexChanged(currentWinnerIndex + 1)
-                        : null,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    iconSize: 24,
-                  ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 8),
-
-          // Consensus tracking
-          Text(
-            isSoleWinner
-                ? l10n.soleWinsProgress(consecutiveSoleWins, confirmationRoundsRequired)
-                : l10n.tiedWinNoConsensus,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isSoleWinner
-                      ? Theme.of(context).colorScheme.onSurfaceVariant
-                      : Colors.orange.shade700,
-                ),
           ),
 
           // See Results button (when showPreviousResults is enabled)

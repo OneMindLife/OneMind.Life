@@ -45,9 +45,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Simplified UI: just shows the winner content
       expect(find.text('Winning proposition'), findsOneWidget);
-      expect(find.text('Score: 85.5'), findsOneWidget);
-      expect(find.text('Sole wins: 2/3'), findsOneWidget);
     });
 
     testWidgets('shows tie badge for multiple winners', (tester) async {
@@ -68,8 +67,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Shows tie badge for multiple winners
       expect(find.text('2-WAY TIE'), findsOneWidget);
-      expect(find.text('Tied win (does not count toward consensus)'), findsOneWidget);
     });
 
     testWidgets('hides See Results button when showResultsButton is false', (tester) async {

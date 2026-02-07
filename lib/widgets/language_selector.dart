@@ -50,6 +50,45 @@ class LanguageSelector extends ConsumerWidget {
               ],
             ),
           ),
+          PopupMenuItem(
+            value: 'pt',
+            child: Row(
+              children: [
+                if (locale.languageCode == 'pt')
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                const Text('Portugues'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'fr',
+            child: Row(
+              children: [
+                if (locale.languageCode == 'fr')
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                const Text('Francais'),
+              ],
+            ),
+          ),
+          PopupMenuItem(
+            value: 'de',
+            child: Row(
+              children: [
+                if (locale.languageCode == 'de')
+                  const Icon(Icons.check, size: 18)
+                else
+                  const SizedBox(width: 18),
+                const SizedBox(width: 8),
+                const Text('Deutsch'),
+              ],
+            ),
+          ),
         ],
       );
     }
@@ -73,6 +112,18 @@ class LanguageSelector extends ConsumerWidget {
           value: 'es',
           child: Text('Espanol'),
         ),
+        DropdownMenuItem(
+          value: 'pt',
+          child: Text('Portugues'),
+        ),
+        DropdownMenuItem(
+          value: 'fr',
+          child: Text('Francais'),
+        ),
+        DropdownMenuItem(
+          value: 'de',
+          child: Text('Deutsch'),
+        ),
       ],
     );
   }
@@ -91,6 +142,15 @@ class LanguageSelectorTile extends ConsumerWidget {
     switch (locale.languageCode) {
       case 'es':
         languageName = l10n.spanish;
+        break;
+      case 'pt':
+        languageName = l10n.portuguese;
+        break;
+      case 'fr':
+        languageName = l10n.french;
+        break;
+      case 'de':
+        languageName = l10n.german;
         break;
       case 'en':
       default:
@@ -114,32 +174,67 @@ class LanguageSelectorTile extends ConsumerWidget {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: Text(l10n.language),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<String>(
-              title: Text(l10n.english),
-              value: 'en',
-              groupValue: locale.languageCode,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(localeProvider.notifier).setLocale(value);
-                  Navigator.pop(dialogContext);
-                }
-              },
-            ),
-            RadioListTile<String>(
-              title: Text(l10n.spanish),
-              value: 'es',
-              groupValue: locale.languageCode,
-              onChanged: (value) {
-                if (value != null) {
-                  ref.read(localeProvider.notifier).setLocale(value);
-                  Navigator.pop(dialogContext);
-                }
-              },
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioListTile<String>(
+                title: Text(l10n.english),
+                value: 'en',
+                groupValue: locale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(localeProvider.notifier).setLocale(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: Text(l10n.spanish),
+                value: 'es',
+                groupValue: locale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(localeProvider.notifier).setLocale(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: Text(l10n.portuguese),
+                value: 'pt',
+                groupValue: locale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(localeProvider.notifier).setLocale(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: Text(l10n.french),
+                value: 'fr',
+                groupValue: locale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(localeProvider.notifier).setLocale(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+              RadioListTile<String>(
+                title: Text(l10n.german),
+                value: 'de',
+                groupValue: locale.languageCode,
+                onChanged: (value) {
+                  if (value != null) {
+                    ref.read(localeProvider.notifier).setLocale(value);
+                    Navigator.pop(dialogContext);
+                  }
+                },
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(

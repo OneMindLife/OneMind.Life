@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart';
 import 'package:onemind_app/screens/create/widgets/ai_section.dart';
 
@@ -8,6 +9,9 @@ void main() {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: AISettings.defaults(),
@@ -23,6 +27,9 @@ void main() {
     testWidgets('displays enable switch', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: AISettings.defaults(),
@@ -39,6 +46,9 @@ void main() {
     testWidgets('hides proposition count when disabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: false, propositionCount: 3),
@@ -54,6 +64,9 @@ void main() {
     testWidgets('shows proposition count when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: true, propositionCount: 3),
@@ -72,6 +85,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: false, propositionCount: 3),
@@ -94,6 +110,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: true, propositionCount: 3),
@@ -116,6 +135,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: true, propositionCount: 3),
@@ -135,6 +157,9 @@ void main() {
     testWidgets('respects min limit of 1', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: true, propositionCount: 1),
@@ -153,6 +178,9 @@ void main() {
     testWidgets('respects max limit of 10', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AISection(
               settings: const AISettings(enabled: true, propositionCount: 10),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/widgets/email_invite_section.dart';
 
 void main() {
@@ -9,6 +10,9 @@ void main() {
       void Function(List<String>)? onEmailsChanged,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
         home: Scaffold(
           body: EmailInviteSection(
             emails: emails,

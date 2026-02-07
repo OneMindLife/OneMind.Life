@@ -1,0 +1,1043 @@
+{
+  "@@locale": "fr",
+  "appTitle": "OneMind",
+  "howItWorks": "Comment ca marche",
+  "discover": "Decouvrir",
+  "discoverPublicChats": "Decouvrir les chats publics",
+  "discoverChats": "Decouvrir les Chats",
+  "joinWithCode": "Rejoindre avec un Code",
+  "joinAnExistingChatWithInviteCode": "Rejoindre un chat existant avec un code d'invitation",
+  "joinChat": "Rejoindre le Chat",
+  "join": "Rejoindre",
+  "findChat": "Trouver un Chat",
+  "requestToJoin": "Demander a Rejoindre",
+  "createChat": "Creer un Chat",
+  "createANewChat": "Creer un nouveau chat",
+  "chatCreated": "Chat Cree!",
+  "cancel": "Annuler",
+  "continue_": "Continuer",
+  "retry": "Reessayer",
+  "yes": "Oui",
+  "no": "Non",
+  "delete": "Supprimer",
+  "leave": "Quitter",
+  "kick": "Expulser",
+  "pause": "Pause",
+  "resume": "Reprendre",
+  "remove": "Retirer",
+  "clear": "Effacer",
+  "done": "Termine",
+  "save": "Enregistrer",
+  "officialOneMind": "OneMind Officiel",
+  "official": "OFFICIEL",
+  "pending": "EN ATTENTE",
+  "pendingRequests": "Demandes en Attente",
+  "yourChats": "Vos Chats",
+  "cancelRequest": "Annuler la Demande",
+  "cancelRequestQuestion": "Annuler votre demande pour rejoindre \"{chatName}\"?",
+  "@cancelRequestQuestion": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "yesCancel": "Oui, Annuler",
+  "requestCancelled": "Demande annulee",
+  "waitingForHostApproval": "En attente de l'approbation de l'hote",
+  "hostApprovalRequired": "L'hote doit approuver chaque demande",
+  "noChatsYet": "Aucun chat pour l'instant",
+  "discoverPublicChatsJoinOrCreate": "Decouvrez des chats publics, rejoignez avec un code ou creez le votre",
+  "discoverPublicChatsButton": "Decouvrir les Chats Publics",
+  "noActiveChatsYet": "Aucun chat actif pour l'instant. Vos chats approuves apparaitront ici.",
+  "loadingChats": "Chargement des chats",
+  "failedToLoadChats": "Echec du chargement des chats",
+  "chatNotFound": "Chat non trouve",
+  "failedToLookupChat": "Echec de la recherche du chat",
+  "failedToJoinChat": "Echec pour rejoindre le chat: {error}",
+  "@failedToJoinChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "enterInviteCode": "Entrez le code d'invitation a 6 caracteres:",
+  "pleaseEnterSixCharCode": "Veuillez entrer un code a 6 caracteres",
+  "inviteCodeHint": "ABC123",
+  "hostedBy": "Organise par {hostName}",
+  "@hostedBy": {
+    "placeholders": {
+      "hostName": {
+        "type": "String"
+      }
+    }
+  },
+  "thisChatsRequiresInvite": "Ce chat necessite une invitation",
+  "enterEmailForInvite": "Entrez l'email auquel votre invitation a ete envoyee:",
+  "yourEmailHint": "votre@email.com",
+  "pleaseEnterEmailAddress": "Veuillez entrer votre adresse email",
+  "pleaseEnterValidEmail": "Veuillez entrer un email valide",
+  "noInviteFoundForEmail": "Aucune invitation trouvee pour cet email",
+  "failedToValidateInvite": "Echec de la validation de l'invitation",
+  "pleaseVerifyEmailFirst": "Veuillez d'abord verifier votre email",
+  "verifyEmail": "Verifier l'Email",
+  "emailVerified": "Email verifie: {email}",
+  "@emailVerified": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "enterDisplayName": "Entrez votre nom d'affichage:",
+  "yourName": "Votre Nom",
+  "yourNamePlaceholder": "Votre Nom",
+  "displayName": "Nom d'affichage",
+  "enterYourName": "Entrez votre nom",
+  "pleaseEnterYourName": "Veuillez entrer votre nom",
+  "yourDisplayName": "Votre nom d'affichage",
+  "yourNameVisibleToAll": "Votre nom sera visible par tous les participants",
+  "usingSavedName": "Utilisation de votre nom enregistre",
+  "joinRequestSent": "Demande envoyee. En attente de l'approbation de l'hote.",
+  "searchPublicChats": "Rechercher des chats publics...",
+  "noChatsFoundFor": "Aucun chat trouve pour \"{query}\"",
+  "@noChatsFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "noPublicChatsAvailable": "Aucun chat public disponible",
+  "beFirstToCreate": "Soyez le premier a en creer un!",
+  "failedToLoadPublicChats": "Echec du chargement des chats publics: {error}",
+  "@failedToLoadPublicChats": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "participantCount": "{count} participant",
+  "@participantCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "participantsCount": "{count} participants",
+  "@participantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "enterYourNameTitle": "Entrez Votre Nom",
+  "anonymous": "Anonyme",
+  "timerWarning": "Avertissement du Minuteur",
+  "timerWarningMessage": "Vos minuteurs de phase sont plus longs que la fenetre de {minutes} minutes programmee.\n\nLes phases peuvent s'etendre au-dela du temps programme ou se mettre en pause a la fermeture de la fenetre.\n\nEnvisagez d'utiliser des minuteurs plus courts (5 min ou 30 min) pour les sessions programmees.",
+  "@timerWarningMessage": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "adjustSettings": "Ajuster les Parametres",
+  "continueAnyway": "Continuer Quand Meme",
+  "chatNowPublic": "Votre chat est maintenant public!",
+  "anyoneCanJoinFrom": "N'importe qui peut trouver et rejoindre \"{chatName}\" depuis la page Decouvrir.",
+  "@anyoneCanJoinFrom": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesSent": "{count} invitation envoyee!",
+  "@invitesSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "invitesSentPlural": "{count} invitations envoyees!",
+  "@invitesSentPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noInvitesSent": "Aucune invitation envoyee",
+  "onlyInvitedUsersCanJoin": "Seuls les utilisateurs invites peuvent rejoindre ce chat.",
+  "shareCodeWithParticipants": "Partagez ce code avec les participants:",
+  "inviteCodeCopied": "Code d'invitation copie",
+  "tapToCopy": "Appuyez pour copier",
+  "showQrCode": "Afficher le Code QR",
+  "addEmailForInviteOnly": "Ajoutez au moins un email pour le mode invitation uniquement",
+  "emailAlreadyAdded": "Email deja ajoute",
+  "settings": "Parametres",
+  "language": "Langue",
+  "english": "English",
+  "spanish": "Espanol",
+  "portuguese": "Portugues",
+  "french": "Francais",
+  "german": "Deutsch",
+  "rankPropositions": "Classer les Propositions",
+  "placing": "Classement: ",
+  "rankedSuccessfully": "{count} propositions classees avec succes!",
+  "@rankedSuccessfully": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "failedToSaveRankings": "Echec de l'enregistrement des classements",
+  "chatPausedByHost": "Chat mis en pause par l'hote",
+  "ratingPhaseEnded": "La phase d'evaluation est terminee",
+  "goBack": "Retour",
+  "ratePropositions": "Evaluer les Propositions",
+  "submitRatings": "Soumettre les Evaluations",
+  "failedToSubmitRatings": "Echec de la soumission des evaluations: {error}",
+  "@failedToSubmitRatings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "roundResults": "Resultats du Tour {roundNumber}",
+  "@roundResults": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "noPropositionsToDisplay": "Aucune proposition a afficher",
+  "noPreviousWinner": "Aucun gagnant precedent",
+  "roundWinner": "Gagnant du Tour {roundNumber}",
+  "@roundWinner": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "roundWinners": "Gagnants du Tour {roundNumber}",
+  "@roundWinners": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "unknownProposition": "Proposition inconnue",
+  "score": "Score: {score}",
+  "@score": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
+  "soleWinsProgress": "Victoires uniques: {current}/{required}",
+  "@soleWinsProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
+  "tiedWinNoConsensus": "Egalite (ne compte pas pour le consensus)",
+  "seeAllResults": "Voir Tous les Resultats",
+  "startPhase": "Demarrer la Phase",
+  "waiting": "En Attente",
+  "waitingForHostToStart": "En attente que l'hote demarre...",
+  "roundNumber": "Tour {roundNumber}",
+  "@roundNumber": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
+  "viewAllPropositions": "Voir toutes les propositions",
+  "chatIsPaused": "Chat en pause...",
+  "shareYourIdea": "Partagez votre idee...",
+  "addAnotherIdea": "Ajouter une autre idee...",
+  "submit": "Soumettre",
+  "addProposition": "Ajouter une Proposition",
+  "waitingForRatingPhase": "En attente de la phase d'evaluation...",
+  "endProposingStartRating": "Terminer les Propositions et Demarrer l'Evaluation",
+  "proposingComplete": "Propositions Terminees",
+  "reviewPropositionsStartRating": "Examinez les propositions et demarrez l'evaluation quand vous etes pret.",
+  "waitingForHostToStartRating": "En attente que l'hote demarre la phase d'evaluation.",
+  "startRatingPhase": "Demarrer la Phase d'Evaluation",
+  "ratingComplete": "Evaluation Terminee",
+  "waitingForRatingPhaseEnd": "En attente de la fin de la phase d'evaluation.",
+  "rateAllPropositions": "Evaluez les {count} propositions",
+  "@rateAllPropositions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "continueRating": "Continuer l'Evaluation",
+  "startRating": "Commencer l'Evaluation",
+  "endRatingStartNextRound": "Terminer l'Evaluation et Demarrer le Prochain Tour",
+  "chatPaused": "Chat en Pause",
+  "chatPausedByHostTitle": "Chat Mis en Pause par l'Hote",
+  "timerStoppedTapResume": "Le minuteur est arrete. Appuyez sur Reprendre dans la barre pour continuer.",
+  "hostPausedPleaseWait": "L'hote a mis ce chat en pause. Veuillez attendre qu'il reprenne.",
+  "previousWinner": "Gagnant",
+  "yourProposition": "Votre Proposition",
+  "yourPropositions": "Vos Propositions",
+  "rate": "Evaluer",
+  "participants": "Participants",
+  "chatInfo": "Info du Chat",
+  "shareQrCode": "Partager le Code QR",
+  "joinRequests": "Demandes d'Adhesion",
+  "resumeChat": "Reprendre le Chat",
+  "pauseChat": "Mettre en Pause le Chat",
+  "leaveChat": "Quitter le Chat",
+  "deleteChat": "Supprimer le Chat",
+  "host": "Hote",
+  "deletePropositionQuestion": "Supprimer la Proposition?",
+  "areYouSureDeleteProposition": "Etes-vous sur de vouloir supprimer cette proposition?",
+  "deleteChatQuestion": "Supprimer le Chat?",
+  "leaveChatQuestion": "Quitter le Chat?",
+  "kickParticipantQuestion": "Expulser le Participant?",
+  "pauseChatQuestion": "Mettre en Pause le Chat?",
+  "removePaymentMethodQuestion": "Retirer le Moyen de Paiement?",
+  "propositionDeleted": "Proposition supprimee",
+  "chatDeleted": "Chat supprime",
+  "youHaveLeftChat": "Vous avez quitte le chat",
+  "youHaveBeenRemoved": "Vous avez ete retire de ce chat",
+  "chatHasBeenDeleted": "Ce chat a ete supprime",
+  "participantRemoved": "{name} a ete retire",
+  "@participantRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPausedSuccess": "Chat mis en pause",
+  "requestApproved": "Demande approuvee",
+  "requestDenied": "Demande refusee",
+  "failedToSubmit": "Echec de la soumission: {error}",
+  "@failedToSubmit": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "duplicateProposition": "Cette proposition existe deja dans ce tour",
+  "failedToStartPhase": "Echec du demarrage de la phase: {error}",
+  "@failedToStartPhase": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAdvancePhase": "Echec de l'avancement de la phase: {error}",
+  "@failedToAdvancePhase": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCompleteRating": "Echec de la completion de l'evaluation: {error}",
+  "@failedToCompleteRating": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDelete": "Echec de la suppression: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDeleteChat": "Echec de la suppression du chat: {error}",
+  "@failedToDeleteChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToLeaveChat": "Echec pour quitter le chat: {error}",
+  "@failedToLeaveChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToKickParticipant": "Echec de l'expulsion du participant: {error}",
+  "@failedToKickParticipant": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPauseChat": "Echec de la mise en pause du chat: {error}",
+  "@failedToPauseChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "error": "Erreur: {error}",
+  "@error": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noPendingRequests": "Aucune demande en attente",
+  "newRequestsWillAppear": "Les nouvelles demandes apparaitront ici",
+  "participantsJoined": "{count} participants ont rejoint",
+  "@participantsJoined": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitingForMoreParticipants": "En attente de {count} participant(s) supplementaire(s)",
+  "@waitingForMoreParticipants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduled": "Programme",
+  "chatOutsideSchedule": "Chat en dehors de la fenetre programmee",
+  "nextWindowStarts": "Prochaine fenetre commence {dateTime}",
+  "@nextWindowStarts": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWindows": "Fenetres programmees:",
+  "scheduledToStart": "Programme pour demarrer",
+  "chatWillAutoStart": "Le chat demarrera automatiquement a l'heure programmee.",
+  "submittedCount": "{submitted}/{total} soumis",
+  "@submittedCount": {
+    "placeholders": {
+      "submitted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "propositionCollected": "{count} proposition collectee",
+  "@propositionCollected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "propositionsCollected": "{count} propositions collectees",
+  "@propositionsCollected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeExpired": "Temps expire",
+  "noDataAvailable": "Aucune donnee disponible",
+  "tryAgain": "Reessayer",
+  "requireApproval": "Necessiter l'approbation",
+  "requireAuthentication": "Necessiter l'authentification",
+  "showPreviousResults": "Afficher les resultats complets des tours precedents",
+  "enableAdaptiveDuration": "Activer la duree adaptative",
+  "enableOneMindAI": "Activer OneMind AI",
+  "enableAutoAdvanceProposing": "Terminer tot quand assez d'idees soumises",
+  "enableAutoAdvanceRating": "Terminer tot quand assez d'evaluations soumises",
+  "hideWhenOutsideSchedule": "Masquer en dehors du planning",
+  "chatVisibleButPaused": "Chat visible mais en pause en dehors du planning",
+  "chatHiddenUntilNext": "Chat masque jusqu'a la prochaine fenetre programmee",
+  "timezone": "Fuseau horaire",
+  "scheduleType": "Type de Planning",
+  "oneTime": "Unique",
+  "recurring": "Recurrent",
+  "startDateTime": "Date et Heure de Debut",
+  "scheduleWindowsLabel": "Fenetres de Planning",
+  "addWindow": "Ajouter une Fenetre",
+  "searchTimezone": "Rechercher un fuseau horaire...",
+  "manual": "Manuel",
+  "auto": "Automatique",
+  "credits": "Credits",
+  "refillAmountMustBeGreater": "Le montant de recharge doit etre superieur au seuil",
+  "autoRefillSettingsUpdated": "Parametres de recharge automatique mis a jour",
+  "autoRefillEnabled": "Recharge automatique activee",
+  "autoRefillDisabled": "Recharge automatique desactivee",
+  "saveSettings": "Enregistrer les Parametres",
+  "removeCard": "Retirer la Carte",
+  "purchaseWithStripe": "Acheter avec Stripe",
+  "processing": "Traitement...",
+  "pageNotFound": "Page Non Trouvee",
+  "goHome": "Aller a l'Accueil",
+  "allPropositionsCount": "Toutes les Propositions ({count})",
+  "@allPropositionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hostCanModerateContent": "En tant qu'hote, vous pouvez moderer le contenu. L'identite de l'auteur est masquee.",
+  "yourPropositionLabel": "(Votre proposition)",
+  "previousWinnerLabel": "(Gagnant precedent)",
+  "cannotBeUndone": "Cette action ne peut pas etre annulee.",
+  "deleteChatConfirmation": "Etes-vous sur de vouloir supprimer \"{chatName}\"?\n\nCela supprimera definitivement toutes les propositions, evaluations et l'historique. Cette action ne peut pas etre annulee.",
+  "@deleteChatConfirmation": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "leaveChatConfirmation": "Etes-vous sur de vouloir quitter \"{chatName}\"?\n\nVous ne verrez plus ce chat dans votre liste.",
+  "@leaveChatConfirmation": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "kickParticipantConfirmation": "Etes-vous sur de vouloir retirer \"{participantName}\" de ce chat?\n\nIl ne pourra pas rejoindre a nouveau sans approbation.",
+  "@kickParticipantConfirmation": {
+    "placeholders": {
+      "participantName": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseChatConfirmation": "Cela mettra en pause le minuteur de la phase actuelle. Les participants verront que le chat est en pause par l'hote.",
+  "approveOrDenyRequests": "Approuver ou refuser les demandes pour rejoindre ce chat.",
+  "signedIn": "Connecte",
+  "guest": "Invite",
+  "approve": "Approuver",
+  "deny": "Refuser",
+  "initialMessage": "Message Initial",
+  "consensusNumber": "Consensus #{number}",
+  "@consensusNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kickParticipant": "Expulser le participant",
+  "propositions": "Propositions",
+  "leaderboard": "Classement",
+  "noLeaderboardData": "Aucune donnee de classement disponible",
+  "skip": "Passer",
+  "skipped": "Passe",
+  "skipsRemaining": "{remaining} passages restants",
+  "@skipsRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "createChatTitle": "Creer un Chat",
+  "enterYourNameLabel": "Entrez votre nom",
+  "nameVisibleToAll": "Votre nom sera visible par tous les participants",
+  "basicInfo": "Informations de Base",
+  "chatNameRequired": "Nom du Chat *",
+  "chatNameHint": "ex., Dejeuner d'Equipe Vendredi",
+  "required": "Requis",
+  "initialMessageRequired": "Message Initial *",
+  "initialMessageOptional": "Message Initial (Optionnel)",
+  "initialMessageHint": "Le sujet ou la question initiale",
+  "initialMessageHelperText": "Les participants sauront que vous avez ecrit ceci puisque vous avez cree le chat",
+  "descriptionOptional": "Description (Optionnelle)",
+  "descriptionHint": "Contexte supplementaire",
+  "visibility": "Visibilite",
+  "whoCanJoin": "Qui peut trouver et rejoindre ce chat?",
+  "accessPublic": "Public",
+  "accessPublicDesc": "N'importe qui peut decouvrir et rejoindre",
+  "accessCode": "Code d'Invitation",
+  "accessCodeDesc": "Partagez un code a 6 caracteres pour rejoindre",
+  "accessEmail": "Email Uniquement",
+  "accessEmailDesc": "Seules les adresses email invitees peuvent rejoindre",
+  "instantJoin": "Les utilisateurs rejoignent instantanement",
+  "inviteByEmail": "Inviter par Email",
+  "inviteEmailOnly": "Seules les adresses email invitees peuvent rejoindre ce chat",
+  "emailAddress": "Adresse email",
+  "emailHint": "utilisateur@exemple.com",
+  "invalidEmail": "Veuillez entrer un email valide",
+  "addEmailToSend": "Ajoutez au moins un email pour envoyer des invitations",
+  "facilitationMode": "Comment les Phases Fonctionnent",
+  "facilitationDesc": "Choisissez entre controle manuel ou minuteurs automatiques pour les transitions de phase.",
+  "modeManual": "Manuel",
+  "modeAuto": "Auto",
+  "modeManualDesc": "Vous controlez quand chaque phase commence et se termine. Pas de minuteurs.",
+  "modeAutoDesc": "Les minuteurs s'executent automatiquement. Vous pouvez toujours terminer les phases plus tot.",
+  "autoStartParticipants": "Demarrer quand ce nombre rejoint",
+  "ratingStartMode": "Mode de Demarrage d'Evaluation",
+  "ratingStartModeDesc": "Controle comment la phase d'evaluation commence apres les propositions.",
+  "ratingAutoDesc": "L'evaluation commence immediatement apres les propositions ou quand le seuil est atteint.",
+  "ratingManualDesc": "Apres les propositions, vous choisissez quand demarrer l'evaluation (ex., le lendemain).",
+  "phaseFlowExplanation": "Chaque phase dure jusqu'a {duration}, mais se termine tot si {threshold} personnes participent. Ne se terminera pas tant qu'au moins {minimum} idees n'existent (le minuteur s'etend si necessaire).",
+  "@phaseFlowExplanation": {
+    "placeholders": {
+      "duration": {"type": "String"},
+      "threshold": {"type": "int"},
+      "minimum": {"type": "int"}
+    }
+  },
+  "enableSchedule": "Activer le Planning",
+  "restrictChatRoom": "Restreindre quand la salle de chat est ouverte",
+  "timers": "Minuteurs",
+  "useSameDuration": "Meme duree pour les deux phases",
+  "useSameDurationDesc": "Utiliser la meme limite de temps pour les propositions et l'evaluation",
+  "phaseDuration": "Duree de Phase",
+  "proposing": "Propositions",
+  "rating": "Evaluation",
+  "preset5min": "5 min",
+  "preset30min": "30 min",
+  "preset1hour": "1 heure",
+  "preset1day": "1 jour",
+  "presetCustom": "Personnalise",
+  "duration1min": "1 min",
+  "duration2min": "2 min",
+  "duration10min": "10 min",
+  "duration2hours": "2 heures",
+  "duration4hours": "4 heures",
+  "duration8hours": "8 heures",
+  "duration12hours": "12 heures",
+  "hours": "Heures",
+  "minutes": "Minutes",
+  "max24h": "(max 24h)",
+  "minimumToAdvance": "Participation Requise",
+  "timeExtendsAutomatically": "La phase ne se terminera pas tant que les exigences ne sont pas satisfaites",
+  "proposingMinimum": "Idees necessaires",
+  "proposingMinimumDesc": "La phase ne se terminera pas tant que {count} idees ne sont pas soumises",
+  "@proposingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ratingMinimum": "Evaluations necessaires",
+  "ratingMinimumDesc": "La phase ne se terminera pas tant que chaque idee n'a pas {count} evaluations",
+  "@ratingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "autoAdvanceAt": "Terminer la Phase Tot",
+  "skipTimerEarly": "La phase peut se terminer tot lorsque les seuils sont atteints",
+  "enableAutoAdvanceProposing": "Activer pour les idees",
+  "whenPercentSubmit": "Quand {percent}% des participants soumettent",
+  "@whenPercentSubmit": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "minParticipantsSubmit": "Idees necessaires",
+  "enableAutoAdvanceRating": "Activer pour les evaluations",
+  "minAvgRaters": "Evaluations necessaires",
+  "proposingThresholdPreview": "La phase se termine tot quand {threshold} sur {participants} participants soumettent des idees ({percent}%)",
+  "@proposingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "participants": {"type": "int"},
+      "percent": {"type": "int"}
+    }
+  },
+  "proposingThresholdPreviewSimple": "La phase se termine tot quand {threshold} idees sont soumises",
+  "@proposingThresholdPreviewSimple": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "ratingThresholdPreview": "La phase se termine tot quand chaque idee a {threshold} evaluations",
+  "@ratingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "consensusSettings": "Parametres de Consensus",
+  "confirmationRounds": "Tours de confirmation",
+  "firstWinnerConsensus": "Le premier gagnant atteint le consensus immediatement",
+  "mustWinConsecutive": "La meme proposition doit gagner {count} tours consecutifs",
+  "@mustWinConsecutive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showFullResults": "Afficher les resultats complets des tours precedents",
+  "seeAllPropositions": "Les utilisateurs voient toutes les propositions et evaluations",
+  "seeWinningOnly": "Les utilisateurs ne voient que la proposition gagnante",
+  "propositionLimits": "Limites de Propositions",
+  "propositionsPerUser": "Propositions par utilisateur",
+  "onePropositionPerRound": "Chaque utilisateur peut soumettre 1 proposition par tour",
+  "nPropositionsPerRound": "Chaque utilisateur peut soumettre jusqu'a {count} propositions par tour",
+  "@nPropositionsPerRound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adaptiveDuration": "Duree Adaptative",
+  "adjustDurationDesc": "Auto-ajuster la duree de phase selon la participation",
+  "durationAdjusts": "La duree s'ajuste selon la participation",
+  "fixedDurations": "Durees de phase fixes",
+  "usesThresholds": "Utilise les seuils d'avance anticipee pour determiner la participation",
+  "adjustmentPercent": "Ajustement: {percent}%",
+  "@adjustmentPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "minDuration": "Duree minimum",
+  "maxDuration": "Duree maximum",
+  "aiParticipant": "Participant IA",
+  "enableAI": "Activer OneMind AI",
+  "aiPropositionsPerRound": "Propositions IA par tour",
+  "scheduleTypeLabel": "Type de Planning",
+  "scheduleOneTime": "Une fois",
+  "scheduleRecurring": "Recurrent",
+  "hideOutsideSchedule": "Masquer hors planning",
+  "visiblePaused": "Chat visible mais en pause hors planning",
+  "hiddenUntilWindow": "Chat masque jusqu'a la prochaine fenetre planifiee",
+  "timezoneLabel": "Fuseau Horaire",
+  "scheduleWindowsTitle": "Fenetres de Planning",
+  "addWindowButton": "Ajouter une Fenetre",
+  "scheduleWindowsDesc": "Definissez quand le chat est actif. Supporte les fenetres nocturnes (ex., 23h a 1h le lendemain).",
+  "windowNumber": "Fenetre {n}",
+  "@windowNumber": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "removeWindow": "Supprimer la fenetre",
+  "startDay": "Jour de Debut",
+  "endDay": "Jour de Fin",
+  "daySun": "Dim",
+  "dayMon": "Lun",
+  "dayTue": "Mar",
+  "dayWed": "Mer",
+  "dayThu": "Jeu",
+  "dayFri": "Ven",
+  "daySat": "Sam",
+  "timerWarningTitle": "Avertissement de Minuteur",
+  "timerWarningContent": "Vos minuteurs de phase sont plus longs que la fenetre de {minutes} minutes.\n\nLes phases peuvent s'etendre au-dela du temps planifie, ou se mettre en pause a la fermeture de la fenetre.\n\nEnvisagez d'utiliser des minuteurs plus courts (5 min ou 30 min) pour les sessions planifiees.",
+  "@timerWarningContent": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "adjustSettingsButton": "Ajuster les Parametres",
+  "continueAnywayButton": "Continuer Quand Meme",
+  "chatCreatedTitle": "Chat Cree!",
+  "chatNowPublicTitle": "Votre chat est maintenant public!",
+  "anyoneCanJoinDiscover": "N'importe qui peut trouver et rejoindre \"{name}\" depuis la page Decouvrir.",
+  "@anyoneCanJoinDiscover": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesSentTitle": "{count} invitations envoyees!",
+  "@invitesSentTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noInvitesSentTitle": "Aucune invitation envoyee",
+  "inviteOnlyMessage": "Seuls les utilisateurs invites peuvent rejoindre ce chat.",
+  "shareCodeInstruction": "Partagez ce code avec les participants:",
+  "codeCopied": "Code d'invitation copie",
+  "joinScreenTitle": "Rejoindre le Chat",
+  "noTokenOrCode": "Aucun token ou code d'invitation fourni",
+  "invalidExpiredInvite": "Ce lien d'invitation est invalide ou a expire",
+  "inviteOnlyError": "Ce chat necessite une invitation par email. Veuillez utiliser le lien envoye a votre email.",
+  "invalidInviteTitle": "Invitation Invalide",
+  "invalidInviteDefault": "Ce lien d'invitation n'est pas valide.",
+  "invitedToJoin": "Vous etes invite a rejoindre",
+  "enterNameToJoin": "Entrez votre nom pour rejoindre:",
+  "nameVisibleNotice": "Ce nom sera visible par les autres participants.",
+  "requiresApprovalNotice": "Ce chat necessite l'approbation de l'hote pour rejoindre.",
+  "requestToJoinButton": "Demander a Rejoindre",
+  "joinChatButton": "Rejoindre le Chat",
+  "creditsTitle": "Credits",
+  "yourBalance": "Votre Solde",
+  "paidCredits": "Credits Payes",
+  "freeThisMonth": "Gratuits ce Mois",
+  "totalAvailable": "Total Disponible",
+  "userRounds": "tours-utilisateur",
+  "freeTierResets": "Le niveau gratuit se reinitialise {date}",
+  "@freeTierResets": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "buyCredits": "Acheter des Credits",
+  "pricingInfo": "1 credit = 1 tour-utilisateur = 0,01$",
+  "total": "Total",
+  "autoRefillTitle": "Auto-Recharge",
+  "autoRefillDesc": "Acheter des credits automatiquement quand le solde passe sous le seuil",
+  "lastError": "Derniere erreur: {error}",
+  "@lastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "autoRefillComingSoon": "Configuration de l'auto-recharge bientot disponible. Pour l'instant, achetez des credits manuellement ci-dessus.",
+  "whenBelow": "Quand en dessous de",
+  "refillTo": "Recharger a",
+  "disableAutoRefillMessage": "Cela desactivera l'auto-recharge. Vous pouvez ajouter un nouveau moyen de paiement plus tard.",
+  "recentTransactions": "Transactions Recentes",
+  "noTransactionHistory": "Aucun historique de transactions",
+  "chatSettingsTitle": "Parametres du Chat",
+  "accessVisibility": "Acces et Visibilite",
+  "accessMethod": "Methode d'Acces",
+  "facilitation": "Facilitation",
+  "startMode": "Mode de Demarrage",
+  "autoStartThreshold": "Seuil d'Auto-Demarrage",
+  "nParticipants": "{n} participants",
+  "@nParticipants": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "proposingDuration": "Duree des Propositions",
+  "ratingDuration": "Duree d'Evaluation",
+  "nSeconds": "{n} secondes",
+  "@nSeconds": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nMinutes": "{n} minutes",
+  "@nMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nHours": "{n} heures",
+  "@nHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nDays": "{n} jours",
+  "@nDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "minimumRequirements": "Exigences Minimales",
+  "nPropositions": "{n} propositions",
+  "@nPropositions": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nAvgRaters": "{n} evaluateurs en moyenne par proposition",
+  "@nAvgRaters": {
+    "placeholders": {
+      "n": {
+        "type": "double"
+      }
+    }
+  },
+  "earlyAdvanceThresholds": "Seuils d'Avance Anticipee",
+  "proposingThreshold": "Seuil de Propositions",
+  "ratingThreshold": "Seuil d'Evaluation",
+  "nConsecutiveWins": "{n} victoires consecutives",
+  "@nConsecutiveWins": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "enabled": "Active",
+  "nPerRound": "{n} par tour",
+  "@nPerRound": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduledStart": "Demarrage Planifie",
+  "windows": "Fenetres",
+  "nConfigured": "{n} configurees",
+  "@nConfigured": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "visibleOutsideSchedule": "Visible Hors Planning",
+  "privacyPolicyTitle": "Politique de Confidentialite",
+  "termsOfServiceTitle": "Conditions d'Utilisation",
+  "lastUpdated": "Derniere mise a jour: {date}",
+  "@lastUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chatSettings": "Paramètres du Chat",
+  "chatName": "Nom",
+  "chatDescription": "Description",
+  "accessAndVisibility": "Accès et Visibilité",
+  "autoMode": "Automatique",
+  "avgRatersPerProposition": "évaluateurs moyens par proposition",
+  "consensus": "Consensus",
+  "aiPropositions": "Propositions IA",
+  "perRound": "par tour",
+  "schedule": "Horaire",
+  "configured": "configuré",
+  "publicAccess": "Public",
+  "inviteCodeAccess": "Code d'Invitation",
+  "inviteOnlyAccess": "Sur Invitation Uniquement",
+
+  "shareLinkTitle": "Partager le lien pour rejoindre {chatName}",
+  "@shareLinkTitle": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "shareButton": "Partager",
+  "copyLinkButton": "Copier le Lien",
+  "linkCopied": "Lien copie dans le presse-papiers",
+  "enterCodeManually": "Ou entrez le code manuellement:",
+  "shareNotSupported": "Partage non disponible - lien copie",
+  "orScan": "ou scanner",
+
+  "tutorialWelcomeTitle": "Bienvenue sur OneMind",
+  "tutorialWelcomeSubtitle": "Apprenez comment les groupes atteignent un consensus ensemble",
+  "tutorialWhatYoullLearn": "Dans ce tutoriel:",
+  "tutorialBullet1": "Soumettez vos idees de maniere anonyme",
+  "tutorialBullet2": "Evaluez les idees des autres",
+  "tutorialBullet3": "Voyez comment le consensus est atteint",
+  "tutorialTheQuestion": "La question:",
+  "tutorialQuestion": "Qu'est-ce que nous valorisons?",
+  "tutorialStartButton": "Commencer le Tutoriel",
+  "tutorialSkipButton": "Passer le tutoriel",
+  "tutorialConsensusReached": "Consensus Atteint!",
+  "tutorialWonTwoRounds": "\"{proposition}\" a gagne 2 tours d'affilee.",
+  "@tutorialWonTwoRounds": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialAddedToChat": "C'est maintenant ajoute au chat ci-dessus.",
+  "tutorialFinishButton": "Terminer le Tutoriel",
+  "tutorialRound1Result": "'Succes' a gagne ce tour! Pour devenir une reponse permanente, il doit gagner a nouveau au prochain tour.",
+  "tutorialProposingHint": "Soumettez une idee que vous voulez voir devenir la reponse du groupe.",
+  "tutorialProposingHintWithWinner": "Pouvez-vous trouver mieux? Soumettez une idee pour defier le gagnant actuel.",
+  "tutorialRatingHint": "Pour eviter les biais, chacun evalue toutes les idees sauf la sienne. La votre vous est cachee mais les autres l'evalueront.",
+  "tutorialRound2Result": "Votre idee \"{proposition}\" a gagne! Si elle gagne au prochain tour, elle sera ajoutee definitivement au chat.",
+  "@tutorialRound2Result": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialRound2Prompt": "En voyant 'Succes' comme la reponse actuelle du groupe - que pensez-vous que nous valorisons VRAIMENT?",
+  "tutorialPropSuccess": "Succes",
+  "tutorialPropAdventure": "Aventure",
+  "tutorialPropGrowth": "Croissance",
+  "tutorialPropHarmony": "Harmonie",
+  "tutorialPropInnovation": "Innovation",
+  "tutorialPropFreedom": "Liberte",
+  "tutorialPropSecurity": "Securite",
+  "tutorialPropStability": "Stabilite",
+  "tutorialDuplicateProposition": "Cette idee existe deja dans ce tour. Essayez quelque chose de different!",
+  "tutorialShareTitle": "Partagez Votre Chat",
+  "tutorialShareExplanation": "Pour inviter d'autres personnes a rejoindre votre chat, appuyez sur le bouton de partage en haut de votre ecran.",
+  "tutorialShareTryIt": "Essayez maintenant!",
+  "tutorialShareButtonHint": "Appuyez sur le bouton de partage en haut a droite ↗",
+  "tutorialSkipMenuItem": "Passer le Tutoriel",
+  "tutorialSkipConfirmTitle": "Passer le Tutoriel?",
+  "tutorialSkipConfirmMessage": "Vous pouvez toujours acceder au tutoriel plus tard depuis l'ecran d'accueil.",
+  "tutorialSkipConfirmYes": "Oui, Passer",
+  "tutorialSkipConfirmNo": "Continuer le Tutoriel",
+  "tutorialShareTooltip": "Partager le Chat",
+  "tutorialYourIdea": "Votre idee",
+  "tutorialRateIdeas": "Evaluer les Idees",
+  "tutorialSeeResultsHint": "Appuyez ci-dessous pour voir comment toutes les idees ont ete classees.",
+  "tutorialSeeResultsContinueHint": "Super! Maintenant vous comprenez comment le classement fonctionne. Continuez pour reessayer au Round 2.",
+  "tutorialResultsBackHint": "Appuyez sur la fleche retour quand vous avez fini de voir les resultats.",
+
+  "wizardStep1Title": "De quoi voulez-vous parler?",
+  "wizardStep1Subtitle": "C'est le coeur de votre chat",
+  "wizardStep2Title": "Definir le rythme",
+  "wizardStep2Subtitle": "Combien de temps pour chaque phase?",
+  "wizardOneLastThing": "Une derniere chose...",
+  "wizardProposingLabel": "Proposer (soumettre des idees)",
+  "wizardRatingLabel": "Evaluer (classer les idees)",
+  "back": "Retour"
+}

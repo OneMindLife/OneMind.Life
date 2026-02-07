@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/timezone_utils.dart';
@@ -16,9 +17,9 @@ import 'widgets/basic_info_section.dart';
 import 'widgets/consensus_section.dart';
 import 'widgets/minimum_advance_section.dart';
 import 'widgets/phase_start_section.dart';
-import 'widgets/proposition_limits_section.dart';
+// import 'widgets/proposition_limits_section.dart'; // Hidden from UI
 import 'widgets/timer_section.dart';
-import 'widgets/visibility_section.dart';
+// import 'widgets/visibility_section.dart'; // Hidden from UI
 
 class CreateChatScreen extends ConsumerStatefulWidget {
   const CreateChatScreen({super.key});
@@ -31,23 +32,26 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _messageController = TextEditingController();
-  final _descriptionController = TextEditingController();
   final _hostNameController = TextEditingController();
   bool _needsHostName = true;
 
-  // Basic settings
-  AccessMethod _accessMethod = AccessMethod.code;
-  List<String> _inviteEmails = [];
-  bool _requireAuth = false;
-  bool _requireApproval = true;
-  StartMode _startMode = StartMode.manual; // Facilitation mode (manual/auto)
-  StartMode _ratingStartMode = StartMode.auto; // Rating start mode (auto/manual)
+  // Basic settings (hidden from UI - using defaults)
+  final AccessMethod _accessMethod = AccessMethod.code;
+  final List<String> _inviteEmails = [];
+  final bool _requireAuth = false;
+  final bool _requireApproval = true;
+  // NOTE: Manual mode removed - host can't see propositions to know when to advance.
+  // Always use auto mode with timers now.
+  final StartMode _startMode = StartMode.auto;
+  final StartMode _ratingStartMode = StartMode.auto;
   int _autoStartCount = 3;
   bool _enableSchedule = false; // Schedule disabled by default
+  bool _userModifiedThreshold = false; // Track if user manually changed thresholds
 
   // Grouped settings - use test-friendly defaults
   // Timer: 3 minutes for quick testing
   state.TimerSettings _timerSettings = const state.TimerSettings(
+    useSameDuration: true,
     proposingPreset: 'custom',
     ratingPreset: 'custom',
     proposingDuration: 180, // 3 minutes
@@ -88,7 +92,6 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
   void dispose() {
     _nameController.dispose();
     _messageController.dispose();
-    _descriptionController.dispose();
     _hostNameController.dispose();
     super.dispose();
   }
@@ -102,15 +105,39 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
     }
   }
 
+  /// Smart pre-population: update threshold suggestions based on participant count.
+  /// Suggests threshold = 80% of participants (rounded up) for good participation.
+  void _onAutoStartCountChanged(int count) {
+    setState(() {
+      _autoStartCount = count;
+
+      // Suggest threshold = 80% of participants (rounded up), with floor of 3
+      if (!_userModifiedThreshold) {
+        final suggestedThreshold = ((count * 0.8).ceil()).clamp(3, count);
+        _autoAdvanceSettings = _autoAdvanceSettings.copyWith(
+          proposingThresholdCount: suggestedThreshold,
+          ratingThresholdCount: (suggestedThreshold * 0.8).ceil().clamp(2, count),
+        );
+
+        // Also update minimum settings to not exceed participant count
+        if (_minimumSettings.proposingMinimum > count) {
+          _minimumSettings = _minimumSettings.copyWith(proposingMinimum: count);
+        }
+      }
+    });
+  }
+
   Future<void> _createChat() async {
     if (!_formKey.currentState!.validate()) return;
+
+    final l10n = AppLocalizations.of(context)!;
 
     // Validate host name is provided
     final hostName = _hostNameController.text.trim();
     if (hostName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter your name'),
+        SnackBar(
+          content: Text(l10n.pleaseEnterYourName),
         ),
       );
       return;
@@ -119,8 +146,8 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
     // Validate invite-only requires at least one email
     if (_accessMethod == AccessMethod.inviteOnly && _inviteEmails.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add at least one email address for invite-only mode'),
+        SnackBar(
+          content: Text(l10n.addEmailForInviteOnly),
         ),
       );
       return;
@@ -174,9 +201,6 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
       final chat = await chatService.createChat(
         name: _nameController.text.trim(),
         initialMessage: _messageController.text.trim(),
-        description: _descriptionController.text.trim().isEmpty
-            ? null
-            : _descriptionController.text.trim(),
         accessMethod: _accessMethod,
         requireAuth: _requireAuth,
         requireApproval: _requireApproval,
@@ -256,6 +280,15 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         invitesSent = results.length;
       }
 
+      // Log analytics event
+      ref.read(analyticsServiceProvider).logChatCreated(
+        chatId: chat.id.toString(),
+        hasAiParticipant: _aiSettings.enabled,
+        confirmationRounds: _consensusSettings.confirmationRoundsRequired,
+        autoAdvanceProposing: _autoAdvanceSettings.enableProposing,
+        autoAdvanceRating: _autoAdvanceSettings.enableRating,
+      );
+
       if (mounted) {
         CreateChatDialogs.showSuccess(
           context: context,
@@ -278,119 +311,119 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Chat'),
+        title: Text(l10n.createChatTitle),
       ),
       body: Form(
         key: _formKey,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Host name section
-            Text(
-              'Your Name',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              key: const Key('host_name_field'),
-              controller: _hostNameController,
-              decoration: InputDecoration(
-                labelText: 'Display name',
-                hintText: 'Enter your name',
-                helperText: _needsHostName
-                    ? 'Your name will be visible to all participants'
-                    : 'Using your saved name',
-                border: const OutlineInputBorder(),
+            // Host name section - only show if name not already set
+            if (_needsHostName) ...[
+              Text(
+                l10n.yourName,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
-              textCapitalization: TextCapitalization.words,
-              validator: (value) {
-                if (value == null || value.trim().isEmpty) {
-                  return 'Please enter your name';
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 32),
+              const SizedBox(height: 8),
+              TextFormField(
+                key: const Key('host_name_field'),
+                controller: _hostNameController,
+                decoration: InputDecoration(
+                  labelText: l10n.displayName,
+                  hintText: l10n.enterYourName,
+                  border: const OutlineInputBorder(),
+                ),
+                textCapitalization: TextCapitalization.words,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return l10n.pleaseEnterYourName;
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 32),
+            ],
             BasicInfoSection(
               nameController: _nameController,
               messageController: _messageController,
-              descriptionController: _descriptionController,
             ),
+            // VisibilitySection hidden - defaults to invite code with approval required
+            // VisibilitySection(
+            //   accessMethod: _accessMethod,
+            //   inviteEmails: _inviteEmails,
+            //   requireAuth: _requireAuth,
+            //   requireApproval: _requireApproval,
+            //   onAccessMethodChanged: (v) => setState(() => _accessMethod = v),
+            //   onEmailsChanged: (v) => setState(() => _inviteEmails = v),
+            //   onRequireAuthChanged: (v) => setState(() => _requireAuth = v),
+            //   onRequireApprovalChanged: (v) =>
+            //       setState(() => _requireApproval = v),
+            // ),
+            // NOTE: PhaseStartSection hidden - using defaults:
+            // - Always auto mode (manual removed - host can't see propositions)
+            // - Auto-start count = 3 (minimum needed for meaningful consensus)
+            // - Schedule disabled
+            // const SizedBox(height: 32),
+            // PhaseStartSection(
+            //   autoStartCount: _autoStartCount,
+            //   enableSchedule: _enableSchedule,
+            //   scheduleSettings: _scheduleSettings,
+            //   onAutoStartCountChanged: _onAutoStartCountChanged,
+            //   onEnableScheduleChanged: (v) =>
+            //       setState(() => _enableSchedule = v),
+            //   onScheduleSettingsChanged: (v) =>
+            //       setState(() => _scheduleSettings = v),
+            // ),
             const SizedBox(height: 32),
-            VisibilitySection(
-              accessMethod: _accessMethod,
-              inviteEmails: _inviteEmails,
-              requireAuth: _requireAuth,
-              requireApproval: _requireApproval,
-              onAccessMethodChanged: (v) => setState(() => _accessMethod = v),
-              onEmailsChanged: (v) => setState(() => _inviteEmails = v),
-              onRequireAuthChanged: (v) => setState(() => _requireAuth = v),
-              onRequireApprovalChanged: (v) =>
-                  setState(() => _requireApproval = v),
+            TimerSection(
+              settings: _timerSettings,
+              onChanged: (v) => setState(() => _timerSettings = v),
             ),
-            const SizedBox(height: 32),
-            PhaseStartSection(
-              startMode: _startMode,
-              ratingStartMode: _ratingStartMode,
-              autoStartCount: _autoStartCount,
-              enableSchedule: _enableSchedule,
-              scheduleSettings: _scheduleSettings,
-              onStartModeChanged: (v) => setState(() {
-                _startMode = v;
-                // Force rating_start_mode to auto when facilitation is auto
-                if (v == StartMode.auto) {
-                  _ratingStartMode = StartMode.auto;
-                }
-              }),
-              onRatingStartModeChanged: (v) =>
-                  setState(() => _ratingStartMode = v),
-              onAutoStartCountChanged: (v) =>
-                  setState(() => _autoStartCount = v),
-              onEnableScheduleChanged: (v) =>
-                  setState(() => _enableSchedule = v),
-              onScheduleSettingsChanged: (v) =>
-                  setState(() => _scheduleSettings = v),
-            ),
-            // Timer-related sections only shown for non-manual modes
-            if (_startMode != StartMode.manual) ...[
-              const SizedBox(height: 32),
-              TimerSection(
-                settings: _timerSettings,
-                onChanged: (v) => setState(() => _timerSettings = v),
-              ),
-              // NOTE: AdaptiveDurationSection hidden due to oscillation problem.
-              // When participation meets threshold → duration decreases →
-              // participation drops below threshold → duration increases →
-              // back to original. Creates stuck over/under cycles.
-              // Infrastructure kept for potential future improvements.
-              // See docs/FEATURE_REQUESTS.md for details.
-              const SizedBox(height: 32),
-              AutoAdvanceSection(
-                settings: _autoAdvanceSettings,
-                onChanged: (v) => setState(() => _autoAdvanceSettings = v),
-              ),
-            ],
-            const SizedBox(height: 32),
-            MinimumAdvanceSection(
-              settings: _minimumSettings,
-              onChanged: (v) => setState(() => _minimumSettings = v),
-            ),
+            // NOTE: MinimumAdvanceSection hidden - using defaults:
+            // - proposingMinimum = 3 (need 3+ ideas before phase can end)
+            // - ratingMinimum = 2 (each idea needs 2+ ratings)
+            // const SizedBox(height: 32),
+            // MinimumAdvanceSection(
+            //   settings: _minimumSettings,
+            //   onChanged: (v) => setState(() => _minimumSettings = v),
+            //   startMode: _startMode,
+            //   autoStartCount: _autoStartCount,
+            //   proposingDuration: _timerSettings.proposingDuration,
+            //   proposingThreshold: _autoAdvanceSettings.enableProposing
+            //       ? _autoAdvanceSettings.proposingThresholdCount
+            //       : null,
+            // ),
+            // NOTE: AutoAdvanceSection hidden - using smart defaults:
+            // - Proposing: ends when 100% of participants have acted (submitted OR skipped)
+            // - Rating: ends when each proposition has 10 ratings (enough signal)
+            // const SizedBox(height: 32),
+            // AutoAdvanceSection(
+            //   settings: _autoAdvanceSettings,
+            //   autoStartCount: _autoStartCount,
+            //   onChanged: (v) {
+            //     setState(() {
+            //       _autoAdvanceSettings = v;
+            //       _userModifiedThreshold = true;
+            //     });
+            //   },
+            // ),
             // NOTE: AISection hidden - not implemented yet
             // const SizedBox(height: 32),
             // AISection(
             //   settings: _aiSettings,
             //   onChanged: (v) => setState(() => _aiSettings = v),
             // ),
-            const SizedBox(height: 32),
-            PropositionLimitsSection(
-              propositionsPerUser: _consensusSettings.propositionsPerUser,
-              onChanged: (v) => setState(() {
-                _consensusSettings =
-                    _consensusSettings.copyWith(propositionsPerUser: v);
-              }),
-            ),
+            // PropositionLimitsSection hidden - default to 1 proposition per user
+            // PropositionLimitsSection(
+            //   propositionsPerUser: _consensusSettings.propositionsPerUser,
+            //   onChanged: (v) => setState(() {
+            //     _consensusSettings =
+            //         _consensusSettings.copyWith(propositionsPerUser: v);
+            //   }),
+            // ),
             const SizedBox(height: 32),
             ConsensusSection(
               settings: _consensusSettings,
@@ -401,7 +434,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
               onPressed: _isLoading ? null : _createChat,
               child: _isLoading
                   ? const CircularProgressIndicator()
-                  : const Text('Create Chat'),
+                  : Text(l10n.createChat),
             ),
             const SizedBox(height: 32),
           ],

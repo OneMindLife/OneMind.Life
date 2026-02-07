@@ -52,12 +52,14 @@ const securityHeaders: Record<string, string> = {
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
 
-  // In development, allow all localhost origins
+  // Always allow localhost origins for development
+  // This allows local Flutter web debugging to work even when
+  // ALLOWED_ORIGINS is set for production
   if (
     origin.startsWith("http://localhost:") ||
     origin.startsWith("http://127.0.0.1:")
   ) {
-    return Deno.env.get("ALLOWED_ORIGINS") === undefined;
+    return true;
   }
 
   return allowedOrigins.includes(origin);

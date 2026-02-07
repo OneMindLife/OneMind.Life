@@ -93,7 +93,7 @@ class ScheduleWindow extends Equatable {
 class Chat extends Equatable {
   final int id;
   final String name;
-  final String initialMessage;
+  final String? initialMessage;
   final String? description;
   final String? inviteCode;
   final AccessMethod accessMethod;
@@ -148,7 +148,7 @@ class Chat extends Equatable {
   const Chat({
     required this.id,
     required this.name,
-    required this.initialMessage,
+    this.initialMessage,
     this.description,
     this.inviteCode,
     required this.accessMethod,
@@ -199,7 +199,7 @@ class Chat extends Equatable {
     return Chat(
       id: json['id'] as int,
       name: json['name'] as String,
-      initialMessage: json['initial_message'] as String,
+      initialMessage: json['initial_message'] as String?,
       description: json['description'] as String?,
       inviteCode: json['invite_code'] as String?,
       accessMethod: _parseAccessMethod(json['access_method'] as String?),
@@ -385,8 +385,8 @@ class Chat extends Equatable {
   /// Display description with translation fallback (translated → original).
   String? get displayDescription => descriptionTranslated ?? description;
 
-  /// Display initial message with translation fallback (translated → original).
-  String get displayInitialMessage => initialMessageTranslated ?? initialMessage;
+  /// Display initial message with translation fallback (translated → original → empty).
+  String get displayInitialMessage => initialMessageTranslated ?? initialMessage ?? '';
 
   @override
   List<Object?> get props => [

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/widgets/proposition_limits_section.dart';
 
 void main() {
@@ -7,6 +8,9 @@ void main() {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 1,
@@ -22,6 +26,9 @@ void main() {
     testWidgets('displays input label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 1,
@@ -38,6 +45,9 @@ void main() {
         (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 1,
@@ -56,6 +66,9 @@ void main() {
     testWidgets('displays plural helper text when value > 1', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 3,
@@ -74,6 +87,9 @@ void main() {
     testWidgets('displays current value', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 5,
@@ -91,6 +107,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 3,
@@ -111,6 +130,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 3,
@@ -129,6 +151,9 @@ void main() {
     testWidgets('respects min limit of 1', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 1,
@@ -147,6 +172,9 @@ void main() {
     testWidgets('respects max limit of 20', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PropositionLimitsSection(
               propositionsPerUser: 20,

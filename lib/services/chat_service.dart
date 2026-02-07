@@ -1,7 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/errors/app_exception.dart';
 import '../models/models.dart';
-import 'winner_calculator.dart';
 
 /// Service for chat-related database operations
 class ChatService {
@@ -74,7 +73,10 @@ class ChatService {
         .eq('is_active', true)
         .maybeSingle();
 
-    return response != null ? Chat.fromJson(response) : null;
+    if (response != null) {
+      return Chat.fromJson(response);
+    }
+    return null;
   }
 
   /// Get public chats for browsing/discovery
@@ -215,15 +217,15 @@ class ChatService {
       return Chat.fromJson(list.first);
     }
 
-    // Default: no translations
-    final response = await _client
-        .from('chats')
-        .select()
-        .eq('invite_code', code.toUpperCase())
-        .eq('is_active', true)
-        .maybeSingle();
+    // Default: use RPC to bypass restrictive SELECT policy on non-public chats
+    final response = await _client.rpc(
+      'get_chat_by_code',
+      params: {'p_invite_code': code.toUpperCase()},
+    );
 
-    return response != null ? Chat.fromJson(response) : null;
+    final list = response as List;
+    if (list.isEmpty) return null;
+    return Chat.fromJson(list.first);
   }
 
   /// Get chat by ID
@@ -260,8 +262,7 @@ class ChatService {
   /// Uses auth.uid() for creator identification
   Future<Chat> createChat({
     required String name,
-    required String initialMessage,
-    String? description,
+    String? initialMessage,
     required AccessMethod accessMethod,
     required bool requireAuth,
     required bool requireApproval,
@@ -323,10 +324,8 @@ class ChatService {
         break;
     }
 
-    final insertData = {
+    final insertData = <String, dynamic>{
       'name': name,
-      'initial_message': initialMessage,
-      'description': description,
       'access_method': accessMethodString,
       'require_auth': requireAuth,
       'require_approval': requireApproval,
@@ -353,6 +352,11 @@ class ChatService {
       'min_phase_duration_seconds': minPhaseDurationSeconds,
       'max_phase_duration_seconds': maxPhaseDurationSeconds,
     };
+
+    // Add optional initial message if provided
+    if (initialMessage != null && initialMessage.isNotEmpty) {
+      insertData['initial_message'] = initialMessage;
+    }
 
     // Add schedule fields when schedule is configured (independent of startMode)
     if (scheduleType != null) {
@@ -656,31 +660,66 @@ class ChatService {
     }
 
     // Calculate MOVDA scores for this round (populates proposition_movda_ratings and global_scores)
-    // This is needed for the "Previous Round Results" display to show proper rankings
-    await _client.rpc('calculate_movda_scores_for_round', params: {'p_round_id': roundId});
+    // CRITICAL: This is the source of truth for winner selection
+    // Uses host-only wrapper that validates caller is the chat host
+    await _client.rpc('host_calculate_movda_scores', params: {'p_round_id': roundId});
 
-    // Calculate winners using the utility class (handles ties)
-    final result = WinnerCalculator.calculateWinners(
-      rankings.cast<Map<String, dynamic>>(),
-    );
+    // Get winners from MOVDA scores (proposition_global_scores)
+    // This ensures consistency with what's displayed to users
+    final scores = await _client
+        .from('proposition_global_scores')
+        .select('proposition_id, global_score')
+        .eq('round_id', roundId)
+        .order('global_score', ascending: false);
 
-    final winningPropositionIds = result['winnerIds'] as List<int>;
-    final highestAvg = result['highestScore'] as double;
-    final isSoleWinner = result['isSoleWinner'] as bool;
-    final primaryWinnerId = winningPropositionIds.isNotEmpty
-        ? winningPropositionIds.first
-        : null;
+    int? primaryWinnerId;
+    bool isSoleWinner;
+    List<Map<String, dynamic>> tiedWinners;
+
+    if ((scores as List).isEmpty) {
+      // No MOVDA scores (shouldn't happen since we have rankings), fall back to oldest proposition
+      final propositions = await _client
+          .from('propositions')
+          .select('id')
+          .eq('round_id', roundId)
+          .order('created_at', ascending: true)
+          .limit(1);
+
+      if ((propositions as List).isNotEmpty) {
+        primaryWinnerId = propositions.first['id'] as int;
+        isSoleWinner = true;
+        tiedWinners = [{'proposition_id': primaryWinnerId, 'global_score': null}];
+      } else {
+        throw AppException.validation(
+          message: 'No propositions found for this round.',
+        );
+      }
+    } else {
+      // Find all propositions tied for first place (with tolerance matching edge function)
+      const scoreTolerance = 0.001;
+      final topScore = (scores.first['global_score'] as num).toDouble();
+      tiedWinners = (scores as List<dynamic>)
+          .where((s) {
+            final score = (s['global_score'] as num).toDouble();
+            return (score - topScore).abs() < scoreTolerance;
+          })
+          .map((s) => s as Map<String, dynamic>)
+          .toList();
+
+      isSoleWinner = tiedWinners.length == 1;
+      primaryWinnerId = tiedWinners.first['proposition_id'] as int;
+    }
 
     // Upsert ALL winners into round_winners table BEFORE setting winning_proposition_id
     // This is needed because the trigger reads from round_winners to carry forward
     // Using upsert to handle retries (if user clicks button twice)
-    for (final propId in winningPropositionIds) {
+    for (final winner in tiedWinners) {
       await _client.from('round_winners').upsert(
         {
           'round_id': roundId,
-          'proposition_id': propId,
+          'proposition_id': winner['proposition_id'],
           'rank': 1,
-          'global_score': highestAvg,
+          'global_score': winner['global_score'],
         },
         onConflict: 'round_id,proposition_id',
       );

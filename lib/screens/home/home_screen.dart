@@ -1,22 +1,58 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:go_router/go_router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../widgets/language_selector.dart';
 import '../chat/chat_screen.dart';
-import '../discover/discover_screen.dart';
+// import '../discover/discover_screen.dart'; // Hidden for MVP
 import '../join/join_dialog.dart';
-import '../create/create_chat_screen.dart';
+import '../create/create_chat_wizard.dart';
+import '../legal/legal_documents_dialog.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  StreamSubscription<Chat>? _approvedChatSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen for approved join requests to auto-open the chat
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _setupApprovedChatListener();
+    });
+  }
+
+  void _setupApprovedChatListener() {
+    _approvedChatSubscription?.cancel();
+    _approvedChatSubscription =
+        ref.read(myChatsProvider.notifier).approvedChatStream.listen((chat) {
+      if (mounted) {
+        _navigateToChat(context, ref, chat);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _approvedChatSubscription?.cancel();
+    super.dispose();
+  }
 
   void _openJoinDialog(BuildContext context, WidgetRef ref) {
     showDialog(
       context: context,
-      builder: (context) => JoinDialog(
+      builder: (ctx) => JoinDialog(
         onJoined: (chat) {
           ref.read(myChatsProvider.notifier).refresh();
           _navigateToChat(context, ref, chat);
@@ -25,19 +61,20 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  void _openDiscover(BuildContext context, WidgetRef ref) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const DiscoverScreen()),
-    );
-    // Refresh chat list when returning (user may have joined a chat)
-    ref.read(myChatsProvider.notifier).refresh();
-  }
+  // Hidden for MVP
+  // void _openDiscover(BuildContext context, WidgetRef ref) async {
+  //   await Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (context) => const DiscoverScreen()),
+  //   );
+  //   // Refresh chat list when returning (user may have joined a chat)
+  //   ref.read(myChatsProvider.notifier).refresh();
+  // }
 
   void _openCreateChat(BuildContext context, WidgetRef ref) async {
     final result = await Navigator.push<Chat>(
       context,
-      MaterialPageRoute(builder: (context) => const CreateChatScreen()),
+      MaterialPageRoute(builder: (ctx) => const CreateChatWizard()),
     );
     if (result != null) {
       ref.read(myChatsProvider.notifier).refresh();
@@ -51,7 +88,7 @@ class HomeScreen extends ConsumerWidget {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ChatScreen(chat: chat),
+        builder: (ctx) => ChatScreen(chat: chat),
       ),
     );
     // Refresh chat list when returning from chat screen
@@ -88,7 +125,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final myChatsStateAsync = ref.watch(myChatsProvider);
     final officialChatAsync = ref.watch(officialChatProvider);
     final l10n = AppLocalizations.of(context);
@@ -100,35 +137,18 @@ class HomeScreen extends ConsumerWidget {
           child: Text(l10n.appTitle),
         ),
         actions: [
-          IconButton(
-            key: const Key('youtube-button'),
-            icon: const Icon(Icons.play_circle_outline),
-            tooltip: 'Watch Tutorial',
-            onPressed: () async {
-              final uri = Uri.parse('https://www.youtube.com/watch?v=zzq2TPhuVSg');
-              await launchUrl(uri, mode: LaunchMode.externalApplication);
-            },
-          ),
           const LanguageSelector(compact: true),
-          Semantics(
-            button: true,
-            label: l10n.discoverPublicChats,
-            child: IconButton(
-              key: const Key('discover-button'),
-              icon: const Icon(Icons.explore),
-              tooltip: l10n.discover,
-              onPressed: () => _openDiscover(context, ref),
-            ),
+          IconButton(
+            key: const Key('tutorial-button'),
+            icon: const Icon(Icons.help_outline),
+            tooltip: l10n.howItWorks,
+            onPressed: () => context.push('/tutorial'),
           ),
-          Semantics(
-            button: true,
-            label: l10n.joinAnExistingChatWithInviteCode,
-            child: IconButton(
-              key: const Key('join-with-code-button'),
-              icon: const Icon(Icons.add),
-              tooltip: l10n.joinWithCode,
-              onPressed: () => _openJoinDialog(context, ref),
-            ),
+          IconButton(
+            key: const Key('legal-button'),
+            icon: const Icon(Icons.description_outlined),
+            tooltip: l10n.legalDocuments,
+            onPressed: () => showLegalDocumentsDialog(context),
           ),
         ],
       ),
@@ -181,24 +201,34 @@ class HomeScreen extends ConsumerWidget {
                 const SizedBox(height: 24),
               ],
 
-              // My Chats
+              // My Chats (exclude official chat - it's shown above)
               _buildSectionHeader(context, l10n.yourChats),
               const SizedBox(height: 8),
-              if (myChatsState.chats.isEmpty &&
-                  myChatsState.pendingRequests.isEmpty)
-                _buildEmptyState(context, ref)
-              else if (myChatsState.chats.isEmpty)
-                _buildNoChatsYet(context)
-              else
-                ...myChatsState.chats.map(
-                  (chat) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _ChatCard(
-                      chat: chat,
-                      onTap: () => _navigateToChat(context, ref, chat),
-                    ),
-                  ),
-                ),
+              Builder(
+                builder: (context) {
+                  final nonOfficialChats = myChatsState.chats
+                      .where((chat) => !chat.isOfficial)
+                      .toList();
+                  if (nonOfficialChats.isEmpty &&
+                      myChatsState.pendingRequests.isEmpty) {
+                    return _buildEmptyState(context, ref);
+                  }
+                  if (nonOfficialChats.isEmpty) {
+                    return _buildNoChatsYet(context);
+                  }
+                  return Column(
+                    children: nonOfficialChats.map(
+                      (chat) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _ChatCard(
+                          chat: chat,
+                          onTap: () => _navigateToChat(context, ref, chat),
+                        ),
+                      ),
+                    ).toList(),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -235,15 +265,27 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
-      floatingActionButton: Semantics(
-        button: true,
-        label: l10n.createANewChat,
-        child: FloatingActionButton.extended(
-          key: const Key('create-chat-fab'),
-          onPressed: () => _openCreateChat(context, ref),
-          icon: const Icon(Icons.add),
-          label: Text(l10n.createChat),
-        ),
+      floatingActionButton: SpeedDial(
+        key: const Key('chat-speed-dial'),
+        icon: Icons.add,
+        activeIcon: Icons.close,
+        spacing: 12,
+        childPadding: const EdgeInsets.all(5),
+        spaceBetweenChildren: 8,
+        children: [
+          SpeedDialChild(
+            key: const Key('create-chat-fab'),
+            child: const Icon(Icons.create),
+            label: l10n.createChat,
+            onTap: () => _openCreateChat(context, ref),
+          ),
+          SpeedDialChild(
+            key: const Key('join-chat-fab'),
+            child: const Icon(Icons.abc),
+            label: l10n.joinWithCode,
+            onTap: () => _openJoinDialog(context, ref),
+          ),
+        ],
       ),
     );
   }
@@ -281,18 +323,6 @@ class HomeScreen extends ConsumerWidget {
                     color: Colors.grey.shade600,
                   ),
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _openDiscover(context, ref),
-              icon: const Icon(Icons.explore),
-              label: Text(l10n.discoverPublicChatsButton),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: () => _openJoinDialog(context, ref),
-              icon: const Icon(Icons.login),
-              label: Text(l10n.joinWithCode),
             ),
           ],
         ),

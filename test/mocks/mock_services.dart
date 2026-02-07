@@ -60,7 +60,6 @@ extension MockChatServiceSetup on MockChatService {
     when(() => createChat(
           name: any(named: 'name'),
           initialMessage: any(named: 'initialMessage'),
-          description: any(named: 'description'),
           accessMethod: any(named: 'accessMethod'),
           requireAuth: any(named: 'requireAuth'),
           requireApproval: any(named: 'requireApproval'),
@@ -263,6 +262,22 @@ extension MockPropositionServiceSetup on MockPropositionService {
   void setupHasRated(int roundId, int participantId, bool hasRated) {
     when(() => this.hasRated(roundId, participantId))
         .thenAnswer((_) async => hasRated);
+  }
+
+  /// Setup getUserRoundRanks (for leaderboard display)
+  void setupGetUserRoundRanks(List<UserRoundRank> ranks) {
+    when(() => getUserRoundRanks(
+          roundId: any(named: 'roundId'),
+          myParticipantId: any(named: 'myParticipantId'),
+        )).thenAnswer((_) async => ranks);
+  }
+
+  /// Setup getUserRoundRanks to throw an error
+  void setupGetUserRoundRanksError(Exception error) {
+    when(() => getUserRoundRanks(
+          roundId: any(named: 'roundId'),
+          myParticipantId: any(named: 'myParticipantId'),
+        )).thenThrow(error);
   }
 }
 

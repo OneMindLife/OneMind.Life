@@ -36,6 +36,35 @@ void main() {
         expect(chat.propositionsPerUser, 1);
       });
 
+      test('parses null initial_message', () {
+        final json = {
+          'id': 1,
+          'name': 'Test Chat',
+          'initial_message': null,
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final chat = Chat.fromJson(json);
+
+        expect(chat.id, 1);
+        expect(chat.name, 'Test Chat');
+        expect(chat.initialMessage, isNull);
+        expect(chat.displayInitialMessage, '');
+      });
+
+      test('parses missing initial_message', () {
+        final json = {
+          'id': 1,
+          'name': 'Test Chat',
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final chat = Chat.fromJson(json);
+
+        expect(chat.initialMessage, isNull);
+        expect(chat.displayInitialMessage, '');
+      });
+
       test('parses all fields', () {
         final json = {
           'id': 1,
@@ -652,6 +681,43 @@ void main() {
       test('returns false when scheduleType is null', () {
         final chat = ChatFixtures.model();
         expect(chat.hasSchedule, false);
+      });
+    });
+
+    group('displayInitialMessage', () {
+      test('returns initialMessage when present', () {
+        final chat = ChatFixtures.model(initialMessage: 'Test message');
+        expect(chat.displayInitialMessage, 'Test message');
+      });
+
+      test('returns empty string when initialMessage is null', () {
+        final chat = Chat.fromJson({
+          'id': 1,
+          'name': 'Test',
+          'initial_message': null,
+          'created_at': '2024-01-01T00:00:00Z',
+        });
+        expect(chat.displayInitialMessage, '');
+      });
+
+      test('returns translation when available', () {
+        final chat = ChatFixtures.withTranslation(
+          initialMessage: 'Original',
+          initialMessageTranslated: 'Translated',
+          translationLanguage: 'es',
+        );
+        expect(chat.displayInitialMessage, 'Translated');
+      });
+
+      test('returns translation over empty string', () {
+        final chat = Chat.fromJson({
+          'id': 1,
+          'name': 'Test',
+          'initial_message': null,
+          'initial_message_translated': 'Translated',
+          'created_at': '2024-01-01T00:00:00Z',
+        });
+        expect(chat.displayInitialMessage, 'Translated');
       });
     });
 

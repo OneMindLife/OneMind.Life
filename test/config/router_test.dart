@@ -1,14 +1,35 @@
+import 'package:firebase_analytics/observer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:onemind_app/config/router.dart';
+import 'package:onemind_app/core/l10n/locale_provider.dart';
+import 'package:onemind_app/providers/providers.dart';
+import 'package:onemind_app/services/analytics_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class MockSharedPreferences extends Mock implements SharedPreferences {}
+class MockAnalyticsService extends Mock implements AnalyticsService {
+  @override
+  FirebaseAnalyticsObserver? get observer => null;
+}
 
 void main() {
   late ProviderContainer container;
   late GoRouter router;
 
   setUp(() {
-    container = ProviderContainer();
+    final mockPrefs = MockSharedPreferences();
+    when(() => mockPrefs.getBool(any())).thenReturn(true);
+
+    container = ProviderContainer(
+      overrides: [
+        sharedPreferencesProvider.overrideWithValue(mockPrefs),
+        analyticsServiceProvider.overrideWithValue(MockAnalyticsService()),
+        hasCompletedTutorialProvider.overrideWithValue(true),
+      ],
+    );
     router = container.read(routerProvider);
   });
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import 'form_inputs.dart';
 
 /// Proposition limits section
@@ -14,13 +15,14 @@ class PropositionLimitsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('Proposition Limits'),
+        SectionHeader(l10n.propositionLimits),
         const SizedBox(height: 16),
         NumberInput(
-          label: 'Propositions per user',
+          label: l10n.propositionsPerUser,
           value: propositionsPerUser,
           onChanged: onChanged,
           min: 1,
@@ -30,8 +32,8 @@ class PropositionLimitsSection extends StatelessWidget {
           padding: const EdgeInsets.only(left: 16, top: 4),
           child: Text(
             propositionsPerUser == 1
-                ? 'Each user can submit 1 proposition per round'
-                : 'Each user can submit up to $propositionsPerUser propositions per round',
+                ? l10n.onePropositionPerRound
+                : l10n.nPropositionsPerRound(propositionsPerUser),
             style: Theme.of(context).textTheme.bodySmall,
           ),
         ),

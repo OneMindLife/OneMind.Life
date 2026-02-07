@@ -12,6 +12,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get appTitle => 'OneMind';
 
   @override
+  String get howItWorks => 'How it works';
+
+  @override
   String get discover => 'Discover';
 
   @override
@@ -64,6 +67,33 @@ class AppLocalizationsEn extends AppLocalizations {
   String get no => 'No';
 
   @override
+  String get delete => 'Delete';
+
+  @override
+  String get leave => 'Leave';
+
+  @override
+  String get kick => 'Kick';
+
+  @override
+  String get pause => 'Pause';
+
+  @override
+  String get resume => 'Resume';
+
+  @override
+  String get remove => 'Remove';
+
+  @override
+  String get clear => 'Clear';
+
+  @override
+  String get done => 'Done';
+
+  @override
+  String get save => 'Save';
+
+  @override
   String get officialOneMind => 'Official OneMind';
 
   @override
@@ -96,7 +126,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get waitingForHostApproval => 'Waiting for host approval';
 
   @override
-  String get hostApprovalRequired => 'Host approval required to join';
+  String get hostApprovalRequired => 'Host must approve each request';
 
   @override
   String get noChatsYet => 'No chats yet';
@@ -179,7 +209,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterDisplayName => 'Enter your display name:';
 
   @override
-  String get yourName => 'Your name';
+  String get yourName => 'Your Name';
 
   @override
   String get yourNamePlaceholder => 'Your Name';
@@ -297,6 +327,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add at least one email address for invite-only mode';
 
   @override
+  String get emailAlreadyAdded => 'Email already added';
+
+  @override
   String get settings => 'Settings';
 
   @override
@@ -307,6 +340,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get spanish => 'Espanol';
+
+  @override
+  String get portuguese => 'Portugues';
+
+  @override
+  String get french => 'Francais';
+
+  @override
+  String get german => 'Deutsch';
 
   @override
   String get rankPropositions => 'Rank Propositions';
@@ -324,6 +366,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatPausedByHost => 'Chat was paused by host';
+
+  @override
+  String get ratingPhaseEnded => 'Rating phase has ended';
 
   @override
   String get goBack => 'Go Back';
@@ -464,4 +509,1291 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get hostPausedPleaseWait =>
       'The host has paused this chat. Please wait for them to resume.';
+
+  @override
+  String get previousWinner => 'Winner';
+
+  @override
+  String get yourProposition => 'Your Proposition';
+
+  @override
+  String get yourPropositions => 'Your Propositions';
+
+  @override
+  String get rate => 'Rate';
+
+  @override
+  String get participants => 'Participants';
+
+  @override
+  String get chatInfo => 'Chat Info';
+
+  @override
+  String get shareQrCode => 'Share QR Code';
+
+  @override
+  String get joinRequests => 'Join Requests';
+
+  @override
+  String get resumeChat => 'Resume Chat';
+
+  @override
+  String get pauseChat => 'Pause Chat';
+
+  @override
+  String get leaveChat => 'Leave Chat';
+
+  @override
+  String get deleteChat => 'Delete Chat';
+
+  @override
+  String get host => 'Host';
+
+  @override
+  String get deletePropositionQuestion => 'Delete Proposition?';
+
+  @override
+  String get areYouSureDeleteProposition =>
+      'Are you sure you want to delete this proposition?';
+
+  @override
+  String get deleteChatQuestion => 'Delete Chat?';
+
+  @override
+  String get leaveChatQuestion => 'Leave Chat?';
+
+  @override
+  String get kickParticipantQuestion => 'Kick Participant?';
+
+  @override
+  String get pauseChatQuestion => 'Pause Chat?';
+
+  @override
+  String get removePaymentMethodQuestion => 'Remove Payment Method?';
+
+  @override
+  String get propositionDeleted => 'Proposition deleted';
+
+  @override
+  String get chatDeleted => 'Chat deleted';
+
+  @override
+  String get youHaveLeftChat => 'You have left the chat';
+
+  @override
+  String get youHaveBeenRemoved => 'You have been removed from this chat';
+
+  @override
+  String get chatHasBeenDeleted => 'This chat has been deleted';
+
+  @override
+  String participantRemoved(String name) {
+    return '$name has been removed';
+  }
+
+  @override
+  String get chatPausedSuccess => 'Chat paused';
+
+  @override
+  String get requestApproved => 'Request approved';
+
+  @override
+  String get requestDenied => 'Request denied';
+
+  @override
+  String failedToSubmit(String error) {
+    return 'Failed to submit: $error';
+  }
+
+  @override
+  String get duplicateProposition =>
+      'This proposition already exists in this round';
+
+  @override
+  String failedToStartPhase(String error) {
+    return 'Failed to start phase: $error';
+  }
+
+  @override
+  String failedToAdvancePhase(String error) {
+    return 'Failed to advance phase: $error';
+  }
+
+  @override
+  String failedToCompleteRating(String error) {
+    return 'Failed to complete rating: $error';
+  }
+
+  @override
+  String failedToDelete(String error) {
+    return 'Failed to delete: $error';
+  }
+
+  @override
+  String failedToDeleteChat(String error) {
+    return 'Failed to delete chat: $error';
+  }
+
+  @override
+  String failedToLeaveChat(String error) {
+    return 'Failed to leave chat: $error';
+  }
+
+  @override
+  String failedToKickParticipant(String error) {
+    return 'Failed to kick participant: $error';
+  }
+
+  @override
+  String failedToPauseChat(String error) {
+    return 'Failed to pause chat: $error';
+  }
+
+  @override
+  String error(String error) {
+    return 'Error: $error';
+  }
+
+  @override
+  String get noPendingRequests => 'No pending requests';
+
+  @override
+  String get newRequestsWillAppear => 'New requests will appear here';
+
+  @override
+  String participantsJoined(int count) {
+    return '$count participants have joined';
+  }
+
+  @override
+  String waitingForMoreParticipants(int count) {
+    return 'Waiting for $count more participant(s) to join';
+  }
+
+  @override
+  String get scheduled => 'Scheduled';
+
+  @override
+  String get chatOutsideSchedule => 'Chat is outside schedule window';
+
+  @override
+  String nextWindowStarts(String dateTime) {
+    return 'Next window starts $dateTime';
+  }
+
+  @override
+  String get scheduleWindows => 'Schedule windows:';
+
+  @override
+  String get scheduledToStart => 'Scheduled to start';
+
+  @override
+  String get chatWillAutoStart =>
+      'The chat will automatically start at the scheduled time.';
+
+  @override
+  String submittedCount(int submitted, int total) {
+    return '$submitted/$total submitted';
+  }
+
+  @override
+  String propositionCollected(int count) {
+    return '$count proposition collected';
+  }
+
+  @override
+  String propositionsCollected(int count) {
+    return '$count propositions collected';
+  }
+
+  @override
+  String get timeExpired => 'Time expired';
+
+  @override
+  String get noDataAvailable => 'No data available';
+
+  @override
+  String get tryAgain => 'Try Again';
+
+  @override
+  String get requireApproval => 'Require approval';
+
+  @override
+  String get requireAuthentication => 'Require authentication';
+
+  @override
+  String get showPreviousResults => 'Show full results from past rounds';
+
+  @override
+  String get enableAdaptiveDuration => 'Enable adaptive duration';
+
+  @override
+  String get enableOneMindAI => 'Enable OneMind AI';
+
+  @override
+  String get enableAutoAdvanceProposing => 'Enable for ideas';
+
+  @override
+  String get enableAutoAdvanceRating => 'Enable for ratings';
+
+  @override
+  String get hideWhenOutsideSchedule => 'Hide when outside schedule';
+
+  @override
+  String get chatVisibleButPaused => 'Chat visible but paused outside schedule';
+
+  @override
+  String get chatHiddenUntilNext => 'Chat hidden until next scheduled window';
+
+  @override
+  String get timezone => 'Timezone';
+
+  @override
+  String get scheduleType => 'Schedule Type';
+
+  @override
+  String get oneTime => 'One-time';
+
+  @override
+  String get recurring => 'Recurring';
+
+  @override
+  String get startDateTime => 'Start Date & Time';
+
+  @override
+  String get scheduleWindowsLabel => 'Schedule Windows';
+
+  @override
+  String get addWindow => 'Add Window';
+
+  @override
+  String get searchTimezone => 'Search timezone...';
+
+  @override
+  String get manual => 'Manual';
+
+  @override
+  String get auto => 'Auto';
+
+  @override
+  String get credits => 'Credits';
+
+  @override
+  String get refillAmountMustBeGreater =>
+      'Refill amount must be greater than threshold';
+
+  @override
+  String get autoRefillSettingsUpdated => 'Auto-refill settings updated';
+
+  @override
+  String get autoRefillEnabled => 'Auto-refill enabled';
+
+  @override
+  String get autoRefillDisabled => 'Auto-refill disabled';
+
+  @override
+  String get saveSettings => 'Save Settings';
+
+  @override
+  String get removeCard => 'Remove Card';
+
+  @override
+  String get purchaseWithStripe => 'Purchase with Stripe';
+
+  @override
+  String get processing => 'Processing...';
+
+  @override
+  String get pageNotFound => 'Page Not Found';
+
+  @override
+  String get goHome => 'Go Home';
+
+  @override
+  String allPropositionsCount(int count) {
+    return 'All Propositions ($count)';
+  }
+
+  @override
+  String get hostCanModerateContent =>
+      'As host, you can moderate content. Submitter identity is hidden.';
+
+  @override
+  String get yourPropositionLabel => '(Your proposition)';
+
+  @override
+  String get previousWinnerLabel => '(Previous winner)';
+
+  @override
+  String get cannotBeUndone => 'This action cannot be undone.';
+
+  @override
+  String deleteChatConfirmation(String chatName) {
+    return 'Are you sure you want to delete \"$chatName\"?\n\nThis will permanently delete all propositions, ratings, and history. This action cannot be undone.';
+  }
+
+  @override
+  String leaveChatConfirmation(String chatName) {
+    return 'Are you sure you want to leave \"$chatName\"?\n\nYou will no longer see this chat in your list.';
+  }
+
+  @override
+  String kickParticipantConfirmation(String participantName) {
+    return 'Are you sure you want to remove \"$participantName\" from this chat?\n\nThey will not be able to rejoin without approval.';
+  }
+
+  @override
+  String get pauseChatConfirmation =>
+      'This will pause the current phase timer. Participants will see that the chat is paused by the host.';
+
+  @override
+  String get approveOrDenyRequests =>
+      'Approve or deny requests to join this chat.';
+
+  @override
+  String get signedIn => 'Signed in';
+
+  @override
+  String get guest => 'Guest';
+
+  @override
+  String get approve => 'Approve';
+
+  @override
+  String get deny => 'Deny';
+
+  @override
+  String get initialMessage => 'Initial Message';
+
+  @override
+  String consensusNumber(int number) {
+    return 'Consensus #$number';
+  }
+
+  @override
+  String get kickParticipant => 'Kick participant';
+
+  @override
+  String get propositions => 'Propositions';
+
+  @override
+  String get leaderboard => 'Leaderboard';
+
+  @override
+  String get noLeaderboardData => 'No leaderboard data available';
+
+  @override
+  String get skip => 'Skip';
+
+  @override
+  String get skipped => 'Skipped';
+
+  @override
+  String skipsRemaining(int remaining) {
+    return '$remaining skips remaining';
+  }
+
+  @override
+  String get createChatTitle => 'Create Chat';
+
+  @override
+  String get enterYourNameLabel => 'Enter your name';
+
+  @override
+  String get nameVisibleToAll =>
+      'Your name will be visible to all participants';
+
+  @override
+  String get basicInfo => 'Basic Info';
+
+  @override
+  String get chatNameRequired => 'Chat Name *';
+
+  @override
+  String get chatNameHint => 'e.g., Team Lunch Friday';
+
+  @override
+  String get required => 'Required';
+
+  @override
+  String get initialMessageRequired => 'Initial Message *';
+
+  @override
+  String get initialMessageOptional => 'Initial Message (Optional)';
+
+  @override
+  String get initialMessageHint => 'The opening topic or question';
+
+  @override
+  String get initialMessageHelperText =>
+      'Participants will know you wrote this since you created the chat';
+
+  @override
+  String get descriptionOptional => 'Description (Optional)';
+
+  @override
+  String get descriptionHint => 'Additional context';
+
+  @override
+  String get visibility => 'Visibility';
+
+  @override
+  String get whoCanJoin => 'Who can find and join this chat?';
+
+  @override
+  String get accessPublic => 'Public';
+
+  @override
+  String get accessPublicDesc => 'Anyone can discover and join';
+
+  @override
+  String get accessCode => 'Invite Code';
+
+  @override
+  String get accessCodeDesc => 'Share a 6-character code to join';
+
+  @override
+  String get accessEmail => 'Email Invite Only';
+
+  @override
+  String get accessEmailDesc => 'Only invited email addresses can join';
+
+  @override
+  String get instantJoin => 'Users join instantly';
+
+  @override
+  String get inviteByEmail => 'Invite by Email';
+
+  @override
+  String get inviteEmailOnly =>
+      'Only invited email addresses can join this chat';
+
+  @override
+  String get emailAddress => 'Email address';
+
+  @override
+  String get emailHint => 'user@example.com';
+
+  @override
+  String get invalidEmail => 'Please enter a valid email address';
+
+  @override
+  String get addEmailToSend => 'Add at least one email to send invites';
+
+  @override
+  String get facilitationMode => 'How Phases Run';
+
+  @override
+  String get facilitationDesc =>
+      'Choose between manual control or automatic timers for phase transitions.';
+
+  @override
+  String get modeManual => 'Manual';
+
+  @override
+  String get modeAuto => 'Auto';
+
+  @override
+  String get modeManualDesc =>
+      'You control when each phase starts and ends. No timers.';
+
+  @override
+  String get modeAutoDesc =>
+      'Timers run automatically. You can still end phases early.';
+
+  @override
+  String get autoStartParticipants => 'Start when this many join';
+
+  @override
+  String get ratingStartMode => 'Rating Start Mode';
+
+  @override
+  String get ratingStartModeDesc =>
+      'Controls how the rating phase begins after proposing ends.';
+
+  @override
+  String get ratingAutoDesc =>
+      'Rating starts immediately after proposing ends or threshold is met.';
+
+  @override
+  String get ratingManualDesc =>
+      'After proposing ends, you choose when to start rating (e.g., the next day).';
+
+  @override
+  String phaseFlowExplanation(String duration, int threshold, int minimum) {
+    return 'Each phase runs for up to $duration, but ends early if $threshold people participate. Won\'t end until at least $minimum ideas exist (timer extends if needed).';
+  }
+
+  @override
+  String get enableSchedule => 'Enable Schedule';
+
+  @override
+  String get restrictChatRoom => 'Restrict when the chat room is open';
+
+  @override
+  String get timers => 'Timers';
+
+  @override
+  String get useSameDuration => 'Same duration for both phases';
+
+  @override
+  String get useSameDurationDesc =>
+      'Use the same time limit for proposing and rating';
+
+  @override
+  String get phaseDuration => 'Phase Duration';
+
+  @override
+  String get proposing => 'Proposing';
+
+  @override
+  String get rating => 'Rating';
+
+  @override
+  String get preset5min => '5 min';
+
+  @override
+  String get preset30min => '30 min';
+
+  @override
+  String get preset1hour => '1 hour';
+
+  @override
+  String get preset1day => '1 day';
+
+  @override
+  String get presetCustom => 'Custom';
+
+  @override
+  String get duration1min => '1 min';
+
+  @override
+  String get duration2min => '2 min';
+
+  @override
+  String get duration10min => '10 min';
+
+  @override
+  String get duration2hours => '2 hours';
+
+  @override
+  String get duration4hours => '4 hours';
+
+  @override
+  String get duration8hours => '8 hours';
+
+  @override
+  String get duration12hours => '12 hours';
+
+  @override
+  String get hours => 'Hours';
+
+  @override
+  String get minutes => 'Minutes';
+
+  @override
+  String get max24h => '(max 24h)';
+
+  @override
+  String get minimumToAdvance => 'Required Participation';
+
+  @override
+  String get timeExtendsAutomatically =>
+      'Phase won\'t end until requirements are met';
+
+  @override
+  String get proposingMinimum => 'Ideas needed';
+
+  @override
+  String proposingMinimumDesc(int count) {
+    return 'Phase won\'t end until $count ideas are submitted';
+  }
+
+  @override
+  String get ratingMinimum => 'Ratings needed';
+
+  @override
+  String ratingMinimumDesc(int count) {
+    return 'Phase won\'t end until each idea has $count ratings';
+  }
+
+  @override
+  String get autoAdvanceAt => 'End Phase Early';
+
+  @override
+  String get skipTimerEarly =>
+      'Phase can end early when thresholds are reached';
+
+  @override
+  String whenPercentSubmit(int percent) {
+    return 'When $percent% of participants submit';
+  }
+
+  @override
+  String get minParticipantsSubmit => 'Ideas needed';
+
+  @override
+  String get minAvgRaters => 'Ratings needed';
+
+  @override
+  String proposingThresholdPreview(
+    int threshold,
+    int participants,
+    int percent,
+  ) {
+    return 'Phase ends early when $threshold of $participants participants submit ideas ($percent%)';
+  }
+
+  @override
+  String proposingThresholdPreviewSimple(int threshold) {
+    return 'Phase ends early when $threshold ideas are submitted';
+  }
+
+  @override
+  String ratingThresholdPreview(int threshold) {
+    return 'Phase ends early when each idea has $threshold ratings';
+  }
+
+  @override
+  String get consensusSettings => 'Consensus Settings';
+
+  @override
+  String get confirmationRounds => 'Confirmation rounds';
+
+  @override
+  String get firstWinnerConsensus =>
+      'First winner reaches consensus immediately';
+
+  @override
+  String mustWinConsecutive(int count) {
+    return 'Same proposition must win $count rounds in a row';
+  }
+
+  @override
+  String get showFullResults => 'Show full results from past rounds';
+
+  @override
+  String get seeAllPropositions => 'Users see all propositions and ratings';
+
+  @override
+  String get seeWinningOnly => 'Users only see the winning proposition';
+
+  @override
+  String get propositionLimits => 'Proposition Limits';
+
+  @override
+  String get propositionsPerUser => 'Propositions per user';
+
+  @override
+  String get onePropositionPerRound =>
+      'Each user can submit 1 proposition per round';
+
+  @override
+  String nPropositionsPerRound(int count) {
+    return 'Each user can submit up to $count propositions per round';
+  }
+
+  @override
+  String get adaptiveDuration => 'Adaptive Duration';
+
+  @override
+  String get adjustDurationDesc =>
+      'Auto-adjust phase duration based on participation';
+
+  @override
+  String get durationAdjusts => 'Duration adjusts based on participation';
+
+  @override
+  String get fixedDurations => 'Fixed phase durations';
+
+  @override
+  String get usesThresholds =>
+      'Uses early advance thresholds to determine participation';
+
+  @override
+  String adjustmentPercent(int percent) {
+    return 'Adjustment: $percent%';
+  }
+
+  @override
+  String get minDuration => 'Minimum duration';
+
+  @override
+  String get maxDuration => 'Maximum duration';
+
+  @override
+  String get aiParticipant => 'AI Participant';
+
+  @override
+  String get enableAI => 'Enable OneMind AI';
+
+  @override
+  String get aiPropositionsPerRound => 'AI propositions per round';
+
+  @override
+  String get scheduleTypeLabel => 'Schedule Type';
+
+  @override
+  String get scheduleOneTime => 'One-time';
+
+  @override
+  String get scheduleRecurring => 'Recurring';
+
+  @override
+  String get hideOutsideSchedule => 'Hide when outside schedule';
+
+  @override
+  String get visiblePaused => 'Chat visible but paused outside schedule';
+
+  @override
+  String get hiddenUntilWindow => 'Chat hidden until next scheduled window';
+
+  @override
+  String get timezoneLabel => 'Timezone';
+
+  @override
+  String get scheduleWindowsTitle => 'Schedule Windows';
+
+  @override
+  String get addWindowButton => 'Add Window';
+
+  @override
+  String get scheduleWindowsDesc =>
+      'Define when the chat is active. Supports overnight windows (e.g., 11pm to 1am next day).';
+
+  @override
+  String windowNumber(int n) {
+    return 'Window $n';
+  }
+
+  @override
+  String get removeWindow => 'Remove window';
+
+  @override
+  String get startDay => 'Start Day';
+
+  @override
+  String get endDay => 'End Day';
+
+  @override
+  String get daySun => 'Sun';
+
+  @override
+  String get dayMon => 'Mon';
+
+  @override
+  String get dayTue => 'Tue';
+
+  @override
+  String get dayWed => 'Wed';
+
+  @override
+  String get dayThu => 'Thu';
+
+  @override
+  String get dayFri => 'Fri';
+
+  @override
+  String get daySat => 'Sat';
+
+  @override
+  String get timerWarningTitle => 'Timer Warning';
+
+  @override
+  String timerWarningContent(int minutes) {
+    return 'Your phase timers are longer than the $minutes-minute schedule window.\n\nPhases may extend beyond the scheduled time, or pause when the window closes.\n\nConsider using shorter timers (5 min or 30 min) for scheduled sessions.';
+  }
+
+  @override
+  String get adjustSettingsButton => 'Adjust Settings';
+
+  @override
+  String get continueAnywayButton => 'Continue Anyway';
+
+  @override
+  String get chatCreatedTitle => 'Chat Created!';
+
+  @override
+  String get chatNowPublicTitle => 'Your chat is now public!';
+
+  @override
+  String anyoneCanJoinDiscover(String name) {
+    return 'Anyone can find and join \"$name\" from the Discover page.';
+  }
+
+  @override
+  String invitesSentTitle(int count) {
+    return '$count invites sent!';
+  }
+
+  @override
+  String get noInvitesSentTitle => 'No invites sent';
+
+  @override
+  String get inviteOnlyMessage => 'Only invited users can join this chat.';
+
+  @override
+  String get shareCodeInstruction => 'Share this code with participants:';
+
+  @override
+  String get codeCopied => 'Invite code copied to clipboard';
+
+  @override
+  String get joinScreenTitle => 'Join Chat';
+
+  @override
+  String get noTokenOrCode => 'No invite token or code provided';
+
+  @override
+  String get invalidExpiredInvite =>
+      'This invite link is invalid or has expired';
+
+  @override
+  String get inviteOnlyError =>
+      'This chat requires an email invite. Please use the invite link sent to your email.';
+
+  @override
+  String get invalidInviteTitle => 'Invalid Invite';
+
+  @override
+  String get invalidInviteDefault => 'This invite link is not valid.';
+
+  @override
+  String get invitedToJoin => 'You\'re invited to join';
+
+  @override
+  String get enterNameToJoin => 'Enter your name to join:';
+
+  @override
+  String get nameVisibleNotice =>
+      'This name will be visible to other participants.';
+
+  @override
+  String get requiresApprovalNotice =>
+      'This chat requires host approval to join.';
+
+  @override
+  String get requestToJoinButton => 'Request to Join';
+
+  @override
+  String get joinChatButton => 'Join Chat';
+
+  @override
+  String get creditsTitle => 'Credits';
+
+  @override
+  String get yourBalance => 'Your Balance';
+
+  @override
+  String get paidCredits => 'Paid Credits';
+
+  @override
+  String get freeThisMonth => 'Free This Month';
+
+  @override
+  String get totalAvailable => 'Total Available';
+
+  @override
+  String get userRounds => 'user-rounds';
+
+  @override
+  String freeTierResets(String date) {
+    return 'Free tier resets $date';
+  }
+
+  @override
+  String get buyCredits => 'Buy Credits';
+
+  @override
+  String get pricingInfo => '1 credit = 1 user-round = \$0.01';
+
+  @override
+  String get total => 'Total';
+
+  @override
+  String get autoRefillTitle => 'Auto-Refill';
+
+  @override
+  String get autoRefillDesc =>
+      'Automatically purchase credits when balance falls below threshold';
+
+  @override
+  String lastError(String error) {
+    return 'Last error: $error';
+  }
+
+  @override
+  String get autoRefillComingSoon =>
+      'Auto-refill setup coming soon. For now, purchase credits manually above.';
+
+  @override
+  String get whenBelow => 'When below';
+
+  @override
+  String get refillTo => 'Refill to';
+
+  @override
+  String get disableAutoRefillMessage =>
+      'This will disable auto-refill. You can add a new payment method later.';
+
+  @override
+  String get recentTransactions => 'Recent Transactions';
+
+  @override
+  String get noTransactionHistory => 'No transaction history';
+
+  @override
+  String get chatSettingsTitle => 'Chat Settings';
+
+  @override
+  String get accessVisibility => 'Access & Visibility';
+
+  @override
+  String get accessMethod => 'Access Method';
+
+  @override
+  String get facilitation => 'Facilitation';
+
+  @override
+  String get startMode => 'Start Mode';
+
+  @override
+  String get autoStartThreshold => 'Auto-Start Threshold';
+
+  @override
+  String nParticipants(int n) {
+    return '$n participants';
+  }
+
+  @override
+  String get proposingDuration => 'Proposing Duration';
+
+  @override
+  String get ratingDuration => 'Rating Duration';
+
+  @override
+  String nSeconds(int n) {
+    return '$n seconds';
+  }
+
+  @override
+  String nMinutes(int n) {
+    return '$n minutes';
+  }
+
+  @override
+  String nHours(int n) {
+    return '$n hours';
+  }
+
+  @override
+  String nDays(int n) {
+    return '$n days';
+  }
+
+  @override
+  String get minimumRequirements => 'Minimum Requirements';
+
+  @override
+  String nPropositions(int n) {
+    return '$n propositions';
+  }
+
+  @override
+  String nAvgRaters(double n) {
+    return '$n avg raters';
+  }
+
+  @override
+  String get earlyAdvanceThresholds => 'Early Advance Thresholds';
+
+  @override
+  String get proposingThreshold => 'Proposing Threshold';
+
+  @override
+  String get ratingThreshold => 'Rating Threshold';
+
+  @override
+  String nConsecutiveWins(int n) {
+    return '$n consecutive wins';
+  }
+
+  @override
+  String get enabled => 'Enabled';
+
+  @override
+  String nPerRound(int n) {
+    return '$n per round';
+  }
+
+  @override
+  String get scheduledStart => 'Scheduled Start';
+
+  @override
+  String get windows => 'Windows';
+
+  @override
+  String nConfigured(int n) {
+    return '$n configured';
+  }
+
+  @override
+  String get visibleOutsideSchedule => 'Visible Outside Schedule';
+
+  @override
+  String get chatSettings => 'Chat Settings';
+
+  @override
+  String get chatName => 'Name';
+
+  @override
+  String get chatDescription => 'Description';
+
+  @override
+  String get accessAndVisibility => 'Access & Visibility';
+
+  @override
+  String get autoMode => 'Auto';
+
+  @override
+  String get avgRatersPerProposition => 'avg raters per proposition';
+
+  @override
+  String get consensus => 'Consensus';
+
+  @override
+  String get aiPropositions => 'AI Propositions';
+
+  @override
+  String get perRound => 'per round';
+
+  @override
+  String get schedule => 'Schedule';
+
+  @override
+  String get configured => 'configured';
+
+  @override
+  String get publicAccess => 'Public';
+
+  @override
+  String get inviteCodeAccess => 'Invite Code';
+
+  @override
+  String get inviteOnlyAccess => 'Invite Only';
+
+  @override
+  String get privacyPolicyTitle => 'Privacy Policy';
+
+  @override
+  String get termsOfServiceTitle => 'Terms of Service';
+
+  @override
+  String get legalDocuments => 'Legal';
+
+  @override
+  String get byContinuingYouAgree => 'By continuing, you agree to our';
+
+  @override
+  String get andText => 'and';
+
+  @override
+  String lastUpdated(String date) {
+    return 'Last updated: $date';
+  }
+
+  @override
+  String shareLinkTitle(String chatName) {
+    return 'Share link to join $chatName';
+  }
+
+  @override
+  String get shareButton => 'Share';
+
+  @override
+  String get copyLinkButton => 'Copy Link';
+
+  @override
+  String get linkCopied => 'Link copied to clipboard';
+
+  @override
+  String get enterCodeManually => 'Or enter code manually:';
+
+  @override
+  String get shareNotSupported => 'Share not available - link copied instead';
+
+  @override
+  String get orScan => 'or scan';
+
+  @override
+  String get tutorialWelcomeTitle => 'Welcome to OneMind';
+
+  @override
+  String get tutorialWelcomeSubtitle =>
+      'Learn how groups reach consensus together';
+
+  @override
+  String get tutorialWhatYoullLearn => 'In this tutorial, you\'ll:';
+
+  @override
+  String get tutorialBullet1 => 'Submit your ideas anonymously';
+
+  @override
+  String get tutorialBullet2 => 'Rate ideas from others';
+
+  @override
+  String get tutorialBullet3 => 'See how consensus is reached';
+
+  @override
+  String get tutorialTheQuestion => 'The question:';
+
+  @override
+  String get tutorialQuestion => 'What do we value?';
+
+  @override
+  String get tutorialStartButton => 'Start Tutorial';
+
+  @override
+  String get tutorialSkipButton => 'Skip tutorial';
+
+  @override
+  String get tutorialConsensusReached => 'Consensus Reached!';
+
+  @override
+  String tutorialWonTwoRounds(String proposition) {
+    return '\"$proposition\" won 2 rounds in a row.';
+  }
+
+  @override
+  String get tutorialAddedToChat => 'It\'s now added to the chat above.';
+
+  @override
+  String get tutorialFinishButton => 'Finish Tutorial';
+
+  @override
+  String get tutorialRound1Result =>
+      '\'Success\' won this round! To become a permanent answer, it must win again next round.';
+
+  @override
+  String get tutorialProposingHint =>
+      'Submit an idea you want to become the group\'s answer.';
+
+  @override
+  String get tutorialProposingHintWithWinner =>
+      'Can you think of something better? Submit an idea to challenge the current winner.';
+
+  @override
+  String get tutorialRatingHint =>
+      'To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.';
+
+  @override
+  String tutorialRound2Result(String proposition) {
+    return 'Your idea \"$proposition\" won! If it wins next round, it will be permanently added to the chat.';
+  }
+
+  @override
+  String get tutorialRound2Prompt =>
+      'Seeing \'Success\' as the group\'s current answer - what do you think we REALLY value?';
+
+  @override
+  String get tutorialPropSuccess => 'Success';
+
+  @override
+  String get tutorialPropAdventure => 'Adventure';
+
+  @override
+  String get tutorialPropGrowth => 'Growth';
+
+  @override
+  String get tutorialPropHarmony => 'Harmony';
+
+  @override
+  String get tutorialPropInnovation => 'Innovation';
+
+  @override
+  String get tutorialPropFreedom => 'Freedom';
+
+  @override
+  String get tutorialPropSecurity => 'Security';
+
+  @override
+  String get tutorialPropStability => 'Stability';
+
+  @override
+  String get tutorialDuplicateProposition =>
+      'This idea already exists in this round. Try something different!';
+
+  @override
+  String get tutorialShareTitle => 'Share Your Chat';
+
+  @override
+  String get tutorialShareExplanation =>
+      'To invite others to join your chat, tap the share button at the top of your screen.';
+
+  @override
+  String get tutorialShareTryIt => 'Try it now!';
+
+  @override
+  String get tutorialShareButtonHint =>
+      'Tap the share button in the top right ↗';
+
+  @override
+  String get tutorialSkipMenuItem => 'Skip Tutorial';
+
+  @override
+  String get tutorialSkipConfirmTitle => 'Skip Tutorial?';
+
+  @override
+  String get tutorialSkipConfirmMessage =>
+      'You can always access the tutorial later from the home screen.';
+
+  @override
+  String get tutorialSkipConfirmYes => 'Yes, Skip';
+
+  @override
+  String get tutorialSkipConfirmNo => 'Continue Tutorial';
+
+  @override
+  String get tutorialShareTooltip => 'Share Chat';
+
+  @override
+  String get tutorialYourIdea => 'Your idea';
+
+  @override
+  String get tutorialRateIdeas => 'Rate Ideas';
+
+  @override
+  String get tutorialSeeResultsHint => 'Tap below to see how all ideas ranked.';
+
+  @override
+  String get tutorialSeeResultsContinueHint =>
+      'Great! Now you understand how the ranking works. Continue to try again in Round 2.';
+
+  @override
+  String get tutorialResultsBackHint =>
+      'Press the back arrow when done viewing the results.';
+
+  @override
+  String get wizardStep1Title => 'What do you want to talk about?';
+
+  @override
+  String get wizardStep1Subtitle => 'This is the heart of your chat';
+
+  @override
+  String get wizardStep2Title => 'Set the pace';
+
+  @override
+  String get wizardStep2Subtitle => 'How long for each phase?';
+
+  @override
+  String get wizardOneLastThing => 'One last thing...';
+
+  @override
+  String get wizardProposingLabel => 'Proposing (submit ideas)';
+
+  @override
+  String get wizardRatingLabel => 'Rating (rank ideas)';
+
+  @override
+  String get back => 'Back';
 }

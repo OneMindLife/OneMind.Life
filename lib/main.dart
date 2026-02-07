@@ -2,17 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
-// Firebase options - generate with: flutterfire configure
-// If not configured, Firebase Analytics will be skipped
-// To enable Firebase: run `flutterfire configure` which creates firebase_options.dart
-// Then rename this import from firebase_options_stub.dart to firebase_options.dart
-import 'firebase_options_stub.dart';
+import 'firebase_options.dart';
 import 'config/supabase_config.dart';
 import 'config/sentry_config.dart';
 import 'config/router.dart';
@@ -154,7 +149,12 @@ class _OneMindAppState extends ConsumerState<OneMindApp> {
     final locale = ref.watch(localeProvider);
 
     // Always use router to preserve URL on initial load
-    return MaterialApp.router(
+    // Global tap-to-unfocus: dismisses keyboard when tapping outside text fields
+    // and prevents the known Flutter bug where viewInsets.bottom gets stuck
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.translucent,
+      child: MaterialApp.router(
       title: 'OneMind',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
@@ -231,6 +231,7 @@ class _OneMindAppState extends ConsumerState<OneMindApp> {
         ),
       ),
       themeMode: ThemeMode.system,
+      ),
     );
   }
 }

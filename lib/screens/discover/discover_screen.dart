@@ -345,18 +345,7 @@ class _PublicChatCard extends StatelessWidget {
                   ),
                 ],
               ),
-              if (chat.displayDescription != null && chat.displayDescription!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(
-                  chat.displayDescription!,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Text(
                 chat.displayInitialMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(

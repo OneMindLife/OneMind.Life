@@ -17,7 +17,7 @@ SELECT cron.schedule(
     '* * * * *',  -- Every minute
     $$
     SELECT net.http_post(
-        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/process-timers',
+        url := 'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/process-timers',
         headers := '{"Content-Type": "application/json", "X-Cron-Secret": "855dd968210a46ed2334a6281b016a94ce4fb56bfc496851"}'::jsonb,
         body := '{}'::jsonb
     ) AS request_id;
@@ -37,7 +37,7 @@ SELECT cron.schedule(
     '* * * * *',  -- Every minute
     $$
     SELECT net.http_post(
-        url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/process-auto-refill',
+        url := 'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/process-auto-refill',
         headers := '{"Content-Type": "application/json", "Authorization": "Bearer 855dd968210a46ed2334a6281b016a94ce4fb56bfc496851"}'::jsonb,
         body := '{}'::jsonb
     ) AS request_id;

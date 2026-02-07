@@ -72,6 +72,70 @@ void main() {
 
         expect(summary.participantCount, 7);
       });
+
+      test('handles null initial_message', () {
+        final json = {
+          'id': 5,
+          'name': 'Test Chat',
+          'initial_message': null,
+          'participant_count': 3,
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final summary = PublicChatSummary.fromJson(json);
+
+        expect(summary.initialMessage, isNull);
+        expect(summary.displayInitialMessage, '');
+      });
+
+      test('handles missing initial_message', () {
+        final json = {
+          'id': 6,
+          'name': 'Test Chat',
+          'participant_count': 3,
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final summary = PublicChatSummary.fromJson(json);
+
+        expect(summary.initialMessage, isNull);
+        expect(summary.displayInitialMessage, '');
+      });
+    });
+
+    group('displayInitialMessage', () {
+      test('returns initialMessage when present', () {
+        final summary = PublicChatSummary(
+          id: 1,
+          name: 'Test',
+          initialMessage: 'Test message',
+          participantCount: 5,
+          createdAt: DateTime.utc(2024, 1, 1),
+        );
+        expect(summary.displayInitialMessage, 'Test message');
+      });
+
+      test('returns empty string when initialMessage is null', () {
+        final summary = PublicChatSummary(
+          id: 1,
+          name: 'Test',
+          participantCount: 5,
+          createdAt: DateTime.utc(2024, 1, 1),
+        );
+        expect(summary.displayInitialMessage, '');
+      });
+
+      test('returns translation when available', () {
+        final summary = PublicChatSummary(
+          id: 1,
+          name: 'Test',
+          initialMessage: 'Original',
+          initialMessageTranslated: 'Translated',
+          participantCount: 5,
+          createdAt: DateTime.utc(2024, 1, 1),
+        );
+        expect(summary.displayInitialMessage, 'Translated');
+      });
     });
 
     group('equality', () {

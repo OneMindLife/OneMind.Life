@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart' as state;
 import 'package:onemind_app/screens/create/widgets/phase_start_section.dart';
@@ -9,15 +10,14 @@ void main() {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -26,22 +26,23 @@ void main() {
         ),
       );
 
-      expect(find.text('Facilitation Mode'), findsOneWidget);
+      // Section header is now "Start when this many join" (auto-start count label)
+      expect(find.text('Start when this many join'), findsWidgets);
     });
 
-    testWidgets('displays only Manual and Auto options (no Scheduled)',
-        (tester) async {
+    // NOTE: Manual/Auto toggle has been removed - always auto now.
+    // Host can't see propositions, so manual mode doesn't work.
+    testWidgets('manual/auto toggle is removed (always auto)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -50,27 +51,22 @@ void main() {
         ),
       );
 
-      // With manual facilitation, rating start mode section is shown
-      // So there are 2 sets of Manual/Auto - one for facilitation, one for rating start mode
-      expect(find.text('Manual'), findsNWidgets(2));
-      expect(find.text('Auto'), findsNWidgets(2));
-      // Schedule is now a separate toggle, not a start mode
-      expect(find.text('Scheduled'), findsNothing);
+      // Manual/Auto buttons should not exist
+      expect(find.text('Manual'), findsNothing);
+      expect(find.text('Auto'), findsNothing);
     });
 
-    testWidgets('hides rating start mode section when facilitation is auto',
-        (tester) async {
+    testWidgets('always shows auto-start count (no manual mode)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.auto,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -79,99 +75,24 @@ void main() {
         ),
       );
 
-      // With auto facilitation, rating start mode section is hidden
-      // Only 1 Manual/Auto pair for facilitation mode
-      expect(find.text('Manual'), findsOneWidget);
-      expect(find.text('Auto'), findsOneWidget);
-      expect(find.text('Rating Start Mode'), findsNothing);
-    });
-
-    testWidgets('shows rating start mode section when facilitation is manual',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
-              autoStartCount: 5,
-              enableSchedule: false,
-              scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
-              onAutoStartCountChanged: (_) {},
-              onEnableScheduleChanged: (_) {},
-              onScheduleSettingsChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      // With manual facilitation, rating start mode section is shown
-      expect(find.text('Rating Start Mode'), findsOneWidget);
-      expect(find.text('Manual'), findsNWidgets(2));
-      expect(find.text('Auto'), findsNWidgets(2));
-    });
-
-    testWidgets('hides auto-start count in manual mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
-              autoStartCount: 5,
-              enableSchedule: false,
-              scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
-              onAutoStartCountChanged: (_) {},
-              onEnableScheduleChanged: (_) {},
-              onScheduleSettingsChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Auto-start at X participants'), findsNothing);
-    });
-
-    testWidgets('shows auto-start count in auto mode', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PhaseStartSection(
-              startMode: StartMode.auto,
-              ratingStartMode: StartMode.auto,
-              autoStartCount: 5,
-              enableSchedule: false,
-              scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
-              onAutoStartCountChanged: (_) {},
-              onEnableScheduleChanged: (_) {},
-              onScheduleSettingsChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('Auto-start at X participants'), findsOneWidget);
+      // Auto-start count is always shown now (no manual mode)
+      expect(find.text('Start when this many join'), findsWidgets);
       expect(find.text('5'), findsOneWidget);
     });
 
-    testWidgets('displays Enable Schedule toggle', (tester) async {
+    // NOTE: Schedule UI is hidden for MVP. These tests verify it's not shown.
+    // When re-enabling schedule, change findsNothing to findsOneWidget.
+    testWidgets('schedule toggle is hidden (re-enable: change to findsOneWidget)', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -180,23 +101,22 @@ void main() {
         ),
       );
 
-      expect(find.text('Enable Schedule'), findsOneWidget);
-      expect(find.text('Restrict when the chat room is open'), findsOneWidget);
+      // Schedule UI is hidden for MVP - change to findsOneWidget when re-enabled
+      expect(find.text('Enable Schedule'), findsNothing);
+      expect(find.text('Restrict when the chat room is open'), findsNothing);
     });
 
-    testWidgets('hides schedule settings when enableSchedule is false',
-        (tester) async {
+    testWidgets('schedule settings hidden when enableSchedule is false', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -205,97 +125,41 @@ void main() {
         ),
       );
 
-      // Schedule settings card specific text
+      // Schedule settings card specific text - always hidden when enableSchedule is false
       expect(find.text('One-time'), findsNothing);
       expect(find.text('Recurring'), findsNothing);
     });
 
-    testWidgets('shows schedule settings when enableSchedule is true',
-        (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: PhaseStartSection(
-                startMode: StartMode.manual,
-                ratingStartMode: StartMode.auto,
-                autoStartCount: 5,
-                enableSchedule: true,
-                scheduleSettings: state.ScheduleSettings.defaults(),
-                onStartModeChanged: (_) {},
-                onRatingStartModeChanged: (_) {},
-                onAutoStartCountChanged: (_) {},
-                onEnableScheduleChanged: (_) {},
-                onScheduleSettingsChanged: (_) {},
-              ),
-            ),
-          ),
-        ),
-      );
+    // NOTE: Tests below are commented out since schedule UI is hidden for MVP.
+    // Uncomment when schedule feature is re-enabled.
+    //
+    // testWidgets('shows schedule settings when enableSchedule is true',
+    //     (tester) async {
+    //   await tester.pumpWidget(
+    //     MaterialApp(
+    //       localizationsDelegates: AppLocalizations.localizationsDelegates,
+    //       supportedLocales: AppLocalizations.supportedLocales,
+    //       locale: const Locale('en'),
+    //       home: Scaffold(
+    //         body: SingleChildScrollView(
+    //           child: PhaseStartSection(
+    //             autoStartCount: 5,
+    //             enableSchedule: true,
+    //             scheduleSettings: state.ScheduleSettings.defaults(),
+    //             onAutoStartCountChanged: (_) {},
+    //             onEnableScheduleChanged: (_) {},
+    //             onScheduleSettingsChanged: (_) {},
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    //
+    //   expect(find.text('One-time'), findsOneWidget);
+    //   expect(find.text('Recurring'), findsOneWidget);
+    // });
 
-      expect(find.text('One-time'), findsOneWidget);
-      expect(find.text('Recurring'), findsOneWidget);
-    });
-
-    testWidgets('schedule can be enabled with auto facilitation mode',
-        (tester) async {
-      // This tests the orthogonality of schedule and facilitation
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: PhaseStartSection(
-                startMode: StartMode.auto,
-                ratingStartMode: StartMode.auto,
-                autoStartCount: 5,
-                enableSchedule: true,
-                scheduleSettings: state.ScheduleSettings.defaults(),
-                onStartModeChanged: (_) {},
-                onRatingStartModeChanged: (_) {},
-                onAutoStartCountChanged: (_) {},
-                onEnableScheduleChanged: (_) {},
-                onScheduleSettingsChanged: (_) {},
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // Both auto-start count (from auto mode) and schedule settings should be visible
-      expect(find.text('Auto-start at X participants'), findsOneWidget);
-      expect(find.text('One-time'), findsOneWidget);
-      expect(find.text('Recurring'), findsOneWidget);
-    });
-
-    testWidgets('calls onStartModeChanged when selecting auto',
-        (tester) async {
-      StartMode? updatedMode;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
-              autoStartCount: 5,
-              enableSchedule: false,
-              scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (v) => updatedMode = v,
-              onRatingStartModeChanged: (_) {},
-              onAutoStartCountChanged: (_) {},
-              onEnableScheduleChanged: (_) {},
-              onScheduleSettingsChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      // Tap the first 'Auto' button (facilitation mode, not rating start mode)
-      await tester.tap(find.text('Auto').first);
-      await tester.pump();
-
-      expect(updatedMode, StartMode.auto);
-    });
+    // NOTE: onStartModeChanged test removed - manual mode no longer exists.
 
     testWidgets('calls onAutoStartCountChanged when incrementing',
         (tester) async {
@@ -303,15 +167,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.auto,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 5,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (v) => updatedCount = v,
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -329,15 +192,14 @@ void main() {
     testWidgets('respects min limit of 3 for auto-start count', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: PhaseStartSection(
-              startMode: StartMode.auto,
-              ratingStartMode: StartMode.auto,
               autoStartCount: 3,
               enableSchedule: false,
               scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
               onAutoStartCountChanged: (_) {},
               onEnableScheduleChanged: (_) {},
               onScheduleSettingsChanged: (_) {},
@@ -352,65 +214,70 @@ void main() {
       expect(decrementButton.onPressed, isNull);
     });
 
-    testWidgets('calls onEnableScheduleChanged when toggling schedule',
-        (tester) async {
-      bool? updatedValue;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: PhaseStartSection(
-              startMode: StartMode.manual,
-              ratingStartMode: StartMode.auto,
-              autoStartCount: 5,
-              enableSchedule: false,
-              scheduleSettings: state.ScheduleSettings.defaults(),
-              onStartModeChanged: (_) {},
-              onRatingStartModeChanged: (_) {},
-              onAutoStartCountChanged: (_) {},
-              onEnableScheduleChanged: (v) => updatedValue = v,
-              onScheduleSettingsChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.byType(Switch));
-      await tester.pump();
-
-      expect(updatedValue, true);
-    });
-
-    testWidgets('calls onScheduleSettingsChanged for schedule type',
-        (tester) async {
-      state.ScheduleSettings? updatedSettings;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: PhaseStartSection(
-                startMode: StartMode.manual,
-                ratingStartMode: StartMode.auto,
-                autoStartCount: 5,
-                enableSchedule: true,
-                scheduleSettings: state.ScheduleSettings.defaults(),
-                onStartModeChanged: (_) {},
-                onRatingStartModeChanged: (_) {},
-                onAutoStartCountChanged: (_) {},
-                onEnableScheduleChanged: (_) {},
-                onScheduleSettingsChanged: (v) => updatedSettings = v,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Recurring'));
-      await tester.pump();
-
-      expect(updatedSettings, isNotNull);
-      expect(updatedSettings!.type, state.ScheduleType.recurring);
-    });
+    // NOTE: Schedule callback tests commented out since UI is hidden.
+    // Uncomment when schedule feature is re-enabled.
+    //
+    // testWidgets('calls onEnableScheduleChanged when toggling schedule',
+    //     (tester) async {
+    //   bool? updatedValue;
+    //
+    //   await tester.pumpWidget(
+    //     MaterialApp(
+    //       localizationsDelegates: AppLocalizations.localizationsDelegates,
+    //       supportedLocales: AppLocalizations.supportedLocales,
+    //       locale: const Locale('en'),
+    //       home: Scaffold(
+    //         body: PhaseStartSection(
+    //           startMode: StartMode.manual,
+    //           autoStartCount: 5,
+    //           enableSchedule: false,
+    //           scheduleSettings: state.ScheduleSettings.defaults(),
+    //           onStartModeChanged: (_) {},
+    //           onAutoStartCountChanged: (_) {},
+    //           onEnableScheduleChanged: (v) => updatedValue = v,
+    //           onScheduleSettingsChanged: (_) {},
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    //
+    //   await tester.tap(find.byType(Switch));
+    //   await tester.pump();
+    //
+    //   expect(updatedValue, true);
+    // });
+    //
+    // testWidgets('calls onScheduleSettingsChanged for schedule type',
+    //     (tester) async {
+    //   state.ScheduleSettings? updatedSettings;
+    //
+    //   await tester.pumpWidget(
+    //     MaterialApp(
+    //       localizationsDelegates: AppLocalizations.localizationsDelegates,
+    //       supportedLocales: AppLocalizations.supportedLocales,
+    //       locale: const Locale('en'),
+    //       home: Scaffold(
+    //         body: SingleChildScrollView(
+    //           child: PhaseStartSection(
+    //             startMode: StartMode.manual,
+    //             autoStartCount: 5,
+    //             enableSchedule: true,
+    //             scheduleSettings: state.ScheduleSettings.defaults(),
+    //             onStartModeChanged: (_) {},
+    //             onAutoStartCountChanged: (_) {},
+    //             onEnableScheduleChanged: (_) {},
+    //             onScheduleSettingsChanged: (v) => updatedSettings = v,
+    //           ),
+    //         ),
+    //       ),
+    //     ),
+    //   );
+    //
+    //   await tester.tap(find.text('Recurring'));
+    //   await tester.pump();
+    //
+    //   expect(updatedSettings, isNotNull);
+    //   expect(updatedSettings!.type, state.ScheduleType.recurring);
+    // });
   });
 }

@@ -29,6 +29,9 @@ class ChatDetailState extends Equatable {
   final List<Proposition> previousRoundResults;
   final bool isDeleted;
   final List<Map<String, dynamic>> pendingJoinRequests;
+  // Skip proposing state
+  final int skipCount;
+  final bool hasSkipped;
 
   const ChatDetailState({
     this.chat,
@@ -48,7 +51,29 @@ class ChatDetailState extends Equatable {
     this.previousRoundResults = const [],
     this.isDeleted = false,
     this.pendingJoinRequests = const [],
+    this.skipCount = 0,
+    this.hasSkipped = false,
   });
+
+  /// Number of active participants (used for skip quota calculation)
+  int get activeParticipantCount =>
+      participants.where((p) => p.status == ParticipantStatus.active).length;
+
+  /// Maximum number of skips allowed (participants - proposing_minimum)
+  int get maxSkips {
+    final minimum = chat?.proposingMinimum ?? 1;
+    return (activeParticipantCount - minimum).clamp(0, activeParticipantCount);
+  }
+
+  /// Whether the current user can skip proposing
+  /// - Must not have already submitted a proposition
+  /// - Must not have already skipped
+  /// - Skip quota must not be exceeded
+  bool get canSkip {
+    // Don't count carried forward propositions as submissions
+    final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
+    return !hasSkipped && newSubmissions == 0 && skipCount < maxSkips;
+  }
 
   ChatDetailState copyWith({
     Chat? chat,
@@ -68,6 +93,8 @@ class ChatDetailState extends Equatable {
     List<Proposition>? previousRoundResults,
     bool? isDeleted,
     List<Map<String, dynamic>>? pendingJoinRequests,
+    int? skipCount,
+    bool? hasSkipped,
   }) {
     return ChatDetailState(
       chat: chat ?? this.chat,
@@ -87,6 +114,8 @@ class ChatDetailState extends Equatable {
       previousRoundResults: previousRoundResults ?? this.previousRoundResults,
       isDeleted: isDeleted ?? this.isDeleted,
       pendingJoinRequests: pendingJoinRequests ?? this.pendingJoinRequests,
+      skipCount: skipCount ?? this.skipCount,
+      hasSkipped: hasSkipped ?? this.hasSkipped,
     );
   }
 
@@ -109,6 +138,8 @@ class ChatDetailState extends Equatable {
         previousRoundResults,
         isDeleted,
         pendingJoinRequests,
+        skipCount,
+        hasSkipped,
       ];
 }
 
@@ -148,16 +179,19 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   RealtimeChannel? _participantChannel;
   RealtimeChannel? _propositionChannel;
   RealtimeChannel? _joinRequestChannel;
+  RealtimeChannel? _skipChannel;
 
   // Debounce timers
   Timer? _refreshDebounce;
   Timer? _propositionDebounce;
   Timer? _joinRequestDebounce;
+  Timer? _skipDebounce;
 
   // Rate limiting
   DateTime? _lastRefreshTime;
   DateTime? _lastPropositionRefreshTime;
   DateTime? _lastJoinRequestRefreshTime;
+  DateTime? _lastSkipRefreshTime;
 
   // Cache last known state for use during loading
   ChatDetailState? _cachedState;
@@ -205,6 +239,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _refreshDebounce?.cancel();
     _propositionDebounce?.cancel();
     _joinRequestDebounce?.cancel();
+    _skipDebounce?.cancel();
     disposeLanguageSupport();
     _unsubscribeAll();
     super.dispose();
@@ -217,11 +252,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _participantChannel?.unsubscribe();
     _propositionChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
+    _skipChannel?.unsubscribe();
   }
 
   Future<void> _loadData({bool setupSubscriptions = false}) async {
-    // ignore: avoid_print
-    print('[ChatDetailNotifier] _loadData starting for chat $chatId');
     try {
       // Load all data in parallel (including fresh chat data for schedulePaused, etc.)
       final results = await Future.wait([
@@ -234,8 +268,19 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       final chat = results[0] as Chat?;
       final currentCycle = results[1] as Cycle?;
       final consensusItems = results[2] as List<Proposition>;
-      final participants = results[3] as List<Participant>;
-      final myParticipant = results[4] as Participant?;
+      var participants = results[3] as List<Participant>;
+      var myParticipant = results[4] as Participant?;
+
+      // Auto-join official chat if user is not a participant
+      if (myParticipant == null && chat?.isOfficial == true) {
+        try {
+          myParticipant = await _participantService.joinPublicChat(chatId: chatId);
+          // Refetch participants to include self
+          participants = await _participantService.getParticipants(chatId);
+        } catch (e) {
+          // Continue without participant - user can view but not participate
+        }
+      }
 
       // Fetch pending join requests if user is host
       List<Map<String, dynamic>> pendingJoinRequests = [];
@@ -254,6 +299,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       List<Proposition> myPropositions = [];
       bool hasRated = false;
       bool hasStartedRating = false;
+      int skipCount = 0;
+      bool hasSkipped = false;
 
       if (currentCycle != null) {
         currentRound = await _chatService.getCurrentRound(currentCycle.id);
@@ -281,8 +328,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         }
 
         if (currentRound != null && myParticipant != null) {
-          // ignore: avoid_print
-          print('[ChatDetailNotifier] Fetching propositions for round ${currentRound.id} with languageCode: $languageCode');
           final roundResults = await Future.wait([
             _propositionService.getPropositions(
               currentRound.id,
@@ -296,6 +341,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
               currentRound.id,
               myParticipant.id,
             ),
+            _propositionService.getSkipCount(currentRound.id),
+            _propositionService.hasSkipped(currentRound.id, myParticipant.id),
           ]);
 
           propositions = roundResults[0] as List<Proposition>;
@@ -303,12 +350,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           final ratingProgress = roundResults[2] as Map<String, dynamic>;
           hasRated = ratingProgress['completed'] as bool;
           hasStartedRating = ratingProgress['started'] as bool;
-          // ignore: avoid_print
-          print('[ChatDetailNotifier] Got ${propositions.length} propositions');
-          for (final p in propositions) {
-            // ignore: avoid_print
-            print('[ChatDetailNotifier]   - id=${p.id} content="${p.content}" translated="${p.contentTranslated}" display="${p.displayContent}"');
-          }
+          skipCount = roundResults[3] as int;
+          hasSkipped = roundResults[4] as bool;
         }
       }
 
@@ -329,6 +372,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         previousRoundId: previousRoundId,
         previousRoundResults: previousRoundResults,
         pendingJoinRequests: pendingJoinRequests,
+        skipCount: skipCount,
+        hasSkipped: hasSkipped,
       );
       state = AsyncData(newState);
       _cachedState = newState;
@@ -344,8 +389,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   }
 
   void _setupSubscriptions() {
-    // ignore: avoid_print
-    print('[ChatDetailNotifier] Setting up subscriptions for chat $chatId');
     _unsubscribeAll();
 
     // Subscribe to chat changes (including delete)
@@ -358,13 +401,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     );
 
     // Subscribe to cycle changes
-    // ignore: avoid_print
-    print('[ChatDetailNotifier] Setting up cycle subscription for chat $chatId');
     _cycleChannel = _chatService.subscribeToCycleChanges(
       chatId,
       () {
-        // ignore: avoid_print
-        print('[ChatDetailNotifier] Cycle change received for chat $chatId - scheduling refresh');
         _scheduleRefresh();
       },
     );
@@ -436,6 +475,15 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         currentState.currentRound!.id,
         () {
           _schedulePropositionRefresh();
+        },
+      );
+
+      // Update skip subscription for current round
+      _skipChannel?.unsubscribe();
+      _skipChannel = _propositionService.subscribeToSkips(
+        currentState.currentRound!.id,
+        () {
+          _scheduleSkipRefresh();
         },
       );
     } else {
@@ -523,8 +571,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   // Debounced refresh methods with rate limiting
   void _scheduleRefresh() {
-    // ignore: avoid_print
-    print('[ChatDetailNotifier] _scheduleRefresh called for chat $chatId');
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minRefreshInterval) {
@@ -532,13 +578,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       // This ensures critical updates like phase changes aren't missed
       final timeSinceLastRefresh = now.difference(_lastRefreshTime!);
       final delay = _minRefreshInterval - timeSinceLastRefresh;
-      // ignore: avoid_print
-      print('[ChatDetailNotifier] Rate limited - deferring refresh by ${delay.inMilliseconds}ms');
       _refreshDebounce?.cancel();
       _refreshDebounce = Timer(delay + _debounceDuration, () {
         _lastRefreshTime = DateTime.now();
-        // ignore: avoid_print
-        print('[ChatDetailNotifier] Deferred refresh executing');
         _loadData();
       });
       return;
@@ -547,8 +589,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _refreshDebounce?.cancel();
     _refreshDebounce = Timer(_debounceDuration, () {
       _lastRefreshTime = DateTime.now();
-      // ignore: avoid_print
-      print('[ChatDetailNotifier] Debounced refresh executing');
       _loadData();
     });
   }
@@ -589,9 +629,34 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     });
   }
 
+  void _scheduleSkipRefresh() {
+    final now = DateTime.now();
+    if (_lastSkipRefreshTime != null &&
+        now.difference(_lastSkipRefreshTime!) < _minRefreshInterval) {
+      // Defer instead of drop
+      final timeSinceLastRefresh = now.difference(_lastSkipRefreshTime!);
+      final delay = _minRefreshInterval - timeSinceLastRefresh;
+      _skipDebounce?.cancel();
+      _skipDebounce = Timer(delay + _debounceDuration, () {
+        _lastSkipRefreshTime = DateTime.now();
+        _refreshSkips();
+      });
+      return;
+    }
+
+    _skipDebounce?.cancel();
+    _skipDebounce = Timer(_debounceDuration, () {
+      _lastSkipRefreshTime = DateTime.now();
+      _refreshSkips();
+    });
+  }
+
   Future<void> _onParticipantsChanged(List<Participant> participants) async {
     final currentState = state.valueOrNull;
-    if (currentState == null) return;
+    if (currentState == null) {
+      return;
+    }
+
 
     // Small delay for transaction visibility
     await Future.delayed(const Duration(milliseconds: 50));
@@ -612,6 +677,36 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     try {
       final requests = await _participantService.getPendingRequests(chatId);
       state = AsyncData(currentState.copyWith(pendingJoinRequests: requests));
+    } catch (e) {
+      // Log but don't fail - next event will retry
+    }
+  }
+
+  Future<void> _refreshSkips() async {
+    final currentState = state.valueOrNull;
+    if (currentState?.currentRound == null ||
+        currentState?.myParticipant == null) {
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        _propositionService.getSkipCount(currentState!.currentRound!.id),
+        _propositionService.hasSkipped(
+          currentState.currentRound!.id,
+          currentState.myParticipant!.id,
+        ),
+      ]);
+
+      final skipCount = results[0] as int;
+      final hasSkipped = results[1] as bool;
+
+      final updatedState = currentState.copyWith(
+        skipCount: skipCount,
+        hasSkipped: hasSkipped,
+      );
+      state = AsyncData(updatedState);
+      _cachedState = updatedState;
     } catch (e) {
       // Log but don't fail - next event will retry
     }
@@ -661,6 +756,39 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
     // Immediately refresh to show own submission (don't wait for debounced realtime)
     await _refreshPropositions();
+  }
+
+  /// Skip proposing for the current round
+  ///
+  /// User must not have already submitted and skip quota must not be exceeded.
+  /// Skippers count toward participation for early advance calculations.
+  Future<void> skipProposing() async {
+    final currentState = state.valueOrNull;
+    if (currentState?.currentRound == null ||
+        currentState?.myParticipant == null) {
+      return;
+    }
+
+    // Validate canSkip before calling service
+    if (!currentState!.canSkip) {
+      throw Exception('Cannot skip: already submitted, already skipped, or skip quota exceeded');
+    }
+
+    await _propositionService.skipProposing(
+      roundId: currentState.currentRound!.id,
+      participantId: currentState.myParticipant!.id,
+    );
+
+    // Immediately update local state (optimistic)
+    final updatedState = currentState.copyWith(
+      hasSkipped: true,
+      skipCount: currentState.skipCount + 1,
+    );
+    state = AsyncData(updatedState);
+    _cachedState = updatedState;
+
+    // Refresh to get accurate skip count from server
+    await _refreshSkips();
   }
 
   /// Start the next phase (host only)

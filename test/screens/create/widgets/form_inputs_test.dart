@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/widgets/form_inputs.dart';
 
 void main() {
@@ -7,6 +8,9 @@ void main() {
     testWidgets('displays label and value', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: NumberInput(
               label: 'Test Label',
@@ -26,6 +30,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {
@@ -51,6 +58,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: StatefulBuilder(
               builder: (context, setState) {
@@ -74,6 +84,9 @@ void main() {
     testWidgets('decrement disabled at min value', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: NumberInput(
               label: 'Count',
@@ -94,6 +107,9 @@ void main() {
     testWidgets('increment disabled at max value', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: NumberInput(
               label: 'Count',
@@ -116,6 +132,9 @@ void main() {
     testWidgets('displays label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: LabeledSlider(
               label: 'Threshold',
@@ -133,6 +152,9 @@ void main() {
     testWidgets('slider shows current value', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: LabeledSlider(
               label: 'Progress',
@@ -152,6 +174,9 @@ void main() {
     testWidgets('clamps value to min/max range', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: LabeledSlider(
               label: 'Clamped',
@@ -173,6 +198,9 @@ void main() {
     testWidgets('displays label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: DurationDropdown(
               label: 'Duration',
@@ -190,6 +218,9 @@ void main() {
     testWidgets('shows min duration options when isMin is true', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: DurationDropdown(
               label: 'Min Duration',
@@ -215,6 +246,9 @@ void main() {
     testWidgets('shows max duration options when isMin is false', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: DurationDropdown(
               label: 'Max Duration',
@@ -240,6 +274,9 @@ void main() {
     testWidgets('displays title with correct style', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SectionHeader('Settings'),
           ),
@@ -254,6 +291,9 @@ void main() {
     testWidgets('displays all preset chips including Custom', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerPresets(
               label: 'Timer',
@@ -275,6 +315,9 @@ void main() {
     testWidgets('highlights selected preset', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerPresets(
               label: 'Timer',
@@ -298,6 +341,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: TimerPresets(
               label: 'Timer',

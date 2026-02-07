@@ -7,7 +7,7 @@ class PublicChatSummary extends Equatable {
   final int id;
   final String name;
   final String? description;
-  final String initialMessage;
+  final String? initialMessage;
   final int participantCount;
   final DateTime createdAt;
   final DateTime? lastActivityAt;
@@ -28,7 +28,7 @@ class PublicChatSummary extends Equatable {
     required this.id,
     required this.name,
     this.description,
-    required this.initialMessage,
+    this.initialMessage,
     required this.participantCount,
     required this.createdAt,
     this.lastActivityAt,
@@ -43,7 +43,7 @@ class PublicChatSummary extends Equatable {
       id: json['id'] as int,
       name: json['name'] as String,
       description: json['description'] as String?,
-      initialMessage: json['initial_message'] as String,
+      initialMessage: json['initial_message'] as String?,
       participantCount: (json['participant_count'] as num?)?.toInt() ?? 0,
       createdAt: DateTime.parse(json['created_at'] as String),
       lastActivityAt: json['last_activity_at'] != null
@@ -62,8 +62,8 @@ class PublicChatSummary extends Equatable {
   /// Returns the translated description if available, otherwise the original.
   String? get displayDescription => descriptionTranslated ?? description;
 
-  /// Returns the translated initial message if available, otherwise the original.
-  String get displayInitialMessage => initialMessageTranslated ?? initialMessage;
+  /// Returns the translated initial message if available, otherwise the original, or empty.
+  String get displayInitialMessage => initialMessageTranslated ?? initialMessage ?? '';
 
   /// Returns true if this chat has translations available.
   bool get hasTranslation =>

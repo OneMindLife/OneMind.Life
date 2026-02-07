@@ -56,7 +56,7 @@ DO $$
 BEGIN
   -- Try to set from environment or use a placeholder for local dev
   PERFORM set_config('app.settings.project_ref',
-    COALESCE(current_setting('app.settings.project_ref', true), 'YOUR_PROJECT_REF'),
+    COALESCE(current_setting('app.settings.project_ref', true), 'ccyuxrtrklgpkzcryzpj'),
     false
   );
 EXCEPTION WHEN OTHERS THEN
@@ -91,7 +91,7 @@ BEGIN
   END IF;
 
   -- Build Edge Function URL
-  v_url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/translate';
+  v_url := 'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/translate';
 
   -- Build request body with all translatable fields
   v_body := jsonb_build_object(
@@ -166,7 +166,7 @@ BEGIN
   END IF;
 
   -- Build Edge Function URL
-  v_url := 'https://YOUR_PROJECT_REF.supabase.co/functions/v1/translate';
+  v_url := 'https://ccyuxrtrklgpkzcryzpj.supabase.co/functions/v1/translate';
 
   -- Build request body
   v_body := jsonb_build_object(

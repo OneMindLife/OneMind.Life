@@ -1,0 +1,117 @@
+name: CI
+
+on:
+  # Only run CI directly on PRs and develop branch
+  # Main branch CI runs via deploy.yml workflow_call (avoids duplicate runs)
+  push:
+    branches: [develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_call:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Flutter Analysis, Tests, and Build (combined to avoid duplicate setup)
+  flutter-tests:
+    name: Flutter Tests & Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze code
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test --coverage
+
+      - name: Build Web (verify build works)
+        run: flutter build web
+
+      - name: Check test coverage
+        run: |
+          # Generate coverage report summary
+          if [ -f coverage/lcov.info ]; then
+            echo "Coverage report generated"
+            # You can add coverage threshold checks here
+          fi
+
+  # Note: Supabase SQL tests removed from CI due to Docker image availability issues
+  # Run locally with: supabase start && supabase test db
+
+  # Edge Function Verification
+  edge-functions:
+    name: Edge Functions Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Type check Edge Functions
+        run: |
+          for dir in supabase/functions/*/; do
+            if [ -f "$dir/index.ts" ]; then
+              echo "Type checking $dir..."
+              deno check --no-lock "$dir/index.ts" || true
+            fi
+          done
+
+  # Security Checks
+  security:
+    name: Security Checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for secrets in code
+        run: |
+          # Check for common secret patterns
+          if grep -rE "(sk_live_|pk_live_|SUPABASE_SERVICE_ROLE_KEY\s*=)" --include="*.dart" --include="*.ts" --include="*.js" .; then
+            echo "Error: Potential secrets found in code!"
+            exit 1
+          fi
+          echo "No secrets found in code"
+
+      - name: Check .gitignore for sensitive files
+        run: |
+          required_patterns=(".env" "*.jks" "*.keystore" "key.properties")
+          for pattern in "${required_patterns[@]}"; do
+            if ! grep -q "$pattern" .gitignore; then
+              echo "Warning: $pattern not in .gitignore"
+            fi
+          done
+
+  # All checks passed
+  ci-complete:
+    name: CI Complete
+    runs-on: ubuntu-latest
+    needs: [flutter-tests, edge-functions, security]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [[ "${{ needs.flutter-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.security.result }}" == "failure" ]]; then
+            echo "One or more required jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"

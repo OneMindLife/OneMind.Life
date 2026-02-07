@@ -1,60 +1,78 @@
 {
   "@@locale": "es",
-
   "appTitle": "OneMind",
-
+  "howItWorks": "Como funciona",
   "discover": "Descubrir",
   "discoverPublicChats": "Descubrir chats publicos",
   "discoverChats": "Descubrir Chats",
-
   "joinWithCode": "Unirse con Codigo",
   "joinAnExistingChatWithInviteCode": "Unirse a un chat existente con codigo de invitacion",
   "joinChat": "Unirse al Chat",
   "join": "Unirse",
   "findChat": "Buscar Chat",
   "requestToJoin": "Solicitar Unirse",
-
   "createChat": "Crear Chat",
   "createANewChat": "Crear un nuevo chat",
   "chatCreated": "Chat Creado!",
-
   "cancel": "Cancelar",
   "continue_": "Continuar",
   "retry": "Reintentar",
   "yes": "Si",
   "no": "No",
-
+  "delete": "Eliminar",
+  "leave": "Salir",
+  "kick": "Expulsar",
+  "pause": "Pausar",
+  "resume": "Reanudar",
+  "remove": "Quitar",
+  "clear": "Borrar",
+  "done": "Listo",
+  "save": "Guardar",
   "officialOneMind": "OneMind Oficial",
   "official": "OFICIAL",
   "pending": "PENDIENTE",
   "pendingRequests": "Solicitudes Pendientes",
   "yourChats": "Tus Chats",
-
   "cancelRequest": "Cancelar Solicitud",
   "cancelRequestQuestion": "Cancelar tu solicitud para unirte a \"{chatName}\"?",
+  "@cancelRequestQuestion": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
   "yesCancel": "Si, Cancelar",
   "requestCancelled": "Solicitud cancelada",
   "waitingForHostApproval": "Esperando aprobacion del anfitrion",
-  "hostApprovalRequired": "Se requiere aprobacion del anfitrion para unirse",
-
+  "hostApprovalRequired": "El anfitrion debe aprobar cada solicitud",
   "noChatsYet": "Sin chats aun",
   "discoverPublicChatsJoinOrCreate": "Descubre chats publicos, unete con un codigo o crea el tuyo",
   "discoverPublicChatsButton": "Descubrir Chats Publicos",
   "noActiveChatsYet": "Sin chats activos aun. Tus chats aprobados apareceran aqui.",
-
   "loadingChats": "Cargando chats",
   "failedToLoadChats": "Error al cargar chats",
-
   "chatNotFound": "Chat no encontrado",
   "failedToLookupChat": "Error al buscar el chat",
   "failedToJoinChat": "Error al unirse al chat: {error}",
-
+  "@failedToJoinChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "enterInviteCode": "Ingresa el codigo de invitacion de 6 caracteres:",
   "pleaseEnterSixCharCode": "Por favor ingresa un codigo de 6 caracteres",
   "inviteCodeHint": "ABC123",
-
   "hostedBy": "Organizado por {hostName}",
-
+  "@hostedBy": {
+    "placeholders": {
+      "hostName": {
+        "type": "String"
+      }
+    }
+  },
   "thisChatsRequiresInvite": "Este chat requiere una invitacion",
   "enterEmailForInvite": "Ingresa el email al que se envio tu invitacion:",
   "yourEmailHint": "tu@email.com",
@@ -65,9 +83,15 @@
   "pleaseVerifyEmailFirst": "Por favor verifica tu email primero",
   "verifyEmail": "Verificar Email",
   "emailVerified": "Email verificado: {email}",
-
+  "@emailVerified": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "enterDisplayName": "Ingresa tu nombre visible:",
-  "yourName": "Tu nombre",
+  "yourName": "Tu Nombre",
   "yourNamePlaceholder": "Tu Nombre",
   "displayName": "Nombre visible",
   "enterYourName": "Ingresa tu nombre",
@@ -75,68 +99,178 @@
   "yourDisplayName": "Tu nombre visible",
   "yourNameVisibleToAll": "Tu nombre sera visible para todos los participantes",
   "usingSavedName": "Usando tu nombre guardado",
-
   "joinRequestSent": "Solicitud enviada. Esperando aprobacion del anfitrion.",
-
   "searchPublicChats": "Buscar chats publicos...",
   "noChatsFoundFor": "No se encontraron chats para \"{query}\"",
+  "@noChatsFoundFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "noPublicChatsAvailable": "No hay chats publicos disponibles",
   "beFirstToCreate": "Se el primero en crear uno!",
   "failedToLoadPublicChats": "Error al cargar chats publicos: {error}",
+  "@failedToLoadPublicChats": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "participantCount": "{count} participante",
+  "@participantCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "participantsCount": "{count} participantes",
+  "@participantsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "enterYourNameTitle": "Ingresa Tu Nombre",
   "anonymous": "Anonimo",
-
   "timerWarning": "Advertencia de Temporizador",
   "timerWarningMessage": "Tus temporizadores de fase son mas largos que la ventana de {minutes} minutos programada.\n\nLas fases pueden extenderse mas alla del tiempo programado, o pausarse cuando la ventana se cierre.\n\nConsidera usar temporizadores mas cortos (5 min o 30 min) para sesiones programadas.",
+  "@timerWarningMessage": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
   "adjustSettings": "Ajustar Configuracion",
   "continueAnyway": "Continuar de Todas Formas",
-
   "chatNowPublic": "Tu chat es ahora publico!",
   "anyoneCanJoinFrom": "Cualquiera puede encontrar y unirse a \"{chatName}\" desde la pagina Descubrir.",
-
+  "@anyoneCanJoinFrom": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
   "invitesSent": "{count} invitacion enviada!",
+  "@invitesSent": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "invitesSentPlural": "{count} invitaciones enviadas!",
+  "@invitesSentPlural": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "noInvitesSent": "No se enviaron invitaciones",
   "onlyInvitedUsersCanJoin": "Solo los usuarios invitados pueden unirse a este chat.",
-
   "shareCodeWithParticipants": "Comparte este codigo con los participantes:",
   "inviteCodeCopied": "Codigo de invitacion copiado al portapapeles",
   "tapToCopy": "Toca para copiar",
   "showQrCode": "Mostrar Codigo QR",
-
   "addEmailForInviteOnly": "Agrega al menos un email para el modo solo invitados",
-
+  "emailAlreadyAdded": "Email ya agregado",
   "settings": "Configuracion",
   "language": "Idioma",
   "english": "English",
   "spanish": "Espanol",
-
+  "portuguese": "Portugues",
+  "french": "Francais",
+  "german": "Deutsch",
   "rankPropositions": "Clasificar Propuestas",
   "placing": "Colocando: ",
   "rankedSuccessfully": "{count} propuestas clasificadas exitosamente!",
+  "@rankedSuccessfully": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "failedToSaveRankings": "Error al guardar las clasificaciones",
   "chatPausedByHost": "El chat fue pausado por el anfitrion",
+  "ratingPhaseEnded": "La fase de calificacion ha terminado",
   "goBack": "Volver",
   "ratePropositions": "Calificar Propuestas",
   "submitRatings": "Enviar Calificaciones",
   "failedToSubmitRatings": "Error al enviar calificaciones: {error}",
-
+  "@failedToSubmitRatings": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
   "roundResults": "Resultados de la Ronda {roundNumber}",
+  "@roundResults": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
   "noPropositionsToDisplay": "No hay propuestas para mostrar",
   "noPreviousWinner": "Sin ganador anterior",
   "roundWinner": "Ganador de la Ronda {roundNumber}",
+  "@roundWinner": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
   "roundWinners": "Ganadores de la Ronda {roundNumber}",
+  "@roundWinners": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
   "unknownProposition": "Propuesta desconocida",
   "score": "Puntuacion: {score}",
+  "@score": {
+    "placeholders": {
+      "score": {
+        "type": "String"
+      }
+    }
+  },
   "soleWinsProgress": "Victorias unicas: {current}/{required}",
+  "@soleWinsProgress": {
+    "placeholders": {
+      "current": {
+        "type": "int"
+      },
+      "required": {
+        "type": "int"
+      }
+    }
+  },
   "tiedWinNoConsensus": "Empate (no cuenta para el consenso)",
   "seeAllResults": "Ver Todos los Resultados",
   "startPhase": "Iniciar Fase",
   "waiting": "Esperando",
   "waitingForHostToStart": "Esperando que el anfitrion inicie...",
   "roundNumber": "Ronda {roundNumber}",
+  "@roundNumber": {
+    "placeholders": {
+      "roundNumber": {
+        "type": "int"
+      }
+    }
+  },
   "viewAllPropositions": "Ver todas las propuestas",
   "chatIsPaused": "Chat pausado...",
   "shareYourIdea": "Comparte tu idea...",
@@ -152,11 +286,758 @@
   "ratingComplete": "Calificacion Completa",
   "waitingForRatingPhaseEnd": "Esperando que termine la fase de calificacion.",
   "rateAllPropositions": "Califica las {count} propuestas",
+  "@rateAllPropositions": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "continueRating": "Continuar Calificando",
   "startRating": "Iniciar Calificacion",
   "endRatingStartNextRound": "Terminar Calificacion e Iniciar Siguiente Ronda",
   "chatPaused": "Chat Pausado",
   "chatPausedByHostTitle": "Chat Pausado por el Anfitrion",
   "timerStoppedTapResume": "El temporizador esta detenido. Toca Reanudar en la barra para continuar.",
-  "hostPausedPleaseWait": "El anfitrion ha pausado este chat. Por favor espera a que lo reanude."
+  "hostPausedPleaseWait": "El anfitrion ha pausado este chat. Por favor espera a que lo reanude.",
+  "previousWinner": "Ganador",
+  "yourProposition": "Tu Propuesta",
+  "yourPropositions": "Tus Propuestas",
+  "rate": "Calificar",
+  "participants": "Participantes",
+  "chatInfo": "Info del Chat",
+  "shareQrCode": "Compartir Codigo QR",
+  "joinRequests": "Solicitudes de Union",
+  "resumeChat": "Reanudar Chat",
+  "pauseChat": "Pausar Chat",
+  "leaveChat": "Salir del Chat",
+  "deleteChat": "Eliminar Chat",
+  "host": "Anfitrion",
+  "deletePropositionQuestion": "Eliminar Propuesta?",
+  "areYouSureDeleteProposition": "Estas seguro de que quieres eliminar esta propuesta?",
+  "deleteChatQuestion": "Eliminar Chat?",
+  "leaveChatQuestion": "Salir del Chat?",
+  "kickParticipantQuestion": "Expulsar Participante?",
+  "pauseChatQuestion": "Pausar Chat?",
+  "removePaymentMethodQuestion": "Quitar Metodo de Pago?",
+  "propositionDeleted": "Propuesta eliminada",
+  "chatDeleted": "Chat eliminado",
+  "youHaveLeftChat": "Has salido del chat",
+  "youHaveBeenRemoved": "Has sido eliminado de este chat",
+  "chatHasBeenDeleted": "Este chat ha sido eliminado",
+  "participantRemoved": "{name} ha sido eliminado",
+  "@participantRemoved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "chatPausedSuccess": "Chat pausado",
+  "requestApproved": "Solicitud aprobada",
+  "requestDenied": "Solicitud denegada",
+  "failedToSubmit": "Error al enviar: {error}",
+  "@failedToSubmit": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "duplicateProposition": "Esta propuesta ya existe en esta ronda",
+  "failedToStartPhase": "Error al iniciar fase: {error}",
+  "@failedToStartPhase": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToAdvancePhase": "Error al avanzar fase: {error}",
+  "@failedToAdvancePhase": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToCompleteRating": "Error al completar calificacion: {error}",
+  "@failedToCompleteRating": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDelete": "Error al eliminar: {error}",
+  "@failedToDelete": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToDeleteChat": "Error al eliminar chat: {error}",
+  "@failedToDeleteChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToLeaveChat": "Error al salir del chat: {error}",
+  "@failedToLeaveChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToKickParticipant": "Error al expulsar participante: {error}",
+  "@failedToKickParticipant": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "failedToPauseChat": "Error al pausar chat: {error}",
+  "@failedToPauseChat": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "error": "Error: {error}",
+  "@error": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "noPendingRequests": "Sin solicitudes pendientes",
+  "newRequestsWillAppear": "Las nuevas solicitudes apareceran aqui",
+  "participantsJoined": "{count} participantes se han unido",
+  "@participantsJoined": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "waitingForMoreParticipants": "Esperando que se unan {count} participante(s) mas",
+  "@waitingForMoreParticipants": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduled": "Programado",
+  "chatOutsideSchedule": "Chat fuera de la ventana programada",
+  "nextWindowStarts": "La proxima ventana comienza {dateTime}",
+  "@nextWindowStarts": {
+    "placeholders": {
+      "dateTime": {
+        "type": "String"
+      }
+    }
+  },
+  "scheduleWindows": "Ventanas programadas:",
+  "scheduledToStart": "Programado para iniciar",
+  "chatWillAutoStart": "El chat iniciara automaticamente a la hora programada.",
+  "submittedCount": "{submitted}/{total} enviados",
+  "@submittedCount": {
+    "placeholders": {
+      "submitted": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "propositionCollected": "{count} propuesta recopilada",
+  "@propositionCollected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "propositionsCollected": "{count} propuestas recopiladas",
+  "@propositionsCollected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "timeExpired": "Tiempo expirado",
+  "noDataAvailable": "Sin datos disponibles",
+  "tryAgain": "Intentar de Nuevo",
+  "requireApproval": "Requerir aprobacion",
+  "requireAuthentication": "Requerir autenticacion",
+  "showPreviousResults": "Mostrar resultados completos de rondas anteriores",
+  "enableAdaptiveDuration": "Habilitar duracion adaptativa",
+  "enableOneMindAI": "Habilitar OneMind AI",
+  "enableAutoAdvanceProposing": "Terminar antes cuando se envien suficientes ideas",
+  "enableAutoAdvanceRating": "Terminar antes cuando se envien suficientes calificaciones",
+  "hideWhenOutsideSchedule": "Ocultar fuera de horario",
+  "chatVisibleButPaused": "Chat visible pero pausado fuera de horario",
+  "chatHiddenUntilNext": "Chat oculto hasta la proxima ventana programada",
+  "timezone": "Zona horaria",
+  "scheduleType": "Tipo de Horario",
+  "oneTime": "Una vez",
+  "recurring": "Recurrente",
+  "startDateTime": "Fecha y Hora de Inicio",
+  "scheduleWindowsLabel": "Ventanas de Horario",
+  "addWindow": "Agregar Ventana",
+  "searchTimezone": "Buscar zona horaria...",
+  "manual": "Manual",
+  "auto": "Automatico",
+  "credits": "Creditos",
+  "refillAmountMustBeGreater": "El monto de recarga debe ser mayor que el umbral",
+  "autoRefillSettingsUpdated": "Configuracion de recarga automatica actualizada",
+  "autoRefillEnabled": "Recarga automatica habilitada",
+  "autoRefillDisabled": "Recarga automatica deshabilitada",
+  "saveSettings": "Guardar Configuracion",
+  "removeCard": "Quitar Tarjeta",
+  "purchaseWithStripe": "Comprar con Stripe",
+  "processing": "Procesando...",
+  "pageNotFound": "Pagina No Encontrada",
+  "goHome": "Ir al Inicio",
+  "allPropositionsCount": "Todas las Propuestas ({count})",
+  "@allPropositionsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "hostCanModerateContent": "Como anfitrion, puedes moderar el contenido. La identidad del remitente esta oculta.",
+  "yourPropositionLabel": "(Tu propuesta)",
+  "previousWinnerLabel": "(Ganador anterior)",
+  "cannotBeUndone": "Esta accion no se puede deshacer.",
+  "deleteChatConfirmation": "Estas seguro de que quieres eliminar \"{chatName}\"?\n\nEsto eliminara permanentemente todas las propuestas, calificaciones e historial. Esta accion no se puede deshacer.",
+  "@deleteChatConfirmation": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "leaveChatConfirmation": "Estas seguro de que quieres salir de \"{chatName}\"?\n\nYa no veras este chat en tu lista.",
+  "@leaveChatConfirmation": {
+    "placeholders": {
+      "chatName": {
+        "type": "String"
+      }
+    }
+  },
+  "kickParticipantConfirmation": "Estas seguro de que quieres eliminar a \"{participantName}\" de este chat?\n\nNo podra volver a unirse sin aprobacion.",
+  "@kickParticipantConfirmation": {
+    "placeholders": {
+      "participantName": {
+        "type": "String"
+      }
+    }
+  },
+  "pauseChatConfirmation": "Esto pausara el temporizador de la fase actual. Los participantes veran que el chat esta pausado por el anfitrion.",
+  "approveOrDenyRequests": "Aprobar o denegar solicitudes para unirse a este chat.",
+  "signedIn": "Conectado",
+  "guest": "Invitado",
+  "approve": "Aprobar",
+  "deny": "Denegar",
+  "initialMessage": "Mensaje Inicial",
+  "consensusNumber": "Consenso #{number}",
+  "@consensusNumber": {
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
+  },
+  "kickParticipant": "Expulsar participante",
+  "propositions": "Propuestas",
+  "leaderboard": "Clasificacion",
+  "noLeaderboardData": "No hay datos de clasificacion disponibles",
+  "skip": "Saltar",
+  "skipped": "Saltado",
+  "skipsRemaining": "{remaining} saltos restantes",
+  "@skipsRemaining": {
+    "placeholders": {
+      "remaining": {
+        "type": "int"
+      }
+    }
+  },
+  "createChatTitle": "Crear Chat",
+  "enterYourNameLabel": "Ingresa tu nombre",
+  "nameVisibleToAll": "Tu nombre sera visible para todos los participantes",
+  "basicInfo": "Informacion Basica",
+  "chatNameRequired": "Nombre del Chat *",
+  "chatNameHint": "ej., Almuerzo del Equipo Viernes",
+  "required": "Requerido",
+  "initialMessageRequired": "Mensaje Inicial *",
+  "initialMessageOptional": "Mensaje Inicial (Opcional)",
+  "initialMessageHint": "El tema o pregunta inicial",
+  "initialMessageHelperText": "Los participantes sabran que escribiste esto ya que creaste el chat",
+  "descriptionOptional": "Descripcion (Opcional)",
+  "descriptionHint": "Contexto adicional",
+  "visibility": "Visibilidad",
+  "whoCanJoin": "Quien puede encontrar y unirse a este chat?",
+  "accessPublic": "Publico",
+  "accessPublicDesc": "Cualquiera puede descubrir y unirse",
+  "accessCode": "Codigo de Invitacion",
+  "accessCodeDesc": "Comparte un codigo de 6 caracteres para unirse",
+  "accessEmail": "Solo por Email",
+  "accessEmailDesc": "Solo direcciones de email invitadas pueden unirse",
+  "instantJoin": "Los usuarios se unen instantaneamente",
+  "inviteByEmail": "Invitar por Email",
+  "inviteEmailOnly": "Solo direcciones de email invitadas pueden unirse a este chat",
+  "emailAddress": "Direccion de email",
+  "emailHint": "usuario@ejemplo.com",
+  "invalidEmail": "Por favor ingresa un email valido",
+  "addEmailToSend": "Agrega al menos un email para enviar invitaciones",
+  "facilitationMode": "Como Funcionan las Fases",
+  "facilitationDesc": "Elige entre control manual o temporizadores automaticos para transiciones de fase.",
+  "modeManual": "Manual",
+  "modeAuto": "Automatico",
+  "modeManualDesc": "Tu controlas cuando comienza y termina cada fase. Sin temporizadores.",
+  "modeAutoDesc": "Los temporizadores funcionan automaticamente. Aun puedes terminar fases antes.",
+  "autoStartParticipants": "Iniciar cuando se unan",
+  "ratingStartMode": "Modo de Inicio de Calificacion",
+  "ratingStartModeDesc": "Controla como comienza la fase de calificacion despues de terminar las propuestas.",
+  "ratingAutoDesc": "La calificacion comienza inmediatamente despues de que terminan las propuestas o se alcanza el umbral.",
+  "ratingManualDesc": "Despues de terminar las propuestas, tu eliges cuando iniciar la calificacion (ej., al dia siguiente).",
+  "phaseFlowExplanation": "Cada fase dura hasta {duration}, pero termina antes si {threshold} personas participan. No terminara hasta que existan al menos {minimum} ideas (el temporizador se extiende si es necesario).",
+  "@phaseFlowExplanation": {
+    "placeholders": {
+      "duration": {"type": "String"},
+      "threshold": {"type": "int"},
+      "minimum": {"type": "int"}
+    }
+  },
+  "enableSchedule": "Habilitar Horario",
+  "restrictChatRoom": "Restringir cuando la sala de chat esta abierta",
+  "timers": "Temporizadores",
+  "useSameDuration": "Misma duracion para ambas fases",
+  "useSameDurationDesc": "Usar el mismo limite de tiempo para propuestas y calificacion",
+  "phaseDuration": "Duracion de Fase",
+  "proposing": "Propuestas",
+  "rating": "Calificacion",
+  "preset5min": "5 min",
+  "preset30min": "30 min",
+  "preset1hour": "1 hora",
+  "preset1day": "1 dia",
+  "presetCustom": "Personalizado",
+  "duration1min": "1 min",
+  "duration2min": "2 min",
+  "duration10min": "10 min",
+  "duration2hours": "2 horas",
+  "duration4hours": "4 horas",
+  "duration8hours": "8 horas",
+  "duration12hours": "12 horas",
+  "hours": "Horas",
+  "minutes": "Minutos",
+  "max24h": "(max 24h)",
+  "minimumToAdvance": "Participacion Requerida",
+  "timeExtendsAutomatically": "La fase no terminara hasta que se cumplan los requisitos",
+  "proposingMinimum": "Ideas necesarias",
+  "proposingMinimumDesc": "La fase no terminara hasta que se envien {count} ideas",
+  "@proposingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "ratingMinimum": "Calificaciones necesarias",
+  "ratingMinimumDesc": "La fase no terminara hasta que cada idea tenga {count} calificaciones",
+  "@ratingMinimumDesc": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "autoAdvanceAt": "Terminar Fase Antes",
+  "skipTimerEarly": "La fase puede terminar antes cuando se alcancen los limites",
+  "enableAutoAdvanceProposing": "Habilitar para ideas",
+  "whenPercentSubmit": "Cuando {percent}% de participantes envian",
+  "@whenPercentSubmit": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "minParticipantsSubmit": "Ideas necesarias",
+  "enableAutoAdvanceRating": "Habilitar para calificaciones",
+  "minAvgRaters": "Calificaciones necesarias",
+  "proposingThresholdPreview": "La fase termina antes cuando {threshold} de {participants} participantes envian ideas ({percent}%)",
+  "@proposingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"},
+      "participants": {"type": "int"},
+      "percent": {"type": "int"}
+    }
+  },
+  "proposingThresholdPreviewSimple": "La fase termina antes cuando se envien {threshold} ideas",
+  "@proposingThresholdPreviewSimple": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "ratingThresholdPreview": "La fase termina antes cuando cada idea tenga {threshold} calificaciones",
+  "@ratingThresholdPreview": {
+    "placeholders": {
+      "threshold": {"type": "int"}
+    }
+  },
+  "consensusSettings": "Configuracion de Consenso",
+  "confirmationRounds": "Rondas de confirmacion",
+  "firstWinnerConsensus": "El primer ganador alcanza consenso inmediatamente",
+  "mustWinConsecutive": "La misma propuesta debe ganar {count} rondas consecutivas",
+  "@mustWinConsecutive": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "showFullResults": "Mostrar resultados completos de rondas anteriores",
+  "seeAllPropositions": "Los usuarios ven todas las propuestas y calificaciones",
+  "seeWinningOnly": "Los usuarios solo ven la propuesta ganadora",
+  "propositionLimits": "Limites de Propuestas",
+  "propositionsPerUser": "Propuestas por usuario",
+  "onePropositionPerRound": "Cada usuario puede enviar 1 propuesta por ronda",
+  "nPropositionsPerRound": "Cada usuario puede enviar hasta {count} propuestas por ronda",
+  "@nPropositionsPerRound": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "adaptiveDuration": "Duracion Adaptativa",
+  "adjustDurationDesc": "Auto-ajustar la duracion de fase segun la participacion",
+  "durationAdjusts": "La duracion se ajusta segun la participacion",
+  "fixedDurations": "Duraciones de fase fijas",
+  "usesThresholds": "Usa umbrales de avance temprano para determinar la participacion",
+  "adjustmentPercent": "Ajuste: {percent}%",
+  "@adjustmentPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "minDuration": "Duracion minima",
+  "maxDuration": "Duracion maxima",
+  "aiParticipant": "Participante IA",
+  "enableAI": "Habilitar OneMind AI",
+  "aiPropositionsPerRound": "Propuestas de IA por ronda",
+  "scheduleTypeLabel": "Tipo de Horario",
+  "scheduleOneTime": "Una vez",
+  "scheduleRecurring": "Recurrente",
+  "hideOutsideSchedule": "Ocultar fuera de horario",
+  "visiblePaused": "Chat visible pero pausado fuera de horario",
+  "hiddenUntilWindow": "Chat oculto hasta la proxima ventana programada",
+  "timezoneLabel": "Zona Horaria",
+  "scheduleWindowsTitle": "Ventanas de Horario",
+  "addWindowButton": "Agregar Ventana",
+  "scheduleWindowsDesc": "Define cuando el chat esta activo. Soporta ventanas nocturnas (ej., 11pm a 1am del dia siguiente).",
+  "windowNumber": "Ventana {n}",
+  "@windowNumber": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "removeWindow": "Eliminar ventana",
+  "startDay": "Dia de Inicio",
+  "endDay": "Dia de Fin",
+  "daySun": "Dom",
+  "dayMon": "Lun",
+  "dayTue": "Mar",
+  "dayWed": "Mie",
+  "dayThu": "Jue",
+  "dayFri": "Vie",
+  "daySat": "Sab",
+  "timerWarningTitle": "Advertencia de Temporizador",
+  "timerWarningContent": "Tus temporizadores de fase son mas largos que la ventana de {minutes} minutos.\n\nLas fases pueden extenderse mas alla del tiempo programado, o pausarse cuando la ventana se cierre.\n\nConsidera usar temporizadores mas cortos (5 min o 30 min) para sesiones programadas.",
+  "@timerWarningContent": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "adjustSettingsButton": "Ajustar Configuracion",
+  "continueAnywayButton": "Continuar de Todos Modos",
+  "chatCreatedTitle": "Chat Creado!",
+  "chatNowPublicTitle": "Tu chat es ahora publico!",
+  "anyoneCanJoinDiscover": "Cualquiera puede encontrar y unirse a \"{name}\" desde la pagina Descubrir.",
+  "@anyoneCanJoinDiscover": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "invitesSentTitle": "{count} invitaciones enviadas!",
+  "@invitesSentTitle": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "noInvitesSentTitle": "Sin invitaciones enviadas",
+  "inviteOnlyMessage": "Solo usuarios invitados pueden unirse a este chat.",
+  "shareCodeInstruction": "Comparte este codigo con los participantes:",
+  "codeCopied": "Codigo de invitacion copiado",
+  "joinScreenTitle": "Unirse al Chat",
+  "noTokenOrCode": "No se proporciono token o codigo de invitacion",
+  "invalidExpiredInvite": "Este enlace de invitacion es invalido o ha expirado",
+  "inviteOnlyError": "Este chat requiere una invitacion por email. Por favor usa el enlace enviado a tu email.",
+  "invalidInviteTitle": "Invitacion Invalida",
+  "invalidInviteDefault": "Este enlace de invitacion no es valido.",
+  "invitedToJoin": "Estas invitado a unirte",
+  "enterNameToJoin": "Ingresa tu nombre para unirte:",
+  "nameVisibleNotice": "Este nombre sera visible para otros participantes.",
+  "requiresApprovalNotice": "Este chat requiere aprobacion del anfitrion para unirse.",
+  "requestToJoinButton": "Solicitar Unirse",
+  "joinChatButton": "Unirse al Chat",
+  "creditsTitle": "Creditos",
+  "yourBalance": "Tu Saldo",
+  "paidCredits": "Creditos Pagados",
+  "freeThisMonth": "Gratis Este Mes",
+  "totalAvailable": "Total Disponible",
+  "userRounds": "rondas-usuario",
+  "freeTierResets": "El nivel gratuito se reinicia {date}",
+  "@freeTierResets": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "buyCredits": "Comprar Creditos",
+  "pricingInfo": "1 credito = 1 ronda-usuario = $0.01",
+  "total": "Total",
+  "autoRefillTitle": "Auto-Recarga",
+  "autoRefillDesc": "Comprar creditos automaticamente cuando el saldo cae bajo el umbral",
+  "lastError": "Ultimo error: {error}",
+  "@lastError": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "autoRefillComingSoon": "Configuracion de auto-recarga proximamente. Por ahora, compra creditos manualmente arriba.",
+  "whenBelow": "Cuando este bajo",
+  "refillTo": "Recargar a",
+  "disableAutoRefillMessage": "Esto deshabilitara la auto-recarga. Puedes agregar un nuevo metodo de pago despues.",
+  "recentTransactions": "Transacciones Recientes",
+  "noTransactionHistory": "Sin historial de transacciones",
+  "chatSettingsTitle": "Configuracion del Chat",
+  "accessVisibility": "Acceso y Visibilidad",
+  "accessMethod": "Metodo de Acceso",
+  "facilitation": "Facilitacion",
+  "startMode": "Modo de Inicio",
+  "autoStartThreshold": "Umbral de Auto-Inicio",
+  "nParticipants": "{n} participantes",
+  "@nParticipants": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "proposingDuration": "Duracion de Propuestas",
+  "ratingDuration": "Duracion de Calificacion",
+  "nSeconds": "{n} segundos",
+  "@nSeconds": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nMinutes": "{n} minutos",
+  "@nMinutes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nHours": "{n} horas",
+  "@nHours": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nDays": "{n} dias",
+  "@nDays": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "minimumRequirements": "Requisitos Minimos",
+  "nPropositions": "{n} propuestas",
+  "@nPropositions": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "nAvgRaters": "{n} calificadores promedio por propuesta",
+  "@nAvgRaters": {
+    "placeholders": {
+      "n": {
+        "type": "double"
+      }
+    }
+  },
+  "earlyAdvanceThresholds": "Umbrales de Avance Temprano",
+  "proposingThreshold": "Umbral de Propuestas",
+  "ratingThreshold": "Umbral de Calificacion",
+  "nConsecutiveWins": "{n} victorias consecutivas",
+  "@nConsecutiveWins": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "enabled": "Habilitado",
+  "nPerRound": "{n} por ronda",
+  "@nPerRound": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduledStart": "Inicio Programado",
+  "windows": "Ventanas",
+  "nConfigured": "{n} configuradas",
+  "@nConfigured": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
+  "visibleOutsideSchedule": "Visible Fuera de Horario",
+  "privacyPolicyTitle": "Politica de Privacidad",
+  "termsOfServiceTitle": "Terminos de Servicio",
+  "lastUpdated": "Ultima actualizacion: {date}",
+  "@lastUpdated": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "chatSettings": "Configuración del Chat",
+  "chatName": "Nombre",
+  "chatDescription": "Descripción",
+  "accessAndVisibility": "Acceso y Visibilidad",
+  "autoMode": "Automático",
+  "avgRatersPerProposition": "calificadores promedio por proposición",
+  "consensus": "Consenso",
+  "aiPropositions": "Proposiciones de IA",
+  "perRound": "por ronda",
+  "schedule": "Horario",
+  "configured": "configurado",
+  "publicAccess": "Público",
+  "inviteCodeAccess": "Código de Invitación",
+  "inviteOnlyAccess": "Solo por Invitación",
+
+  "shareLinkTitle": "Compartir enlace para unirse a {chatName}",
+  "@shareLinkTitle": {
+    "placeholders": {
+      "chatName": {"type": "String"}
+    }
+  },
+  "shareButton": "Compartir",
+  "copyLinkButton": "Copiar Enlace",
+  "linkCopied": "Enlace copiado al portapapeles",
+  "enterCodeManually": "O ingresa el codigo manualmente:",
+  "shareNotSupported": "Compartir no disponible - enlace copiado",
+  "orScan": "o escanea",
+
+  "tutorialWelcomeTitle": "Bienvenido a OneMind",
+  "tutorialWelcomeSubtitle": "Aprende como los grupos alcanzan consenso juntos",
+  "tutorialWhatYoullLearn": "En este tutorial:",
+  "tutorialBullet1": "Envia tus ideas de forma anonima",
+  "tutorialBullet2": "Califica ideas de otros",
+  "tutorialBullet3": "Ve como se alcanza el consenso",
+  "tutorialTheQuestion": "La pregunta:",
+  "tutorialQuestion": "Que valoramos?",
+  "tutorialStartButton": "Iniciar Tutorial",
+  "tutorialSkipButton": "Saltar tutorial",
+  "tutorialConsensusReached": "Consenso Alcanzado!",
+  "tutorialWonTwoRounds": "\"{proposition}\" gano 2 rondas seguidas.",
+  "@tutorialWonTwoRounds": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialAddedToChat": "Ahora se agrego al chat arriba.",
+  "tutorialFinishButton": "Terminar Tutorial",
+  "tutorialRound1Result": "'Exito' gano esta ronda! Para ser una respuesta permanente, debe ganar de nuevo en la proxima ronda.",
+  "tutorialProposingHint": "Envia una idea que quieras que sea la respuesta del grupo.",
+  "tutorialProposingHintWithWinner": "Puedes pensar en algo mejor? Envia una idea para desafiar al ganador actual.",
+  "tutorialRatingHint": "Para evitar sesgo, todos califican todas las ideas excepto la suya. La tuya esta oculta para ti pero otros la calificaran.",
+  "tutorialRound2Result": "Tu idea \"{proposition}\" gano! Si gana en la proxima ronda, sera agregada permanentemente al chat.",
+  "@tutorialRound2Result": {
+    "placeholders": {
+      "proposition": {"type": "String"}
+    }
+  },
+  "tutorialRound2Prompt": "Viendo 'Exito' como la respuesta actual del grupo - que crees que REALMENTE valoramos?",
+  "tutorialPropSuccess": "Exito",
+  "tutorialPropAdventure": "Aventura",
+  "tutorialPropGrowth": "Crecimiento",
+  "tutorialPropHarmony": "Armonia",
+  "tutorialPropInnovation": "Innovacion",
+  "tutorialPropFreedom": "Libertad",
+  "tutorialPropSecurity": "Seguridad",
+  "tutorialPropStability": "Estabilidad",
+  "tutorialDuplicateProposition": "Esta idea ya existe en esta ronda. Prueba algo diferente!",
+  "tutorialShareTitle": "Comparte Tu Chat",
+  "tutorialShareExplanation": "Para invitar a otros a unirse a tu chat, toca el boton de compartir en la parte superior de tu pantalla.",
+  "tutorialShareTryIt": "Pruebalo ahora!",
+  "tutorialShareButtonHint": "Toca el boton de compartir arriba a la derecha ↗",
+  "tutorialSkipMenuItem": "Saltar Tutorial",
+  "tutorialSkipConfirmTitle": "Saltar Tutorial?",
+  "tutorialSkipConfirmMessage": "Siempre puedes acceder al tutorial mas tarde desde la pantalla de inicio.",
+  "tutorialSkipConfirmYes": "Si, Saltar",
+  "tutorialSkipConfirmNo": "Continuar Tutorial",
+  "tutorialShareTooltip": "Compartir Chat",
+  "tutorialYourIdea": "Tu idea",
+  "tutorialRateIdeas": "Calificar Ideas",
+  "tutorialSeeResultsHint": "Toca abajo para ver como se clasificaron todas las ideas.",
+  "tutorialSeeResultsContinueHint": "Genial! Ahora entiendes como funciona la clasificacion. Continua para intentarlo de nuevo en la Ronda 2.",
+  "tutorialResultsBackHint": "Presiona la flecha de retroceso cuando termines de ver los resultados.",
+
+  "wizardStep1Title": "De que quieres hablar?",
+  "wizardStep1Subtitle": "Este es el corazon de tu chat",
+  "wizardStep2Title": "Establece el ritmo",
+  "wizardStep2Subtitle": "Cuanto tiempo para cada fase?",
+  "wizardOneLastThing": "Una ultima cosa...",
+  "wizardProposingLabel": "Proponer (enviar ideas)",
+  "wizardRatingLabel": "Calificar (clasificar ideas)",
+  "back": "Atras"
 }

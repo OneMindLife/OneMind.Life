@@ -2,23 +2,26 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/countdown_timer.dart';
+import '../../../widgets/proposition_content_card.dart';
 
-/// Panel displayed when waiting for the host to start the phase.
+/// Panel displayed when waiting for more participants to join.
+/// The phase starts automatically when enough participants join.
 class WaitingStatePanel extends StatelessWidget {
-  final bool isHost;
   final int participantCount;
-  final VoidCallback onStartPhase;
+  final int autoStartParticipantCount;
 
   const WaitingStatePanel({
     super.key,
-    required this.isHost,
     required this.participantCount,
-    required this.onStartPhase,
+    this.autoStartParticipantCount = 3,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final remaining = autoStartParticipantCount - participantCount;
+    final waitingCount = remaining > 0 ? remaining : 0;
+
     return Container(
       key: const Key('waiting-state-panel'),
       padding: const EdgeInsets.all(16),
@@ -27,30 +30,16 @@ class WaitingStatePanel extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            isHost ? l10n.startPhase : l10n.waiting,
+            l10n.waiting,
             style: Theme.of(context).textTheme.titleSmall,
           ),
           const SizedBox(height: 8),
-          if (isHost) ...[
-            Text(
-              '$participantCount participants have joined',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              key: const Key('start-phase-button'),
-              onPressed: onStartPhase,
-              child: Text(l10n.startPhase),
-            ),
-          ] else
-            Text(
-              l10n.waitingForHostToStart,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
+          Text(
+            l10n.waitingForMoreParticipants(waitingCount),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
         ],
       ),
     );
@@ -116,6 +105,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     final tzDisplay = _formatTimezoneDisplay(scheduleTimezone);
 
     return Container(
@@ -133,7 +123,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                'Scheduled',
+                l10n.scheduled,
                 style: theme.textTheme.titleSmall?.copyWith(
                   color: theme.colorScheme.primary,
                 ),
@@ -155,7 +145,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
               children: [
                 if (isRecurring) ...[
                   Text(
-                    'Chat is outside schedule window',
+                    l10n.chatOutsideSchedule,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -163,7 +153,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
                   if (nextWindowStart != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                      'Next window starts ${_formatDateTime(nextWindowStart!)}',
+                      l10n.nextWindowStarts(_formatDateTime(nextWindowStart!)),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -172,7 +162,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
                   if (scheduleWindows.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
-                      'Schedule windows:',
+                      l10n.scheduleWindows,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
@@ -191,7 +181,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
                   ],
                 ] else if (scheduledStartAt != null) ...[
                   Text(
-                    'Scheduled to start',
+                    l10n.scheduledToStart,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w500,
                     ),
@@ -227,7 +217,7 @@ class ScheduledWaitingPanel extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'The chat will automatically start at the scheduled time.',
+            l10n.chatWillAutoStart,
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -248,11 +238,18 @@ class ProposingStatePanel extends StatelessWidget {
   final TextEditingController propositionController;
   final VoidCallback onSubmit;
   final DateTime? phaseEndsAt;
+  final VoidCallback? onPhaseExpired;
   final bool isHost;
   final VoidCallback? onAdvancePhase;
-  final VoidCallback? onPhaseExpired;
   final VoidCallback? onViewAllPropositions;
   final bool isPaused;
+  final bool isSubmitting; // Prevent double-clicks
+  // Skip feature
+  final VoidCallback? onSkip;
+  final bool canSkip;
+  final int skipCount;
+  final int maxSkips;
+  final bool hasSkipped;
 
   const ProposingStatePanel({
     super.key,
@@ -263,11 +260,17 @@ class ProposingStatePanel extends StatelessWidget {
     required this.propositionController,
     required this.onSubmit,
     this.phaseEndsAt,
+    this.onPhaseExpired,
     this.isHost = false,
     this.onAdvancePhase,
-    this.onPhaseExpired,
     this.onViewAllPropositions,
     this.isPaused = false,
+    this.isSubmitting = false,
+    this.onSkip,
+    this.canSkip = false,
+    this.skipCount = 0,
+    this.maxSkips = 0,
+    this.hasSkipped = false,
   });
 
   @override
@@ -285,74 +288,157 @@ class ProposingStatePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header row with round info and timer
-          Row(
-            children: [
-              Text(
-                l10n.roundNumber(roundCustomId),
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(width: 8),
-              if (phaseEndsAt != null)
-                CountdownTimer(
-                  endsAt: phaseEndsAt!,
-                  onExpired: onPhaseExpired,
-                ),
-              const Spacer(),
-              if (propositionsPerUser > 1)
+          // Submission count (for multi-proposition mode)
+          if (propositionsPerUser > 1) ...[
+            Row(
+              children: [
+                const Spacer(),
                 Text(
-                  '$newSubmissions/$propositionsPerUser submitted',
+                  l10n.submittedCount(newSubmissions, propositionsPerUser),
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                 ),
-              // Host: View All button to open moderation sheet
-              if (isHost && allPropositionsCount > 0 && onViewAllPropositions != null) ...[
-                const SizedBox(width: 8),
-                Badge(
-                  label: Text('$allPropositionsCount'),
-                  child: IconButton(
-                    icon: const Icon(Icons.list_alt),
-                    tooltip: l10n.viewAllPropositions,
-                    onPressed: onViewAllPropositions,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ),
               ],
-            ],
-          ),
-          const SizedBox(height: 8),
-
-          // Show input if can submit more (for everyone including host)
-          if (canSubmitMore) ...[
-            TextField(
-              key: const Key('proposition-input'),
-              controller: propositionController,
-              enabled: !isPaused,
-              decoration: InputDecoration(
-                hintText: isPaused
-                    ? l10n.chatIsPaused
-                    : newSubmissions == 0
-                        ? l10n.shareYourIdea
-                        : l10n.addAnotherIdea,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-              ),
-              maxLines: 3,
-              maxLength: 500,
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                key: const Key('submit-proposition-button'),
-                onPressed: isPaused ? null : onSubmit,
-                child: Text(newSubmissions == 0 ? l10n.submit : l10n.addProposition),
+          ],
+
+          // Show skip indicator if user has skipped
+          if (hasSkipped) ...[
+            Container(
+              key: const Key('skipped-indicator'),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer.withAlpha(50),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.skip_next,
+                    color: Theme.of(context).colorScheme.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.skipped,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.waitingForRatingPhase,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                if (phaseEndsAt != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '(',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  CountdownTimer(
+                    endsAt: phaseEndsAt!,
+                    onExpired: onPhaseExpired,
+                    showIcon: false,
+                  ),
+                  Text(
+                    ')',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+          ]
+          // Show input if can submit more (for everyone including host)
+          else if (canSubmitMore) ...[
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: propositionController,
+              builder: (context, value, child) {
+                return TextField(
+                  key: const Key('proposition-input'),
+                  controller: propositionController,
+                  enabled: !isPaused && !hasSkipped,
+                  decoration: InputDecoration(
+                    hintText: isPaused
+                        ? l10n.chatIsPaused
+                        : newSubmissions == 0
+                            ? l10n.shareYourIdea
+                            : l10n.addAnotherIdea,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    filled: true,
+                    suffixIcon: value.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () => propositionController.clear(),
+                            tooltip: l10n.clear,
+                          )
+                        : null,
+                  ),
+                  minLines: 1,
+                  maxLines: 5,
+                  maxLength: 200,
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+            // Show submit and skip buttons in a row
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    key: const Key('submit-proposition-button'),
+                    onPressed: isPaused || isSubmitting ? null : onSubmit,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (isSubmitting)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        else
+                          Text(newSubmissions == 0 ? l10n.submit : l10n.addProposition),
+                        if (phaseEndsAt != null && !isSubmitting) ...[
+                          const SizedBox(width: 4),
+                          const Text('('),
+                          CountdownTimer(
+                            endsAt: phaseEndsAt!,
+                            onExpired: onPhaseExpired,
+                            showIcon: false,
+                          ),
+                          const Text(')'),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                // Show skip button if user can skip and hasn't submitted yet
+                if (canSkip && newSubmissions == 0 && maxSkips > 0) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    key: const Key('skip-proposing-button'),
+                    onPressed: isPaused || isSubmitting ? null : onSkip,
+                    child: Text(l10n.skip),
+                  ),
+                ],
+              ],
             ),
           ] else if (newSubmissions > 0) ...[
             // Regular user after submitting: show their submissions
@@ -368,27 +454,51 @@ class ProposingStatePanel extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              l10n.waitingForRatingPhase,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.waitingForRatingPhase,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                if (phaseEndsAt != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '(',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
-              textAlign: TextAlign.center,
+                  CountdownTimer(
+                    endsAt: phaseEndsAt!,
+                    onExpired: onPhaseExpired,
+                    showIcon: false,
+                  ),
+                  Text(
+                    ')',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ],
             ),
           ],
 
-          // Host advance button
-          if (isHost && onAdvancePhase != null) ...[
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              key: const Key('advance-to-rating-button'),
-              onPressed: onAdvancePhase,
-              icon: const Icon(Icons.skip_next),
-              label: Text(l10n.endProposingStartRating),
-            ),
-          ],
+          // Host advance button - hidden for MVP
+          // if (isHost && onAdvancePhase != null) ...[
+          //   const SizedBox(height: 16),
+          //   const Divider(),
+          //   const SizedBox(height: 8),
+          //   OutlinedButton.icon(
+          //     key: const Key('advance-to-rating-button'),
+          //     onPressed: onAdvancePhase,
+          //     icon: const Icon(Icons.skip_next),
+          //     label: Text(l10n.endProposingStartRating),
+          //   ),
+          // ],
         ],
       ),
     );
@@ -400,13 +510,8 @@ class ProposingStatePanel extends StatelessWidget {
     int index, {
     bool isMine = false,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(8),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -430,7 +535,12 @@ class ProposingStatePanel extends StatelessWidget {
                 ),
               ),
             ),
-          Expanded(child: Text(prop.displayContent)),
+          Expanded(
+            child: PropositionContentCard(
+              content: prop.displayContent,
+              maxHeight: 100,
+            ),
+          ),
         ],
       ),
     );
@@ -511,7 +621,9 @@ class WaitingForRatingPanel extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '$propositionCount proposition${propositionCount == 1 ? '' : 's'} collected',
+                      propositionCount == 1
+                          ? l10n.propositionCollected(propositionCount)
+                          : l10n.propositionsCollected(propositionCount),
                       style: theme.textTheme.bodyMedium?.copyWith(
                         fontWeight: FontWeight.w500,
                       ),
@@ -582,29 +694,6 @@ class RatingStatePanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Header row with title and timer
-          Row(
-            children: [
-              Text(
-                hasRated ? l10n.ratingComplete : l10n.ratePropositions,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(width: 8),
-              if (phaseEndsAt != null)
-                CountdownTimer(
-                  endsAt: phaseEndsAt!,
-                  onExpired: onPhaseExpired,
-                ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.roundNumber(roundCustomId),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 8),
           if (hasRated)
             Container(
               key: const Key('rating-complete-indicator'),
@@ -621,47 +710,63 @@ class RatingStatePanel extends StatelessWidget {
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    l10n.waitingForRatingPhaseEnd,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                  Expanded(
+                    child: Text(
+                      l10n.waitingForRatingPhaseEnd,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
                   ),
+                  if (phaseEndsAt != null) ...[
+                    const SizedBox(width: 8),
+                    CountdownTimer(
+                      endsAt: phaseEndsAt!,
+                      onExpired: onPhaseExpired,
+                      showIcon: false,
+                    ),
+                  ],
                 ],
               ),
             )
           else ...[
-            Text(
-              isPaused
-                  ? l10n.chatIsPaused
-                  : l10n.rateAllPropositions(propositionCount),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 key: const Key('start-rating-button'),
                 onPressed: isPaused ? null : onStartRating,
-                child: Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
+                    if (phaseEndsAt != null) ...[
+                      const SizedBox(width: 4),
+                      const Text('('),
+                      CountdownTimer(
+                        endsAt: phaseEndsAt!,
+                        onExpired: onPhaseExpired,
+                        showIcon: false,
+                      ),
+                      const Text(')'),
+                    ],
+                  ],
+                ),
               ),
             ),
           ],
 
-          // Host advance button
-          if (isHost && onAdvancePhase != null) ...[
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              key: const Key('advance-from-rating-button'),
-              onPressed: onAdvancePhase,
-              icon: const Icon(Icons.skip_next),
-              label: Text(l10n.endRatingStartNextRound),
-            ),
-          ],
+          // Host advance button - hidden for MVP
+          // if (isHost && onAdvancePhase != null) ...[
+          //   const SizedBox(height: 16),
+          //   const Divider(),
+          //   const SizedBox(height: 8),
+          //   OutlinedButton.icon(
+          //     key: const Key('advance-from-rating-button'),
+          //     onPressed: onAdvancePhase,
+          //     icon: const Icon(Icons.skip_next),
+          //     label: Text(l10n.endRatingStartNextRound),
+          //   ),
+          // ],
         ],
       ),
     );

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
+import '../../screens/tutorial/tutorial_data.dart';
 
 class JoinDialog extends ConsumerStatefulWidget {
   final void Function(Chat chat) onJoined;
@@ -57,6 +59,15 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
       return;
     }
 
+    // Check for tutorial code - redirect to tutorial
+    if (code == TutorialData.demoInviteCode) {
+      if (mounted) {
+        Navigator.pop(context);
+        context.go('/tutorial');
+      }
+      return;
+    }
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -65,6 +76,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
     try {
       final chatService = ref.read(chatServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
+      final participantService = ref.read(participantServiceProvider);
       final languageCode = ref.read(localeProvider).languageCode;
       final chat = await chatService.getChatByCode(code, languageCode: languageCode);
 
@@ -73,6 +85,17 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
           _error = l10n.chatNotFound;
           _isLoading = false;
         });
+        return;
+      }
+
+      // Check if user is already a participant in this chat
+      final existingParticipant = await participantService.getMyParticipant(chat.id);
+      if (existingParticipant != null && existingParticipant.status == ParticipantStatus.active) {
+        // User is already in this chat - close dialog and navigate to it
+        if (mounted) {
+          Navigator.pop(context);
+          widget.onJoined(chat);
+        }
         return;
       }
 
@@ -200,6 +223,12 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
             participantId: participant.id,
           );
         }
+
+        // Log analytics event
+        ref.read(analyticsServiceProvider).logChatJoined(
+          chatId: _foundChat!.id.toString(),
+          joinMethod: 'invite_code',
+        );
 
         if (mounted) {
           Navigator.pop(context);

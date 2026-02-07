@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 
 /// A number input with increment/decrement buttons.
 class NumberInput extends StatelessWidget {
@@ -96,23 +97,24 @@ class DurationDropdown extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final options = isMin
         ? [
             // Minimum 60s due to cron job granularity (runs every minute)
-            (60, '1 min'),
-            (120, '2 min'),
-            (300, '5 min'),
-            (600, '10 min'),
-            (1800, '30 min'),
-            (3600, '1 hour'),
+            (60, l10n.duration1min),
+            (120, l10n.duration2min),
+            (300, l10n.preset5min),
+            (600, l10n.duration10min),
+            (1800, l10n.preset30min),
+            (3600, l10n.preset1hour),
           ]
         : [
-            (3600, '1 hour'),
-            (7200, '2 hours'),
-            (14400, '4 hours'),
-            (28800, '8 hours'),
-            (43200, '12 hours'),
-            (86400, '1 day'),
+            (3600, l10n.preset1hour),
+            (7200, l10n.duration2hours),
+            (14400, l10n.duration4hours),
+            (28800, l10n.duration8hours),
+            (43200, l10n.duration12hours),
+            (86400, l10n.preset1day),
           ];
 
     return Column(
@@ -224,18 +226,18 @@ class _TimerPresetsState extends State<TimerPresets> {
     super.dispose();
   }
 
-  String _formatPreset(String preset) {
+  String _formatPreset(String preset, AppLocalizations l10n) {
     switch (preset) {
       case '5min':
-        return '5 min';
+        return l10n.preset5min;
       case '30min':
-        return '30 min';
+        return l10n.preset30min;
       case '1hour':
-        return '1 hour';
+        return l10n.preset1hour;
       case '1day':
-        return '1 day';
+        return l10n.preset1day;
       case 'custom':
-        return 'Custom';
+        return l10n.presetCustom;
       default:
         return preset;
     }
@@ -260,6 +262,7 @@ class _TimerPresetsState extends State<TimerPresets> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final isCustomSelected = widget.selected == 'custom';
 
     return Column(
@@ -272,7 +275,7 @@ class _TimerPresetsState extends State<TimerPresets> {
           children: TimerPresets.presets.keys.map((preset) {
             final isSelected = widget.selected == preset;
             return ChoiceChip(
-              label: Text(_formatPreset(preset)),
+              label: Text(_formatPreset(preset, l10n)),
               selected: isSelected,
               onSelected: (_) {
                 if (preset == 'custom') {
@@ -294,11 +297,11 @@ class _TimerPresetsState extends State<TimerPresets> {
                 width: 80,
                 child: TextField(
                   controller: _hoursController,
-                  decoration: const InputDecoration(
-                    labelText: 'Hours',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.hours,
+                    border: const OutlineInputBorder(),
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => _onCustomDurationChanged(),
@@ -309,11 +312,11 @@ class _TimerPresetsState extends State<TimerPresets> {
                 width: 80,
                 child: TextField(
                   controller: _minutesController,
-                  decoration: const InputDecoration(
-                    labelText: 'Minutes',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: l10n.minutes,
+                    border: const OutlineInputBorder(),
                     isDense: true,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => _onCustomDurationChanged(),
@@ -321,7 +324,7 @@ class _TimerPresetsState extends State<TimerPresets> {
               ),
               const SizedBox(width: 12),
               Text(
-                '(max 24h)',
+                l10n.max24h,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),

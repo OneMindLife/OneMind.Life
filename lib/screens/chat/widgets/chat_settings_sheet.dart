@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 
 /// A bottom sheet that displays all chat settings in read-only mode.
@@ -54,7 +55,7 @@ class ChatSettingsSheet extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Chat Settings',
+                    AppLocalizations.of(context)!.chatSettings,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -73,25 +74,26 @@ class ChatSettingsSheet extends StatelessWidget {
               children: [
                 _buildSection(
                   context,
-                  'Basic Info',
+                  AppLocalizations.of(context)!.basicInfo,
                   [
-                    _buildSettingRow(context, 'Name', chat.displayName),
+                    _buildSettingRow(context, AppLocalizations.of(context)!.chatName, chat.displayName),
                     if (chat.hostDisplayName != null)
-                      _buildSettingRow(context, 'Host', chat.hostDisplayName!),
-                    _buildSettingRow(context, 'Initial Message', chat.displayInitialMessage),
+                      _buildSettingRow(context, AppLocalizations.of(context)!.host, chat.hostDisplayName!),
                     if (chat.displayDescription != null && chat.displayDescription!.isNotEmpty)
-                      _buildSettingRow(context, 'Description', chat.displayDescription!),
+                      _buildSettingRow(context, AppLocalizations.of(context)!.chatDescription, chat.displayDescription!),
+                    if (chat.displayInitialMessage.isNotEmpty)
+                      _buildSettingRow(context, AppLocalizations.of(context)!.initialMessage, chat.displayInitialMessage),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
                   context,
-                  'Access & Visibility',
+                  AppLocalizations.of(context)!.accessAndVisibility,
                   [
                     _buildSettingRow(
                       context,
-                      'Access Method',
-                      _formatAccessMethod(chat.accessMethod),
+                      AppLocalizations.of(context)!.accessMethod,
+                      _formatAccessMethod(context, chat.accessMethod),
                     ),
                     // TODO: Re-enable when user authentication is implemented
                     // See docs/FEATURE_REQUESTS.md - "User Authentication"
@@ -102,66 +104,66 @@ class ChatSettingsSheet extends StatelessWidget {
                     // ),
                     _buildSettingRow(
                       context,
-                      'Require Approval',
-                      chat.requireApproval ? 'Yes' : 'No',
+                      AppLocalizations.of(context)!.requireApproval,
+                      chat.requireApproval ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
                   context,
-                  'Facilitation',
+                  AppLocalizations.of(context)!.facilitation,
                   [
                     _buildSettingRow(
                       context,
-                      'Start Mode',
-                      chat.startMode == StartMode.auto ? 'Auto' : 'Manual',
+                      AppLocalizations.of(context)!.startMode,
+                      chat.startMode == StartMode.auto ? AppLocalizations.of(context)!.autoMode : AppLocalizations.of(context)!.manual,
                     ),
                     if (chat.startMode == StartMode.auto &&
                         chat.autoStartParticipantCount != null)
                       _buildSettingRow(
                         context,
-                        'Auto-Start Threshold',
-                        '${chat.autoStartParticipantCount} participants',
+                        AppLocalizations.of(context)!.autoStartThreshold,
+                        '${chat.autoStartParticipantCount} ${AppLocalizations.of(context)!.participants}',
                       ),
                     _buildSettingRow(
                       context,
-                      'Rating Start Mode',
-                      chat.ratingStartMode == StartMode.auto ? 'Auto' : 'Manual',
+                      AppLocalizations.of(context)!.ratingStartMode,
+                      chat.ratingStartMode == StartMode.auto ? AppLocalizations.of(context)!.autoMode : AppLocalizations.of(context)!.manual,
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
                   context,
-                  'Timers',
+                  AppLocalizations.of(context)!.timers,
                   [
                     _buildSettingRow(
                       context,
-                      'Proposing Duration',
-                      _formatDuration(chat.proposingDurationSeconds),
+                      AppLocalizations.of(context)!.proposingDuration,
+                      _formatDuration(context, chat.proposingDurationSeconds),
                     ),
                     _buildSettingRow(
                       context,
-                      'Rating Duration',
-                      _formatDuration(chat.ratingDurationSeconds),
+                      AppLocalizations.of(context)!.ratingDuration,
+                      _formatDuration(context, chat.ratingDurationSeconds),
                     ),
                   ],
                 ),
                 const SizedBox(height: 24),
                 _buildSection(
                   context,
-                  'Minimum Requirements',
+                  AppLocalizations.of(context)!.minimumRequirements,
                   [
                     _buildSettingRow(
                       context,
-                      'Proposing Minimum',
-                      '${chat.proposingMinimum} propositions',
+                      AppLocalizations.of(context)!.proposingMinimum,
+                      '${chat.proposingMinimum} ${AppLocalizations.of(context)!.propositions}',
                     ),
                     _buildSettingRow(
                       context,
-                      'Rating Minimum',
-                      '${chat.ratingMinimum} avg raters per proposition',
+                      AppLocalizations.of(context)!.ratingMinimum,
+                      '${chat.ratingMinimum} ${AppLocalizations.of(context)!.avgRatersPerProposition}',
                     ),
                   ],
                 ),
@@ -170,19 +172,19 @@ class ChatSettingsSheet extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSection(
                     context,
-                    'Early Advance Thresholds',
+                    AppLocalizations.of(context)!.earlyAdvanceThresholds,
                     [
                       if (chat.proposingThresholdCount != null)
                         _buildSettingRow(
                           context,
-                          'Proposing Threshold',
-                          '${chat.proposingThresholdCount} propositions',
+                          AppLocalizations.of(context)!.proposingThreshold,
+                          '${chat.proposingThresholdCount} ${AppLocalizations.of(context)!.propositions}',
                         ),
                       if (chat.ratingThresholdCount != null)
                         _buildSettingRow(
                           context,
-                          'Rating Threshold',
-                          '${chat.ratingThresholdCount} avg raters',
+                          AppLocalizations.of(context)!.ratingThreshold,
+                          AppLocalizations.of(context)!.nAvgRaters(chat.ratingThresholdCount!.toDouble()),
                         ),
                     ],
                   ),
@@ -190,22 +192,22 @@ class ChatSettingsSheet extends StatelessWidget {
                 const SizedBox(height: 24),
                 _buildSection(
                   context,
-                  'Consensus',
+                  AppLocalizations.of(context)!.consensus,
                   [
                     _buildSettingRow(
                       context,
-                      'Confirmation Rounds',
-                      '${chat.confirmationRoundsRequired} consecutive wins',
+                      AppLocalizations.of(context)!.confirmationRounds,
+                      AppLocalizations.of(context)!.nConsecutiveWins(chat.confirmationRoundsRequired),
                     ),
                     _buildSettingRow(
                       context,
-                      'Propositions Per User',
+                      AppLocalizations.of(context)!.propositionsPerUser,
                       '${chat.propositionsPerUser}',
                     ),
                     _buildSettingRow(
                       context,
-                      'Show Previous Results',
-                      chat.showPreviousResults ? 'Yes' : 'No',
+                      AppLocalizations.of(context)!.showPreviousResults,
+                      chat.showPreviousResults ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no,
                     ),
                   ],
                 ),
@@ -213,14 +215,14 @@ class ChatSettingsSheet extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSection(
                     context,
-                    'AI Participant',
+                    AppLocalizations.of(context)!.aiParticipant,
                     [
-                      _buildSettingRow(context, 'Enabled', 'Yes'),
+                      _buildSettingRow(context, AppLocalizations.of(context)!.enabled, AppLocalizations.of(context)!.yes),
                       if (chat.aiPropositionsCount != null)
                         _buildSettingRow(
                           context,
-                          'AI Propositions',
-                          '${chat.aiPropositionsCount} per round',
+                          AppLocalizations.of(context)!.aiPropositions,
+                          '${chat.aiPropositionsCount} ${AppLocalizations.of(context)!.perRound}',
                         ),
                     ],
                   ),
@@ -229,38 +231,38 @@ class ChatSettingsSheet extends StatelessWidget {
                   const SizedBox(height: 24),
                   _buildSection(
                     context,
-                    'Schedule',
+                    AppLocalizations.of(context)!.schedule,
                     [
                       _buildSettingRow(
                         context,
-                        'Schedule Type',
+                        AppLocalizations.of(context)!.scheduleType,
                         chat.scheduleType == ScheduleType.once
-                            ? 'One-time'
-                            : 'Recurring',
+                            ? AppLocalizations.of(context)!.oneTime
+                            : AppLocalizations.of(context)!.recurring,
                       ),
                       _buildSettingRow(
                         context,
-                        'Timezone',
+                        AppLocalizations.of(context)!.timezone,
                         chat.scheduleTimezone,
                       ),
                       if (chat.scheduleType == ScheduleType.once &&
                           chat.scheduledStartAt != null)
                         _buildSettingRow(
                           context,
-                          'Scheduled Start',
+                          AppLocalizations.of(context)!.scheduledStart,
                           _formatDateTime(chat.scheduledStartAt!),
                         ),
                       if (chat.scheduleType == ScheduleType.recurring &&
                           chat.scheduleWindows.isNotEmpty)
                         _buildSettingRow(
                           context,
-                          'Windows',
-                          '${chat.scheduleWindows.length} configured',
+                          AppLocalizations.of(context)!.windows,
+                          '${chat.scheduleWindows.length} ${AppLocalizations.of(context)!.configured}',
                         ),
                       _buildSettingRow(
                         context,
-                        'Visible Outside Schedule',
-                        chat.visibleOutsideSchedule ? 'Yes' : 'No',
+                        AppLocalizations.of(context)!.visibleOutsideSchedule,
+                        chat.visibleOutsideSchedule ? AppLocalizations.of(context)!.yes : AppLocalizations.of(context)!.no,
                       ),
                     ],
                   ),
@@ -323,29 +325,30 @@ class ChatSettingsSheet extends StatelessWidget {
     );
   }
 
-  String _formatAccessMethod(AccessMethod method) {
+  String _formatAccessMethod(BuildContext context, AccessMethod method) {
     switch (method) {
       case AccessMethod.public:
-        return 'Public';
+        return AppLocalizations.of(context)!.publicAccess;
       case AccessMethod.code:
-        return 'Invite Code';
+        return AppLocalizations.of(context)!.inviteCodeAccess;
       case AccessMethod.inviteOnly:
-        return 'Invite Only';
+        return AppLocalizations.of(context)!.inviteOnlyAccess;
     }
   }
 
-  String _formatDuration(int seconds) {
+  String _formatDuration(BuildContext context, int seconds) {
+    final l10n = AppLocalizations.of(context)!;
     if (seconds < 60) {
-      return '$seconds seconds';
+      return l10n.nSeconds(seconds);
     } else if (seconds < 3600) {
       final minutes = seconds ~/ 60;
-      return '$minutes minute${minutes == 1 ? '' : 's'}';
+      return l10n.nMinutes(minutes);
     } else if (seconds < 86400) {
       final hours = seconds ~/ 3600;
-      return '$hours hour${hours == 1 ? '' : 's'}';
+      return l10n.nHours(hours);
     } else {
       final days = seconds ~/ 86400;
-      return '$days day${days == 1 ? '' : 's'}';
+      return l10n.nDays(days);
     }
   }
 

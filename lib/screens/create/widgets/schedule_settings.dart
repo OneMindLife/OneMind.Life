@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../utils/timezone_utils.dart';
 import '../models/create_chat_state.dart' as state;
@@ -32,6 +33,7 @@ class ScheduleSettingsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -39,18 +41,18 @@ class ScheduleSettingsCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Schedule Type
-            Text('Schedule Type',
+            Text(l10n.scheduleTypeLabel,
                 style: Theme.of(context).textTheme.titleSmall),
             const SizedBox(height: 8),
             SegmentedButton<ScheduleType>(
-              segments: const [
+              segments: [
                 ButtonSegment(
                   value: ScheduleType.once,
-                  label: Text('One-time'),
+                  label: Text(l10n.scheduleOneTime),
                 ),
                 ButtonSegment(
                   value: ScheduleType.recurring,
-                  label: Text('Recurring'),
+                  label: Text(l10n.scheduleRecurring),
                 ),
               ],
               selected: {scheduleType},
@@ -79,10 +81,10 @@ class ScheduleSettingsCard extends StatelessWidget {
 
             // Visibility outside schedule
             SwitchListTile(
-              title: const Text('Hide when outside schedule'),
+              title: Text(l10n.hideOutsideSchedule),
               subtitle: Text(visibleOutsideSchedule
-                  ? 'Chat visible but paused outside schedule'
-                  : 'Chat hidden until next scheduled window'),
+                  ? l10n.visiblePaused
+                  : l10n.hiddenUntilWindow),
               value: !visibleOutsideSchedule,
               onChanged: (v) => onVisibleOutsideScheduleChanged(!v),
               contentPadding: EdgeInsets.zero,
@@ -116,11 +118,12 @@ class _OneTimeSchedule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Timezone
-        Text('Timezone', style: Theme.of(context).textTheme.titleSmall),
+        Text(l10n.timezoneLabel, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         _TimezoneAutocomplete(
           selectedTimezone: scheduleTimezone,
@@ -129,7 +132,7 @@ class _OneTimeSchedule extends StatelessWidget {
         const SizedBox(height: 16),
 
         // Date & Time
-        Text('Start Date & Time',
+        Text(l10n.startDateTime,
             style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         Row(
@@ -226,11 +229,12 @@ class _RecurringSchedule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Timezone
-        Text('Timezone', style: Theme.of(context).textTheme.titleSmall),
+        Text(l10n.timezoneLabel, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
         _TimezoneAutocomplete(
           selectedTimezone: scheduleTimezone,
@@ -242,18 +246,18 @@ class _RecurringSchedule extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Schedule Windows',
+            Text(l10n.scheduleWindowsTitle,
                 style: Theme.of(context).textTheme.titleSmall),
             TextButton.icon(
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add Window'),
+              label: Text(l10n.addWindowButton),
               onPressed: () => _addWindow(context),
             ),
           ],
         ),
         const SizedBox(height: 8),
         Text(
-          'Define when the chat is active. Supports overnight windows (e.g., 11pm → 1am next day).',
+          l10n.scheduleWindowsDesc,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -294,15 +298,6 @@ class _ScheduleWindowCard extends StatelessWidget {
     'friday',
     'saturday'
   ];
-  static const dayLabels = {
-    'sunday': 'Sun',
-    'monday': 'Mon',
-    'tuesday': 'Tue',
-    'wednesday': 'Wed',
-    'thursday': 'Thu',
-    'friday': 'Fri',
-    'saturday': 'Sat',
-  };
 
   const _ScheduleWindowCard({
     required this.window,
@@ -319,8 +314,22 @@ class _ScheduleWindowCard extends StatelessWidget {
     return '$hour:$minute $period';
   }
 
+  Map<String, String> _getDayLabels(AppLocalizations l10n) {
+    return {
+      'sunday': l10n.daySun,
+      'monday': l10n.dayMon,
+      'tuesday': l10n.dayTue,
+      'wednesday': l10n.dayWed,
+      'thursday': l10n.dayThu,
+      'friday': l10n.dayFri,
+      'saturday': l10n.daySat,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final dayLabelsLocalized = _getDayLabels(l10n);
     return Card(
       elevation: 0,
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -334,7 +343,7 @@ class _ScheduleWindowCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Window ${index + 1}',
+                  l10n.windowNumber(index + 1),
                   style: Theme.of(context).textTheme.labelLarge,
                 ),
                 if (canDelete)
@@ -342,7 +351,7 @@ class _ScheduleWindowCard extends StatelessWidget {
                     icon: const Icon(Icons.delete_outline, size: 20),
                     onPressed: onDelete,
                     visualDensity: VisualDensity.compact,
-                    tooltip: 'Remove window',
+                    tooltip: l10n.removeWindow,
                   ),
               ],
             ),
@@ -354,17 +363,17 @@ class _ScheduleWindowCard extends StatelessWidget {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: window.startDay,
-                    decoration: const InputDecoration(
-                      labelText: 'Start Day',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.startDay,
+                      border: const OutlineInputBorder(),
                       isDense: true,
                       contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: allDays.map((day) {
                       return DropdownMenuItem(
                         value: day,
-                        child: Text(dayLabels[day] ?? day),
+                        child: Text(dayLabelsLocalized[day] ?? day),
                       );
                     }).toList(),
                     onChanged: (v) =>
@@ -406,17 +415,17 @@ class _ScheduleWindowCard extends StatelessWidget {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     value: window.endDay,
-                    decoration: const InputDecoration(
-                      labelText: 'End Day',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: l10n.endDay,
+                      border: const OutlineInputBorder(),
                       isDense: true,
                       contentPadding:
-                          EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                     items: allDays.map((day) {
                       return DropdownMenuItem(
                         value: day,
-                        child: Text(dayLabels[day] ?? day),
+                        child: Text(dayLabelsLocalized[day] ?? day),
                       );
                     }).toList(),
                     onChanged: (v) =>
@@ -498,6 +507,7 @@ class _TimezoneAutocompleteState extends State<_TimezoneAutocomplete> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Autocomplete<String>(
       initialValue: TextEditingValue(
         text: getTimezoneDisplayName(widget.selectedTimezone),
@@ -522,7 +532,7 @@ class _TimezoneAutocompleteState extends State<_TimezoneAutocomplete> {
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             isDense: true,
-            hintText: 'Search timezone...',
+            hintText: l10n.searchTimezone,
             suffixIcon: IconButton(
               icon: const Icon(Icons.clear, size: 18),
               onPressed: () {

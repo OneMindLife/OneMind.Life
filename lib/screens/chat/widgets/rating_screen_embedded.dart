@@ -6,7 +6,7 @@ import '../../../providers/providers.dart';
 
 /// An embedded rating screen widget for rating propositions.
 /// Note: This is the legacy inline rating screen. The primary rating UI
-/// is now GridRankingScreen for a better UX.
+/// is now RatingScreen for a better UX.
 class RatingScreenEmbedded extends ConsumerStatefulWidget {
   final Round round;
   final Participant participant;

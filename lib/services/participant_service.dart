@@ -202,4 +202,40 @@ class ParticipantService {
   Future<void> cancelJoinRequest(int requestId) async {
     await _client.rpc('cancel_join_request', params: {'p_request_id': requestId});
   }
+
+  /// Join a public chat (no display name required)
+  /// For official/public chats where users can join without approval
+  Future<Participant> joinPublicChat({required int chatId}) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw AppException.authRequired(
+        message: 'User must be signed in to join a chat',
+      );
+    }
+
+    // Check if already a participant (any status)
+    final existing = await _client
+        .from('participants')
+        .select()
+        .eq('chat_id', chatId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (existing != null) {
+      // Already joined - return existing record
+      return Participant.fromJson(existing);
+    }
+
+    // Join with default display name (column is NOT NULL)
+    final response = await _client.from('participants').insert({
+      'chat_id': chatId,
+      'user_id': userId,
+      'display_name': 'Anonymous',
+      'is_host': false,
+      'is_authenticated': true,
+      'status': 'active',
+    }).select().single();
+
+    return Participant.fromJson(response);
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart' as state;
 import 'package:onemind_app/screens/create/widgets/schedule_settings.dart';
@@ -35,6 +36,9 @@ void main() {
       void Function(bool)? onVisibleOutsideScheduleChanged,
     }) {
       return MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
         home: Scaffold(
           body: SingleChildScrollView(
             child: ScheduleSettingsCard(

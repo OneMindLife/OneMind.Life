@@ -39,6 +39,10 @@ Screens (UI) → Notifiers (State) → Services (Business Logic) → Supabase (B
 - `ChatService` - Chat CRUD, cycles, rounds, winner calculation
 - `ParticipantService` - Join/leave/kick, approval workflow
 - `PropositionService` - Submit and rate propositions
+- `AnalyticsService` - Firebase Analytics event tracking
+- `BillingService` - Credits and billing operations
+- `InviteService` - Invite codes and email invitations
+- `TutorialService` - Tutorial completion state
 
 **Utils** (`lib/utils/`) - Standalone utility functions:
 - `timezone_utils.dart` - Timezone auto-detection and mapping
@@ -46,7 +50,7 @@ Screens (UI) → Notifiers (State) → Services (Business Logic) → Supabase (B
 **Notifiers** (`lib/providers/notifiers/`) - Stateful controllers with Realtime subscriptions:
 - `MyChatsNotifier` - User's chat list with debounced refresh (150ms)
 - `ChatDetailNotifier` - Individual chat state with phase management
-- `GridRankingNotifier` - Proposition ranking state
+- `RatingNotifier` - Proposition ranking state
 - `PublicChatsNotifier` - Public chat discovery with pagination
 
 **Providers** (`lib/providers/providers.dart`) - Dependency injection:
@@ -119,7 +123,7 @@ setUpAll(() => registerFallbackValues());
 - All services use `auth.uid()` for user identification (RLS enforced)
 - Realtime subscriptions use `PostgresChangeFilter` on user_id or chat_id
 - Services return domain models, not raw JSON
-- Migrations live in `supabase/` with 799 pgtap tests
+- Migrations live in `supabase/` with ~1100 pgtap tests
 
 ## Models
 
@@ -128,9 +132,54 @@ All models in `lib/models/` use:
 - `equatable` mixin for value equality
 - snake_case JSON keys matching Supabase columns
 
-## Local Development
+## User Onboarding Flow
 
-See `docs/LOCAL_DEVELOPMENT.md` for detailed instructions.
+The app is designed to make onboarding as smooth as possible so users can quickly start participating with one another.
+
+### Entry Points
+
+Users can arrive at OneMind via two paths:
+
+1. **Direct visit** (`onemind.life`) - User discovers the app organically
+2. **Invite link** (`onemind.life/join/CODE`) - User was invited to join an existing chat
+
+### Tutorial Flow
+
+All new users go through the tutorial to learn how the app works. This is critical because the consensus-building mechanics are unique and users won't understand how to participate without guidance.
+
+**Tutorial sequence:**
+1. User arrives at app → redirected to tutorial (if not completed)
+2. Tutorial teaches: proposing ideas, rating, viewing results, sharing
+3. Tutorial ends with share dialog showing a prominent "Continue" button
+
+### Post-Tutorial Navigation
+
+After completing the tutorial, the app checks if the user has any chats or pending join requests:
+
+| Condition | Action | Rationale |
+|-----------|--------|-----------|
+| Has chats or pending requests | Navigate to Home | User came via invite link - a chat is waiting for them |
+| No chats and no pending | Navigate to Create Chat | User visited directly - they need to create a chat to use the app |
+
+**Why this logic?**
+- **Invite flow**: User clicks invite link → requests to join → tutorial starts → tutorial ends → they already have a pending request, so go to Home where they can see it
+- **Direct flow**: User visits onemind.life → tutorial starts → tutorial ends → no chats exist, so guide them to create one immediately
+
+### Invite Link Behavior
+
+When a user clicks an invite link (`/join/CODE`):
+- If tutorial not completed: The join request is processed, then user is redirected to tutorial
+- If tutorial completed: User goes directly to the join screen (skips tutorial)
+
+This ensures invited users learn the app before participating, while returning users can join quickly.
+
+### Key Files
+
+- `lib/config/router.dart` - Routing logic, tutorial redirect, post-tutorial navigation
+- `lib/screens/tutorial/` - Tutorial implementation
+- `lib/services/tutorial_service.dart` - Tutorial completion state (persisted locally)
+
+## Local Development
 
 ### CRITICAL: After Database Reset
 
@@ -143,16 +192,21 @@ psql "postgresql://postgres:postgres@localhost:54322/postgres" -f scripts/setup_
 # 2. Restart the Flutter app (full restart, not hot reload)
 ```
 
-**Why?** Migrations create cron jobs pointing to **production** Edge Functions. Without running the setup script, timed features (phase advancement, timer extension, auto-start) will silently fail locally.
+**Why?** Migrations create cron jobs using vault-based URL helpers with placeholder values. Without running the setup script, the vault secrets won't point to your local instance and timed features (phase advancement, timer extension, auto-start) will silently fail.
 
 ### Verify Cron Setup
 
 ```bash
-# Check cron jobs point to LOCAL
+# Check cron jobs use vault-based helpers (not hardcoded URLs)
 psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "
   SELECT jobname, CASE
-    WHEN command LIKE '%host.docker.internal%' THEN 'LOCAL ✓'
-    ELSE 'PRODUCTION ✗'
+    WHEN command LIKE '%get_edge_function_url%' THEN 'VAULT-BASED ✓'
+    ELSE 'HARDCODED ✗'
   END as target
-  FROM cron.job WHERE jobname = 'process-timers';"
+  FROM cron.job WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats');"
+
+# Verify vault secret points to local
+psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "
+  SELECT name, LEFT(decrypted_secret, 40) as url_preview
+  FROM vault.decrypted_secrets WHERE name = 'project_url';"
 ```

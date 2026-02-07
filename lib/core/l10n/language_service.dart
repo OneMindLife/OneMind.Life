@@ -15,7 +15,7 @@ class LanguageService {
   final SupabaseClient _supabase;
 
   static const String _localeKey = 'locale';
-  static const List<String> supportedLanguageCodes = ['en', 'es'];
+  static const List<String> supportedLanguageCodes = ['en', 'es', 'pt', 'fr', 'de'];
 
   LanguageService(this._prefs, this._supabase);
 

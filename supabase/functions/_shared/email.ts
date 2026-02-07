@@ -11,9 +11,9 @@
  */
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "OneMind <hello@mail.YOUR_DOMAIN>";
-const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "your-email@YOUR_DOMAIN";
-const APP_URL = Deno.env.get("APP_URL") ?? "https://YOUR_DOMAIN";
+const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "OneMind <hello@mail.onemind.life>";
+const REPLY_TO_EMAIL = Deno.env.get("REPLY_TO_EMAIL") ?? "joel@onemind.life";
+const APP_URL = Deno.env.get("APP_URL") ?? "https://onemind.life";
 
 export interface EmailOptions {
   to: string;
@@ -119,7 +119,7 @@ export function welcomeEmail(userName?: string): { subject: string; html: string
 
   <p style="color: #999; font-size: 12px; text-align: center;">
     OneMind - Collective alignment platform<br>
-    <a href="${APP_URL}" style="color: #6366F1;">YOUR_DOMAIN</a>
+    <a href="${APP_URL}" style="color: #6366F1;">onemind.life</a>
   </p>
 </body>
 </html>
@@ -213,7 +213,7 @@ export function inviteEmail(params: {
   </p>
 
   <p style="color: #999; font-size: 12px; text-align: center;">
-    <a href="${APP_URL}" style="color: #6366F1;">YOUR_DOMAIN</a>
+    <a href="${APP_URL}" style="color: #6366F1;">onemind.life</a>
   </p>
 </body>
 </html>
@@ -310,7 +310,7 @@ export function paymentReceiptEmail(params: {
 
   <p style="color: #999; font-size: 12px;">
     Questions about this charge? Reply to this email or contact support.<br>
-    <a href="${APP_URL}" style="color: #6366F1;">YOUR_DOMAIN</a>
+    <a href="${APP_URL}" style="color: #6366F1;">onemind.life</a>
   </p>
 </body>
 </html>

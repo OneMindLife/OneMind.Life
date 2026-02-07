@@ -8,7 +8,7 @@
 //
 // Returns: { success: true } on success
 //
-// Generates translations for both 'en' and 'es' and stores them in the translations table.
+// Generates translations for all supported languages (en, es, pt, fr, de) and stores them in the translations table.
 // Uses structured JSON output with retry logic and exponential backoff.
 //
 // AUTH: This function uses internal auth validation (verify_jwt should be false at Supabase level)
@@ -40,10 +40,13 @@ const anthropic = new Anthropic({
 // Initialize Supabase client with service role for DB operations
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Zod validation schema
+// Zod validation schema for all supported languages
 const TranslationsSchema = z.object({
   en: z.string(),
   es: z.string(),
+  pt: z.string(),
+  fr: z.string(),
+  de: z.string(),
 });
 
 type Translations = z.infer<typeof TranslationsSchema>;
@@ -92,15 +95,15 @@ async function getTranslations(text: string): Promise<Translations> {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000;
 
-  const prompt = `Translate the following text into English and Spanish.
-Keep the translation natural and preserve the original meaning.
-If the text is already in one of these languages, still provide both translations.
+  const prompt = `Translate the following text into English, Spanish, Portuguese, French, and German.
+Keep the translations natural and preserve the original meaning.
+If the text is already in one of these languages, still provide all translations.
 
 Text to translate:
 ${text}
 
 Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
-{"en": "English translation", "es": "Spanish translation"}`;
+{"en": "English translation", "es": "Spanish translation", "pt": "Portuguese translation", "fr": "French translation", "de": "German translation"}`;
 
   let attempts = 0;
 
@@ -193,7 +196,7 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 
 /**
  * Extract project reference from Supabase URL
- * e.g., "https://YOUR_PROJECT_REF.supabase.co" -> "YOUR_PROJECT_REF"
+ * e.g., "https://abcdefghijklmnopqrst.supabase.co" -> "abcdefghijklmnopqrst"
  */
 function getProjectRef(): string | null {
   try {

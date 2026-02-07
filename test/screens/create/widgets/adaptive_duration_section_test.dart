@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart';
 import 'package:onemind_app/screens/create/widgets/adaptive_duration_section.dart';
 
@@ -8,6 +9,9 @@ void main() {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),
@@ -23,6 +27,9 @@ void main() {
     testWidgets('displays helper text', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),
@@ -41,6 +48,9 @@ void main() {
     testWidgets('displays enable switch', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),
@@ -57,6 +67,9 @@ void main() {
     testWidgets('shows disabled subtitle when disabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),
@@ -72,6 +85,9 @@ void main() {
     testWidgets('shows enabled subtitle when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: AdaptiveDurationSection(
@@ -97,6 +113,9 @@ void main() {
     testWidgets('hides options when disabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),
@@ -114,6 +133,9 @@ void main() {
     testWidgets('shows options when enabled', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: AdaptiveDurationSection(
@@ -137,6 +159,9 @@ void main() {
     testWidgets('displays threshold explanation text', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: AdaptiveDurationSection(
@@ -163,6 +188,9 @@ void main() {
     testWidgets('displays adjustment slider label', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: AdaptiveDurationSection(
@@ -187,6 +215,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AdaptiveDurationSection(
               settings: AdaptiveDurationSettings.defaults(),

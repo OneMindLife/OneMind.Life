@@ -8,7 +8,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { shouldAutoAdvance } from "../_shared/auto-advance.ts";
+import { shouldAutoAdvance, shouldAutoAdvanceRating } from "../_shared/auto-advance.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -290,15 +290,21 @@ async function checkMinimumMet(
   isProposing: boolean
 ): Promise<boolean> {
   if (isProposing) {
-    // Count NEW propositions for this round (exclude carried forward)
-    const { count, error } = await supabase
+    // Count NEW HUMAN propositions for this round (exclude carried forward AND AI)
+    // AI propositions (participant_id IS NULL) don't count toward minimum
+    const { count: propositionCount, error } = await supabase
       .from("propositions")
       .select("id", { count: "exact", head: true })
       .eq("round_id", roundId)
-      .is("carried_from_id", null);
+      .is("carried_from_id", null)
+      .not("participant_id", "is", null);
 
     if (error) throw error;
-    return (count || 0) >= chat.proposing_minimum;
+
+    // Always enforce proposing_minimum as the floor - no dynamic adjustment
+    // This ensures meaningful consensus (at least 3 propositions to compare)
+    // If not enough participants/propositions, timer extends until more join
+    return (propositionCount || 0) >= chat.proposing_minimum;
   } else {
     // Rating phase: check average raters per proposition using grid_rankings
     const { data: propositions, error: propError } = await supabase
@@ -686,17 +692,58 @@ async function checkThresholdsMet(
 
   // Get participated count based on phase
   let participatedCount: number;
+  let skipCount = 0;
 
   if (isProposing) {
-    // Count unique proposers
+    // Count unique HUMAN proposers (exclude carried forward AND AI)
+    // AI propositions (participant_id IS NULL) don't count toward threshold
     const { data: propositions, error } = await supabase
       .from("propositions")
       .select("participant_id")
-      .eq("round_id", round.id);
+      .eq("round_id", round.id)
+      .is("carried_from_id", null)
+      .not("participant_id", "is", null);
 
     if (error) throw error;
 
-    participatedCount = new Set(propositions?.map((p) => p.participant_id)).size;
+    const uniqueSubmitters = new Set(propositions?.map((p) => p.participant_id)).size;
+
+    // Count skips for this round
+    const { count: skips, error: skipError } = await supabase
+      .from("round_skips")
+      .select("id", { count: "exact", head: true })
+      .eq("round_id", round.id);
+
+    if (skipError) throw skipError;
+    skipCount = skips || 0;
+
+    // Participated = unique submitters + skippers
+    participatedCount = uniqueSubmitters + skipCount;
+
+    // For count threshold, use dynamic adjustment
+    // effective_threshold = MIN(host_setting, max_possible)
+    const maxPossible = participantCount - skipCount;
+
+    // Calculate percent-based requirement
+    const percentRequired = thresholdPercent !== null
+      ? Math.ceil((participantCount * thresholdPercent) / 100)
+      : 0;
+
+    // Calculate effective count threshold
+    const effectiveCountThreshold = thresholdCount !== null
+      ? Math.min(thresholdCount, maxPossible)
+      : 0;
+
+    // Check if thresholds met:
+    // 1. Participated (submitters + skippers) >= percent requirement
+    // 2. Propositions (uniqueSubmitters) >= effective count threshold
+    const percentMet = participatedCount >= percentRequired;
+    const countMet = uniqueSubmitters >= effectiveCountThreshold;
+
+    console.log(`[checkThresholdsMet] Round ${round.id}: ${uniqueSubmitters} submitters + ${skipCount} skips = ${participatedCount} participated. ` +
+                `Percent: ${participatedCount} >= ${percentRequired}? ${percentMet}. Count: ${uniqueSubmitters} >= ${effectiveCountThreshold}? ${countMet}`);
+
+    return percentMet && countMet;
   } else {
     // Count unique raters
     const { data: propositions, error: propError } = await supabase
@@ -718,13 +765,14 @@ async function checkThresholdsMet(
     if (ratingError) throw ratingError;
 
     participatedCount = new Set(ratings?.map((r) => r.participant_id)).size;
-  }
 
-  // Use shared helper for threshold calculation (MAX logic)
-  return shouldAutoAdvance(
-    { thresholdPercent, thresholdCount },
-    { totalParticipants: participantCount, participatedCount }
-  );
+    // Use rating-specific helper that caps threshold to (participants - 1)
+    // since users can't rate their own propositions
+    return shouldAutoAdvanceRating(
+      { thresholdPercent, thresholdCount },
+      { totalParticipants: participantCount, participatedCount }
+    );
+  }
 }
 
 // =============================================================================

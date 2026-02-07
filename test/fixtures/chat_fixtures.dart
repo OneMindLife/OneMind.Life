@@ -6,7 +6,7 @@ class ChatFixtures {
   static Map<String, dynamic> json({
     int id = 1,
     String name = 'Test Chat',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
     String? description,
     String inviteCode = 'ABC123',
     String accessMethod = 'code',
@@ -96,7 +96,7 @@ class ChatFixtures {
   static Chat model({
     int id = 1,
     String name = 'Test Chat',
-    String initialMessage = 'What should we discuss?',
+    String? initialMessage = 'What should we discuss?',
     String inviteCode = 'ABC123',
     bool isActive = true,
     bool isOfficial = false,

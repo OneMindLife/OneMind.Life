@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/chat/widgets/phase_panels.dart';
+
+/// Helper to wrap widgets with localization support
+Widget createTestWidget(Widget child) {
+  return MaterialApp(
+    localizationsDelegates: AppLocalizations.localizationsDelegates,
+    supportedLocales: AppLocalizations.supportedLocales,
+    locale: const Locale('en'),
+    home: Scaffold(body: child),
+  );
+}
 
 void main() {
   group('ScheduledWaitingPanel', () {
@@ -9,13 +20,11 @@ void main() {
         final scheduledStartAt = DateTime.now().add(const Duration(hours: 2));
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: true,
-                scheduledStartAt: scheduledStartAt,
-                scheduleTimezone: 'America/New_York',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: true,
+              scheduledStartAt: scheduledStartAt,
+              scheduleTimezone: 'America/New_York',
             ),
           ),
         );
@@ -31,13 +40,11 @@ void main() {
         final scheduledStartAt = DateTime.now().add(const Duration(hours: 2));
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: false,
-                scheduledStartAt: scheduledStartAt,
-                scheduleTimezone: 'America/New_York',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: false,
+              scheduledStartAt: scheduledStartAt,
+              scheduleTimezone: 'America/New_York',
             ),
           ),
         );
@@ -50,13 +57,11 @@ void main() {
         final scheduledStartAt = DateTime.now().add(const Duration(hours: 1));
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: false,
-                scheduledStartAt: scheduledStartAt,
-                scheduleTimezone: 'UTC',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: false,
+              scheduledStartAt: scheduledStartAt,
+              scheduleTimezone: 'UTC',
             ),
           ),
         );
@@ -70,14 +75,12 @@ void main() {
     group('Recurring scheduled chat', () {
       testWidgets('shows outside schedule window message', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: true,
-                isRecurring: true,
-                nextWindowStart: DateTime.now().add(const Duration(days: 1)),
-                scheduleTimezone: 'Europe/London',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: true,
+              isRecurring: true,
+              nextWindowStart: DateTime.now().add(const Duration(days: 1)),
+              scheduleTimezone: 'Europe/London',
             ),
           ),
         );
@@ -92,14 +95,12 @@ void main() {
         final nextWindow = DateTime.now().add(const Duration(hours: 5));
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: true,
-                isRecurring: true,
-                nextWindowStart: nextWindow,
-                scheduleTimezone: 'Asia/Tokyo',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: true,
+              isRecurring: true,
+              nextWindowStart: nextWindow,
+              scheduleTimezone: 'Asia/Tokyo',
             ),
           ),
         );
@@ -114,13 +115,11 @@ void main() {
         final scheduledStartAt = DateTime.now().add(const Duration(minutes: 30));
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: true,
-                scheduledStartAt: scheduledStartAt,
-                scheduleTimezone: 'America/Los_Angeles',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: true,
+              scheduledStartAt: scheduledStartAt,
+              scheduleTimezone: 'America/Los_Angeles',
             ),
           ),
         );
@@ -132,14 +131,12 @@ void main() {
 
       testWidgets('host cannot manually start recurring chat outside window', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: ScheduledWaitingPanel(
-                isHost: true,
-                isRecurring: true,
-                nextWindowStart: DateTime.now().add(const Duration(hours: 10)),
-                scheduleTimezone: 'Europe/Paris',
-              ),
+          createTestWidget(
+            ScheduledWaitingPanel(
+              isHost: true,
+              isRecurring: true,
+              nextWindowStart: DateTime.now().add(const Duration(hours: 10)),
+              scheduleTimezone: 'Europe/Paris',
             ),
           ),
         );

@@ -65,12 +65,16 @@ dependencies:
   # QR Code
   qr_flutter: ^4.1.0
 
+  # Share
+  share_plus: ^10.0.0
+
   # Payments
 
   # Firebase (Analytics + Crashlytics)
   firebase_core: ^3.8.1
   firebase_analytics: ^11.4.1
   sentry_flutter: ^9.9.2
+  flutter_speed_dial: ^7.0.0
 
 dev_dependencies:
   flutter_test:

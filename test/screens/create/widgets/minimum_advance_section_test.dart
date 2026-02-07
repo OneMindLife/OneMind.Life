@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/screens/create/models/create_chat_state.dart';
 import 'package:onemind_app/screens/create/widgets/minimum_advance_section.dart';
+import 'package:onemind_app/models/models.dart';
 
 void main() {
   group('MinimumAdvanceSection', () {
     testWidgets('displays section header', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -17,12 +22,16 @@ void main() {
         ),
       );
 
-      expect(find.text('Minimum to Advance'), findsOneWidget);
+      // Updated label: "Required Participation" instead of "Minimum to Advance"
+      expect(find.text('Required Participation'), findsOneWidget);
     });
 
     testWidgets('displays helper text', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -32,8 +41,9 @@ void main() {
         ),
       );
 
+      // Updated label: "Phase won't end until requirements are met"
       expect(
-        find.text('If not met when timer ends, time extends automatically'),
+        find.text("Phase won't end until requirements are met"),
         findsOneWidget,
       );
     });
@@ -41,6 +51,9 @@ void main() {
     testWidgets('displays proposing minimum input', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -50,12 +63,16 @@ void main() {
         ),
       );
 
-      expect(find.text('Proposing minimum'), findsOneWidget);
+      // Updated label: "Ideas needed" instead of "Proposing minimum"
+      expect(find.text('Ideas needed'), findsOneWidget);
     });
 
     testWidgets('displays rating minimum input', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -65,12 +82,16 @@ void main() {
         ),
       );
 
-      expect(find.text('Rating minimum'), findsOneWidget);
+      // Updated label: "Ratings needed" instead of "Avg ratings needed"
+      expect(find.text('Ratings needed'), findsOneWidget);
     });
 
     testWidgets('displays default values', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -89,6 +110,9 @@ void main() {
     testWidgets('displays custom values', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: const MinimumSettings(
@@ -111,6 +135,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -134,6 +161,9 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: MinimumAdvanceSection(
               settings: MinimumSettings.defaults(),
@@ -150,5 +180,60 @@ void main() {
       expect(updatedSettings, isNotNull);
       expect(updatedSettings!.ratingMinimum, 3); // 2 + 1
     });
+
+    testWidgets('shows dynamic helper text in auto mode with threshold',
+        (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MinimumAdvanceSection(
+                settings: MinimumSettings.defaults(),
+                onChanged: (_) {},
+                startMode: StartMode.auto,
+                autoStartCount: 5,
+                proposingDuration: 300, // 5 minutes
+                proposingThreshold: 4,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // Should show the dynamic phase flow explanation
+      expect(
+        find.textContaining('Each phase runs for up to'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('hides dynamic helper text in manual mode', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          home: Scaffold(
+            body: MinimumAdvanceSection(
+              settings: MinimumSettings.defaults(),
+              onChanged: (_) {},
+              startMode: StartMode.manual,
+            ),
+          ),
+        ),
+      );
+
+      // Should NOT show the dynamic phase flow explanation in manual mode
+      expect(
+        find.textContaining('Each phase runs for up to'),
+        findsNothing,
+      );
+    });
+
+    // Note: max limit is now 100 (not capped by autoStartCount)
+    // because more participants can join after the chat starts
   });
 }

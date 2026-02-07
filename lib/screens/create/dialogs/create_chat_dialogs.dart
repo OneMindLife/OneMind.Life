@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:qr_flutter/qr_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../../config/env_config.dart';
+import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../widgets/qr_code_share.dart';
 
 /// Dialog helpers for the create chat screen
 class CreateChatDialogs {
@@ -10,23 +14,22 @@ class CreateChatDialogs {
     BuildContext context,
     int windowMinutes,
   ) async {
+    final l10n = AppLocalizations.of(context);
     return await showDialog<bool>(
           context: context,
           builder: (context) => AlertDialog(
-            title: const Text('Timer Warning'),
+            title: Text(l10n.timerWarningTitle),
             content: Text(
-              'Your phase timers are longer than the $windowMinutes-minute schedule window.\n\n'
-              'Phases may extend beyond the scheduled time, or pause when the window closes.\n\n'
-              'Consider using shorter timers (5 min or 30 min) for scheduled sessions.',
+              l10n.timerWarningContent(windowMinutes),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
-                child: const Text('Adjust Settings'),
+                child: Text(l10n.adjustSettingsButton),
               ),
               ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('Continue Anyway'),
+                child: Text(l10n.continueAnywayButton),
               ),
             ],
           ),
@@ -42,11 +45,12 @@ class CreateChatDialogs {
     required int invitesSent,
     required VoidCallback onContinue,
   }) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Chat Created!'),
+        title: Text(l10n.chatCreatedTitle),
         content: _buildSuccessContent(
           dialogContext: dialogContext,
           parentContext: context,
@@ -61,7 +65,7 @@ class CreateChatDialogs {
               Navigator.pop(dialogContext);
               onContinue();
             },
-            child: const Text('Continue'),
+            child: Text(l10n.continue_),
           ),
         ],
       ),
@@ -91,6 +95,7 @@ class CreateChatDialogs {
   }
 
   static Widget _buildPublicSuccessContent(BuildContext context, Chat chat) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -101,12 +106,12 @@ class CreateChatDialogs {
         ),
         const SizedBox(height: 16),
         Text(
-          'Your chat is now public!',
+          l10n.chatNowPublicTitle,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Text(
-          'Anyone can find and join "${chat.name}" from the Discover page.',
+          l10n.anyoneCanJoinDiscover(chat.name),
           style: Theme.of(context).textTheme.bodySmall,
           textAlign: TextAlign.center,
         ),
@@ -118,6 +123,7 @@ class CreateChatDialogs {
     BuildContext context,
     int invitesSent,
   ) {
+    final l10n = AppLocalizations.of(context);
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -129,13 +135,13 @@ class CreateChatDialogs {
         const SizedBox(height: 16),
         Text(
           invitesSent > 0
-              ? '$invitesSent invite${invitesSent == 1 ? '' : 's'} sent!'
-              : 'No invites sent',
+              ? l10n.invitesSentTitle(invitesSent)
+              : l10n.noInvitesSentTitle,
           style: Theme.of(context).textTheme.titleMedium,
         ),
         const SizedBox(height: 8),
         Text(
-          'Only invited users can join this chat.',
+          l10n.inviteOnlyMessage,
           style: Theme.of(context).textTheme.bodySmall,
           textAlign: TextAlign.center,
         ),
@@ -149,86 +155,149 @@ class CreateChatDialogs {
     Chat chat,
     VoidCallback onContinue,
   ) {
+    final l10n = AppLocalizations.of(dialogContext);
     final colorScheme = Theme.of(dialogContext).colorScheme;
     final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
+    final inviteCode = chat.inviteCode ?? '';
+    final fullUrl = '${EnvConfig.webAppUrl}/join/$inviteCode';
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('Share this code with participants:'),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: () {
-            Clipboard.setData(ClipboardData(text: chat.inviteCode ?? ''));
-            ScaffoldMessenger.of(dialogContext).showSnackBar(
-              const SnackBar(
-                content: Text('Invite code copied to clipboard'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+    /// Copies link to clipboard and also opens native share sheet if available.
+    Future<void> copyAndShare() async {
+      // Always copy to clipboard first
+      await Clipboard.setData(ClipboardData(text: fullUrl));
+
+      // Show feedback that link was copied
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(
+            content: Text(l10n.linkCopied),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      // Also try to open native share sheet (works on mobile, no-op on desktop)
+      try {
+        await Share.share(
+          fullUrl,
+          subject: l10n.shareLinkTitle(chat.name),
+        );
+      } catch (e) {
+        // Ignore share errors - link is already copied
+      }
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Full URL display
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: isDark
                   ? colorScheme.surfaceContainerHighest
-                  : colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
+                  : colorScheme.surfaceContainerLow,
+              borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: colorScheme.primary.withAlpha(50),
-                width: 2,
+                color: colorScheme.outlineVariant,
               ),
             ),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    chat.inviteCode ?? 'N/A',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 8,
-                      color: isDark
-                          ? colorScheme.onSurface
-                          : colorScheme.onPrimaryContainer,
-                    ),
+            child: SelectableText(
+              fullUrl,
+              style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.primary,
+                    fontFamily: 'monospace',
                   ),
-                  const SizedBox(width: 12),
-                  Icon(
-                    Icons.copy,
-                    size: 24,
-                    color: isDark
-                        ? colorScheme.onSurfaceVariant
-                        : colorScheme.onPrimaryContainer.withAlpha(180),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Share button (copies to clipboard + opens share sheet on mobile)
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: copyAndShare,
+              icon: const Icon(Icons.share),
+              label: Text(l10n.shareButton),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Divider with "or scan"
+          Row(
+            children: [
+              Expanded(child: Divider(color: colorScheme.outline)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  l10n.orScan,
+                  style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+              Expanded(child: Divider(color: colorScheme.outline)),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // QR Code
+          IgnorePointer(
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(25),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
+              child: SizedBox(
+                width: 180,
+                height: 180,
+                child: QrImageView(
+                  data: fullUrl,
+                  version: QrVersions.auto,
+                  size: 180,
+                  backgroundColor: Colors.white,
+                  eyeStyle: const QrEyeStyle(
+                    eyeShape: QrEyeShape.square,
+                    color: Colors.black,
+                  ),
+                  dataModuleStyle: const QrDataModuleStyle(
+                    dataModuleShape: QrDataModuleShape.square,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Tap to copy',
-          style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 16),
-        OutlinedButton.icon(
-          onPressed: () {
-            Navigator.pop(dialogContext);
-            QrCodeShareDialog.show(
-              parentContext,
-              chatName: chat.name,
-              inviteCode: chat.inviteCode!,
-            ).then((_) => onContinue());
-          },
-          icon: const Icon(Icons.qr_code_2),
-          label: const Text('Show QR Code'),
-        ),
-      ],
+          const SizedBox(height: 16),
+
+          // Manual code fallback
+          Text(
+            l10n.enterCodeManually,
+            style: Theme.of(dialogContext).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            inviteCode,
+            style: Theme.of(dialogContext).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                  color: colorScheme.primary,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }

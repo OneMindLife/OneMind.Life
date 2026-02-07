@@ -150,7 +150,7 @@ async function createTestChat(
       creator_session_token: crypto.randomUUID(),
       proposing_duration_seconds: options.proposingDuration ?? 300,
       rating_duration_seconds: options.ratingDuration ?? 300,
-      proposing_minimum: options.proposingMinimum ?? 2,
+      proposing_minimum: options.proposingMinimum ?? 3,
       rating_minimum: options.ratingMinimum ?? 2,
       proposing_threshold_percent: options.proposingThresholdPercent ?? null,
       proposing_threshold_count: options.proposingThresholdCount ?? null,
@@ -264,10 +264,10 @@ Deno.test({
     const chatName = "Test Timer Advance " + Date.now();
 
     try {
-      // Create chat with low minimum
+      // Create chat with minimum of 3 propositions
       const chat = await createTestChat(chatName, {
         proposingDuration: 60,
-        proposingMinimum: 2,
+        proposingMinimum: 3,
       });
 
       // Create cycle and round with EXPIRED timer
@@ -278,11 +278,13 @@ Deno.test({
         expiredTime
       );
 
-      // Create participants and propositions to meet minimum
+      // Create participants and propositions to meet minimum (3)
       const p1 = await createTestParticipant(chat.id, "User 1");
       const p2 = await createTestParticipant(chat.id, "User 2");
+      const p3 = await createTestParticipant(chat.id, "User 3");
       await createTestProposition(round.id, p1.id, "Prop 1");
       await createTestProposition(round.id, p2.id, "Prop 2");
+      await createTestProposition(round.id, p3.id, "Prop 3");
 
       // Invoke the timer processor
       const result = await invokeProcessTimers();
@@ -296,6 +298,54 @@ Deno.test({
 
       assertEquals(updatedRound?.phase, "rating");
       assert(result.phases_advanced >= 1);
+    } finally {
+      await cleanupTestData(chatName);
+    }
+  },
+  sanitizeOps: false,
+  sanitizeResources: false,
+});
+
+Deno.test({
+  name: "Timer: Minimum is enforced regardless of participant count (no dynamic adjustment)",
+  async fn() {
+    await setupTestData();
+    const chatName = "Test Minimum Enforced " + Date.now();
+
+    try {
+      // Create chat requiring 3 propositions
+      const chat = await createTestChat(chatName, {
+        proposingDuration: 300,
+        proposingMinimum: 3,
+      });
+
+      // Create cycle and round with EXPIRED timer
+      const expiredTime = new Date(Date.now() - 60000);
+      const { round } = await createTestCycleAndRound(
+        chat.id,
+        "proposing",
+        expiredTime
+      );
+
+      // Create only 1 participant with 1 proposition
+      // Previously this would have advanced (dynamic adjustment: min(3,1) = 1)
+      // Now it should extend timer because we enforce minimum = 3
+      const p1 = await createTestParticipant(chat.id, "Solo User");
+      await createTestProposition(round.id, p1.id, "Only Prop");
+
+      // Invoke the timer processor
+      const result = await invokeProcessTimers();
+
+      // Verify timer EXTENDED (not advanced) - minimum is enforced
+      const { data: updatedRound } = await adminClient
+        .from("rounds")
+        .select("phase, phase_ends_at")
+        .eq("id", round.id)
+        .single();
+
+      assertEquals(updatedRound?.phase, "proposing"); // Still in proposing
+      assert(new Date(updatedRound?.phase_ends_at) > new Date()); // Timer extended
+      assert(result.timers_extended >= 1);
     } finally {
       await cleanupTestData(chatName);
     }
@@ -413,12 +463,12 @@ Deno.test({
     const chatName = "Test Auto Advance " + Date.now();
 
     try {
-      // Create chat with 50% threshold, count of 2
+      // Create chat with 50% threshold, count of 3
       const chat = await createTestChat(chatName, {
         proposingDuration: 3600, // 1 hour (not expired)
-        proposingMinimum: 2,
+        proposingMinimum: 3,
         proposingThresholdPercent: 50,
-        proposingThresholdCount: 2,
+        proposingThresholdCount: 3,
       });
 
       // Timer NOT expired yet
@@ -468,7 +518,7 @@ Deno.test({
       // Create chat with 50% threshold BUT count of 5
       const chat = await createTestChat(chatName, {
         proposingDuration: 3600,
-        proposingMinimum: 2,
+        proposingMinimum: 3,
         proposingThresholdPercent: 50,
         proposingThresholdCount: 5, // Requires 5 proposers minimum
       });

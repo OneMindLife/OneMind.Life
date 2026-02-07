@@ -255,25 +255,7 @@ void main() {
         expect(find.text('1 participant'), findsOneWidget);
       });
 
-      testWidgets('displays description when available', (tester) async {
-        final chats = [
-          PublicChatSummaryFixtures.model(
-            id: 1,
-            name: 'Descriptive Chat',
-            description: 'This is a detailed description',
-          ),
-        ];
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => chats);
-
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.text('This is a detailed description'), findsOneWidget);
-      });
+      // Note: description display was removed from UI - only initial message is shown
 
       testWidgets('displays initial message', (tester) async {
         final chats = [
@@ -786,24 +768,7 @@ void main() {
         expect(find.text('Original Name'), findsNothing);
       });
 
-      testWidgets('displays translated description when available', (tester) async {
-        final translatedChat = PublicChatSummaryFixtures.withSpanishTranslation(
-          id: 1,
-          name: 'Test Chat',
-          description: 'Original Description',
-        );
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [translatedChat]);
-
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        // Should display translated description
-        expect(find.text('Descripcion de Prueba'), findsOneWidget);
-      });
+      // Note: description display was removed from UI - only initial message is shown
 
       testWidgets('displays translated initial message when available', (tester) async {
         final translatedChat = PublicChatSummaryFixtures.withSpanishTranslation(
@@ -842,24 +807,7 @@ void main() {
         expect(find.text('Original Name Only'), findsOneWidget);
       });
 
-      testWidgets('falls back to original description when no translation', (tester) async {
-        final untranslatedChat = PublicChatSummaryFixtures.model(
-          id: 1,
-          name: 'Chat',
-          description: 'Original Description Only',
-        );
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [untranslatedChat]);
-
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        // Should display original description
-        expect(find.text('Original Description Only'), findsOneWidget);
-      });
+      // Note: description display was removed from UI - only initial message is shown
 
       testWidgets('falls back to original initial message when no translation', (tester) async {
         final untranslatedChat = PublicChatSummaryFixtures.model(

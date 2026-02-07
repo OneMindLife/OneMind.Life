@@ -32,9 +32,19 @@ DECLARE
     v_user2_id UUID := '22222222-2222-2222-2222-222222222222';
     v_user3_id UUID := '33333333-3333-3333-3333-333333333333';
 BEGIN
-    -- Create main chat
-    INSERT INTO chats (name, initial_message, creator_session_token)
-    VALUES ('Delete Test Chat', 'Testing proposition deletion', v_host_user_id)
+    -- Create main chat:
+    -- - Disable AI to prevent auto-generated propositions
+    -- - Set proposing_minimum=10 and disable threshold-based advance to prevent auto-advance
+    INSERT INTO chats (
+        name, initial_message, creator_session_token,
+        enable_ai_participant, proposing_minimum,
+        proposing_threshold_count, proposing_threshold_percent
+    )
+    VALUES (
+        'Delete Test Chat', 'Testing proposition deletion', v_host_user_id,
+        FALSE, 10,
+        NULL, NULL  -- Disable early advance
+    )
     RETURNING id INTO v_chat_id;
 
     -- Create participants with user_id
@@ -215,8 +225,8 @@ DECLARE
     v_other_host_participant_id BIGINT;
     v_other_host_id UUID := '44444444-4444-4444-4444-444444444444';
 BEGIN
-    INSERT INTO chats (name, initial_message, creator_session_token)
-    VALUES ('Other Chat', 'Other chat', v_other_host_id)
+    INSERT INTO chats (name, initial_message, creator_session_token, enable_ai_participant)
+    VALUES ('Other Chat', 'Other chat', v_other_host_id, FALSE)
     RETURNING id INTO v_other_chat_id;
 
     INSERT INTO participants (chat_id, user_id, display_name, is_host, status)

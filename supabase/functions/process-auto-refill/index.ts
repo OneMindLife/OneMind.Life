@@ -40,9 +40,12 @@ interface ProcessResult {
 
 Deno.serve(async (req: Request) => {
   try {
-    // Verify cron secret (must be set and match)
+    // Verify cron secret via X-Cron-Secret header or Authorization: Bearer
     const authHeader = req.headers.get("Authorization");
-    if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
+    const cronSecretHeader = req.headers.get("X-Cron-Secret");
+    const isValidCron = CRON_SECRET && cronSecretHeader === CRON_SECRET;
+    const isValidBearer = CRON_SECRET && authHeader === `Bearer ${CRON_SECRET}`;
+    if (!isValidCron && !isValidBearer) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { "Content-Type": "application/json" },
