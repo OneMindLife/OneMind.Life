@@ -66,6 +66,16 @@ The [token model](TOKEN_ECONOMICS.md) is designed so wealth cannot compound:
 
 Two ways to get OMT: participate in consensus rounds (minting new tokens) or trade goods and services in the marketplace (circulating existing ones). The currency's value emerges from what people are willing to do for it.
 
+## Rank Through Contribution
+
+The [user ranking system](USER_RANKING.md) measures how well you contribute to collective thinking — voting accuracy and proposition quality, scored 0–100 each round.
+
+Current hierarchies are largely based on wealth, connections, credentials, or inherited status. These structures don't measure what actually matters: your ability to understand and contribute to collective decision-making. OneMind measures exactly that.
+
+Your OneMind Rank reflects how well you align with and strengthen the collective. The more you contribute, the higher your rank. Not through accumulation or politics, but through demonstrated competence in collective thinking. This creates a hierarchy based on merit in its most direct form — how much you actually help the group think better.
+
+The vision is for this to serve as a new basis for social organization. Not replacing all structure, but offering a legitimate alternative where status is earned through contribution to the whole rather than extraction from it.
+
 ## Self-Sustaining Model
 
 OneMind is designed to sustain itself without external funding or advertising:
