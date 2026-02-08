@@ -44,7 +44,7 @@ It enhances cooperation through shared direction via a convergence mechanism. An
 
 ```bash
 # Clone the repository
-git clone <repo-url>
+git clone https://github.com/OneMindLife/OneMind.Life.git
 cd onemind_app
 
 # Install dependencies
