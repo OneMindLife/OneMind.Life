@@ -28,7 +28,6 @@ It enhances cooperation through shared direction via a convergence mechanism. An
 - **Anonymous propositions** - Nobody can see who proposed what
 - **Democratic rating** - All participants rank propositions via grid ranking
 - **Zoom-like access** - 6-character invite codes, no sign-up required
-- **Optional authentication** - Google OAuth or Magic Link for persistence
 - **Real-time updates** - See changes as they happen
 - **Flexible settings** - Timers, thresholds, approval requirements
 
