@@ -4,6 +4,8 @@
 
 **Try it live at [onemind.life](https://onemind.life)**
 
+**[Watch the demo on YouTube](https://www.youtube.com/watch?v=zzq2TPhuVSg)**
+
 It enhances cooperation through shared direction via a convergence mechanism. Any group of people can use OneMind to reach consensus on ideas through structured, democratic deliberation.
 
 ## How It Works
