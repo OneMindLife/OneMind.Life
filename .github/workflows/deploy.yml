@@ -129,11 +129,12 @@ jobs:
             echo "⚠️  Health check returned status $HTTP_CODE (some features may be degraded)"
           fi
 
-  # Build and deploy web app
+  # Build and deploy web app (only if Flutter files changed)
   deploy-web:
     name: Deploy Web App
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, changes]
+    if: needs.changes.outputs.flutter == 'true'
     environment: ${{ github.event.inputs.environment || 'production' }}
     steps:
       - name: Checkout code
@@ -174,8 +175,8 @@ jobs:
   release-notes:
     name: Generate Release Notes
     runs-on: ubuntu-latest
-    needs: [deploy-web]
-    if: success()
+    needs: [deploy-supabase, deploy-web]
+    if: ${{ !failure() && !cancelled() }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -213,15 +214,18 @@ jobs:
     steps:
       - name: Set deployment status
         run: |
-          # deploy-supabase can be skipped if no supabase changes, so treat skipped as success
+          # Both jobs can be skipped when their files didn't change — treat skipped as success
           SUPABASE_OK=$([[ "${{ needs.deploy-supabase.result }}" == "success" || "${{ needs.deploy-supabase.result }}" == "skipped" ]] && echo "true" || echo "false")
-          WEB_OK=$([[ "${{ needs.deploy-web.result }}" == "success" ]] && echo "true" || echo "false")
+          WEB_OK=$([[ "${{ needs.deploy-web.result }}" == "success" || "${{ needs.deploy-web.result }}" == "skipped" ]] && echo "true" || echo "false")
 
           if [[ "$SUPABASE_OK" == "true" ]] && [[ "$WEB_OK" == "true" ]]; then
             echo "DEPLOY_STATUS=success" >> $GITHUB_ENV
             echo "Deployment successful!"
             if [[ "${{ needs.deploy-supabase.result }}" == "skipped" ]]; then
               echo "(Supabase deployment skipped - no changes detected)"
+            fi
+            if [[ "${{ needs.deploy-web.result }}" == "skipped" ]]; then
+              echo "(Web deployment skipped - no Flutter changes detected)"
             fi
           else
             echo "DEPLOY_STATUS=failed" >> $GITHUB_ENV
