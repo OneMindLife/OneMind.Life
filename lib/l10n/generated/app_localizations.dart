@@ -3209,6 +3209,36 @@ abstract class AppLocalizations {
   /// **'Use the arrows to move the highlighted idea up or down. Higher = agree more. Tap the checkmark to place it.'**
   String get tutorialRatingPositioningHint;
 
+  /// No description provided for @tutorialRatingSwap.
+  ///
+  /// In en, this message translates to:
+  /// **'Swap'**
+  String get tutorialRatingSwap;
+
+  /// No description provided for @tutorialRatingConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get tutorialRatingConfirm;
+
+  /// No description provided for @tutorialRatingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Up'**
+  String get tutorialRatingUp;
+
+  /// No description provided for @tutorialRatingDown.
+  ///
+  /// In en, this message translates to:
+  /// **'Down'**
+  String get tutorialRatingDown;
+
+  /// No description provided for @tutorialRatingPlace.
+  ///
+  /// In en, this message translates to:
+  /// **'Place'**
+  String get tutorialRatingPlace;
+
   /// No description provided for @tutorialRound2Result.
   ///
   /// In en, this message translates to:

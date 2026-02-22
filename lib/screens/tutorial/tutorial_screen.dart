@@ -1046,11 +1046,20 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
             _buildHint(
               context,
               l10n.tutorialRatingBinaryHint,
+              buttonLegend: [
+                _buttonPreview(context, Icons.swap_vert, l10n.tutorialRatingSwap),
+                _buttonPreview(context, Icons.check, l10n.tutorialRatingConfirm, filled: true),
+              ],
             ),
           if (widget.showHints && _currentPhase == RatingPhase.positioning)
             _buildHint(
               context,
               l10n.tutorialRatingPositioningHint,
+              buttonLegend: [
+                _buttonPreview(context, Icons.arrow_upward, l10n.tutorialRatingUp),
+                _buttonPreview(context, Icons.arrow_downward, l10n.tutorialRatingDown),
+                _buttonPreview(context, Icons.check, l10n.tutorialRatingPlace, filled: true),
+              ],
             ),
           Expanded(
             child: RatingWidget(
@@ -1070,7 +1079,7 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
     );
   }
 
-  Widget _buildHint(BuildContext context, String text) {
+  Widget _buildHint(BuildContext context, String text, {List<Widget>? buttonLegend}) {
     final theme = Theme.of(context);
     final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
     final borderColor = theme.colorScheme.primary.withAlpha(80);
@@ -1084,18 +1093,64 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(color: contentColor),
-            ),
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodySmall?.copyWith(color: contentColor),
+                ),
+              ),
+            ],
           ),
+          if (buttonLegend != null) ...[
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: buttonLegend,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buttonPreview(BuildContext context, IconData icon, String label, {bool filled = false}) {
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: filled ? primaryColor : theme.colorScheme.surface,
+            shape: BoxShape.circle,
+            border: filled ? null : Border.all(color: primaryColor, width: 1.5),
+          ),
+          child: Icon(
+            icon,
+            size: 14,
+            color: filled ? Colors.white : primaryColor,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1033,6 +1033,11 @@
   "tutorialRatingHint": "Para evitar vies, todos avaliam todas as ideias exceto a propria. A sua esta oculta para voce mas outros a avaliarao.",
   "tutorialRatingBinaryHint": "Qual ideia voce prefere? Coloque-a no topo (100). Use o botao de troca para inverte-las e toque na marca de verificacao para confirmar.",
   "tutorialRatingPositioningHint": "Use as setas para mover a ideia destacada para cima ou para baixo. Mais alto = mais concordancia. Toque na marca de verificacao para posiciona-la.",
+  "tutorialRatingSwap": "Trocar",
+  "tutorialRatingConfirm": "Confirmar",
+  "tutorialRatingUp": "Cima",
+  "tutorialRatingDown": "Baixo",
+  "tutorialRatingPlace": "Colocar",
   "tutorialRound2Result": "Sua ideia \"{proposition}\" venceu! Se vencer na proxima rodada, sera adicionada permanentemente ao chat.",
   "@tutorialRound2Result": {
     "placeholders": {

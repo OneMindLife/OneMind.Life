@@ -1034,6 +1034,11 @@
   "tutorialRatingHint": "Um Voreingenommenheit zu vermeiden, bewertet jeder alle Ideen ausser der eigenen. Deine ist fuer dich verborgen, aber andere werden sie bewerten.",
   "tutorialRatingBinaryHint": "Welche Idee bevorzugst du? Setze sie nach oben (100). Benutze die Tausch-Schaltflaeche, um sie zu wechseln, und tippe dann auf das Haekchen, um zu bestaetigen.",
   "tutorialRatingPositioningHint": "Benutze die Pfeile, um die hervorgehobene Idee nach oben oder unten zu verschieben. Hoeher = mehr Zustimmung. Tippe auf das Haekchen, um sie zu platzieren.",
+  "tutorialRatingSwap": "Tauschen",
+  "tutorialRatingConfirm": "Bestaetigen",
+  "tutorialRatingUp": "Hoch",
+  "tutorialRatingDown": "Runter",
+  "tutorialRatingPlace": "Platzieren",
   "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie in der naechsten Runde erneut gewinnt, wird sie dauerhaft zum Chat hinzugefuegt.",
   "@tutorialRound2Result": {
     "placeholders": {

@@ -1717,6 +1717,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialRatingPositioningHint => 'Utilisez les fleches pour deplacer l\'idee en surbrillance vers le haut ou vers le bas. Plus haut = plus d\'accord. Appuyez sur la coche pour la placer.';
 
   @override
+  String get tutorialRatingSwap => 'Inverser';
+
+  @override
+  String get tutorialRatingConfirm => 'Confirmer';
+
+  @override
+  String get tutorialRatingUp => 'Haut';
+
+  @override
+  String get tutorialRatingDown => 'Bas';
+
+  @override
+  String get tutorialRatingPlace => 'Placer';
+
+  @override
   String tutorialRound2Result(String proposition) {
     return 'Votre idee \"$proposition\" a gagne! Si elle gagne au prochain tour, elle sera ajoutee definitivement au chat.';
   }

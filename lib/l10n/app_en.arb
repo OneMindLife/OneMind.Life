@@ -990,6 +990,11 @@
   "tutorialRatingHint": "To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.",
   "tutorialRatingBinaryHint": "Which idea do you prefer? Place it at the top (100). Use the swap button to flip them, then tap the checkmark to confirm.",
   "tutorialRatingPositioningHint": "Use the arrows to move the highlighted idea up or down. Higher = agree more. Tap the checkmark to place it.",
+  "tutorialRatingSwap": "Swap",
+  "tutorialRatingConfirm": "Confirm",
+  "tutorialRatingUp": "Up",
+  "tutorialRatingDown": "Down",
+  "tutorialRatingPlace": "Place",
   "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round, it will be permanently added to the chat.",
   "@tutorialRound2Result": {
     "placeholders": {

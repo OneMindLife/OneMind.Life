@@ -1717,6 +1717,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutorialRatingPositioningHint => 'Use as setas para mover a ideia destacada para cima ou para baixo. Mais alto = mais concordancia. Toque na marca de verificacao para posiciona-la.';
 
   @override
+  String get tutorialRatingSwap => 'Trocar';
+
+  @override
+  String get tutorialRatingConfirm => 'Confirmar';
+
+  @override
+  String get tutorialRatingUp => 'Cima';
+
+  @override
+  String get tutorialRatingDown => 'Baixo';
+
+  @override
+  String get tutorialRatingPlace => 'Colocar';
+
+  @override
   String tutorialRound2Result(String proposition) {
     return 'Sua ideia \"$proposition\" venceu! Se vencer na proxima rodada, sera adicionada permanentemente ao chat.';
   }

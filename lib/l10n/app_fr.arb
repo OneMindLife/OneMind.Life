@@ -1033,6 +1033,11 @@
   "tutorialRatingHint": "Pour eviter les biais, chacun evalue toutes les idees sauf la sienne. La votre vous est cachee mais les autres l'evalueront.",
   "tutorialRatingBinaryHint": "Quelle idee preferez-vous? Placez-la en haut (100). Utilisez le bouton d'echange pour les inverser, puis appuyez sur la coche pour confirmer.",
   "tutorialRatingPositioningHint": "Utilisez les fleches pour deplacer l'idee en surbrillance vers le haut ou vers le bas. Plus haut = plus d'accord. Appuyez sur la coche pour la placer.",
+  "tutorialRatingSwap": "Inverser",
+  "tutorialRatingConfirm": "Confirmer",
+  "tutorialRatingUp": "Haut",
+  "tutorialRatingDown": "Bas",
+  "tutorialRatingPlace": "Placer",
   "tutorialRound2Result": "Votre idee \"{proposition}\" a gagne! Si elle gagne au prochain tour, elle sera ajoutee definitivement au chat.",
   "@tutorialRound2Result": {
     "placeholders": {
