@@ -32,6 +32,18 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Generate stub firebase_options.dart
+        run: |
+          cat > lib/firebase_options.dart << 'DART'
+          // Auto-generated stub for CI (real file is gitignored)
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'stub', appId: 'stub', messagingSenderId: 'stub', projectId: 'stub',
+            );
+          }
+          DART
+
       - name: Analyze code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 

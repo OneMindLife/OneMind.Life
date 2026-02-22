@@ -1651,7 +1651,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tutorialRound2PromptTemplate(String winner) {
-    return 'Seeing \'$winner\' as the group\'s current answer - can you think of something better?';
+    return 'The winner \'$winner\' is automatically carried forward into this round. Can you think of something better to challenge it?';
   }
 
   @override
@@ -1705,7 +1705,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialProposingHint => 'Submit an idea you want to become the group\'s answer.';
 
   @override
-  String get tutorialProposingHintWithWinner => 'Can you think of something better? Submit an idea to challenge the current winner.';
+  String get tutorialProposingHintWithWinner => 'The previous winner was carried forward automatically. Submit an idea to challenge it.';
 
   @override
   String get tutorialRatingHint => 'To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.';
@@ -1722,7 +1722,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get tutorialRound2Prompt => 'Seeing \'Success\' as the group\'s current answer - what do you think we REALLY value?';
+  String get tutorialRound2Prompt => 'The winner \'Success\' is automatically carried forward into this round. What do you think we REALLY value?';
 
   @override
   String get tutorialPropSuccess => 'Success';

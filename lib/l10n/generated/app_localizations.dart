@@ -3086,7 +3086,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound2PromptTemplate.
   ///
   /// In en, this message translates to:
-  /// **'Seeing \'{winner}\' as the group\'s current answer - can you think of something better?'**
+  /// **'The winner \'{winner}\' is automatically carried forward into this round. Can you think of something better to challenge it?'**
   String tutorialRound2PromptTemplate(String winner);
 
   /// No description provided for @tutorialWelcomeTitle.
@@ -3188,7 +3188,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialProposingHintWithWinner.
   ///
   /// In en, this message translates to:
-  /// **'Can you think of something better? Submit an idea to challenge the current winner.'**
+  /// **'The previous winner was carried forward automatically. Submit an idea to challenge it.'**
   String get tutorialProposingHintWithWinner;
 
   /// No description provided for @tutorialRatingHint.
@@ -3218,7 +3218,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound2Prompt.
   ///
   /// In en, this message translates to:
-  /// **'Seeing \'Success\' as the group\'s current answer - what do you think we REALLY value?'**
+  /// **'The winner \'Success\' is automatically carried forward into this round. What do you think we REALLY value?'**
   String get tutorialRound2Prompt;
 
   /// No description provided for @tutorialPropSuccess.

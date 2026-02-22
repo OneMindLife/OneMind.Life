@@ -1651,7 +1651,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tutorialRound2PromptTemplate(String winner) {
-    return '\'$winner\' est la réponse actuelle du groupe – pouvez-vous proposer mieux ?';
+    return 'Le gagnant \'$winner\' est automatiquement reporte dans ce tour. Pouvez-vous proposer mieux pour le defier?';
   }
 
   @override
@@ -1705,7 +1705,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialProposingHint => 'Soumettez une idee que vous voulez voir devenir la reponse du groupe.';
 
   @override
-  String get tutorialProposingHintWithWinner => 'Pouvez-vous trouver mieux? Soumettez une idee pour defier le gagnant actuel.';
+  String get tutorialProposingHintWithWinner => 'Le gagnant precedent a ete automatiquement reporte. Soumettez une idee pour le defier.';
 
   @override
   String get tutorialRatingHint => 'Pour eviter les biais, chacun evalue toutes les idees sauf la sienne. La votre vous est cachee mais les autres l\'evalueront.';
@@ -1722,7 +1722,7 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tutorialRound2Prompt => 'En voyant \'Succes\' comme la reponse actuelle du groupe - que pensez-vous que nous valorisons VRAIMENT?';
+  String get tutorialRound2Prompt => 'Le gagnant \'Succes\' est automatiquement reporte dans ce tour. Que pensez-vous que nous valorisons VRAIMENT?';
 
   @override
   String get tutorialPropSuccess => 'Succes';

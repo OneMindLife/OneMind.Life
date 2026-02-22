@@ -1651,7 +1651,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String tutorialRound2PromptTemplate(String winner) {
-    return '\'$winner\' ist die aktuelle Antwort der Gruppe – fällt dir etwas Besseres ein?';
+    return 'Der Gewinner \'$winner\' wird automatisch in diese Runde uebernommen. Faellt dir etwas Besseres ein, um ihn herauszufordern?';
   }
 
   @override
@@ -1705,7 +1705,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialProposingHint => 'Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.';
 
   @override
-  String get tutorialProposingHintWithWinner => 'Faellt dir etwas Besseres ein? Reiche eine Idee ein, um den aktuellen Gewinner herauszufordern.';
+  String get tutorialProposingHintWithWinner => 'Der vorherige Gewinner wurde automatisch uebernommen. Reiche eine Idee ein, um ihn herauszufordern.';
 
   @override
   String get tutorialRatingHint => 'Um Voreingenommenheit zu vermeiden, bewertet jeder alle Ideen ausser der eigenen. Deine ist fuer dich verborgen, aber andere werden sie bewerten.';
@@ -1722,7 +1722,7 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tutorialRound2Prompt => '\'Erfolg\' ist die aktuelle Antwort der Gruppe - was denkst du, was wir WIRKLICH schaetzen?';
+  String get tutorialRound2Prompt => 'Der Gewinner \'Erfolg\' wird automatisch in diese Runde uebernommen. Was denkst du, was wir WIRKLICH schaetzen?';
 
   @override
   String get tutorialPropSuccess => 'Erfolg';

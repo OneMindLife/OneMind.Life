@@ -1001,7 +1001,7 @@
       "winner": {"type": "String"}
     }
   },
-  "tutorialRound2PromptTemplate": "Viendo '{winner}' como la respuesta actual del grupo, ¿puedes pensar en algo mejor?",
+  "tutorialRound2PromptTemplate": "El ganador '{winner}' se lleva automaticamente a esta ronda. Puedes pensar en algo mejor para desafiarlo?",
   "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1029,7 +1029,7 @@
   "tutorialFinishButton": "Terminar Tutorial",
   "tutorialRound1Result": "'Exito' gano esta ronda! Para ser una respuesta permanente, debe ganar de nuevo en la proxima ronda.",
   "tutorialProposingHint": "Envia una idea que quieras que sea la respuesta del grupo.",
-  "tutorialProposingHintWithWinner": "Puedes pensar en algo mejor? Envia una idea para desafiar al ganador actual.",
+  "tutorialProposingHintWithWinner": "El ganador anterior se llevo automaticamente. Envia una idea para desafiarlo.",
   "tutorialRatingHint": "Para evitar sesgo, todos califican todas las ideas excepto la suya. La tuya esta oculta para ti pero otros la calificaran.",
   "tutorialRatingBinaryHint": "Cual idea prefieres? Colocala en la parte superior (100). Coloca la que menos prefieras en la parte inferior (0). Usa [swap] para invertirlas, luego toca [check] para confirmar.",
   "tutorialRatingPositioningHint": "Usa [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Usa [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.",
@@ -1039,7 +1039,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "Viendo 'Exito' como la respuesta actual del grupo - que crees que REALMENTE valoramos?",
+  "tutorialRound2Prompt": "El ganador 'Exito' se lleva automaticamente a esta ronda. Que crees que REALMENTE valoramos?",
   "tutorialPropSuccess": "Exito",
   "tutorialPropAdventure": "Aventura",
   "tutorialPropGrowth": "Crecimiento",

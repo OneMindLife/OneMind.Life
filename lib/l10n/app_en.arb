@@ -958,7 +958,7 @@
       "winner": {"type": "String"}
     }
   },
-  "tutorialRound2PromptTemplate": "Seeing '{winner}' as the group's current answer - can you think of something better?",
+  "tutorialRound2PromptTemplate": "The winner '{winner}' is automatically carried forward into this round. Can you think of something better to challenge it?",
   "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -986,7 +986,7 @@
   "tutorialFinishButton": "Finish Tutorial",
   "tutorialRound1Result": "'Success' won this round! To become a permanent answer, it must win again next round.",
   "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
-  "tutorialProposingHintWithWinner": "Can you think of something better? Submit an idea to challenge the current winner.",
+  "tutorialProposingHintWithWinner": "The previous winner was carried forward automatically. Submit an idea to challenge it.",
   "tutorialRatingHint": "To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.",
   "tutorialRatingBinaryHint": "Which idea do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.",
   "tutorialRatingPositioningHint": "Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
@@ -996,7 +996,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "Seeing 'Success' as the group's current answer - what do you think we REALLY value?",
+  "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward into this round. What do you think we REALLY value?",
   "tutorialPropSuccess": "Success",
   "tutorialPropAdventure": "Adventure",
   "tutorialPropGrowth": "Growth",
