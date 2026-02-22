@@ -1117,8 +1117,8 @@
   "tutorialShareTooltip": "Chat Teilen",
   "tutorialYourIdea": "Deine Idee",
   "tutorialRateIdeas": "Ideen Bewerten",
-  "tutorialSeeResultsHint": "Tippe unten, um zu sehen, wie alle Ideen eingestuft wurden.",
-  "tutorialSeeResultsContinueHint": "Sehr gut! Jetzt verstehst du, wie die Bewertung funktioniert. Weiter, um es in Runde 2 erneut zu versuchen.",
+  "tutorialSeeResultsHint": "Tippe auf die Schaltflaeche unten, um zu sehen, wie alle Ideen eingestuft wurden.",
+  "tutorialSeeResultsContinueHint": "Sehr gut! Jetzt verstehst du, wie die Bewertung funktioniert. In Runde 2 reichst du eine neue Idee ein und alle bewerten erneut.",
   "tutorialResultsBackHint": "Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.",
 
   "wizardStep1Title": "Worueber moechtest du sprechen?",

@@ -1932,10 +1932,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialRateIdeas => 'Calificar Ideas';
 
   @override
-  String get tutorialSeeResultsHint => 'Toca abajo para ver como se clasificaron todas las ideas.';
+  String get tutorialSeeResultsHint => 'Toca el boton de abajo para ver como se clasificaron todas las ideas.';
 
   @override
-  String get tutorialSeeResultsContinueHint => 'Genial! Ahora entiendes como funciona la clasificacion. Continua para intentarlo de nuevo en la Ronda 2.';
+  String get tutorialSeeResultsContinueHint => 'Genial! Ahora entiendes como funciona la clasificacion. En la Ronda 2, enviaras una nueva idea y todos calificaran de nuevo.';
 
   @override
   String get tutorialResultsBackHint => 'Presiona la flecha de retroceso cuando termines de ver los resultados.';

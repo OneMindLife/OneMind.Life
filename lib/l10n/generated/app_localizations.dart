@@ -3638,13 +3638,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialSeeResultsHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap below to see how all ideas ranked.'**
+  /// **'Tap the button below to see how all ideas ranked.'**
   String get tutorialSeeResultsHint;
 
   /// No description provided for @tutorialSeeResultsContinueHint.
   ///
   /// In en, this message translates to:
-  /// **'Great! Now you understand how the ranking works. Continue to try again in Round 2.'**
+  /// **'Great! Now you understand how the ranking works. In Round 2, you\'ll submit a new idea and everyone will rate again.'**
   String get tutorialSeeResultsContinueHint;
 
   /// No description provided for @tutorialResultsBackHint.

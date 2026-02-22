@@ -1932,10 +1932,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialRateIdeas => 'Ideen Bewerten';
 
   @override
-  String get tutorialSeeResultsHint => 'Tippe unten, um zu sehen, wie alle Ideen eingestuft wurden.';
+  String get tutorialSeeResultsHint => 'Tippe auf die Schaltflaeche unten, um zu sehen, wie alle Ideen eingestuft wurden.';
 
   @override
-  String get tutorialSeeResultsContinueHint => 'Sehr gut! Jetzt verstehst du, wie die Bewertung funktioniert. Weiter, um es in Runde 2 erneut zu versuchen.';
+  String get tutorialSeeResultsContinueHint => 'Sehr gut! Jetzt verstehst du, wie die Bewertung funktioniert. In Runde 2 reichst du eine neue Idee ein und alle bewerten erneut.';
 
   @override
   String get tutorialResultsBackHint => 'Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.';

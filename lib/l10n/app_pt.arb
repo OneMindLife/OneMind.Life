@@ -1116,8 +1116,8 @@
   "tutorialShareTooltip": "Compartilhar Chat",
   "tutorialYourIdea": "Sua ideia",
   "tutorialRateIdeas": "Avaliar Ideias",
-  "tutorialSeeResultsHint": "Toque abaixo para ver como todas as ideias foram classificadas.",
-  "tutorialSeeResultsContinueHint": "Otimo! Agora voce entende como a classificacao funciona. Continue para tentar novamente na Rodada 2.",
+  "tutorialSeeResultsHint": "Toque no botao abaixo para ver como todas as ideias foram classificadas.",
+  "tutorialSeeResultsContinueHint": "Otimo! Agora voce entende como a classificacao funciona. Na Rodada 2, voce enviara uma nova ideia e todos avaliarao novamente.",
   "tutorialResultsBackHint": "Pressione a seta de voltar quando terminar de ver os resultados.",
 
   "wizardStep1Title": "Sobre o que voce quer falar?",

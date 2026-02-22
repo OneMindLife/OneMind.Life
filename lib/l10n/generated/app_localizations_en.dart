@@ -1932,10 +1932,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialRateIdeas => 'Rate Ideas';
 
   @override
-  String get tutorialSeeResultsHint => 'Tap below to see how all ideas ranked.';
+  String get tutorialSeeResultsHint => 'Tap the button below to see how all ideas ranked.';
 
   @override
-  String get tutorialSeeResultsContinueHint => 'Great! Now you understand how the ranking works. Continue to try again in Round 2.';
+  String get tutorialSeeResultsContinueHint => 'Great! Now you understand how the ranking works. In Round 2, you\'ll submit a new idea and everyone will rate again.';
 
   @override
   String get tutorialResultsBackHint => 'Press the back arrow when done viewing the results.';
