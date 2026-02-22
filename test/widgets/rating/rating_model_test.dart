@@ -1393,7 +1393,7 @@ void main() {
         expect(model.virtualPosition, positionBefore);
       });
 
-      test('pressing opposite direction pins boundary card and decompresses others smoothly', () {
+      test('pressing opposite direction decompresses all cards smoothly', () {
         // Use 4 cards so there are non-boundary cards to decompress
         final model4 = RatingModel([
           {'id': 1, 'content': 'A'},
@@ -1409,6 +1409,8 @@ void main() {
         // Move far past 100
         model4.moveActiveProposition(500);
 
+        final prop1Compressed =
+            model4.rankedPropositions.firstWhere((p) => p.id == '1').position;
         final prop3Compressed =
             model4.rankedPropositions.firstWhere((p) => p.id == '3').position;
 
@@ -1422,20 +1424,22 @@ void main() {
         expect(prop1OnRelease, lessThan(100.0),
             reason: 'prop1 stays compressed on release');
 
-        // First move down — active moves, boundary card pins to 100
+        // First move down — active stays at boundary, cards decompress
         model4.moveActiveProposition(-10);
 
         final active = model4.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 90.0,
-            reason: 'active moves freely during decompression');
+        expect(active.position, 100.0,
+            reason: 'active stays at boundary during decompression');
 
-        // Prop1 (boundary card) pins to 100 immediately
+        // Prop1 (boundary card) decompresses gradually toward 100
         final prop1After =
             model4.rankedPropositions.firstWhere((p) => p.id == '1').position;
-        expect(prop1After, 100.0,
-            reason: 'boundary card pins to 100 on first decompression move');
+        expect(prop1After, greaterThan(prop1Compressed),
+            reason: 'prop1 should be decompressing from compressed position');
+        expect(prop1After, lessThan(100.0),
+            reason: 'prop1 should not snap to 100 instantly');
 
-        // Prop3 (non-boundary) decompresses gradually
+        // Prop3 decompresses gradually
         final prop3After =
             model4.rankedPropositions.firstWhere((p) => p.id == '3').position;
         expect(prop3After, greaterThan(prop3Compressed),
@@ -1639,19 +1643,25 @@ void main() {
             reason: 'highest card should reach 100 after expansion');
       });
 
-      test('after normalize from top, active moves freely during decompression', () {
+      test('after normalize from top, active stays at boundary during decompression then moves', () {
         model.moveActiveProposition(200);
         model.normalizeVirtualPositionOnRelease();
 
-        // During decompression, active should move freely
-        for (int i = 0; i < 10; i++) {
+        // During decompression (first 30 units), active stays at boundary
+        for (int i = 0; i < 6; i++) {
           model.moveActiveProposition(-5);
           final active =
               model.rankedPropositions.firstWhere((p) => p.isActive);
-          final expectedPos = (100.0 - (i + 1) * 5).clamp(0.0, 100.0);
-          expect(active.position, expectedPos,
-              reason: 'active card should move freely during decompression (step $i)');
+          expect(active.position, 100.0,
+              reason: 'active stays at boundary during decompression (step $i)');
         }
+
+        // After decompression completes, active starts moving from boundary
+        model.moveActiveProposition(-5);
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, lessThan(100.0),
+            reason: 'active moves freely after decompression completes');
       });
     });
 
@@ -1746,19 +1756,25 @@ void main() {
             reason: 'lowest card should reach 0 after expansion from bottom');
       });
 
-      test('after normalize from bottom, active moves freely during decompression', () {
+      test('after normalize from bottom, active stays at boundary during decompression then moves', () {
         model.moveActiveProposition(-200);
         model.normalizeVirtualPositionOnRelease();
 
-        // During decompression, active should move freely
-        for (int i = 0; i < 10; i++) {
+        // During decompression (first 30 units), active stays at boundary
+        for (int i = 0; i < 6; i++) {
           model.moveActiveProposition(5);
           final active =
               model.rankedPropositions.firstWhere((p) => p.isActive);
-          final expectedPos = ((i + 1) * 5.0).clamp(0.0, 100.0);
-          expect(active.position, expectedPos,
-              reason: 'active card should move freely during decompression (step $i)');
+          expect(active.position, 0.0,
+              reason: 'active stays at boundary during decompression (step $i)');
         }
+
+        // After decompression completes, active starts moving from boundary
+        model.moveActiveProposition(5);
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, greaterThan(0.0),
+            reason: 'active moves freely after decompression completes');
       });
     });
 
@@ -2052,19 +2068,21 @@ void main() {
         expect(prop3After, closeTo(prop3Compressed, 0.1),
             reason: 'prop3 stays compressed on release');
 
-        // First move — boundary card pins to 100, others decompress partially
+        // First move — active stays at boundary, cards decompress
         model.moveActiveProposition(-10);
 
         final active =
             model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 90.0,
-            reason: 'active moves freely during decompression');
+        expect(active.position, 100.0,
+            reason: 'active stays at boundary during decompression');
 
-        // Prop1 (boundary) pins to 100 immediately
+        // Prop1 decompresses gradually toward 100
         final prop1AfterMove =
             model.rankedPropositions.firstWhere((p) => p.id == '1').position;
-        expect(prop1AfterMove, 100.0,
-            reason: 'boundary card pins to 100 on decompression');
+        expect(prop1AfterMove, greaterThan(prop1Compressed),
+            reason: 'prop1 should be decompressing from compressed position');
+        expect(prop1AfterMove, lessThan(100.0),
+            reason: 'prop1 should not snap to 100 instantly');
 
         // Prop3 decompresses gradually
         final prop3Partial =
@@ -2557,7 +2575,7 @@ void main() {
             reason: 'prop2 at 0 stays at 0 during top compression');
       });
 
-      test('after release, pressing opposite moves active freely during decompression', () {
+      test('after release, pressing opposite keeps active at boundary during decompression', () {
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
           {'id': 2, 'content': 'B'},
@@ -2569,13 +2587,13 @@ void main() {
         model.moveActiveProposition(500);
         model.normalizeVirtualPositionOnRelease();
 
-        // Press down - active should move freely, others decompress
+        // Press down - active stays at boundary, others decompress
         model.moveActiveProposition(-10);
 
         final active =
             model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 90.0,
-            reason: 'active moves freely during decompression');
+        expect(active.position, 100.0,
+            reason: 'active stays at boundary during decompression');
       });
 
       test('releasing from below 0 keeps all compressed positions (no jump)', () {
@@ -2607,7 +2625,7 @@ void main() {
             reason: 'prop2 stays compressed on release (no jump)');
       });
 
-      test('single press after release moves active freely during decompression', () {
+      test('single press after release keeps active at boundary during decompression', () {
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
           {'id': 2, 'content': 'B'},
@@ -2624,19 +2642,19 @@ void main() {
         model.normalizeVirtualPositionOnRelease();
         // Positions stay compressed, active at 100
 
-        // Move down 1 unit - active should move, decompression begins
+        // Move down 1 unit - active stays at boundary, decompression begins
         model.moveActiveProposition(-1);
 
         final active =
             model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 99.0,
-            reason: 'active moves freely during decompression');
+        expect(active.position, 100.0,
+            reason: 'active stays at boundary during decompression');
       });
 
       test('user bug: binary then drag below 0 and release causes no jump', () {
         // Binary placement, then 3rd proposition dragged below 0.
         // The card at 0 compresses upward during drag.
-        // On release, no visual change. Boundary card pins on first opposite move.
+        // On release, no visual change. All cards decompress gradually on opposite move.
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
           {'id': 2, 'content': 'B'},
@@ -2671,12 +2689,20 @@ void main() {
         expect(prop2After, greaterThan(0.0),
             reason: 'prop2 should remain displaced above 0');
 
-        // First opposite move — boundary card (prop2) pins to 0
+        // First opposite move — active stays at 0, prop2 decompresses toward 0
         model.moveActiveProposition(10);
+
+        final activeAfterMove =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(activeAfterMove.position, 0.0,
+            reason: 'active stays at boundary during decompression');
+
         final prop2AfterMove =
             model.rankedPropositions.firstWhere((p) => p.id == '2').position;
-        expect(prop2AfterMove, 0.0,
-            reason: 'boundary card pins to 0 on first opposite-direction move');
+        expect(prop2AfterMove, lessThan(prop2During),
+            reason: 'prop2 should decompress toward 0');
+        expect(prop2AfterMove, greaterThan(0.0),
+            reason: 'prop2 should not snap to 0 instantly');
       });
     });
 
@@ -2731,7 +2757,7 @@ void main() {
     });
 
     group('Boundary Pinning Invariant (always one at 100 and 0)', () {
-      test('active moves freely during decompression from top', () {
+      test('active stays at boundary during decompression then moves freely from top', () {
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
           {'id': 2, 'content': 'B'},
@@ -2746,18 +2772,27 @@ void main() {
         model.moveActiveProposition(300);
         model.normalizeVirtualPositionOnRelease();
 
-        // Move down in small steps — active moves freely each step
-        for (int i = 0; i < 99; i++) {
+        // First 30 steps: active stays at 100 (decompression phase)
+        for (int i = 0; i < 30; i++) {
           model.moveActiveProposition(-1);
           final active =
               model.rankedPropositions.firstWhere((p) => p.isActive);
-          final expectedPos = (100.0 - (i + 1)).clamp(0.0, 100.0);
+          expect(active.position, 100.0,
+              reason: 'active stays at boundary during decompression step $i');
+        }
+
+        // After decompression, active moves freely from boundary
+        for (int i = 0; i < 69; i++) {
+          model.moveActiveProposition(-1);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = 100.0 - (i + 1);
           expect(active.position, expectedPos,
-              reason: 'active moves freely during decompression step $i');
+              reason: 'active moves freely after decompression step $i');
         }
       });
 
-      test('active moves freely during decompression from bottom', () {
+      test('active stays at boundary during decompression then moves freely from bottom', () {
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
           {'id': 2, 'content': 'B'},
@@ -2772,14 +2807,23 @@ void main() {
         model.moveActiveProposition(-300);
         model.normalizeVirtualPositionOnRelease();
 
-        // Move up in small steps — active moves freely each step
-        for (int i = 0; i < 99; i++) {
+        // First 30 steps: active stays at 0 (decompression phase)
+        for (int i = 0; i < 30; i++) {
           model.moveActiveProposition(1);
           final active =
               model.rankedPropositions.firstWhere((p) => p.isActive);
-          final expectedPos = ((i + 1).toDouble()).clamp(0.0, 100.0);
+          expect(active.position, 0.0,
+              reason: 'active stays at boundary during decompression step $i');
+        }
+
+        // After decompression, active moves freely from boundary
+        for (int i = 0; i < 69; i++) {
+          model.moveActiveProposition(1);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = (i + 1).toDouble();
           expect(active.position, expectedPos,
-              reason: 'active moves freely during decompression step $i');
+              reason: 'active moves freely after decompression step $i');
         }
       });
 
@@ -2795,16 +2839,16 @@ void main() {
         model.moveActiveProposition(500);
         model.normalizeVirtualPositionOnRelease();
 
-        // Complete decompression (active moves 100 units to position 0)
+        // Move 100 units: first 30 consumed by decompression, remaining 70 move active
         for (int i = 0; i < 100; i++) {
           model.moveActiveProposition(-1);
         }
 
-        // Active should be at 0 (moved 100 units from 100)
+        // Active should be at 30 (100 - 70 units of actual movement after decompression)
         final active =
             model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 0.0,
-            reason: 'active at 0 after moving 100 units down');
+        expect(active.position, 30.0,
+            reason: 'active at 30 after 30 units decompression + 70 units movement');
 
         // Highest inactive should be at 100 (fully decompressed)
         final inactivePositions = model.rankedPropositions
@@ -2828,16 +2872,16 @@ void main() {
         model.moveActiveProposition(-500);
         model.normalizeVirtualPositionOnRelease();
 
-        // Complete decompression (active moves 100 units to position 100)
+        // Move 100 units: first 30 consumed by decompression, remaining 70 move active
         for (int i = 0; i < 100; i++) {
           model.moveActiveProposition(1);
         }
 
-        // Active should be at 100 (moved 100 units from 0)
+        // Active should be at 70 (0 + 70 units of actual movement after decompression)
         final active =
             model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 100.0,
-            reason: 'active at 100 after moving 100 units up');
+        expect(active.position, 70.0,
+            reason: 'active at 70 after 30 units decompression + 70 units movement');
 
         // Lowest inactive should be at 0 (fully decompressed)
         final inactivePositions = model.rankedPropositions

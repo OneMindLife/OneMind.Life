@@ -414,57 +414,39 @@ class RatingModel extends ChangeNotifier {
     final activeIndex = _rankedPropositions.indexWhere((p) => p.isActive);
     if (activeIndex == -1) return;
 
-    debugPrint('[RATING] move: vPos=$_virtualPosition prevVPos=$_previousVirtualPosition delta=$delta expanding=$_isExpanding');
-    for (final p in _rankedPropositions) {
-      debugPrint('[RATING]   ${p.id}: pos=${p.position.toStringAsFixed(1)} active=${p.isActive}');
-    }
-
     if (_justUndid) {
       _virtualPosition = _previousVirtualPosition;
       _justUndid = false;
     }
 
-    // Handle decompression mode - the boundary card (originally at 100 or 0)
-    // pins immediately to the boundary. Other compressed cards decompress
-    // smoothly toward original positions. Active card moves freely.
+    // Handle decompression mode — active stays at the boundary while
+    // compressed cards smoothly interpolate back to original positions.
+    // User input drives decompression progress; active starts moving
+    // only after decompression completes.
     if (_isExpanding) {
+      final boundary = _expandingFromTop ? 100.0 : 0.0;
       final isMovingAwayFromBoundary =
           (_expandingFromTop && delta < 0) ||
           (!_expandingFromTop && delta > 0);
 
       if (isMovingAwayFromBoundary) {
-        final boundary = _expandingFromTop ? 100.0 : 0.0;
-
-        // Move active card normally (NOT pinned at boundary)
+        // Accumulate input for decompression progress — active stays
+        // at the boundary so the boundary mark is never empty.
         _virtualPosition += delta;
-        final activePos = _virtualPosition.clamp(0.0, 100.0);
         _rankedPropositions[activeIndex] = _rankedPropositions[activeIndex].copyWith(
-          position: activePos,
+          position: boundary,
         );
 
-        // Decompression progress = how far active has moved from boundary.
-        // Use /30 instead of /100 so decompression completes in ~30 units
-        // of movement, making it feel responsive.
-        final distanceFromBoundary = (activePos - boundary).abs();
+        // Decompression progress = accumulated input distance / 30.
+        final distanceFromBoundary = (_virtualPosition - boundary).abs();
         _expansionProgress = (distanceFromBoundary / 30.0).clamp(0.0, 1.0);
 
-        // Boundary card (originally at 100 or 0) pins to the boundary
-        // immediately. Other compressed cards interpolate smoothly.
+        // All compressed cards interpolate smoothly toward their
+        // original positions using the same progress factor.
         for (int i = 0; i < _rankedPropositions.length; i++) {
           if (i != activeIndex) {
             final propId = _rankedPropositions[i].id;
             final original = _originalPositions[propId];
-
-            // Pin boundary card to boundary — it stays at 100 (or 0) until
-            // the active card overtakes it via normal movement.
-            if (original == boundary) {
-              _rankedPropositions[i] = _rankedPropositions[i].copyWith(
-                position: boundary,
-                truePosition: boundary,
-              );
-              _compressedPositions.remove(propId);
-              continue;
-            }
 
             final compressed = _compressedPositions[propId];
             if (compressed != null && original != null) {
@@ -485,10 +467,14 @@ class RatingModel extends ChangeNotifier {
           }
         }
 
-        // If fully decompressed, exit decompression mode
+        // If fully decompressed, exit decompression mode.
+        // Reset virtualPosition to boundary — the accumulated input
+        // was consumed by decompression, so active starts from here.
         if (_expansionProgress >= 1.0) {
           _isExpanding = false;
           _compressedPositions.clear();
+          _virtualPosition = boundary;
+          _previousVirtualPosition = boundary;
           for (var prop in _rankedPropositions) {
             if (!prop.isActive) {
               _originalPositions[prop.id] = prop.position;
@@ -500,10 +486,12 @@ class RatingModel extends ChangeNotifier {
         notifyListeners();
         return;
       } else {
-        // Moving back toward/past boundary - exit decompression mode
-        // Update base positions to current state to avoid visual jump
+        // Moving back toward/past boundary - exit decompression mode.
+        // Reset virtualPosition to boundary to avoid jump.
         _isExpanding = false;
         _compressedPositions.clear();
+        _virtualPosition = boundary;
+        _previousVirtualPosition = boundary;
         _basePositions.clear();
         for (var prop in _rankedPropositions) {
           if (!prop.isActive) {
@@ -705,7 +693,6 @@ class RatingModel extends ChangeNotifier {
 
         if ((leavingTop && noInactiveAtTop) ||
             (leavingBottom && noInactiveAtBottom)) {
-          debugPrint('[RATING] Expanding toward ${leavingTop ? "top" : "bottom"} boundary');
           _expandTowardBoundary(activeIndex, leavingTop);
         }
       }
@@ -1016,10 +1003,6 @@ class RatingModel extends ChangeNotifier {
       _justUndid = false;
       _currentPropositionIndex--;
 
-      debugPrint('[RATING] Undo: reactivated ${lastPlaced.id} at pos=${_virtualPosition}');
-      for (final p in _rankedPropositions) {
-        debugPrint('[RATING]   ${p.id}: pos=${p.position.toStringAsFixed(1)} active=${p.isActive}');
-      }
     }
 
     _detectStacks();
