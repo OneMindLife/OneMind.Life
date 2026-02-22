@@ -1,13 +1,10 @@
 name: CI
 
 on:
-  # Only run CI directly on PRs and develop branch
-  # Main branch CI runs via deploy.yml workflow_call (avoids duplicate runs)
   push:
-    branches: [develop]
+    branches: [main, develop]
   pull_request:
     branches: [main, develop]
-  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -60,9 +57,6 @@ jobs:
             echo "Coverage report generated"
             # You can add coverage threshold checks here
           fi
-
-  # Note: Supabase SQL tests removed from CI due to Docker image availability issues
-  # Run locally with: supabase start && supabase test db
 
   # Edge Function Verification
   edge-functions:
