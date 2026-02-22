@@ -46,6 +46,9 @@ class RatingWidget extends StatefulWidget {
   /// Read-only mode for viewing results (no editing controls, only zoom/pan)
   final bool readOnly;
 
+  /// Callback when the rating phase changes (binary → positioning → completed)
+  final void Function(RatingPhase phase)? onPhaseChanged;
+
   const RatingWidget({
     super.key,
     required this.propositions,
@@ -57,6 +60,7 @@ class RatingWidget extends StatefulWidget {
     this.lazyLoadingMode = false,
     this.isResuming = false,
     this.readOnly = false,
+    this.onPhaseChanged,
   });
 
   @override
@@ -76,6 +80,7 @@ class RatingWidgetState extends State<RatingWidget>
   int _lastPropositionCount = 0;
   bool _hasAutoSubmitted = false;
   double _currentScrollOffset = 0.0;
+  RatingPhase? _lastNotifiedPhase;
 
   @override
   void initState() {
@@ -92,10 +97,14 @@ class RatingWidgetState extends State<RatingWidget>
     _model.addListener(_onModelChange);
     _lastPropositionCount = _model.rankedPropositions.length;
 
-    if (widget.onCounterUpdate != null) {
+    if (widget.onCounterUpdate != null || widget.onPhaseChanged != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        widget.onCounterUpdate!(
+        widget.onCounterUpdate?.call(
             _model.rankedPropositions.length, _model.totalPropositions);
+        if (widget.onPhaseChanged != null) {
+          _lastNotifiedPhase = _model.phase;
+          widget.onPhaseChanged!(_model.phase);
+        }
       });
     }
 
@@ -156,6 +165,12 @@ class RatingWidgetState extends State<RatingWidget>
     if (widget.onCounterUpdate != null) {
       widget.onCounterUpdate!(
           _model.rankedPropositions.length, _model.totalPropositions);
+    }
+
+    // Notify parent when phase changes
+    if (widget.onPhaseChanged != null && _model.phase != _lastNotifiedPhase) {
+      _lastNotifiedPhase = _model.phase;
+      widget.onPhaseChanged!(_model.phase);
     }
 
     setState(() {});

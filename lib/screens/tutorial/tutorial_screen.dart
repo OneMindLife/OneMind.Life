@@ -6,6 +6,7 @@ import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../widgets/qr_code_share.dart';
+import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
 import '../chat/widgets/phase_panels.dart';
 import '../chat/widgets/previous_round_display.dart';
@@ -216,6 +217,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       MaterialPageRoute(
         builder: (context) => _TutorialRatingScreen(
           propositions: translatedPropositions,
+          showHints: state.currentStep == TutorialStep.round1Rating,
           onComplete: () {
             // Complete the rating based on current step
             final currentState = ref.read(tutorialChatNotifierProvider);
@@ -1005,19 +1007,28 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 }
 
 /// Tutorial rating screen (uses real RatingWidget)
-class _TutorialRatingScreen extends StatelessWidget {
+class _TutorialRatingScreen extends StatefulWidget {
   final List<Proposition> propositions;
   final VoidCallback onComplete;
+  final bool showHints;
 
   const _TutorialRatingScreen({
     required this.propositions,
     required this.onComplete,
+    this.showHints = false,
   });
+
+  @override
+  State<_TutorialRatingScreen> createState() => _TutorialRatingScreenState();
+}
+
+class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
+  RatingPhase _currentPhase = RatingPhase.binary;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final propsForRating = propositions
+    final propsForRating = widget.propositions
         .map((p) => {
               'id': p.id,
               'content': p.content,
@@ -1028,11 +1039,62 @@ class _TutorialRatingScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.tutorialRateIdeas),
       ),
-      body: RatingWidget(
-        propositions: propsForRating,
-        onRankingComplete: (_) => onComplete(),
-        lazyLoadingMode: false,
-        isResuming: false,
+      body: Column(
+        children: [
+          // Educational hint based on current phase
+          if (widget.showHints && _currentPhase == RatingPhase.binary)
+            _buildHint(
+              context,
+              l10n.tutorialRatingBinaryHint,
+            ),
+          if (widget.showHints && _currentPhase == RatingPhase.positioning)
+            _buildHint(
+              context,
+              l10n.tutorialRatingPositioningHint,
+            ),
+          Expanded(
+            child: RatingWidget(
+              propositions: propsForRating,
+              onRankingComplete: (_) => widget.onComplete(),
+              lazyLoadingMode: false,
+              isResuming: false,
+              onPhaseChanged: widget.showHints
+                  ? (phase) {
+                      if (mounted) setState(() => _currentPhase = phase);
+                    }
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHint(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
+    final borderColor = theme.colorScheme.primary.withAlpha(80);
+    final contentColor = theme.colorScheme.onPrimaryContainer;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              text,
+              style: theme.textTheme.bodySmall?.copyWith(color: contentColor),
+            ),
+          ),
+        ],
       ),
     );
   }
