@@ -1099,7 +1099,7 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
 
   /// Parse marker tokens and build an InlineSpan with inline icon widgets.
   InlineSpan _buildInlineHintSpans(String text, ThemeData theme, TextStyle? textStyle) {
-    final markerPattern = RegExp(r'\[(swap|check|up|down)\]');
+    final markerPattern = RegExp(r'\[(swap|check|up|down|undo|zoomin|zoomout)\]');
     final children = <InlineSpan>[];
     var lastEnd = 0;
 
@@ -1125,25 +1125,55 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
   /// Create an inline WidgetSpan icon for a marker token.
   WidgetSpan _inlineIcon(String marker, ThemeData theme) {
     final primaryColor = theme.colorScheme.primary;
+    final outlineColor = theme.colorScheme.outline;
+    const undoColor = Color(0xFF8B0000);
+
     final IconData icon;
-    final bool filled;
+    final Color bgColor;
+    final Color iconColor;
+    final Color borderColor;
 
     switch (marker) {
       case 'swap':
         icon = Icons.swap_vert;
-        filled = false;
+        bgColor = theme.colorScheme.surface;
+        iconColor = primaryColor;
+        borderColor = primaryColor;
       case 'check':
         icon = Icons.check;
-        filled = true;
+        bgColor = primaryColor;
+        iconColor = Colors.white;
+        borderColor = Colors.transparent;
       case 'up':
         icon = Icons.arrow_upward;
-        filled = false;
+        bgColor = theme.colorScheme.surface;
+        iconColor = primaryColor;
+        borderColor = primaryColor;
       case 'down':
         icon = Icons.arrow_downward;
-        filled = false;
+        bgColor = theme.colorScheme.surface;
+        iconColor = primaryColor;
+        borderColor = primaryColor;
+      case 'undo':
+        icon = Icons.undo;
+        bgColor = theme.colorScheme.surface;
+        iconColor = undoColor.withAlpha(128);
+        borderColor = undoColor.withAlpha(128);
+      case 'zoomin':
+        icon = Icons.zoom_in;
+        bgColor = theme.colorScheme.surface;
+        iconColor = outlineColor;
+        borderColor = outlineColor.withAlpha(128);
+      case 'zoomout':
+        icon = Icons.zoom_out;
+        bgColor = theme.colorScheme.surface;
+        iconColor = outlineColor;
+        borderColor = outlineColor.withAlpha(128);
       default:
         icon = Icons.help_outline;
-        filled = false;
+        bgColor = theme.colorScheme.surface;
+        iconColor = primaryColor;
+        borderColor = primaryColor;
     }
 
     return WidgetSpan(
@@ -1153,14 +1183,16 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
         height: 20,
         margin: const EdgeInsets.symmetric(horizontal: 2),
         decoration: BoxDecoration(
-          color: filled ? primaryColor : theme.colorScheme.surface,
+          color: bgColor,
           shape: BoxShape.circle,
-          border: filled ? null : Border.all(color: primaryColor, width: 1.5),
+          border: borderColor == Colors.transparent
+              ? null
+              : Border.all(color: borderColor, width: 1.5),
         ),
         child: Icon(
           icon,
           size: 12,
-          color: filled ? Colors.white : primaryColor,
+          color: iconColor,
         ),
       ),
     );

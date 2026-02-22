@@ -3206,7 +3206,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingPositioningHint.
   ///
   /// In en, this message translates to:
-  /// **'Use [up] and [down] to move the highlighted idea. Tap [check] to place it.'**
+  /// **'Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.'**
   String get tutorialRatingPositioningHint;
 
   /// No description provided for @tutorialRound2Result.

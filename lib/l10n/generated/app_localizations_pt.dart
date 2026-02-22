@@ -1714,7 +1714,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutorialRatingBinaryHint => 'Qual ideia voce prefere? Coloque-a no topo (100). Use [swap] para inverte-las e toque em [check] para confirmar.';
 
   @override
-  String get tutorialRatingPositioningHint => 'Use [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la.';
+  String get tutorialRatingPositioningHint => 'Use [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Use [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.';
 
   @override
   String tutorialRound2Result(String proposition) {

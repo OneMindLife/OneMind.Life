@@ -1714,7 +1714,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialRatingBinaryHint => 'Which idea do you prefer? Place it at the top (100). Use [swap] to flip them, then tap [check] to confirm.';
 
   @override
-  String get tutorialRatingPositioningHint => 'Use [up] and [down] to move the highlighted idea. Tap [check] to place it.';
+  String get tutorialRatingPositioningHint => 'Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.';
 
   @override
   String tutorialRound2Result(String proposition) {
