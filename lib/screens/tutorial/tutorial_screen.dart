@@ -1043,24 +1043,9 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
         children: [
           // Educational hint based on current phase
           if (widget.showHints && _currentPhase == RatingPhase.binary)
-            _buildHint(
-              context,
-              l10n.tutorialRatingBinaryHint,
-              buttonLegend: [
-                _buttonPreview(context, Icons.swap_vert, l10n.tutorialRatingSwap),
-                _buttonPreview(context, Icons.check, l10n.tutorialRatingConfirm, filled: true),
-              ],
-            ),
+            _buildHint(context, l10n.tutorialRatingBinaryHint),
           if (widget.showHints && _currentPhase == RatingPhase.positioning)
-            _buildHint(
-              context,
-              l10n.tutorialRatingPositioningHint,
-              buttonLegend: [
-                _buttonPreview(context, Icons.arrow_upward, l10n.tutorialRatingUp),
-                _buttonPreview(context, Icons.arrow_downward, l10n.tutorialRatingDown),
-                _buttonPreview(context, Icons.check, l10n.tutorialRatingPlace, filled: true),
-              ],
-            ),
+            _buildHint(context, l10n.tutorialRatingPositioningHint),
           Expanded(
             child: RatingWidget(
               propositions: propsForRating,
@@ -1079,11 +1064,15 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
     );
   }
 
-  Widget _buildHint(BuildContext context, String text, {List<Widget>? buttonLegend}) {
+  /// Build a hint with inline button icon previews.
+  /// Parses [swap], [check], [up], [down] markers in the text and replaces
+  /// them with inline WidgetSpan icons matching the actual rating buttons.
+  Widget _buildHint(BuildContext context, String text) {
     final theme = Theme.of(context);
     final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
     final borderColor = theme.colorScheme.primary.withAlpha(80);
     final contentColor = theme.colorScheme.onPrimaryContainer;
+    final textStyle = theme.textTheme.bodySmall?.copyWith(color: contentColor);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1093,64 +1082,87 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
       ),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(color: contentColor),
-                ),
-              ),
-            ],
-          ),
-          if (buttonLegend != null) ...[
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              children: buttonLegend,
+          Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text.rich(
+              _buildInlineHintSpans(text, theme, textStyle),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buttonPreview(BuildContext context, IconData icon, String label, {bool filled = false}) {
-    final theme = Theme.of(context);
-    final primaryColor = theme.colorScheme.primary;
+  /// Parse marker tokens and build an InlineSpan with inline icon widgets.
+  InlineSpan _buildInlineHintSpans(String text, ThemeData theme, TextStyle? textStyle) {
+    final markerPattern = RegExp(r'\[(swap|check|up|down)\]');
+    final children = <InlineSpan>[];
+    var lastEnd = 0;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 24,
-          height: 24,
-          decoration: BoxDecoration(
-            color: filled ? primaryColor : theme.colorScheme.surface,
-            shape: BoxShape.circle,
-            border: filled ? null : Border.all(color: primaryColor, width: 1.5),
-          ),
-          child: Icon(
-            icon,
-            size: 14,
-            color: filled ? Colors.white : primaryColor,
-          ),
+    for (final match in markerPattern.allMatches(text)) {
+      // Add text before this marker
+      if (match.start > lastEnd) {
+        children.add(TextSpan(text: text.substring(lastEnd, match.start)));
+      }
+      // Add inline icon widget for the marker
+      final marker = match.group(1)!;
+      children.add(_inlineIcon(marker, theme));
+      lastEnd = match.end;
+    }
+
+    // Add remaining text after last marker
+    if (lastEnd < text.length) {
+      children.add(TextSpan(text: text.substring(lastEnd)));
+    }
+
+    return TextSpan(style: textStyle, children: children);
+  }
+
+  /// Create an inline WidgetSpan icon for a marker token.
+  WidgetSpan _inlineIcon(String marker, ThemeData theme) {
+    final primaryColor = theme.colorScheme.primary;
+    final IconData icon;
+    final bool filled;
+
+    switch (marker) {
+      case 'swap':
+        icon = Icons.swap_vert;
+        filled = false;
+      case 'check':
+        icon = Icons.check;
+        filled = true;
+      case 'up':
+        icon = Icons.arrow_upward;
+        filled = false;
+      case 'down':
+        icon = Icons.arrow_downward;
+        filled = false;
+      default:
+        icon = Icons.help_outline;
+        filled = false;
+    }
+
+    return WidgetSpan(
+      alignment: PlaceholderAlignment.middle,
+      child: Container(
+        width: 20,
+        height: 20,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: filled ? primaryColor : theme.colorScheme.surface,
+          shape: BoxShape.circle,
+          border: filled ? null : Border.all(color: primaryColor, width: 1.5),
         ),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onPrimaryContainer,
-          ),
+        child: Icon(
+          icon,
+          size: 12,
+          color: filled ? Colors.white : primaryColor,
         ),
-      ],
+      ),
     );
   }
 }
