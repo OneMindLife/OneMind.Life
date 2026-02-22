@@ -1711,7 +1711,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialRatingHint => 'To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.';
 
   @override
-  String get tutorialRatingBinaryHint => 'Which idea do you prefer? Place it at the top (100). Use [swap] to flip them, then tap [check] to confirm.';
+  String get tutorialRatingBinaryHint => 'Which idea do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.';
 
   @override
   String get tutorialRatingPositioningHint => 'Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.';

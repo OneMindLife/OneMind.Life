@@ -1711,7 +1711,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialRatingHint => 'Pour eviter les biais, chacun evalue toutes les idees sauf la sienne. La votre vous est cachee mais les autres l\'evalueront.';
 
   @override
-  String get tutorialRatingBinaryHint => 'Quelle idee preferez-vous? Placez-la en haut (100). Utilisez [swap] pour les inverser, puis appuyez sur [check] pour confirmer.';
+  String get tutorialRatingBinaryHint => 'Quelle idee preferez-vous? Placez-la en haut (100). Placez celle que vous preferez le moins en bas (0). Utilisez [swap] pour les inverser, puis appuyez sur [check] pour confirmer.';
 
   @override
   String get tutorialRatingPositioningHint => 'Utilisez [up] et [down] pour deplacer l\'idee en surbrillance. Appuyez sur [check] pour la placer. Utilisez [undo] pour annuler un placement, et [zoomin] [zoomout] pour zoomer et dezoomer.';

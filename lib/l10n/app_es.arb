@@ -1031,7 +1031,7 @@
   "tutorialProposingHint": "Envia una idea que quieras que sea la respuesta del grupo.",
   "tutorialProposingHintWithWinner": "Puedes pensar en algo mejor? Envia una idea para desafiar al ganador actual.",
   "tutorialRatingHint": "Para evitar sesgo, todos califican todas las ideas excepto la suya. La tuya esta oculta para ti pero otros la calificaran.",
-  "tutorialRatingBinaryHint": "Cual idea prefieres? Colocala en la parte superior (100). Usa [swap] para invertirlas, luego toca [check] para confirmar.",
+  "tutorialRatingBinaryHint": "Cual idea prefieres? Colocala en la parte superior (100). Coloca la que menos prefieras en la parte inferior (0). Usa [swap] para invertirlas, luego toca [check] para confirmar.",
   "tutorialRatingPositioningHint": "Usa [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Usa [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.",
   "tutorialRound2Result": "Tu idea \"{proposition}\" gano! Si gana en la proxima ronda, sera agregada permanentemente al chat.",
   "@tutorialRound2Result": {

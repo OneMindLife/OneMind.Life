@@ -3200,7 +3200,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingBinaryHint.
   ///
   /// In en, this message translates to:
-  /// **'Which idea do you prefer? Place it at the top (100). Use [swap] to flip them, then tap [check] to confirm.'**
+  /// **'Which idea do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.'**
   String get tutorialRatingBinaryHint;
 
   /// No description provided for @tutorialRatingPositioningHint.
