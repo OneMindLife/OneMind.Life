@@ -1653,40 +1653,6 @@ void main() {
     });
 
     group('Host Force Consensus', () {
-      testWidgets('host sees force consensus checkbox in proposing phase', (tester) async {
-        final chat = ChatFixtures.model();
-        final hostParticipant = ParticipantFixtures.host();
-
-        final state = createTestState(
-          chat: chat,
-          round: RoundFixtures.proposing(),
-          myParticipant: hostParticipant,
-          isMyParticipantFunded: true,
-        );
-
-        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('force-consensus-checkbox')), findsOneWidget);
-      });
-
-      testWidgets('non-host does not see force consensus checkbox', (tester) async {
-        final chat = ChatFixtures.model();
-        final participant = ParticipantFixtures.model();
-
-        final state = createTestState(
-          chat: chat,
-          round: RoundFixtures.proposing(),
-          myParticipant: participant,
-          isMyParticipantFunded: true,
-        );
-
-        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('force-consensus-checkbox')), findsNothing);
-      });
-
       testWidgets('host-overridden consensus shows host name instead of Consensus #N', (tester) async {
         final chat = ChatFixtures.model();
         final participant = ParticipantFixtures.model();

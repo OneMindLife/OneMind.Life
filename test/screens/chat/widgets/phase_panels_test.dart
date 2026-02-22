@@ -1090,30 +1090,6 @@ void main() {
       expect(find.text('Skip'), findsNothing);
     });
 
-    testWidgets('hides force consensus checkbox in task result mode',
-        (tester) async {
-      final controller = TextEditingController();
-
-      await tester.pumpWidget(
-        createTestWidget(
-          ProposingStatePanel(
-            roundCustomId: 1,
-            propositionsPerUser: 1,
-            myPropositions: [],
-            propositionController: controller,
-            onSubmit: () {},
-            isTaskResultMode: true,
-            onForceConsensusModeChanged: (_) {},
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Force consensus checkbox should be hidden
-      expect(find.byKey(const Key('force-consensus-checkbox')), findsNothing);
-      expect(find.text('Force as Consensus'), findsNothing);
-    });
-
     testWidgets('shows "Submit Result" button text in task result mode',
         (tester) async {
       final controller = TextEditingController();

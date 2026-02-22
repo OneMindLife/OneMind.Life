@@ -252,9 +252,6 @@ class ProposingStatePanel extends StatelessWidget {
   final bool hasSkipped;
   // Credit/funding
   final bool isFunded;
-  // Force consensus (host only)
-  final bool forceConsensusMode;
-  final ValueChanged<bool>? onForceConsensusModeChanged;
   // Task result mode (simplified UI)
   final bool isTaskResultMode;
 
@@ -279,8 +276,6 @@ class ProposingStatePanel extends StatelessWidget {
     this.maxSkips = 0,
     this.hasSkipped = false,
     this.isFunded = true,
-    this.forceConsensusMode = false,
-    this.onForceConsensusModeChanged,
     this.isTaskResultMode = false,
   });
 
@@ -444,9 +439,7 @@ class ProposingStatePanel extends StatelessWidget {
                         else
                           Text(isTaskResultMode
                               ? l10n.submitResult
-                              : forceConsensusMode
-                                  ? l10n.forceConsensus
-                                  : (newSubmissions == 0 ? l10n.submit : l10n.addProposition)),
+                              : (newSubmissions == 0 ? l10n.submit : l10n.addProposition)),
                         if (phaseEndsAt != null && !isSubmitting) ...[
                           const SizedBox(width: 4),
                           const Text('('),
@@ -516,21 +509,6 @@ class ProposingStatePanel extends StatelessWidget {
                   ),
                 ],
               ],
-            ),
-          ],
-
-          // Host force consensus checkbox
-          if (onForceConsensusModeChanged != null && !isTaskResultMode) ...[
-            const SizedBox(height: 8),
-            const Divider(),
-            CheckboxListTile(
-              key: const Key('force-consensus-checkbox'),
-              value: forceConsensusMode,
-              onChanged: (value) => onForceConsensusModeChanged?.call(value ?? false),
-              title: Text(l10n.forceAsConsensus),
-              subtitle: Text(l10n.forceAsConsensusDescription),
-              dense: true,
-              controlAffinity: ListTileControlAffinity.leading,
             ),
           ],
 

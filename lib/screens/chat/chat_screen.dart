@@ -39,9 +39,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _isSubmitting = false;
   bool _isSkipping = false;
 
-  // Host force consensus mode
-  bool _forceConsensusMode = false;
-
   // Track if we've already navigated away (to prevent double-pop)
   bool _hasNavigatedAway = false;
 
@@ -1203,54 +1200,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  Future<void> _handleForceConsensus() async {
-    final content = _propositionController.text.trim();
-    if (content.isEmpty) return;
-
-    final l10n = AppLocalizations.of(context);
-
-    // Show confirmation dialog
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.forceConsensusTitle),
-        content: Text(l10n.forceConsensusMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: Text(l10n.cancel),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: Text(l10n.forceConsensus),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() => _isSubmitting = true);
-    try {
-      await ref.read(chatDetailProvider(_params).notifier).forceConsensus(content);
-      _propositionController.clear();
-      setState(() => _forceConsensusMode = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.forceConsensusSuccess)),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToForceConsensus(e.toString()))),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
-
   Future<bool> _confirmDeleteInitialMessage(AppLocalizations l10n) async {
     final result = await showDialog<bool>(
       context: context,
@@ -1578,7 +1527,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           propositionController: _propositionController,
           onSubmit: isTaskResultMode
               ? _handleTaskResultSubmit
-              : (_forceConsensusMode ? _handleForceConsensus : _submitProposition),
+              : _submitProposition,
           phaseEndsAt: state.currentRound!.phaseEndsAt,
           onPhaseExpired: _onPhaseExpired,
           isHost: isHost,
@@ -1593,11 +1542,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           maxSkips: state.maxSkips,
           hasSkipped: state.hasSkipped,
           isFunded: state.isMyParticipantFunded,
-          // Force consensus (host only)
-          forceConsensusMode: _forceConsensusMode,
-          onForceConsensusModeChanged: isHost && !isTaskResultMode
-              ? (value) => setState(() => _forceConsensusMode = value)
-              : null,
           isTaskResultMode: isTaskResultMode,
         );
       case RoundPhase.rating:
