@@ -952,13 +952,13 @@
   "tutorialTemplateCustom": "Custom Topic",
   "tutorialTemplateCustomDesc": "Enter your own question",
   "tutorialCustomQuestionHint": "Type your question...",
-  "tutorialRound1ResultTemplate": "'{winner}' won this round! To become a permanent answer, it must win again next round.",
+  "tutorialRound1ResultTemplate": "'{winner}' won this round!",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialRound2PromptTemplate": "The winner '{winner}' is automatically carried forward into this round. Can you think of something better to challenge it?",
+  "tutorialRound2PromptTemplate": "The winner '{winner}' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.",
   "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -984,19 +984,19 @@
   },
   "tutorialAddedToChat": "It's now added to the chat above.",
   "tutorialFinishButton": "Finish Tutorial",
-  "tutorialRound1Result": "'Success' won this round! To become a permanent answer, it must win again next round.",
+  "tutorialRound1Result": "'Success' won this round!",
   "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
-  "tutorialProposingHintWithWinner": "The previous winner was carried forward automatically. Submit an idea to challenge it.",
-  "tutorialRatingHint": "To prevent bias, everyone rates all ideas except their own. Yours is hidden from you but others will rate it.",
-  "tutorialRatingBinaryHint": "Which idea do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.",
+  "tutorialProposingHintWithWinner": "Submit a new idea. It will be rated alongside the carried-forward winner.",
+  "tutorialRatingHint": "Now everyone rates each other's ideas. Tap the button to start ranking.",
+  "tutorialRatingBinaryHint": "You won't see your own idea here — others rate it for you. Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.",
   "tutorialRatingPositioningHint": "Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
-  "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round, it will be permanently added to the chat.",
+  "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round too, it becomes a permanent answer.",
   "@tutorialRound2Result": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward into this round. What do you think we REALLY value?",
+  "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.",
   "tutorialPropSuccess": "Success",
   "tutorialPropAdventure": "Adventure",
   "tutorialPropGrowth": "Growth",

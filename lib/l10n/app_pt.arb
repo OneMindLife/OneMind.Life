@@ -995,13 +995,13 @@
   "tutorialTemplateCustom": "Tema personalizado",
   "tutorialTemplateCustomDesc": "Digite sua própria pergunta",
   "tutorialCustomQuestionHint": "Digite sua pergunta...",
-  "tutorialRound1ResultTemplate": "'{winner}' venceu esta rodada! Para se tornar uma resposta permanente, precisa vencer novamente na próxima rodada.",
+  "tutorialRound1ResultTemplate": "'{winner}' venceu esta rodada!",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialRound2PromptTemplate": "O vencedor '{winner}' e automaticamente levado para esta rodada. Consegue pensar em algo melhor para desafia-lo?",
+  "tutorialRound2PromptTemplate": "O vencedor '{winner}' e automaticamente levado para competir novamente. Precisa vencer 2 rodadas seguidas para se tornar uma resposta permanente.",
   "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1027,19 +1027,19 @@
   },
   "tutorialAddedToChat": "Agora foi adicionado ao chat acima.",
   "tutorialFinishButton": "Finalizar Tutorial",
-  "tutorialRound1Result": "'Sucesso' venceu esta rodada! Para se tornar uma resposta permanente, deve vencer novamente na proxima rodada.",
+  "tutorialRound1Result": "'Sucesso' venceu esta rodada!",
   "tutorialProposingHint": "Envie uma ideia que voce quer que seja a resposta do grupo.",
-  "tutorialProposingHintWithWinner": "O vencedor anterior foi levado automaticamente. Envie uma ideia para desafia-lo.",
-  "tutorialRatingHint": "Para evitar vies, todos avaliam todas as ideias exceto a propria. A sua esta oculta para voce mas outros a avaliarao.",
-  "tutorialRatingBinaryHint": "Qual ideia voce prefere? Coloque-a no topo (100). Coloque a que menos prefere na parte inferior (0). Use [swap] para inverte-las e toque em [check] para confirmar.",
+  "tutorialProposingHintWithWinner": "Envie uma nova ideia. Ela sera avaliada junto com o vencedor da rodada anterior.",
+  "tutorialRatingHint": "Agora todos avaliam as ideias uns dos outros. Toque no botao para comecar a classificar.",
+  "tutorialRatingBinaryHint": "Voce nao vera sua propria ideia aqui — outros a avaliam por voce. Qual destas voce prefere? Coloque-a no topo (100). Coloque a que menos prefere na parte inferior (0). Use [swap] para inverte-las e toque em [check] para confirmar.",
   "tutorialRatingPositioningHint": "Use [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Use [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.",
-  "tutorialRound2Result": "Sua ideia \"{proposition}\" venceu! Se vencer na proxima rodada, sera adicionada permanentemente ao chat.",
+  "tutorialRound2Result": "Sua ideia \"{proposition}\" venceu! Se vencer a proxima rodada tambem, se torna uma resposta permanente.",
   "@tutorialRound2Result": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "O vencedor 'Sucesso' e automaticamente levado para esta rodada. O que voce acha que REALMENTE valorizamos?",
+  "tutorialRound2Prompt": "O vencedor 'Sucesso' e automaticamente levado para competir novamente. Precisa vencer 2 rodadas seguidas para se tornar uma resposta permanente.",
   "tutorialPropSuccess": "Sucesso",
   "tutorialPropAdventure": "Aventura",
   "tutorialPropGrowth": "Crescimento",

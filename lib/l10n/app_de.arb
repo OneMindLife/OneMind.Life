@@ -996,13 +996,13 @@
   "tutorialTemplateCustom": "Eigenes Thema",
   "tutorialTemplateCustomDesc": "Eigene Frage eingeben",
   "tutorialCustomQuestionHint": "Frage eingeben...",
-  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Um eine dauerhafte Antwort zu werden, muss es nächste Runde erneut gewinnen.",
+  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen!",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialRound2PromptTemplate": "Der Gewinner '{winner}' wird automatisch in diese Runde uebernommen. Faellt dir etwas Besseres ein, um ihn herauszufordern?",
+  "tutorialRound2PromptTemplate": "Der Gewinner '{winner}' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
   "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1028,19 +1028,19 @@
   },
   "tutorialAddedToChat": "Es wurde jetzt zum Chat oben hinzugefuegt.",
   "tutorialFinishButton": "Tutorial Beenden",
-  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Um eine dauerhafte Antwort zu werden, muss es in der naechsten Runde erneut gewinnen.",
+  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen!",
   "tutorialProposingHint": "Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.",
-  "tutorialProposingHintWithWinner": "Der vorherige Gewinner wurde automatisch uebernommen. Reiche eine Idee ein, um ihn herauszufordern.",
-  "tutorialRatingHint": "Um Voreingenommenheit zu vermeiden, bewertet jeder alle Ideen ausser der eigenen. Deine ist fuer dich verborgen, aber andere werden sie bewerten.",
-  "tutorialRatingBinaryHint": "Welche Idee bevorzugst du? Setze sie nach oben (100). Setze die weniger bevorzugte nach unten (0). Benutze [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen.",
+  "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein. Sie wird zusammen mit dem uebernommenen Gewinner bewertet.",
+  "tutorialRatingHint": "Jetzt bewertet jeder die Ideen der anderen. Tippe auf die Schaltflaeche, um mit dem Ranking zu beginnen.",
+  "tutorialRatingBinaryHint": "Deine eigene Idee siehst du hier nicht — andere bewerten sie fuer dich. Welche davon bevorzugst du? Setze sie nach oben (100). Setze die weniger bevorzugte nach unten (0). Benutze [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen.",
   "tutorialRatingPositioningHint": "Benutze [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Benutze [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.",
-  "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie in der naechsten Runde erneut gewinnt, wird sie dauerhaft zum Chat hinzugefuegt.",
+  "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie auch die naechste Runde gewinnt, wird sie eine dauerhafte Antwort.",
   "@tutorialRound2Result": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch in diese Runde uebernommen. Was denkst du, was wir WIRKLICH schaetzen?",
+  "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
   "tutorialPropSuccess": "Erfolg",
   "tutorialPropAdventure": "Abenteuer",
   "tutorialPropGrowth": "Wachstum",
