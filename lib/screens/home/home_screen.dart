@@ -7,15 +7,20 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
-import '../../widgets/language_selector.dart';
+import '../../providers/providers.dart';
 import '../chat/chat_screen.dart';
 // import '../discover/discover_screen.dart'; // Hidden for MVP
 import '../join/join_dialog.dart';
 import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
+// ignore: unused_import
+import '../../widgets/language_selector.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({super.key, this.returnToChatId});
+
+  /// If set, auto-navigate to this chat on mount (e.g. after Stripe checkout redirect)
+  final int? returnToChatId;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -30,6 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Listen for approved join requests to auto-open the chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupApprovedChatListener();
+      _handleReturnToChat();
     });
   }
 
@@ -41,6 +47,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         _navigateToChat(context, ref, chat);
       }
     });
+  }
+
+  /// Auto-navigate to a chat after returning from Stripe checkout
+  void _handleReturnToChat() async {
+    final chatId = widget.returnToChatId;
+    if (chatId == null) return;
+
+    // Wait for chat list to load, then navigate
+    final chatService = ref.read(chatServiceProvider);
+    try {
+      final chat = await chatService.getChatById(chatId);
+      if (mounted && chat != null) {
+        _navigateToChat(context, ref, chat);
+      }
+    } catch (_) {
+      // Chat not found or error — stay on home
+    }
   }
 
   @override
@@ -137,6 +160,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Text(l10n.appTitle),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.play_circle_outline),
+            tooltip: 'Demo',
+            onPressed: () => context.go('/demo'),
+          ),
           const LanguageSelector(compact: true),
           IconButton(
             key: const Key('tutorial-button'),
@@ -371,6 +399,7 @@ class _ChatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    debugPrint('[_ChatCard] id=${chat.id} name="${chat.name}" displayName="${chat.displayName}" nameTranslated="${chat.nameTranslated}"');
     final semanticLabel = isOfficial
         ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
         : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';

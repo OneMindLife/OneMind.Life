@@ -1,0 +1,5 @@
+# Agent-register is a public endpoint (rate-limited).
+# verify_jwt must be false to allow unauthenticated registration.
+
+[function]
+verify_jwt = false

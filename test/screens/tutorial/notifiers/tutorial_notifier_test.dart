@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/screens/tutorial/models/tutorial_state.dart';
 import 'package:onemind_app/screens/tutorial/notifiers/tutorial_notifier.dart';
+import 'package:onemind_app/screens/tutorial/tutorial_data.dart';
 
 void main() {
   group('TutorialNotifier', () {
@@ -347,6 +348,120 @@ void main() {
 
       expect(state1, equals(state2));
       expect(state1, isNot(equals(state3)));
+    });
+  });
+
+  group('TutorialChatNotifier', () {
+    late TutorialChatNotifier chatNotifier;
+
+    setUp(() {
+      chatNotifier = TutorialChatNotifier();
+    });
+
+    group('template selection', () {
+      test('nextStep from intro goes to templateSelection', () {
+        chatNotifier.nextStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.templateSelection);
+      });
+
+      test('selectTemplate sets template and advances to round1Proposing', () {
+        chatNotifier.nextStep(); // intro → templateSelection
+        chatNotifier.selectTemplate('community');
+
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+        expect(chatNotifier.state.selectedTemplate, 'community');
+      });
+
+      test('selectTemplate with custom question stores question', () {
+        chatNotifier.nextStep();
+        chatNotifier.selectTemplate('classic', customQuestion: 'My question?');
+
+        expect(chatNotifier.state.selectedTemplate, 'classic');
+        expect(chatNotifier.state.customQuestion, 'My question?');
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+      });
+
+      test('showTemplateSelection goes to templateSelection', () {
+        chatNotifier.showTemplateSelection();
+        expect(chatNotifier.state.currentStep, TutorialStep.templateSelection);
+      });
+    });
+
+    group('template-aware propositions', () {
+      test('community template uses community props in round 1', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+
+        // Should contain community props + user prop
+        final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
+        expect(propContents, contains('Block Party'));
+        expect(propContents, contains('Community Garden'));
+        expect(propContents, contains('Neighborhood Watch'));
+        expect(propContents, contains('My Idea'));
+      });
+
+      test('community template round 1 winner is Community Garden', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.completeRound1Rating();
+
+        final winnerContent = chatNotifier.state.previousRoundWinners.first.content;
+        expect(winnerContent, 'Community Garden');
+      });
+
+      test('workplace template uses workplace props', () {
+        chatNotifier.selectTemplate('workplace');
+        chatNotifier.submitRound1Proposition('My Idea');
+
+        final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
+        expect(propContents, contains('Flexible Hours'));
+        expect(propContents, contains('Mental Health Support'));
+        expect(propContents, contains('Team Building'));
+      });
+
+      test('classic template (null) uses default props', () {
+        // beginRound1 without selectTemplate (backwards compat)
+        chatNotifier.beginRound1();
+        chatNotifier.submitRound1Proposition('My Idea');
+
+        final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
+        expect(propContents, contains('Success'));
+        expect(propContents, contains('Adventure'));
+        expect(propContents, contains('Growth'));
+      });
+    });
+
+    group('full flow with template', () {
+      test('completes entire flow with community template', () {
+        chatNotifier.nextStep(); // intro → templateSelection
+        chatNotifier.selectTemplate('community');
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+        expect(chatNotifier.state.selectedTemplate, 'community');
+
+        chatNotifier.submitRound1Proposition('Education');
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Rating);
+
+        chatNotifier.completeRound1Rating();
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
+        expect(chatNotifier.state.previousRoundWinners.first.content, 'Community Garden');
+
+        chatNotifier.continueToSeeResults();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Education');
+        chatNotifier.completeRound2Rating();
+        expect(chatNotifier.state.currentStep, TutorialStep.round2Result);
+
+        chatNotifier.continueToRound3();
+        chatNotifier.submitRound3Proposition('Arts');
+        chatNotifier.completeRound3Rating();
+        expect(chatNotifier.state.currentStep, TutorialStep.round3Consensus);
+
+        chatNotifier.continueToShareDemo();
+        expect(chatNotifier.state.currentStep, TutorialStep.shareDemo);
+
+        chatNotifier.completeTutorial();
+        expect(chatNotifier.state.currentStep, TutorialStep.complete);
+      });
     });
   });
 

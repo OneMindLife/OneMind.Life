@@ -40,6 +40,9 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
   /// Track if we've ever seen the rating phase - prevents popping on stale initial data
   bool _hasSeenRatingPhase = false;
 
+  /// Track if skip is in progress
+  bool _isSkipping = false;
+
   GridRankingParams get _params => GridRankingParams(
         roundId: widget.roundId,
         participantId: widget.participantId,
@@ -62,6 +65,30 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       });
     } else {
       _widgetKey.currentState?.setNoMorePropositions();
+    }
+  }
+
+  Future<void> _handleSkipRating() async {
+    if (_isSkipping) return;
+    setState(() => _isSkipping = true);
+
+    try {
+      final notifier = ref.read(chatDetailProvider(_chatParams).notifier);
+      await notifier.skipRating();
+
+      if (mounted) {
+        _hasPopped = true;
+        Navigator.of(context).pop(false);
+      }
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSkipping = false);
     }
   }
 
@@ -108,6 +135,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final chatStateAsync = ref.watch(chatDetailProvider(_chatParams));
     final isPaused = chatStateAsync.valueOrNull?.chat?.isPaused ?? false;
     final currentPhase = chatStateAsync.valueOrNull?.currentRound?.phase;
+    final canSkipRating = chatStateAsync.valueOrNull?.canSkipRating ?? false;
 
     // Pop back to chat screen if paused
     if (isPaused && !_hasPopped) {
@@ -123,20 +151,24 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       });
     }
 
-    // Pop back to chat screen if rating phase has ended
-    // currentPhase will be null initially, so only pop if it's explicitly not rating
-    // IMPORTANT: Only pop if we've already seen the rating phase at least once.
-    // This prevents popping due to stale/race condition data during initial load.
+    // Pop back to chat screen if this round completed (new round started).
+    // We detect this by checking if stateRoundId changed to a different round.
+    // DO NOT pop based on phase changes within the same round — Realtime events
+    // can arrive out of order (e.g. INSERT with phase=proposing arrives after
+    // UPDATE with phase=rating), causing a brief phase flicker that triggers
+    // a false pop.
     final stateRoundId = chatStateAsync.valueOrNull?.currentRound?.id;
-    final roundMatches = stateRoundId == null || stateRoundId == widget.roundId;
 
-    // Track if we've seen rating phase
-    if (currentPhase == RoundPhase.rating && roundMatches) {
+    // Track if we've seen rating phase (for this round)
+    if (currentPhase == RoundPhase.rating && stateRoundId == widget.roundId) {
       _hasSeenRatingPhase = true;
     }
 
-    // Only pop if: we've seen rating phase, phase is now NOT rating, round matches, haven't popped yet
-    if (_hasSeenRatingPhase && currentPhase != null && currentPhase != RoundPhase.rating && roundMatches && !_hasPopped) {
+    // Pop when: we've seen rating phase AND round changed (our round completed)
+    final roundChanged = stateRoundId != null && stateRoundId != widget.roundId;
+    final cycleEnded = _hasSeenRatingPhase && stateRoundId == null && currentPhase == null;
+
+    if (_hasSeenRatingPhase && (roundChanged || cycleEnded) && !_hasPopped) {
       _hasPopped = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -209,6 +241,22 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           ),
         ),
         centerTitle: true,
+        actions: [
+          if (canSkipRating)
+            TextButton(
+              onPressed: _isSkipping ? null : _handleSkipRating,
+              child: _isSkipping
+                  ? SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: theme.colorScheme.primary,
+                      ),
+                    )
+                  : Text(l10n.skip),
+            ),
+        ],
       ),
       body: SafeArea(
         child: stateAsync.when(

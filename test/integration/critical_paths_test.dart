@@ -221,7 +221,9 @@ void main() {
         previousRoundId: 2,
       );
 
-      chatService.setupGetConsensusItems(1, [winningProposition]);
+      chatService.setupGetConsensusItems(1, [
+        ConsensusItem(cycleId: 1, proposition: winningProposition),
+      ]);
 
       // Act
       final winnersResult = await chatService.getPreviousRoundWinners(1);
@@ -231,7 +233,7 @@ void main() {
       expect(winnersResult['consecutiveSoleWins'], equals(2));
       expect(winnersResult['isSoleWinner'], isTrue);
       expect(consensusItems, hasLength(1));
-      expect(consensusItems.first.content, equals('Winning proposal'));
+      expect(consensusItems.first.proposition.content, equals('Winning proposal'));
     });
 
     test('tied winners do not count toward consensus', () async {

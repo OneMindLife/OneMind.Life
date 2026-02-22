@@ -1,0 +1,5 @@
+# Agent-orchestrator receives service role key from DB trigger, not user JWT.
+# verify_jwt must be false so the gateway doesn't reject non-JWT tokens.
+
+[function]
+verify_jwt = false

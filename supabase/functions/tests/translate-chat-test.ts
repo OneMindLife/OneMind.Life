@@ -5,7 +5,7 @@
 //
 // Note: These tests require:
 // - SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables
-// - ANTHROPIC_API_KEY environment variable (for actual translation)
+// - NVIDIA_API_KEY environment variable (for actual translation)
 // - A local Supabase instance or test database
 //
 // Auth tests verify the internal auth validation:

@@ -766,4 +766,78 @@ class PropositionService {
         )
         .subscribe();
   }
+
+  // ==========================================================================
+  // Rating Skip Methods
+  // ==========================================================================
+
+  /// Skip rating for the current round.
+  /// User must not have already rated.
+  /// Skip quota must not be exceeded.
+  Future<RatingSkip> skipRating({
+    required int roundId,
+    required int participantId,
+  }) async {
+    final response = await _client.from('rating_skips').insert({
+      'round_id': roundId,
+      'participant_id': participantId,
+    }).select().single();
+
+    return RatingSkip.fromJson(response);
+  }
+
+  /// Skip rating with cleanup — deletes any intermediate grid_rankings first.
+  /// Used when skipping from inside the rating screen.
+  Future<void> skipRatingWithCleanup({
+    required int roundId,
+    required int participantId,
+  }) async {
+    await _client.rpc('skip_rating_with_cleanup', params: {
+      'p_round_id': roundId,
+      'p_participant_id': participantId,
+    });
+  }
+
+  /// Get rating skip count for a round
+  Future<int> getRatingSkipCount(int roundId) async {
+    final response = await _client
+        .from('rating_skips')
+        .select('id')
+        .eq('round_id', roundId);
+
+    return (response as List).length;
+  }
+
+  /// Check if a participant has skipped rating this round
+  Future<bool> hasSkippedRating(int roundId, int participantId) async {
+    final response = await _client
+        .from('rating_skips')
+        .select('id')
+        .eq('round_id', roundId)
+        .eq('participant_id', participantId)
+        .maybeSingle();
+
+    return response != null;
+  }
+
+  /// Subscribe to rating skip changes for a round
+  RealtimeChannel subscribeToRatingSkips(
+    int roundId,
+    void Function() onUpdate,
+  ) {
+    return _client
+        .channel('rating_skips:$roundId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'rating_skips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'round_id',
+            value: roundId,
+          ),
+          callback: (_) => onUpdate(),
+        )
+        .subscribe();
+  }
 }

@@ -19,11 +19,11 @@ class SupabaseConfig {
   // Private constructor to prevent instantiation
   SupabaseConfig._();
 
-  /// Remote Supabase URL (must be provided via --dart-define)
-  static const String _remoteUrl = 'https://YOUR_PROJECT.supabase.co';
+  /// Remote Supabase URL
+  static const String _remoteUrl = 'https://ccyuxrtrklgpkzcryzpj.supabase.co';
 
-  /// Remote Supabase anon key (must be provided via --dart-define)
-  static const String _remoteAnonKey = 'your-anon-key';
+  /// Remote Supabase anon key
+  static const String _remoteAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjeXV4cnRya2xncGt6Y3J5enBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODkzOTksImV4cCI6MjA4MzU2NTM5OX0.RR7W2SZD7BS9y3-I1YpyfB550fb0ZckduN-814RqycE';
 
   /// Local Supabase URL for development
   static const String _localUrl = 'http://127.0.0.1:54321';

@@ -148,8 +148,8 @@ void main() {
     test('defaults() returns correct default values', () {
       final settings = AISettings.defaults();
 
-      // AI is always enabled by default with 1 proposition per round
-      expect(settings.enabled, true);
+      // AI proposer retired - always disabled
+      expect(settings.enabled, false);
       expect(settings.propositionCount, 1);
     });
 
@@ -170,6 +170,141 @@ void main() {
 
       expect(updated.enabled, true);
       expect(updated.propositionCount, 5);
+    });
+  });
+
+  group('AgentConfig', () {
+    test('creates with required name and empty personality', () {
+      const config = AgentConfig(name: 'Agent 1');
+      expect(config.name, 'Agent 1');
+      expect(config.personality, '');
+    });
+
+    test('creates with name and personality', () {
+      const config = AgentConfig(name: 'My Agent', personality: 'Focus on cost');
+      expect(config.name, 'My Agent');
+      expect(config.personality, 'Focus on cost');
+    });
+
+    test('copyWith updates name only', () {
+      const config = AgentConfig(name: 'Agent 1', personality: 'Be skeptical');
+      final updated = config.copyWith(name: 'Custom Name');
+      expect(updated.name, 'Custom Name');
+      expect(updated.personality, 'Be skeptical');
+    });
+
+    test('copyWith updates personality only', () {
+      const config = AgentConfig(name: 'Agent 1');
+      final updated = config.copyWith(personality: 'Focus on data');
+      expect(updated.name, 'Agent 1');
+      expect(updated.personality, 'Focus on data');
+    });
+
+    test('toJson returns correct map', () {
+      const config = AgentConfig(name: 'Agent 1', personality: 'Be practical');
+      final json = config.toJson();
+      expect(json, {'name': 'Agent 1', 'personality': 'Be practical'});
+    });
+
+    test('equality works correctly', () {
+      const a = AgentConfig(name: 'Agent 1', personality: 'Test');
+      const b = AgentConfig(name: 'Agent 1', personality: 'Test');
+      const c = AgentConfig(name: 'Agent 2', personality: 'Test');
+      expect(a, equals(b));
+      expect(a, isNot(equals(c)));
+    });
+  });
+
+  group('AgentSettings', () {
+    test('defaults() returns correct default values', () {
+      final settings = AgentSettings.defaults();
+      expect(settings.enabled, false);
+      expect(settings.customizeIndividually, false);
+      expect(settings.useSameCount, true);
+      expect(settings.proposingAgentCount, 1);
+      expect(settings.ratingAgentCount, 1);
+      expect(settings.sharedInstructions, '');
+      expect(settings.agents.length, 1);
+      expect(settings.agents[0].name, 'Agent 1');
+    });
+
+    test('copyWith updates enabled only', () {
+      final settings = AgentSettings.defaults();
+      final updated = settings.copyWith(enabled: true);
+      expect(updated.enabled, true);
+      expect(updated.customizeIndividually, false);
+      expect(updated.proposingAgentCount, 1);
+    });
+
+    test('copyWith updates sharedInstructions', () {
+      final settings = AgentSettings.defaults();
+      final updated = settings.copyWith(sharedInstructions: 'Focus on cost');
+      expect(updated.sharedInstructions, 'Focus on cost');
+    });
+
+    test('withCount grows agents list', () {
+      final settings = AgentSettings.defaults(); // 3 agents
+      final updated = settings.withCount(5);
+      expect(updated.proposingAgentCount, 5);
+      expect(updated.ratingAgentCount, 5); // useSameCount is true
+      expect(updated.agents.length, 5);
+      // Original agents preserved
+      expect(updated.agents[0].name, 'Agent 1');
+      expect(updated.agents[1].name, 'Agent 2');
+      expect(updated.agents[2].name, 'Agent 3');
+      // New agents auto-named
+      expect(updated.agents[3].name, 'Agent 4');
+      expect(updated.agents[4].name, 'Agent 5');
+    });
+
+    test('withCount shrinks agents list', () {
+      final settings = AgentSettings.defaults(); // 3 agents
+      final updated = settings.withCount(1);
+      expect(updated.proposingAgentCount, 1);
+      expect(updated.agents.length, 1);
+      expect(updated.agents[0].name, 'Agent 1');
+    });
+
+    test('withCount preserves customized agents when growing', () {
+      final settings = AgentSettings.defaults().copyWith(
+        agents: [
+          const AgentConfig(name: 'Custom', personality: 'Be bold'),
+          const AgentConfig(name: 'Agent 2'),
+          const AgentConfig(name: 'Agent 3'),
+        ],
+      );
+      final updated = settings.withCount(4);
+      expect(updated.agents[0].name, 'Custom');
+      expect(updated.agents[0].personality, 'Be bold');
+      expect(updated.agents[3].name, 'Agent 4');
+    });
+
+    test('withCount respects useSameCount false', () {
+      final settings = AgentSettings.defaults().copyWith(
+        useSameCount: false,
+        ratingAgentCount: 2,
+      );
+      final updated = settings.withCount(4);
+      expect(updated.proposingAgentCount, 4);
+      expect(updated.ratingAgentCount, 2); // unchanged
+    });
+
+    test('withCount clamps to valid range', () {
+      final settings = AgentSettings.defaults();
+      final tooLow = settings.withCount(0);
+      expect(tooLow.proposingAgentCount, 1);
+
+      final tooHigh = settings.withCount(10);
+      expect(tooHigh.proposingAgentCount, 5);
+    });
+
+    test('equality works correctly', () {
+      final a = AgentSettings.defaults();
+      final b = AgentSettings.defaults();
+      expect(a, equals(b));
+
+      final c = a.copyWith(enabled: true);
+      expect(a, isNot(equals(c)));
     });
   });
 

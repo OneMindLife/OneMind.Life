@@ -223,9 +223,18 @@ class QrCodeShareDialog extends StatelessWidget {
             ),
           )
         else
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(l10n.done),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(context),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  l10n.done,
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
           ),
       ],
     );

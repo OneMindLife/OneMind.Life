@@ -10,7 +10,7 @@
 //
 // This function:
 // 1. Validates JWT (gateway-verified) and participant ownership
-// 2. Translates content to English using Claude Haiku
+// 2. Translates content to English using Gemini 2.0 Flash
 // 3. Normalizes the text (lowercase, trim whitespace)
 // 4. Checks for existing propositions with same normalized English translation
 // 5. If unique, inserts proposition and translations
@@ -21,7 +21,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import OpenAI from "npm:openai@4.77.0";
 import { z } from "npm:zod@3.23.8";
 import {
   getCorsHeaders,
@@ -33,9 +33,10 @@ import {
 // Environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+// Initialize OpenAI client pointing to Gemini 2.0 Flash (free tier, ~1-2s responses)
+const openai = new OpenAI({
+  apiKey: Deno.env.get("GEMINI_API_KEY") ?? "",
+  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
 });
 
 // Initialize Supabase client with service role for DB operations
@@ -46,6 +47,7 @@ const RequestSchema = z.object({
   content: z.string().min(1, "Content is required"),
   round_id: z.number().int().positive("Round ID must be a positive integer"),
   participant_id: z.number().int().positive("Participant ID must be a positive integer"),
+  category: z.string().nullable().optional(),
 });
 
 // Zod schema for translations (en and es only for now)
@@ -61,7 +63,7 @@ type Translations = z.infer<typeof TranslationsSchema>;
 // =============================================================================
 
 /**
- * Translate content to English and Spanish using Claude Haiku
+ * Translate content to English and Spanish using Kimi K2.5
  */
 async function getTranslations(text: string): Promise<Translations> {
   const MAX_RETRIES = 3;
@@ -81,9 +83,9 @@ Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
 
   while (attempts < MAX_RETRIES) {
     try {
-      const message = await anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1024,
+      const message = await openai.chat.completions.create({
+        model: "gemini-2.0-flash",
+        max_tokens: 256,
         messages: [
           {
             role: "user",
@@ -93,9 +95,7 @@ Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
       });
 
       // Extract text from response
-      const responseText = message.content[0].type === "text"
-        ? message.content[0].text
-        : "";
+      const responseText = message.choices[0]?.message?.content ?? "";
 
       // Clean up the response - remove any markdown code blocks
       let cleanedResponse = responseText.trim();
@@ -145,13 +145,20 @@ Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
  * Validate the request JWT and return the authenticated user.
  * Gateway already verified the JWT signature (verify_jwt = true).
  * This function validates via getUser() and returns the user object.
+ * Service role keys are accepted for internal edge-function-to-edge-function calls.
  */
-async function validateAuth(req: Request): Promise<{ user: { id: string } } | { error: string }> {
+async function validateAuth(req: Request): Promise<{ user: { id: string }; isServiceRole?: boolean } | { error: string }> {
   const authHeader = req.headers.get("Authorization") || req.headers.get("authorization");
   const token = authHeader?.replace("Bearer ", "");
 
   if (!token) {
     return { error: "Unauthorized - no token" };
+  }
+
+  // Check if token is the service role key (for internal calls from agent-propose)
+  const envServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (envServiceKey && token === envServiceKey) {
+    return { user: { id: "service_role" }, isServiceRole: true };
   }
 
   const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -239,25 +246,60 @@ Deno.serve(async (req: Request) => {
       return corsErrorResponse(`Validation error: ${errors}`, req, 400);
     }
 
-    const { content, round_id, participant_id } = validationResult.data;
+    const { content: rawContent2, round_id, participant_id, category } = validationResult.data;
+    // Strip any leading [category_tag] prefix — LLM artifact that should never persist in stored content
+    const content = rawContent2.replace(/^\[\w+\]\s*/, "").trim();
 
     // Verify participant ownership and active status
+    // Service role calls (from agent-propose) are trusted — only check active status
     const { data: participant, error: participantErr } = await supabase
       .from("participants")
       .select("user_id, status")
       .eq("id", participant_id)
       .single();
 
-    if (participantErr || !participant || participant.user_id !== authResult.user.id) {
+    if (participantErr || !participant) {
+      return corsErrorResponse("Participant not found", req, 403);
+    }
+    if (!authResult.isServiceRole && participant.user_id !== authResult.user.id) {
       return corsErrorResponse("Not your participant", req, 403);
     }
     if (participant.status !== "active") {
       return corsErrorResponse("Participant not active", req, 403);
     }
 
+    // Step 0: Check if participant is funded for this round
+    const { data: isFunded, error: fundedError } = await supabase
+      .rpc("is_participant_funded", { p_round_id: round_id, p_participant_id: participant_id });
+
+    if (fundedError) {
+      console.error("[SUBMIT-PROPOSITION] Funding check error:", fundedError);
+      return corsErrorResponse(`Funding check failed: ${fundedError.message}`, req, 500);
+    }
+
+    // If round has funding records and participant is NOT funded, reject
+    // (If no funding records exist yet, allow — backward compat for pre-credits rounds)
+    if (isFunded === false) {
+      const { data: fundedCount } = await supabase
+        .rpc("get_funded_participant_count", { p_round_id: round_id });
+
+      if (fundedCount && fundedCount > 0) {
+        console.log("[SUBMIT-PROPOSITION] Participant not funded, rejecting");
+        return corsErrorResponse("Insufficient credits — spectating this round", req, 403, "NOT_FUNDED");
+      }
+    }
+
     // Step 1: Translate content to English (and Spanish)
-    console.log("[SUBMIT-PROPOSITION] Translating content...");
-    const translations = await getTranslations(content);
+    // Agent propositions (service role) are already in English — skip LLM translation
+    // to avoid a second Kimi call that doubles latency and risks 150s gateway timeout
+    let translations: Translations;
+    if (authResult.isServiceRole) {
+      console.log("[SUBMIT-PROPOSITION] Service role call — skipping LLM translation");
+      translations = { en: content, es: "" };
+    } else {
+      console.log("[SUBMIT-PROPOSITION] Translating content...");
+      translations = await getTranslations(content);
+    }
     console.log("[SUBMIT-PROPOSITION] Translations:", JSON.stringify(translations));
 
     // Step 2: Normalize the English translation
@@ -281,7 +323,28 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Step 4: Insert the proposition
+    // Step 4: Auto-detect category if not provided
+    let effectiveCategory = category || null;
+    if (!effectiveCategory) {
+      // Look up chat_id from round → cycle → chat
+      const { data: roundData } = await supabase
+        .from("rounds")
+        .select("cycle_id, cycles(chat_id)")
+        .eq("id", round_id)
+        .single();
+
+      if (roundData?.cycles?.chat_id) {
+        const { data: allowed } = await supabase.rpc("get_chat_allowed_categories", {
+          p_chat_id: roundData.cycles.chat_id,
+        });
+        if (allowed && allowed.length === 1) {
+          effectiveCategory = allowed[0];
+          console.log("[SUBMIT-PROPOSITION] Auto-detected category:", effectiveCategory);
+        }
+      }
+    }
+
+    // Step 5: Insert the proposition
     console.log("[SUBMIT-PROPOSITION] Inserting new proposition...");
     const { data: proposition, error: insertError } = await supabase
       .from("propositions")
@@ -289,6 +352,7 @@ Deno.serve(async (req: Request) => {
         round_id,
         participant_id,
         content,
+        category: effectiveCategory,
       })
       .select()
       .single();

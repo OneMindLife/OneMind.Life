@@ -32,9 +32,29 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     );
   }
 
+  /// Move from intro to template selection
+  void showTemplateSelection() {
+    state = state.copyWith(
+      currentStep: TutorialStep.templateSelection,
+    );
+  }
+
+  /// Select a template and advance to round 1
+  void selectTemplate(String templateKey, {String? customQuestion}) {
+    state = state.copyWith(
+      selectedTemplate: templateKey,
+      customQuestion: customQuestion,
+      currentStep: TutorialStep.round1Proposing,
+      currentRound: TutorialData.round1(phase: RoundPhase.proposing),
+      myPropositions: [],
+      hasRated: false,
+      hasStartedRating: false,
+    );
+  }
+
   // === ROUND 1 ===
 
-  /// Move from intro to round 1 proposing
+  /// Move from intro to round 1 proposing (legacy - skips template selection)
   void beginRound1() {
     state = state.copyWith(
       currentStep: TutorialStep.round1Proposing,
@@ -61,24 +81,25 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       currentRound: TutorialData.round1(phase: RoundPhase.rating),
       myPropositions: [userProp],
       propositions: TutorialData.createPropositions(
-        TutorialData.round1PropositionContents,
+        TutorialData.round1Props(state.selectedTemplate),
         roundId: -1,
         userProposition: content,
       ),
     );
   }
 
-  /// Complete round 1 rating - "Success" wins
+  /// Complete round 1 rating - template's R1 winner wins
   void completeRound1Rating() {
     // Store Round 1 results for "See Results" button
     final round1Results = TutorialData.round1ResultsWithRatings(
       state.userProposition1 ?? '',
+      templateKey: state.selectedTemplate,
     );
 
     state = state.copyWith(
       currentStep: TutorialStep.round1Result,
       hasRated: true,
-      previousRoundWinners: [TutorialData.round1Winner()],
+      previousRoundWinners: [TutorialData.round1Winner(templateKey: state.selectedTemplate)],
       isSoleWinner: true,
       consecutiveSoleWins: 0, // User didn't win
       round1Results: round1Results,
@@ -135,7 +156,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       currentRound: TutorialData.round2(phase: RoundPhase.rating),
       myPropositions: [userProp],
       propositions: TutorialData.createPropositions(
-        TutorialData.round2PropositionContents,
+        TutorialData.round2Props(state.selectedTemplate),
         roundId: -2,
         userProposition: content,
       ),
@@ -151,7 +172,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       previousRoundWinners: [TutorialData.round2Winner(userProp)],
       isSoleWinner: true,
       consecutiveSoleWins: 1, // First win for user
-      round2Results: TutorialData.round2ResultsWithRatings(userProp),
+      round2Results: TutorialData.round2ResultsWithRatings(userProp, templateKey: state.selectedTemplate),
     );
   }
 
@@ -187,7 +208,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       propositions: [
         carriedProp,
         ...TutorialData.createPropositions(
-          TutorialData.round3PropositionContents,
+          TutorialData.round3Props(state.selectedTemplate),
           roundId: -3,
           includeUserProp: false,
         ),
@@ -227,7 +248,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         carriedProp,
         newProp,
         ...TutorialData.createPropositions(
-          TutorialData.round3PropositionContents,
+          TutorialData.round3Props(state.selectedTemplate),
           roundId: -3,
           includeUserProp: false,
         ),
@@ -243,7 +264,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       hasRated: true,
       previousRoundWinners: [TutorialData.round3Winner(userProp)],
       isSoleWinner: true,
-      round3Results: TutorialData.round3ResultsWithRatings(userProp),
+      round3Results: TutorialData.round3ResultsWithRatings(userProp, templateKey: state.selectedTemplate),
       consecutiveSoleWins: 2, // Second consecutive win = CONSENSUS!
       consensusItems: [TutorialData.consensusProposition(userProp)],
     );
@@ -281,7 +302,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   void nextStep() {
     switch (state.currentStep) {
       case TutorialStep.intro:
-        beginRound1();
+        showTemplateSelection();
         break;
       case TutorialStep.round1Result:
         continueToSeeResults();

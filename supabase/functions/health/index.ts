@@ -27,7 +27,7 @@ const APP_VERSION = Deno.env.get("APP_VERSION") ?? "1.0.0";
 const REQUIRED_SECRETS = [
   { name: "CRON_SECRET", desc: "Cron job authentication", critical: true },
   { name: "STRIPE_SECRET_KEY", desc: "Payment processing", critical: false },
-  { name: "ANTHROPIC_API_KEY", desc: "AI translations", critical: false },
+  { name: "NVIDIA_API_KEY", desc: "AI translations (Kimi K2.5 via NVIDIA)", critical: false },
 ] as const;
 
 interface HealthCheck {

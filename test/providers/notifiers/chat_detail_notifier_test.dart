@@ -2,7 +2,53 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/providers/notifiers/chat_detail_notifier.dart';
 
+import '../../fixtures/chat_fixtures.dart';
+import '../../fixtures/participant_fixtures.dart';
+
 void main() {
+  group('RatingSkip model', () {
+    test('fromJson parses correctly', () {
+      final json = {
+        'id': 42,
+        'round_id': 10,
+        'participant_id': 5,
+        'created_at': '2024-01-15T10:30:00Z',
+      };
+
+      final skip = RatingSkip.fromJson(json);
+
+      expect(skip.id, 42);
+      expect(skip.roundId, 10);
+      expect(skip.participantId, 5);
+      expect(skip.createdAt, DateTime.parse('2024-01-15T10:30:00Z'));
+    });
+
+    test('toJson returns insert-ready map', () {
+      final skip = RatingSkip(
+        id: 1,
+        roundId: 10,
+        participantId: 5,
+        createdAt: DateTime.now(),
+      );
+
+      final json = skip.toJson();
+
+      expect(json, {'round_id': 10, 'participant_id': 5});
+      expect(json.containsKey('id'), false);
+      expect(json.containsKey('created_at'), false);
+    });
+
+    test('equality works correctly', () {
+      final now = DateTime.now();
+      final skip1 = RatingSkip(id: 1, roundId: 10, participantId: 5, createdAt: now);
+      final skip2 = RatingSkip(id: 1, roundId: 10, participantId: 5, createdAt: now);
+      final skip3 = RatingSkip(id: 2, roundId: 10, participantId: 5, createdAt: now);
+
+      expect(skip1, equals(skip2));
+      expect(skip1, isNot(equals(skip3)));
+    });
+  });
+
   group('ChatDetailState', () {
     group('copyWith', () {
       test('updates currentRound', () {
@@ -531,6 +577,163 @@ void main() {
 
       // This test documents the implemented fix
       expect(true, true, reason: 'Fix implemented in ChatScreen - see lib/screens/chat/chat_screen.dart');
+    });
+  });
+
+  group('Rating skip state', () {
+    test('copyWith updates ratingSkipCount and hasSkippedRating', () {
+      const state = ChatDetailState();
+      expect(state.ratingSkipCount, 0);
+      expect(state.hasSkippedRating, false);
+
+      final updated = state.copyWith(ratingSkipCount: 3, hasSkippedRating: true);
+      expect(updated.ratingSkipCount, 3);
+      expect(updated.hasSkippedRating, true);
+
+      // Original unchanged
+      expect(state.ratingSkipCount, 0);
+      expect(state.hasSkippedRating, false);
+    });
+
+    test('maxRatingSkips uses ratingMinimum from chat', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 3));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+        ParticipantFixtures.model(id: 4),
+        ParticipantFixtures.model(id: 5),
+      ];
+      final state = ChatDetailState(chat: chat, participants: participants);
+
+      // 5 active - 3 rating_minimum = 2
+      expect(state.maxRatingSkips, 2);
+    });
+
+    test('maxRatingSkips clamps to 0 when participants <= ratingMinimum', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 5));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(chat: chat, participants: participants);
+
+      // 3 active - 5 minimum → clamp to 0
+      expect(state.maxRatingSkips, 0);
+    });
+
+    test('maxRatingSkips defaults to ratingMinimum=2 when chat is null', () {
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+        ParticipantFixtures.model(id: 4),
+      ];
+      const state = ChatDetailState();
+      final withParticipants = state.copyWith(participants: participants);
+
+      // 4 active - 2 default = 2
+      expect(withParticipants.maxRatingSkips, 2);
+    });
+
+    test('canSkipRating is true when all conditions met', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+        ParticipantFixtures.model(id: 4),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasRated: false,
+        hasStartedRating: false,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+      );
+
+      expect(state.canSkipRating, true);
+    });
+
+    test('canSkipRating is false when already rated', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasRated: true,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+      );
+
+      expect(state.canSkipRating, false);
+    });
+
+    test('canSkipRating is true even when already started rating', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasStartedRating: true,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+      );
+
+      expect(state.canSkipRating, true);
+    });
+
+    test('canSkipRating is false when already skipped', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasSkippedRating: true,
+        ratingSkipCount: 1,
+      );
+
+      expect(state.canSkipRating, false);
+    });
+
+    test('canSkipRating is false when quota exceeded', () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasSkippedRating: false,
+        ratingSkipCount: 1, // max is 3-2=1, quota full
+      );
+
+      expect(state.canSkipRating, false);
+    });
+
+    test('rating skip fields included in Equatable props', () {
+      const state1 = ChatDetailState(ratingSkipCount: 0, hasSkippedRating: false);
+      const state2 = ChatDetailState(ratingSkipCount: 1, hasSkippedRating: false);
+      const state3 = ChatDetailState(ratingSkipCount: 0, hasSkippedRating: true);
+
+      expect(state1, isNot(equals(state2)));
+      expect(state1, isNot(equals(state3)));
     });
   });
 }

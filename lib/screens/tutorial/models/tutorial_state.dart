@@ -5,6 +5,7 @@ import '../../../models/models.dart';
 enum TutorialStep {
   // Intro
   intro,
+  templateSelection,
 
   // Round 1
   round1Proposing,
@@ -66,6 +67,8 @@ class TutorialChatState extends Equatable {
   final int consecutiveSoleWins;
 
   // Tutorial-specific state
+  final String? selectedTemplate; // template key: 'community', 'workplace', 'big_questions', 'family', 'custom'
+  final String? customQuestion; // custom topic question (only for 'custom' template)
   final String? userProposition1; // Round 1 submission
   final String? userProposition2; // Round 2 submission
 
@@ -95,6 +98,8 @@ class TutorialChatState extends Equatable {
     this.previousRoundWinners = const [],
     this.isSoleWinner = false,
     this.consecutiveSoleWins = 0,
+    this.selectedTemplate,
+    this.customQuestion,
     this.userProposition1,
     this.userProposition2,
     this.round1Results = const [],
@@ -132,6 +137,8 @@ class TutorialChatState extends Equatable {
     List<RoundWinner>? previousRoundWinners,
     bool? isSoleWinner,
     int? consecutiveSoleWins,
+    String? selectedTemplate,
+    String? customQuestion,
     String? userProposition1,
     String? userProposition2,
     List<Proposition>? round1Results,
@@ -153,6 +160,8 @@ class TutorialChatState extends Equatable {
       previousRoundWinners: previousRoundWinners ?? this.previousRoundWinners,
       isSoleWinner: isSoleWinner ?? this.isSoleWinner,
       consecutiveSoleWins: consecutiveSoleWins ?? this.consecutiveSoleWins,
+      selectedTemplate: selectedTemplate ?? this.selectedTemplate,
+      customQuestion: customQuestion ?? this.customQuestion,
       userProposition1: userProposition1 ?? this.userProposition1,
       userProposition2: userProposition2 ?? this.userProposition2,
       round1Results: round1Results ?? this.round1Results,
@@ -177,6 +186,8 @@ class TutorialChatState extends Equatable {
         previousRoundWinners,
         isSoleWinner,
         consecutiveSoleWins,
+        selectedTemplate,
+        customQuestion,
         userProposition1,
         userProposition2,
         round1Results,

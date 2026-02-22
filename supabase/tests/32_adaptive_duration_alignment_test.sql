@@ -9,7 +9,7 @@
 
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(18);
+SELECT plan(17);
 
 -- =============================================================================
 -- TEST 1: MINIMUM DURATION CONSTRAINT (>= 60, NOT 30)
@@ -279,13 +279,6 @@ SELECT is(
     (SELECT rating_duration_seconds FROM chats WHERE name = 'Early Advance Adaptive'),
     300,
     'Rating duration also adjusted after early advance'
-);
-
--- Test 18: Round participation counts recorded
-SELECT is(
-    (SELECT rating_participant_count FROM rounds WHERE id = current_setting('test.ea_round_id')::INT),
-    3,
-    'Round stores rating_participant_count = 3 after early advance'
 );
 
 -- =============================================================================

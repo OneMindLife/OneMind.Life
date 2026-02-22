@@ -673,15 +673,26 @@ async function checkThresholdsMet(
 ): Promise<boolean> {
   const chatId = (round as any).cycles.chat_id;
 
-  // Get participant count
-  const { count: participantCount, error: partError } = await supabase
-    .from("participants")
-    .select("id", { count: "exact", head: true })
-    .eq("chat_id", chatId)
-    .eq("status", "active");
+  // Use funded participant count (unfunded spectators don't count toward thresholds)
+  const { data: fundedCount, error: fundedError } = await supabase
+    .rpc("get_funded_participant_count", { p_round_id: round.id });
 
-  if (partError) throw partError;
-  if (!participantCount || participantCount === 0) return false;
+  if (fundedError) throw fundedError;
+
+  // Fallback to active participant count if no funding records (backward compat)
+  let participantCount = fundedCount || 0;
+  if (participantCount === 0) {
+    const { count, error: partError } = await supabase
+      .from("participants")
+      .select("id", { count: "exact", head: true })
+      .eq("chat_id", chatId)
+      .eq("status", "active");
+
+    if (partError) throw partError;
+    participantCount = count || 0;
+  }
+
+  if (participantCount === 0) return false;
 
   const thresholdPercent = isProposing
     ? chat.proposing_threshold_percent
@@ -852,6 +863,17 @@ async function processAutoStart(
 
       // Check if threshold reached
       if ((participantCount || 0) >= chat.auto_start_participant_count) {
+        // Check if chat has enough credits to start
+        const { data: canStart, error: creditError } = await supabase
+          .rpc("can_round_start", { p_chat_id: chatId });
+
+        if (creditError) throw creditError;
+
+        if (!canStart) {
+          console.log(`Round ${round.id}: participant threshold met but insufficient credits, staying paused`);
+          continue;
+        }
+
         const now = new Date();
         // Round up to next :00 for cron alignment
         const phaseEndsAt = calculateRoundMinuteEnd(now, chat.proposing_duration_seconds);
@@ -866,6 +888,16 @@ async function processAutoStart(
           .eq("id", round.id);
 
         if (updateError) throw updateError;
+
+        // Fund participants for this round
+        const { data: fundedCount, error: fundError } = await supabase
+          .rpc("fund_round_participants", { p_round_id: round.id, p_chat_id: chatId });
+
+        if (fundError) {
+          console.error(`Error funding participants for round ${round.id}:`, fundError);
+        } else {
+          console.log(`Round ${round.id}: funded ${fundedCount} participants`);
+        }
 
         result.auto_started++;
       }

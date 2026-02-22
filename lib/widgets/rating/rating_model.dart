@@ -97,6 +97,9 @@ class RatingModel extends ChangeNotifier {
   /// How much "expansion progress" we've made (0 = fully compressed, 1 = fully expanded)
   double _expansionProgress = 0.0;
 
+  /// Which boundary we're expanding from (true = top/100, false = bottom/0)
+  bool _expandingFromTop = false;
+
   /// Whether more propositions are expected (for lazy loading)
   bool _morePropositionsExpected = false;
 
@@ -411,26 +414,102 @@ class RatingModel extends ChangeNotifier {
     final activeIndex = _rankedPropositions.indexWhere((p) => p.isActive);
     if (activeIndex == -1) return;
 
+    debugPrint('[RATING] move: vPos=$_virtualPosition prevVPos=$_previousVirtualPosition delta=$delta expanding=$_isExpanding');
+    for (final p in _rankedPropositions) {
+      debugPrint('[RATING]   ${p.id}: pos=${p.position.toStringAsFixed(1)} active=${p.isActive}');
+    }
+
     if (_justUndid) {
       _virtualPosition = _previousVirtualPosition;
       _justUndid = false;
     }
 
-    // Handle expansion mode - active stays at boundary while others expand
+    // Handle decompression mode - the boundary card (originally at 100 or 0)
+    // pins immediately to the boundary. Other compressed cards decompress
+    // smoothly toward original positions. Active card moves freely.
     if (_isExpanding) {
       final isMovingAwayFromBoundary =
-          (_virtualPosition >= 100 && delta < 0) ||
-          (_virtualPosition <= 0 && delta > 0);
+          (_expandingFromTop && delta < 0) ||
+          (!_expandingFromTop && delta > 0);
 
       if (isMovingAwayFromBoundary) {
-        _handleExpansionMove(delta.abs(), activeIndex);
+        final boundary = _expandingFromTop ? 100.0 : 0.0;
+
+        // Move active card normally (NOT pinned at boundary)
+        _virtualPosition += delta;
+        final activePos = _virtualPosition.clamp(0.0, 100.0);
+        _rankedPropositions[activeIndex] = _rankedPropositions[activeIndex].copyWith(
+          position: activePos,
+        );
+
+        // Decompression progress = how far active has moved from boundary.
+        // Use /30 instead of /100 so decompression completes in ~30 units
+        // of movement, making it feel responsive.
+        final distanceFromBoundary = (activePos - boundary).abs();
+        _expansionProgress = (distanceFromBoundary / 30.0).clamp(0.0, 1.0);
+
+        // Boundary card (originally at 100 or 0) pins to the boundary
+        // immediately. Other compressed cards interpolate smoothly.
+        for (int i = 0; i < _rankedPropositions.length; i++) {
+          if (i != activeIndex) {
+            final propId = _rankedPropositions[i].id;
+            final original = _originalPositions[propId];
+
+            // Pin boundary card to boundary — it stays at 100 (or 0) until
+            // the active card overtakes it via normal movement.
+            if (original == boundary) {
+              _rankedPropositions[i] = _rankedPropositions[i].copyWith(
+                position: boundary,
+                truePosition: boundary,
+              );
+              _compressedPositions.remove(propId);
+              continue;
+            }
+
+            final compressed = _compressedPositions[propId];
+            if (compressed != null && original != null) {
+              final newPos = compressed + (original - compressed) * _expansionProgress;
+              _rankedPropositions[i] = _rankedPropositions[i].copyWith(
+                position: newPos.clamp(0.0, 100.0),
+                truePosition: newPos.clamp(0.0, 100.0),
+              );
+            }
+          }
+        }
+
+        // Update base positions to current state
+        _basePositions.clear();
+        for (var prop in _rankedPropositions) {
+          if (!prop.isActive) {
+            _basePositions[prop.id] = prop.position;
+          }
+        }
+
+        // If fully decompressed, exit decompression mode
+        if (_expansionProgress >= 1.0) {
+          _isExpanding = false;
+          _compressedPositions.clear();
+          for (var prop in _rankedPropositions) {
+            if (!prop.isActive) {
+              _originalPositions[prop.id] = prop.position;
+            }
+          }
+        }
+
         _detectStacks();
         notifyListeners();
         return;
       } else {
-        // Moving back toward/past boundary - exit expansion mode
+        // Moving back toward/past boundary - exit decompression mode
+        // Update base positions to current state to avoid visual jump
         _isExpanding = false;
         _compressedPositions.clear();
+        _basePositions.clear();
+        for (var prop in _rankedPropositions) {
+          if (!prop.isActive) {
+            _basePositions[prop.id] = prop.position;
+          }
+        }
       }
     }
 
@@ -452,34 +531,49 @@ class RatingModel extends ChangeNotifier {
   }
 
   /// Handle movement during expansion mode
-  /// Active stays at boundary, other cards expand toward original positions
+  /// All cards expand gradually from compressed positions to their final targets.
   void _handleExpansionMove(double amount, int activeIndex) {
-    // Calculate how much expansion this movement causes
-    // More movement = more expansion progress
     _expansionProgress += amount / 100.0;
     if (_expansionProgress > 1.0) _expansionProgress = 1.0;
 
-    // Check if any card has reached its original position at the boundary
-    bool expansionComplete = false;
-    final boundary = _virtualPosition >= 100 ? 100.0 : 0.0;
+    final towardTop = _expandingFromTop;
 
+    // Collect inactive card indices that have compressed positions
+    final inactiveIndices = <int>[];
     for (int i = 0; i < _rankedPropositions.length; i++) {
-      if (i == activeIndex) continue;
+      if (i != activeIndex &&
+          _compressedPositions.containsKey(_rankedPropositions[i].id)) {
+        inactiveIndices.add(i);
+      }
+    }
+    if (inactiveIndices.isEmpty) return;
 
-      final prop = _rankedPropositions[i];
-      final compressed = _compressedPositions[prop.id];
-      final original = _originalPositions[prop.id];
+    // Find the compressed range
+    double compMin = double.infinity, compMax = double.negativeInfinity;
+    for (final idx in inactiveIndices) {
+      final c = _compressedPositions[_rankedPropositions[idx].id]!;
+      if (c < compMin) { compMin = c; }
+      if (c > compMax) { compMax = c; }
+    }
+    final compRange = compMax - compMin;
 
-      if (compressed != null && original != null) {
-        // Interpolate between compressed and original
-        final newPos = compressed + (original - compressed) * _expansionProgress;
-        _rankedPropositions[i] = prop.copyWith(position: newPos);
-
-        // Check if this card has reached the boundary (takes over)
-        if ((boundary == 100 && original >= 99.9 && newPos >= 99.9) ||
-            (boundary == 0 && original <= 0.1 && newPos <= 0.1)) {
-          expansionComplete = true;
-        }
+    if (compRange <= 0) {
+      // All cards at same compressed position: snap all to the boundary together
+      final boundary = towardTop ? 100.0 : 0.0;
+      for (final idx in inactiveIndices) {
+        _rankedPropositions[idx] =
+            _rankedPropositions[idx].copyWith(position: boundary);
+      }
+    } else {
+      // All cards gradually interpolate from compressed to final positions
+      for (final idx in inactiveIndices) {
+        final compressed = _compressedPositions[_rankedPropositions[idx].id]!;
+        // Final target: linear map from [compMin, compMax] to [0, 100]
+        final double finalPos =
+            ((compressed - compMin) / compRange) * 100.0;
+        final newPos = compressed + (finalPos - compressed) * _expansionProgress;
+        _rankedPropositions[idx] =
+            _rankedPropositions[idx].copyWith(position: newPos.clamp(0.0, 100.0));
       }
     }
 
@@ -492,12 +586,16 @@ class RatingModel extends ChangeNotifier {
     }
 
     // If expansion is complete, exit expansion mode
-    // Now active can move normally
-    if (expansionComplete || _expansionProgress >= 1.0) {
+    if (_expansionProgress >= 1.0) {
       _isExpanding = false;
       _compressedPositions.clear();
-      // Set previousVirtualPosition so normal movement works
       _previousVirtualPosition = _virtualPosition;
+      // Update original positions to the expanded state
+      for (var prop in _rankedPropositions) {
+        if (!prop.isActive) {
+          _originalPositions[prop.id] = prop.position;
+        }
+      }
     }
   }
 
@@ -529,7 +627,8 @@ class RatingModel extends ChangeNotifier {
   }
 
   /// Normalize virtualPosition to boundary when button is released while past bounds.
-  /// Enters expansion mode - active stays at boundary while other cards expand.
+  /// All cards stay at their current visual positions (no jump on release).
+  /// Enters decompression mode so the next opposite-direction move restores positions.
   void normalizeVirtualPositionOnRelease() {
     if (_phase != RatingPhase.positioning) return;
 
@@ -537,14 +636,11 @@ class RatingModel extends ChangeNotifier {
     final wasBelow0 = _virtualPosition < 0;
 
     if (wasAbove100 || wasBelow0) {
-      // Set virtualPosition to boundary
       final boundary = wasAbove100 ? 100.0 : 0.0;
       _virtualPosition = boundary;
       _previousVirtualPosition = boundary;
 
-      // Enter expansion mode - save compressed positions
-      _isExpanding = true;
-      _expansionProgress = 0.0;
+      // Save ALL compressed positions — no visual change on release
       _compressedPositions.clear();
       for (var prop in _rankedPropositions) {
         if (!prop.isActive) {
@@ -552,9 +648,16 @@ class RatingModel extends ChangeNotifier {
         }
       }
 
-      // Update basePositions to current compressed positions
+      _isExpanding = true;
+      _expandingFromTop = wasAbove100;
+      _expansionProgress = 0.0;
+
       _basePositions.clear();
-      _basePositions.addAll(_compressedPositions);
+      for (var prop in _rankedPropositions) {
+        if (!prop.isActive) {
+          _basePositions[prop.id] = prop.position;
+        }
+      }
 
       notifyListeners();
     }
@@ -591,6 +694,22 @@ class RatingModel extends ChangeNotifier {
       bool nowNormal = _virtualPosition > 0 && _virtualPosition < 100;
       bool transitioningFromCompressed = wasCompressed && nowNormal;
 
+      // When active card leaves a boundary, expand inactive cards toward that boundary
+      if (transitioningFromCompressed) {
+        final leavingTop = _previousVirtualPosition >= 100;
+        final leavingBottom = _previousVirtualPosition <= 0;
+        final noInactiveAtTop = !_rankedPropositions.any(
+            (p) => !p.isActive && p.position >= 99.5);
+        final noInactiveAtBottom = !_rankedPropositions.any(
+            (p) => !p.isActive && p.position <= 0.5);
+
+        if ((leavingTop && noInactiveAtTop) ||
+            (leavingBottom && noInactiveAtBottom)) {
+          debugPrint('[RATING] Expanding toward ${leavingTop ? "top" : "bottom"} boundary');
+          _expandTowardBoundary(activeIndex, leavingTop);
+        }
+      }
+
       // Normal movement - just use base positions for inactive cards
       for (int i = 0; i < _rankedPropositions.length; i++) {
         if (i != activeIndex) {
@@ -599,6 +718,58 @@ class RatingModel extends ChangeNotifier {
           _rankedPropositions[i] =
               _rankedPropositions[i].copyWith(position: basePos);
         }
+      }
+    }
+  }
+
+  /// Expand inactive cards toward a vacated boundary.
+  /// When active leaves top (100): stretch highest inactive to 100, keep lowest in place.
+  /// When active leaves bottom (0): stretch lowest inactive to 0, keep highest in place.
+  void _expandTowardBoundary(int activeIndex, bool towardTop) {
+    final inactiveProps = <RatingProposition>[];
+    for (int i = 0; i < _rankedPropositions.length; i++) {
+      if (i != activeIndex) {
+        inactiveProps.add(_rankedPropositions[i]);
+      }
+    }
+    if (inactiveProps.length < 2) return;
+
+    inactiveProps.sort((a, b) => a.position.compareTo(b.position));
+
+    final currentMin = inactiveProps.first.position;
+    final currentMax = inactiveProps.last.position;
+    final currentRange = currentMax - currentMin;
+    if (currentRange <= 0) return;
+
+    // Stretch only toward the vacated boundary, keep the other end fixed
+    final double targetMin = towardTop ? currentMin : 0.0;
+    final double targetMax = towardTop ? 100.0 : currentMax;
+    final targetRange = targetMax - targetMin;
+
+    for (int i = 0; i < inactiveProps.length; i++) {
+      final relativePosition = (inactiveProps[i].position - currentMin) / currentRange;
+      final newPosition = (targetMin + relativePosition * targetRange).clamp(0.0, 100.0);
+
+      final propIndex = _rankedPropositions.indexWhere((p) => p.id == inactiveProps[i].id);
+      if (propIndex != -1) {
+        _rankedPropositions[propIndex] = _rankedPropositions[propIndex].copyWith(
+          position: newPosition,
+          truePosition: newPosition,
+        );
+      }
+    }
+
+    _basePositions.clear();
+    for (var prop in _rankedPropositions) {
+      if (!prop.isActive) {
+        _basePositions[prop.id] = prop.position;
+      }
+    }
+
+    // Also update originalPositions so future compression references the expanded state
+    for (var prop in _rankedPropositions) {
+      if (!prop.isActive) {
+        _originalPositions[prop.id] = prop.position;
       }
     }
   }
@@ -809,8 +980,12 @@ class RatingModel extends ChangeNotifier {
 
     _rankedPropositions.removeWhere((p) => p.isActive);
 
-    // Also remove from input propositions so it can be re-fetched
-    _inputPropositions.removeWhere((p) => p['id'].toString() == removedId);
+    // In lazy loading mode, remove from input so it can be re-fetched via onUndo.
+    // In non-lazy mode, keep it in _inputPropositions so _addNextProposition
+    // can re-add it when the binary choice is re-confirmed.
+    if (lazyLoadingMode) {
+      _inputPropositions.removeWhere((p) => p['id'].toString() == removedId);
+    }
 
     // Notify that this proposition was undone (for lazy loading to re-fetch)
     onUndo?.call(removedId);
@@ -840,6 +1015,11 @@ class RatingModel extends ChangeNotifier {
       _previousVirtualPosition = _virtualPosition;
       _justUndid = false;
       _currentPropositionIndex--;
+
+      debugPrint('[RATING] Undo: reactivated ${lastPlaced.id} at pos=${_virtualPosition}');
+      for (final p in _rankedPropositions) {
+        debugPrint('[RATING]   ${p.id}: pos=${p.position.toStringAsFixed(1)} active=${p.isActive}');
+      }
     }
 
     _detectStacks();

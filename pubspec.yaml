@@ -76,6 +76,12 @@ dependencies:
   sentry_flutter: ^9.9.2
   flutter_speed_dial: ^7.0.0
 
+  # YouTube embed
+  youtube_player_iframe: ^5.1.7
+
+  # Web SEO (tree-shaken on mobile via conditional import)
+  web: ^1.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

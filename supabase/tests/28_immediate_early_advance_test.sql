@@ -1,6 +1,6 @@
 -- Tests for immediate early advance triggers
 BEGIN;
-SELECT plan(12);
+SELECT plan(17);
 
 -- =============================================================================
 -- SETUP: Create test chat with early advance thresholds
@@ -289,6 +289,186 @@ SELECT is(
      WHERE ch.name = 'ManualModeNoAdvance'),
     'waiting',
     'Manual rating_start_mode: advances to waiting (not rating) at 100% participation'
+);
+
+-- =============================================================================
+-- TEST: 100% threshold with 6 participants - should NOT advance with only 3
+-- =============================================================================
+-- This tests the LEAST→AND fix: previously LEAST(6, 3) = 3 allowed early advance
+-- with only 3 propositions. Now both percent AND count must be met.
+
+INSERT INTO chats (name, initial_message, start_mode, auto_start_participant_count,
+    proposing_threshold_percent, proposing_threshold_count,
+    proposing_duration_seconds, rating_duration_seconds,
+    proposing_minimum, rating_minimum)
+VALUES ('AgentThresholdTest', 'Test', 'auto', 99,
+    100, 3,  -- 100% AND at least 3
+    300, 300,
+    3, 2);
+
+-- Add 6 participants (simulating 1 human + 5 agents)
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Human', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Agent1', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Agent2', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Agent3', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Agent4', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'Agent5', 'active', gen_random_uuid() FROM chats WHERE name = 'AgentThresholdTest';
+
+INSERT INTO cycles (chat_id)
+SELECT id FROM chats WHERE name = 'AgentThresholdTest';
+
+INSERT INTO rounds (cycle_id, custom_id, phase, phase_started_at, phase_ends_at)
+SELECT c.id, 1, 'proposing', NOW(), NOW() + INTERVAL '5 minutes'
+FROM cycles c
+JOIN chats ch ON ch.id = c.chat_id
+WHERE ch.name = 'AgentThresholdTest';
+
+-- 3 agents propose → should NOT advance (3/6 = 50%, need 100%)
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Agent1 prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Agent1'
+WHERE ch.name = 'AgentThresholdTest';
+
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Agent2 prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Agent2'
+WHERE ch.name = 'AgentThresholdTest';
+
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Agent3 prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Agent3'
+WHERE ch.name = 'AgentThresholdTest';
+
+SELECT is(
+    (SELECT r.phase FROM rounds r
+     JOIN cycles c ON c.id = r.cycle_id
+     JOIN chats ch ON ch.id = c.chat_id
+     WHERE ch.name = 'AgentThresholdTest'),
+    'proposing',
+    '3 of 6 proposed (50%): still proposing despite count=3 met (percent=100% NOT met)'
+);
+
+-- 2 more agents propose → still NOT advance (5/6 = 83%)
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Agent4 prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Agent4'
+WHERE ch.name = 'AgentThresholdTest';
+
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Agent5 prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Agent5'
+WHERE ch.name = 'AgentThresholdTest';
+
+SELECT is(
+    (SELECT r.phase FROM rounds r
+     JOIN cycles c ON c.id = r.cycle_id
+     JOIN chats ch ON ch.id = c.chat_id
+     WHERE ch.name = 'AgentThresholdTest'),
+    'proposing',
+    '5 of 6 proposed (83%): still proposing (percent=100% NOT met)'
+);
+
+-- Human proposes → 6/6 = 100%, should advance
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Human prop'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'Human'
+WHERE ch.name = 'AgentThresholdTest';
+
+SELECT is(
+    (SELECT r.phase FROM rounds r
+     JOIN cycles c ON c.id = r.cycle_id
+     JOIN chats ch ON ch.id = c.chat_id
+     WHERE ch.name = 'AgentThresholdTest'),
+    'rating',
+    '6 of 6 proposed (100%): ADVANCED to rating'
+);
+
+-- =============================================================================
+-- TEST: Skip counts toward participation percentage
+-- =============================================================================
+
+INSERT INTO chats (name, initial_message, start_mode, auto_start_participant_count,
+    proposing_threshold_percent, proposing_threshold_count,
+    proposing_duration_seconds, rating_duration_seconds,
+    proposing_minimum, rating_minimum)
+VALUES ('SkipThresholdTest', 'Test', 'auto', 99,
+    100, 3,  -- 100% AND at least 3
+    300, 300,
+    3, 2);
+
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'SkipUser1', 'active', gen_random_uuid() FROM chats WHERE name = 'SkipThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'SkipUser2', 'active', gen_random_uuid() FROM chats WHERE name = 'SkipThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'SkipUser3', 'active', gen_random_uuid() FROM chats WHERE name = 'SkipThresholdTest';
+INSERT INTO participants (chat_id, display_name, status, session_token)
+SELECT id, 'SkipUser4', 'active', gen_random_uuid() FROM chats WHERE name = 'SkipThresholdTest';
+
+INSERT INTO cycles (chat_id)
+SELECT id FROM chats WHERE name = 'SkipThresholdTest';
+
+INSERT INTO rounds (cycle_id, custom_id, phase, phase_started_at, phase_ends_at)
+SELECT c.id, 1, 'proposing', NOW(), NOW() + INTERVAL '5 minutes'
+FROM cycles c
+JOIN chats ch ON ch.id = c.chat_id
+WHERE ch.name = 'SkipThresholdTest';
+
+-- 3 users propose → 3/4 = 75%, should NOT advance
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Skip prop 1'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'SkipUser1'
+WHERE ch.name = 'SkipThresholdTest';
+
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Skip prop 2'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'SkipUser2'
+WHERE ch.name = 'SkipThresholdTest';
+
+INSERT INTO propositions (round_id, participant_id, content)
+SELECT r.id, p.id, 'Skip prop 3'
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'SkipUser3'
+WHERE ch.name = 'SkipThresholdTest';
+
+SELECT is(
+    (SELECT r.phase FROM rounds r
+     JOIN cycles c ON c.id = r.cycle_id
+     JOIN chats ch ON ch.id = c.chat_id
+     WHERE ch.name = 'SkipThresholdTest'),
+    'proposing',
+    '3 of 4 proposed, 0 skips (75%): still proposing'
+);
+
+-- User 4 skips → 3 submitted + 1 skipped = 4/4 = 100% participated, should advance
+-- (count threshold: MIN(3, 4-1) = 3, met with 3 submitters)
+INSERT INTO round_skips (round_id, participant_id)
+SELECT r.id, p.id
+FROM rounds r JOIN cycles c ON c.id = r.cycle_id JOIN chats ch ON ch.id = c.chat_id
+JOIN participants p ON p.chat_id = ch.id AND p.display_name = 'SkipUser4'
+WHERE ch.name = 'SkipThresholdTest';
+
+SELECT is(
+    (SELECT r.phase FROM rounds r
+     JOIN cycles c ON c.id = r.cycle_id
+     JOIN chats ch ON ch.id = c.chat_id
+     WHERE ch.name = 'SkipThresholdTest'),
+    'rating',
+    '3 proposed + 1 skipped (100% participated): ADVANCED to rating'
 );
 
 -- =============================================================================

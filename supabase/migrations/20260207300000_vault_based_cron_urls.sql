@@ -5,7 +5,7 @@
 -- 1. Stores project_url and cron_secret in vault (configurable per instance)
 -- 2. Creates get_cron_headers() helper to read cron auth from vault
 -- 3. Rewrites get_edge_function_url() to read project_url from vault
--- 4. Recreates all 3 cron jobs using the vault-based helpers
+-- 4. Recreates all 4 cron jobs using the vault-based helpers
 -- 5. Updates trigger functions to use get_edge_function_url()
 --
 -- Old migrations are left untouched — they've already run on production.

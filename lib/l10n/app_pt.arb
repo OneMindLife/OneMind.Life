@@ -977,6 +977,37 @@
   "shareNotSupported": "Compartilhamento nao disponivel - link copiado",
   "orScan": "ou escaneie",
 
+  "tutorialNextButton": "Próximo",
+  "tutorialChooseTemplate": "Personalize seu tutorial",
+  "tutorialChooseTemplateSubtitle": "Escolha um cenario que importa para voce",
+  "tutorialTemplateCommunity": "Decisão comunitária",
+  "tutorialTemplateCommunityDesc": "O que nosso bairro deveria fazer junto?",
+  "tutorialTemplateWorkplace": "Cultura de trabalho",
+  "tutorialTemplateWorkplaceDesc": "No que nossa equipe deveria focar?",
+  "tutorialTemplateFamily": "Família",
+  "tutorialTemplateFamilyDesc": "Para onde devemos ir de férias?",
+  "tutorialTemplatePersonal": "Decisão pessoal",
+  "tutorialTemplatePersonalDesc": "O que devo fazer depois de me formar?",
+  "tutorialTemplateGovernment": "Orçamento municipal",
+  "tutorialTemplateGovernmentDesc": "Como devemos gastar o orçamento municipal?",
+  "tutorialTemplateWorld": "Questões globais",
+  "tutorialTemplateWorldDesc": "Qual questão global é mais importante?",
+  "tutorialTemplateCustom": "Tema personalizado",
+  "tutorialTemplateCustomDesc": "Digite sua própria pergunta",
+  "tutorialCustomQuestionHint": "Digite sua pergunta...",
+  "tutorialRound1ResultTemplate": "'{winner}' venceu esta rodada! Para se tornar uma resposta permanente, precisa vencer novamente na próxima rodada.",
+  "@tutorialRound1ResultTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
+  "tutorialRound2PromptTemplate": "Vendo '{winner}' como a resposta atual do grupo – consegue pensar em algo melhor?",
+  "@tutorialRound2PromptTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
+
   "tutorialWelcomeTitle": "Bem-vindo ao OneMind",
   "tutorialWelcomeSubtitle": "Aprenda como grupos alcancam consenso juntos",
   "tutorialWhatYoullLearn": "Neste tutorial:",
@@ -1015,6 +1046,61 @@
   "tutorialPropFreedom": "Liberdade",
   "tutorialPropSecurity": "Seguranca",
   "tutorialPropStability": "Estabilidade",
+
+  "tutorialPropTravelAbroad": "Viajar para fora",
+  "tutorialPropStartABusiness": "Abrir um negocio",
+  "tutorialPropGraduateSchool": "Pos-graduacao",
+  "tutorialPropGetAJobFirst": "Conseguir emprego",
+  "tutorialPropTakeAGapYear": "Tirar um ano sabatico",
+  "tutorialPropFreelance": "Freelancer",
+  "tutorialPropMoveToANewCity": "Mudar de cidade",
+  "tutorialPropVolunteerProgram": "Voluntariado",
+
+  "tutorialPropBeachResort": "Resort de praia",
+  "tutorialPropMountainCabin": "Cabana na montanha",
+  "tutorialPropCityTrip": "Viagem urbana",
+  "tutorialPropRoadTrip": "Viagem de carro",
+  "tutorialPropCampingAdventure": "Aventura de camping",
+  "tutorialPropCruise": "Cruzeiro",
+  "tutorialPropThemePark": "Parque tematico",
+  "tutorialPropCulturalExchange": "Intercambio cultural",
+
+  "tutorialPropBlockParty": "Festa de rua",
+  "tutorialPropCommunityGarden": "Horta comunitaria",
+  "tutorialPropNeighborhoodWatch": "Vigilancia de bairro",
+  "tutorialPropToolLibrary": "Biblioteca de ferramentas",
+  "tutorialPropMutualAidFund": "Fundo de ajuda mutua",
+  "tutorialPropFreeLittleLibrary": "Biblioteca livre",
+  "tutorialPropStreetMural": "Mural de rua",
+  "tutorialPropSkillShareNight": "Noite de talentos",
+
+  "tutorialPropFlexibleHours": "Horario flexivel",
+  "tutorialPropMentalHealthSupport": "Saude mental",
+  "tutorialPropTeamBuilding": "Trabalho em equipe",
+  "tutorialPropSkillsTraining": "Capacitacao",
+  "tutorialPropOpenCommunication": "Comunicacao aberta",
+  "tutorialPropFairCompensation": "Remuneracao justa",
+  "tutorialPropWorkLifeBalance": "Equilibrio profissional",
+  "tutorialPropInnovationTime": "Tempo de inovacao",
+
+  "tutorialPropPublicTransportation": "Transporte publico",
+  "tutorialPropSchoolFunding": "Verba escolar",
+  "tutorialPropEmergencyServices": "Servicos de emergencia",
+  "tutorialPropRoadRepairs": "Reparos de ruas",
+  "tutorialPropPublicHealth": "Saude publica",
+  "tutorialPropAffordableHousing": "Moradia acessivel",
+  "tutorialPropSmallBusinessGrants": "Apoio a pequenas empresas",
+  "tutorialPropParksAndRecreation": "Parques e lazer",
+
+  "tutorialPropClimateChange": "Mudanca climatica",
+  "tutorialPropGlobalPoverty": "Pobreza global",
+  "tutorialPropAiGovernance": "Governanca de IA",
+  "tutorialPropPandemicPreparedness": "Preparo para pandemias",
+  "tutorialPropNuclearDisarmament": "Desarmamento nuclear",
+  "tutorialPropOceanConservation": "Conservacao dos oceanos",
+  "tutorialPropDigitalRights": "Direitos digitais",
+  "tutorialPropSpaceCooperation": "Cooperacao espacial",
+
   "tutorialDuplicateProposition": "Esta ideia ja existe nesta rodada. Tente algo diferente!",
   "tutorialShareTitle": "Compartilhe Seu Chat",
   "tutorialShareExplanation": "Para convidar outros a entrar no seu chat, toque no botao de compartilhar no topo da sua tela.",
@@ -1039,5 +1125,9 @@
   "wizardOneLastThing": "Mais uma coisa...",
   "wizardProposingLabel": "Propor (enviar ideias)",
   "wizardRatingLabel": "Avaliar (classificar ideias)",
-  "back": "Voltar"
+  "back": "Voltar",
+
+  "enterTaskResult": "Enter task result...",
+  "submitResult": "Submit Result",
+  "taskResultSubmitted": "Task result submitted"
 }

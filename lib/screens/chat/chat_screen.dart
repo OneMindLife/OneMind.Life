@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/models.dart';
@@ -8,6 +9,8 @@ import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../../services/proposition_service.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/language_selector.dart';
+import '../../widgets/glossary_term.dart';
 import '../../widgets/proposition_content_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../rating/rating_screen.dart';
@@ -30,11 +33,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _showPreviousWinner = false;
   int _currentWinnerIndex = 0;
   int? _lastPreviousWinnerRoundId; // Track to auto-switch when new winners arrive
-  int? _lastPrefillRoundId; // Track to pre-fill text field with previous winner
   int? _lastAutoNavigatedRoundId; // Track to auto-navigate to rating screen once per round
 
   // Prevent duplicate submissions from rapid double-clicks
   bool _isSubmitting = false;
+  bool _isSkipping = false;
+
+  // Host force consensus mode
+  bool _forceConsensusMode = false;
 
   // Track if we've already navigated away (to prevent double-pop)
   bool _hasNavigatedAway = false;
@@ -115,9 +121,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final content = _propositionController.text.trim();
 
     setState(() => _isSubmitting = true);
+    final sw = Stopwatch()..start();
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.submitProposition(content);
+      debugPrint('[_submitProposition] notifier returned in ${sw.elapsedMilliseconds}ms');
       _propositionController.clear();
 
       // Log analytics event
@@ -153,6 +161,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Future<void> _skipProposing() async {
+    if (_isSkipping) return;
+    setState(() => _isSkipping = true);
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.skipProposing();
@@ -163,6 +173,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSkipping = false);
+    }
+  }
+
+  Future<void> _skipRating() async {
+    if (_isSkipping) return;
+    setState(() => _isSkipping = true);
+    try {
+      final notifier = ref.read(chatDetailProvider(_params).notifier);
+      await notifier.skipRating();
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSkipping = false);
     }
   }
 
@@ -580,36 +610,23 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     }
 
-    // Pre-fill text field with previous winner when new proposing round starts
-    final currentRound = stateAsync.valueOrNull?.currentRound;
-    final myPropositions = stateAsync.valueOrNull?.myPropositions ?? [];
-    if (currentRound != null &&
-        currentRound.phase == RoundPhase.proposing &&
-        currentWinners.isNotEmpty &&
-        _lastPrefillRoundId != currentRound.id) {
-      // Only pre-fill if user hasn't submitted yet and text field is empty
-      final hasSubmitted = myPropositions.where((p) => !p.isCarriedForward).isNotEmpty;
-      if (!hasSubmitted && _propositionController.text.isEmpty) {
-        _lastPrefillRoundId = currentRound.id;
-        final winnerContent = currentWinners.first.displayContent;
-        if (winnerContent != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted && _propositionController.text.isEmpty) {
-              _propositionController.text = winnerContent;
-            }
-          });
-        }
-      }
-    }
+    // Previously pre-filled text field with previous winner — removed per user request.
+    // Users should always start with an empty text field in proposing phase.
 
     // Auto-navigate to rating screen when phase changes to rating (once per round)
     final state = stateAsync.valueOrNull;
+    final currentRound = state?.currentRound;
+    debugPrint('[CHAT_SCREEN] build: roundId=${currentRound?.id}, phase=${currentRound?.phase}, '
+        'hasRated=${state?.hasRated}, hasStartedRating=${state?.hasStartedRating}, '
+        '_lastAutoNavigatedRoundId=$_lastAutoNavigatedRoundId');
     if (currentRound != null &&
         currentRound.phase == RoundPhase.rating &&
         state != null &&
         !state.hasRated &&
         !state.hasStartedRating &&
+        !state.hasSkippedRating &&
         _lastAutoNavigatedRoundId != currentRound.id) {
+      debugPrint('[CHAT_SCREEN] Auto-navigating to rating screen for round ${currentRound.id}');
       _lastAutoNavigatedRoundId = currentRound.id;
       // Use post-frame callback to avoid navigation during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -670,6 +687,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           style: Theme.of(context).textTheme.titleMedium,
         ),
         actions: [
+          const LanguageSelector(compact: true),
+          // Credit balance chip - hidden for now
+          // stateAsync.whenOrNull(
+          //       data: (state) {
+          //         final isHost = state.myParticipant?.isHost == true;
+          //         if (isHost && state.chatCredits != null) {
+          //           return _CreditBalanceChip(
+          //             balance: state.chatCredits!.creditBalance,
+          //             participantCount: state.activeParticipantCount,
+          //             onTap: () => _openBuyCredits(state.chatCredits!.chatId),
+          //           );
+          //         }
+          //         return null;
+          //       },
+          //     ) ??
+          //     const SizedBox.shrink(),
           // QR Code button - host only with invite code
           stateAsync.whenOrNull(
                 data: (state) {
@@ -679,7 +712,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   if (isHost && hasInviteCode) {
                     return IconButton(
                       key: const Key('share-button'),
-                      icon: const Icon(Icons.group_add),
+                      icon: const Icon(Icons.ios_share),
                       tooltip: 'Share Chat',
                       onPressed: _showQrCode,
                     );
@@ -704,6 +737,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     ),
                     onSelected: (value) {
                       switch (value) {
+                        case 'description':
+                          _showDescription(state);
+                          break;
                         case 'participants':
                           _showParticipants(state);
                           break;
@@ -727,6 +763,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     itemBuilder: (menuContext) {
                       final l10n = AppLocalizations.of(menuContext);
                       return [
+                        // Description - only if chat has one
+                        if ((state.chat?.displayDescription ?? widget.chat.displayDescription)?.trim().isNotEmpty == true)
+                          PopupMenuItem(
+                            value: 'description',
+                            child: Row(
+                              children: [
+                                const Icon(Icons.info_outline),
+                                const SizedBox(width: 12),
+                                Text(l10n.chatDescription),
+                              ],
+                            ),
+                          ),
                         // Participants - always visible
                         PopupMenuItem(
                           value: 'participants',
@@ -747,7 +795,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                                 Badge(
                                   label: Text('$pendingRequestCount'),
                                   isLabelVisible: pendingRequestCount > 0,
-                                  child: const Icon(Icons.pending),
+                                  child: const Icon(Icons.group_add),
                                 ),
                                 const SizedBox(width: 12),
                                 Text(l10n.joinRequests),
@@ -813,49 +861,101 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               child: Builder(
                 builder: (bodyContext) {
                   final l10n = AppLocalizations.of(bodyContext);
-                  final description = state.chat?.displayDescription ?? widget.chat.displayDescription;
                   final initialMessage = state.chat?.displayInitialMessage ?? widget.chat.displayInitialMessage;
-                  final hasDescription = description != null && description.trim().isNotEmpty;
                   final hasInitialMessage = initialMessage.trim().isNotEmpty;
-                  // DEBUG: trace initial message source
-                  debugPrint('[DEBUG] state.chat?.initialMessage: ${state.chat?.initialMessage}');
-                  debugPrint('[DEBUG] state.chat?.displayInitialMessage: ${state.chat?.displayInitialMessage}');
-                  debugPrint('[DEBUG] widget.chat.initialMessage: ${widget.chat.initialMessage}');
-                  debugPrint('[DEBUG] widget.chat.displayInitialMessage: ${widget.chat.displayInitialMessage}');
-                  debugPrint('[DEBUG] resolved initialMessage: $initialMessage');
-                  debugPrint('[DEBUG] description: $description');
-                  debugPrint('[DEBUG] chat name: ${state.chat?.name ?? widget.chat.name}');
+
+                  final isHost = state.myParticipant?.isHost == true;
 
                   return ListView(
                     padding: const EdgeInsets.all(16),
                     children: [
-                      // Show description if exists, else initialMessage for legacy chats
-                      if (hasDescription) ...[
-                        _buildMessageCard(
-                          l10n.chatDescription,
-                          description,
-                          isPrimary: true,
-                        ),
-                        const SizedBox(height: 16),
-                      ] else if (hasInitialMessage) ...[
-                        _buildMessageCard(
-                          l10n.initialMessage,
-                          initialMessage,
-                          isPrimary: true,
-                        ),
+                      // Always show initial message as the opening prompt
+                      if (hasInitialMessage) ...[
+                        _buildInitialMessageCard(l10n, initialMessage, isHost),
                         const SizedBox(height: 16),
                       ],
 
                       // Consensus Items
-                      ...state.consensusItems.asMap().entries.map((entry) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: _buildMessageCard(
-                            l10n.consensusNumber(entry.key + 1),
-                            entry.value.displayContent,
-                            isPrimary: true,
-                          ),
+                      ...state.consensusItems.asMap().entries.expand((entry) {
+                        final item = entry.value;
+                        final isLastItem = entry.key == state.consensusItems.length - 1;
+                        final label = item.isHostOverride
+                            ? (state.chat?.hostDisplayName ?? 'Host')
+                            : l10n.consensusNumber(entry.key + 1);
+                        final card = _buildMessageCard(
+                          label,
+                          item.displayContent,
+                          isPrimary: true,
                         );
+
+                        final List<Widget> widgets = [];
+
+                        if (!isHost || !isLastItem) {
+                          widgets.add(Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: card,
+                            ),
+                          ));
+                        } else {
+                          widgets.add(Center(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: Dismissible(
+                                key: ValueKey('consensus_${item.cycleId}'),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) => _confirmAndDeleteConsensus(l10n, entry.key + 1, item.cycleId),
+                                onDismissed: (_) => _onConsensusDismissed(item.cycleId),
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.delete, color: Colors.white),
+                                ),
+                                child: card,
+                              ),
+                            ),
+                          ));
+                        }
+
+                        // Task result card (collapsible)
+                        if (item.taskResult != null) {
+                          final taskResultCard = _buildTaskResultCard(item.taskResult!);
+                          if (isHost && isLastItem) {
+                            widgets.add(Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Dismissible(
+                                key: ValueKey('task_result_${item.cycleId}'),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (_) => _confirmAndDeleteTaskResult(l10n, item.cycleId),
+                                onDismissed: (_) => _onTaskResultDismissed(item.cycleId),
+                                background: Container(
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: const Icon(Icons.delete, color: Colors.white),
+                                ),
+                                child: taskResultCard,
+                              ),
+                            ));
+                          } else {
+                            widgets.add(Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: taskResultCard,
+                            ));
+                          }
+                        } else {
+                          // Add extra spacing when no task result
+                          widgets.add(const SizedBox(height: 8));
+                        }
+
+                        return widgets;
                       }),
                     ],
                   );
@@ -910,6 +1010,338 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildTaskResultCard(String taskResult) {
+    return ExpansionTile(
+      leading: Icon(
+        Icons.search,
+        size: 18,
+        color: Theme.of(context).colorScheme.secondary,
+      ),
+      title: Text(
+        'Research Results',
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+      ),
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16),
+      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.secondary.withAlpha(64),
+        ),
+      ),
+      collapsedShape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).colorScheme.secondary.withAlpha(64),
+        ),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(64),
+      collapsedBackgroundColor: Theme.of(context).colorScheme.secondaryContainer.withAlpha(64),
+      children: [
+        Text(
+          taskResult,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInitialMessageCard(AppLocalizations l10n, String initialMessage, bool isHost) {
+    final card = _buildMessageCard(
+      l10n.initialMessage,
+      initialMessage,
+      isPrimary: true,
+    );
+
+    if (!isHost) return Center(child: card);
+
+    return Center(
+      child: Dismissible(
+        key: const ValueKey('initial_message'),
+        direction: DismissDirection.endToStart,
+        confirmDismiss: (_) => _confirmDeleteInitialMessage(l10n),
+        onDismissed: (_) => _handleDeleteInitialMessage(),
+        background: Container(
+          alignment: Alignment.centerRight,
+          padding: const EdgeInsets.only(right: 16),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(Icons.delete, color: Colors.white),
+        ),
+        child: GestureDetector(
+          onLongPress: () => _showEditInitialMessageDialog(l10n, initialMessage),
+          child: card,
+        ),
+      ),
+    );
+  }
+
+  /// Confirm and delete consensus in one step (for Dismissible.confirmDismiss).
+  /// Returns true only if both user confirms AND server delete succeeds,
+  /// so the Dismissible only animates out on actual success.
+  Future<bool> _confirmAndDeleteConsensus(AppLocalizations l10n, int number, int cycleId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteConsensusTitle(number)),
+        content: Text(l10n.deleteConsensusMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return false;
+
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).deleteConsensusOnServer(cycleId);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToDeleteConsensus(e.toString()))),
+        );
+      }
+      return false;
+    }
+  }
+
+  void _onConsensusDismissed(int cycleId) {
+    ref.read(chatDetailProvider(_params).notifier).onConsensusDismissed(cycleId);
+    if (mounted) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.consensusDeleted)),
+      );
+    }
+  }
+
+  /// Confirm and delete task result in one step (for Dismissible.confirmDismiss).
+  Future<bool> _confirmAndDeleteTaskResult(AppLocalizations l10n, int cycleId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteTaskResultTitle),
+        content: Text(l10n.deleteTaskResultMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return false;
+
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).deleteTaskResultOnServer(cycleId);
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToDeleteTaskResult(e.toString()))),
+        );
+      }
+      return false;
+    }
+  }
+
+  void _onTaskResultDismissed(int cycleId) {
+    ref.read(chatDetailProvider(_params).notifier).onTaskResultDismissed(cycleId);
+    if (mounted) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.taskResultDeleted)),
+      );
+    }
+  }
+
+  /// Submit task result directly as consensus (no confirmation dialog).
+  /// Used when isTaskResultMode is true.
+  Future<void> _handleTaskResultSubmit() async {
+    final content = _propositionController.text.trim();
+    if (content.isEmpty) return;
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).forceConsensus(content);
+      _propositionController.clear();
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.taskResultSubmitted)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToForceConsensus(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _handleForceConsensus() async {
+    final content = _propositionController.text.trim();
+    if (content.isEmpty) return;
+
+    final l10n = AppLocalizations.of(context);
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.forceConsensusTitle),
+        content: Text(l10n.forceConsensusMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(l10n.forceConsensus),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).forceConsensus(content);
+      _propositionController.clear();
+      setState(() => _forceConsensusMode = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.forceConsensusSuccess)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToForceConsensus(e.toString()))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<bool> _confirmDeleteInitialMessage(AppLocalizations l10n) async {
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.deleteInitialMessageTitle),
+        content: Text(l10n.deleteInitialMessageMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: Text(l10n.delete),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  void _handleDeleteInitialMessage() async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).deleteInitialMessage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.initialMessageDeleted)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToDeleteInitialMessage(e.toString()))),
+        );
+      }
+    }
+  }
+
+  void _showEditInitialMessageDialog(AppLocalizations l10n, String currentMessage) {
+    final controller = TextEditingController(text: currentMessage);
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.editInitialMessage),
+        content: TextField(
+          controller: controller,
+          maxLines: 5,
+          minLines: 2,
+          decoration: InputDecoration(
+            hintText: l10n.initialMessageHint,
+            border: const OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          TextButton(
+            onPressed: () {
+              final newText = controller.text.trim();
+              Navigator.pop(dialogContext);
+              if (newText.isNotEmpty && newText != currentMessage) {
+                _handleUpdateInitialMessage(newText);
+              }
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handleUpdateInitialMessage(String newMessage) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      await ref.read(chatDetailProvider(_params).notifier).updateInitialMessage(newMessage);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.initialMessageUpdated)),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.failedToUpdateInitialMessage(e.toString()))),
+        );
+      }
+    }
   }
 
   Widget _buildBottomArea(ChatDetailState state) {
@@ -1090,7 +1522,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     }
 
+    // Credit-paused = credits exist but can't afford participant count
+    final isCreditPaused = state.chatCredits != null &&
+        !state.chatCredits!.canAfford(state.activeParticipantCount);
+
     if (state.currentRound == null) {
+      if (isCreditPaused) {
+        return CreditPausedPanel(
+          isHost: isHost,
+          creditBalance: state.chatCredits!.creditBalance,
+          activeParticipantCount: state.activeParticipantCount,
+          onBuyCredits: isHost ? () => _openBuyCredits(state.chatCredits!.chatId) : null,
+        );
+      }
       return WaitingStatePanel(
         participantCount: state.participants.length,
         autoStartParticipantCount: widget.chat.autoStartParticipantCount ?? 3,
@@ -1112,31 +1556,49 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onStartRating: _advanceToRating,
           );
         }
+        if (isCreditPaused) {
+          return CreditPausedPanel(
+            isHost: isHost,
+            creditBalance: state.chatCredits!.creditBalance,
+            activeParticipantCount: state.activeParticipantCount,
+            onBuyCredits: isHost ? () => _openBuyCredits(state.chatCredits!.chatId) : null,
+          );
+        }
         return WaitingStatePanel(
           participantCount: state.participants.length,
           autoStartParticipantCount: widget.chat.autoStartParticipantCount ?? 3,
         );
       case RoundPhase.proposing:
+        final isTaskResultMode = state.isTaskResultMode;
         return ProposingStatePanel(
           roundCustomId: state.currentRound!.customId,
           propositionsPerUser: widget.chat.propositionsPerUser,
           myPropositions: state.myPropositions,
           allPropositionsCount: isHost ? state.propositions.length : 0,
           propositionController: _propositionController,
-          onSubmit: _submitProposition,
+          onSubmit: isTaskResultMode
+              ? _handleTaskResultSubmit
+              : (_forceConsensusMode ? _handleForceConsensus : _submitProposition),
           phaseEndsAt: state.currentRound!.phaseEndsAt,
           onPhaseExpired: _onPhaseExpired,
           isHost: isHost,
           onAdvancePhase: () => _advanceToRating(),
           onViewAllPropositions: isHost ? () => _showAllPropositionsSheet(state) : null,
           isPaused: chat.isPaused,
-          isSubmitting: _isSubmitting,
+          isSubmitting: _isSubmitting || _isSkipping,
           // Skip feature
           onSkip: state.canSkip ? _skipProposing : null,
           canSkip: state.canSkip,
           skipCount: state.skipCount,
           maxSkips: state.maxSkips,
           hasSkipped: state.hasSkipped,
+          isFunded: state.isMyParticipantFunded,
+          // Force consensus (host only)
+          forceConsensusMode: _forceConsensusMode,
+          onForceConsensusModeChanged: isHost && !isTaskResultMode
+              ? (value) => setState(() => _forceConsensusMode = value)
+              : null,
+          isTaskResultMode: isTaskResultMode,
         );
       case RoundPhase.rating:
         return RatingStatePanel(
@@ -1150,7 +1612,103 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           isHost: isHost,
           onAdvancePhase: isHost ? () => _advanceFromRating() : null,
           isPaused: chat.isPaused,
+          // Skip rating feature
+          onSkipRating: state.canSkipRating ? _skipRating : null,
+          canSkipRating: state.canSkipRating,
+          ratingSkipCount: state.ratingSkipCount,
+          maxRatingSkips: state.maxRatingSkips,
+          hasSkippedRating: state.hasSkippedRating,
+          isSkipping: _isSkipping,
+          isFunded: state.isMyParticipantFunded,
         );
+    }
+  }
+
+  Future<void> _openBuyCredits(int chatId) async {
+    final l10n = AppLocalizations.of(context);
+
+    // Show amount picker dialog
+    final credits = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) {
+        int selectedCredits = 100; // Default $1
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final dollars = (selectedCredits / 100).toStringAsFixed(2);
+            return AlertDialog(
+              title: Text(l10n.buyCredits),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text.rich(TextSpan(children: [
+                    const TextSpan(text: '1 credit = 1 '),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: GlossaryTerm(
+                        term: l10n.glossaryUserRoundTitle,
+                        definition: l10n.glossaryUserRoundDef,
+                      ),
+                    ),
+                    const TextSpan(text: ' = \$0.01'),
+                  ])),
+                  const SizedBox(height: 16),
+                  // Preset amounts
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final amount in [100, 500, 1000, 5000])
+                        ChoiceChip(
+                          label: Text('\$${(amount / 100).toStringAsFixed(2)}'),
+                          selected: selectedCredits == amount,
+                          onSelected: (_) => setDialogState(() => selectedCredits = amount),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    '$selectedCredits credits = \$$dollars',
+                    style: Theme.of(dialogContext).textTheme.titleMedium,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text(l10n.cancel),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(dialogContext, selectedCredits),
+                  child: Text(l10n.purchaseWithStripe),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (credits == null) return;
+
+    try {
+      final billingService = ref.read(billingServiceProvider);
+      final url = await billingService.createCheckoutSession(credits, chatId: chatId);
+      if (url != null) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -1162,6 +1720,35 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       context,
       chatName: chatName,
       inviteCode: widget.chat.inviteCode!,
+    );
+  }
+
+  void _showDescription(ChatDetailState? state) {
+    final description = state?.chat?.displayDescription ?? widget.chat.displayDescription ?? '';
+    showModalBottomSheet(
+      context: context,
+      builder: (modalContext) {
+        final l10n = AppLocalizations.of(modalContext);
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.chatDescription,
+                style: Theme.of(modalContext).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 12),
+              SelectableText(
+                description,
+                style: Theme.of(modalContext).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -1458,5 +2045,70 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         SnackBar(content: Text(l10n.requestDenied)),
       );
     }
+  }
+}
+
+/// Compact credit balance chip displayed in the AppBar for hosts.
+class _CreditBalanceChip extends StatelessWidget {
+  final int balance;
+  final int participantCount;
+  final VoidCallback? onTap;
+
+  const _CreditBalanceChip({
+    required this.balance,
+    required this.participantCount,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    final Color chipColor;
+    final Color iconColor;
+    if (balance == 0) {
+      chipColor = theme.colorScheme.errorContainer;
+      iconColor = theme.colorScheme.error;
+    } else if (balance < participantCount) {
+      chipColor = Colors.amber.shade100;
+      iconColor = Colors.amber.shade800;
+    } else {
+      chipColor = theme.colorScheme.surfaceContainerHighest;
+      iconColor = theme.colorScheme.onSurfaceVariant;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: InkWell(
+        key: const Key('credit-balance-chip'),
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: chipColor,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.toll,
+                size: 16,
+                color: iconColor,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '$balance',
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: iconColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

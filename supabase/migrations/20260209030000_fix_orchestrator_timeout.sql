@@ -1,0 +1,91 @@
+-- =============================================================================
+-- MIGRATION: Fix agent orchestrator trigger timeout
+-- =============================================================================
+-- pg_net defaults to 5000ms timeout, but the orchestrator needs ~15-20s
+-- (5 agents doing Tavily search + Kimi K2.5 LLM calls in parallel).
+-- Increase to 120s to handle slow LLM responses.
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION trigger_agent_orchestrator()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+  v_chat_id BIGINT;
+  v_has_agents BOOLEAN;
+  v_service_key TEXT;
+  v_url TEXT;
+  v_body JSONB;
+  v_request_id BIGINT;
+BEGIN
+  -- Only trigger on phase transitions to proposing or rating
+  IF NEW.phase NOT IN ('proposing', 'rating') THEN
+    RETURN NEW;
+  END IF;
+
+  -- Skip if phase didn't actually change
+  IF TG_OP = 'UPDATE' AND OLD.phase = NEW.phase THEN
+    RETURN NEW;
+  END IF;
+
+  -- Get the chat_id from the cycle
+  SELECT c.chat_id INTO v_chat_id
+  FROM cycles c
+  WHERE c.id = NEW.cycle_id;
+
+  -- Check if any active agent personas are participants in this chat
+  SELECT EXISTS (
+    SELECT 1
+    FROM agent_personas ap
+    JOIN participants p ON p.user_id = ap.user_id AND p.chat_id = v_chat_id
+    WHERE ap.is_active = true
+      AND p.status = 'active'
+  ) INTO v_has_agents;
+
+  IF NOT v_has_agents THEN
+    RETURN NEW;
+  END IF;
+
+  -- Get service role key from vault
+  SELECT decrypted_secret INTO v_service_key
+  FROM vault.decrypted_secrets
+  WHERE name = 'edge_function_service_key';
+
+  IF v_service_key IS NULL OR v_service_key = 'placeholder-set-via-dashboard' THEN
+    RAISE WARNING 'Agent orchestrator skipped: edge_function_service_key not configured in vault';
+    RETURN NEW;
+  END IF;
+
+  -- Build Edge Function URL from vault
+  v_url := get_edge_function_url('agent-orchestrator');
+
+  -- Build request body
+  v_body := jsonb_build_object(
+    'round_id', NEW.id,
+    'chat_id', v_chat_id,
+    'cycle_id', NEW.cycle_id,
+    'phase', NEW.phase
+  );
+
+  -- Call Edge Function via pg_net (async, non-blocking)
+  -- 120s timeout: 5 agents × (Tavily ~2s + Kimi K2.5 ~10-15s) in parallel ≈ 15-20s typical
+  SELECT net.http_post(
+    url := v_url,
+    headers := jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || v_service_key
+    ),
+    body := v_body,
+    timeout_milliseconds := 120000
+  ) INTO v_request_id;
+
+  RAISE LOG 'Agent orchestrator called for round % phase % in chat % (request_id: %)',
+    NEW.id, NEW.phase, v_chat_id, v_request_id;
+
+  RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'Agent orchestrator trigger error for round %: %', NEW.id, SQLERRM;
+  RETURN NEW;
+END;
+$$;

@@ -4,9 +4,9 @@
 // Prerequisites:
 // 1. supabase start (local Supabase running)
 // 2. supabase functions serve ai-proposer (function running)
-// 3. ANTHROPIC_API_KEY set in Edge Function secrets
+// 3. NVIDIA_API_KEY set in Edge Function secrets
 //
-// Note: These tests require the Anthropic API to be available.
+// Note: These tests require the NVIDIA API to be available.
 // Some tests mock the AI response to avoid API costs during CI.
 
 import {
@@ -397,10 +397,10 @@ Deno.test({
 });
 
 // =============================================================================
-// TESTS: SUCCESSFUL GENERATION (requires Anthropic API)
+// TESTS: SUCCESSFUL GENERATION (requires NVIDIA API)
 // =============================================================================
 
-// Note: This test makes actual API calls to Anthropic
+// Note: This test makes actual API calls to NVIDIA (Kimi K2.5)
 // Skip in CI by checking for SKIP_AI_TESTS environment variable
 const skipAiTests = Deno.env.get("SKIP_AI_TESTS") === "true";
 

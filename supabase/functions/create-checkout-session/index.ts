@@ -12,7 +12,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import Stripe from "npm:stripe@14";
+import Stripe from "npm:stripe@17";
 import {
   RateLimiter,
   RateLimitPresets,
@@ -94,7 +94,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Parse and validate request body
-    let body: { credits?: unknown };
+    let body: { credits?: unknown; chat_id?: unknown };
     try {
       body = await req.json();
     } catch {
@@ -119,6 +119,42 @@ Deno.serve(async (req: Request) => {
 
     const credits = parseInt(String(body.credits));
 
+    // Validate chat_id (required for chat-based credits)
+    const chatIdValidation = validateInteger(body.chat_id, "chat_id", {
+      required: true,
+      min: 1,
+    });
+
+    if (!chatIdValidation.valid) {
+      return corsErrorResponse(
+        formatValidationErrors(chatIdValidation.errors),
+        req,
+        400,
+        "VALIDATION_ERROR"
+      );
+    }
+
+    const chatId = parseInt(String(body.chat_id));
+
+    // Verify caller is the host of this chat
+    const { data: hostCheck, error: hostError } = await supabaseAdmin
+      .from("participants")
+      .select("id")
+      .eq("chat_id", chatId)
+      .eq("user_id", user.id)
+      .eq("is_host", true)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (hostError) {
+      console.error("Host check error:", hostError);
+      return corsErrorResponse("Failed to verify host status", req, 500);
+    }
+
+    if (!hostCheck) {
+      return corsErrorResponse("Only the chat host can purchase credits", req, 403, "NOT_HOST");
+    }
+
     // Verify price ID is configured
     if (!STRIPE_CREDIT_PRICE_ID) {
       console.error("STRIPE_CREDIT_PRICE_ID not configured");
@@ -132,7 +168,7 @@ Deno.serve(async (req: Request) => {
 
     // Initialize Stripe
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: "2023-10-16",
+      apiVersion: "2025-12-15.clover" as Stripe.LatestApiVersion,
     });
 
     // Get the origin for success/cancel URLs
@@ -148,13 +184,14 @@ Deno.serve(async (req: Request) => {
         },
       ],
       mode: "payment",
-      success_url: `${origin}/credits/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/credits/cancel`,
+      success_url: `${origin}/?credits=success&chat_id=${chatId}`,
+      cancel_url: `${origin}/?chat_id=${chatId}`,
       metadata: {
         user_id: user.id,
         credits: credits.toString(),
+        chat_id: chatId.toString(),
       },
-      customer_email: user.email,
+      ...(user.email ? { customer_email: user.email } : {}),
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
@@ -162,10 +199,11 @@ Deno.serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("Error creating checkout session:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error("Error creating checkout session:", errorMessage);
 
     return corsErrorResponse(
-      "Failed to create checkout session",
+      `Failed to create checkout session: ${errorMessage}`,
       req,
       500,
       "CHECKOUT_ERROR"

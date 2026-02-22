@@ -14,6 +14,7 @@ import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
 import 'widgets/tutorial_intro_panel.dart';
 import 'widgets/tutorial_progress_dots.dart';
+import 'widgets/tutorial_template_panel.dart';
 
 /// Provider for tutorial chat state (new version using real ChatScreen layout)
 /// Uses autoDispose so state resets when tutorial screen is closed
@@ -52,6 +53,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   // Tutorial-specific: track if user has clicked Continue to unlock phase tab
   bool _phaseTabUnlocked = false;
 
+  // Track if tutorial completion is in progress (show loading, block back)
+  bool _isCompleting = false;
+
   @override
   void initState() {
     super.initState();
@@ -88,12 +92,15 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     );
 
     if (confirmed == true && mounted) {
-      ref.read(tutorialChatNotifierProvider.notifier).skipTutorial();
       _handleComplete();
     }
   }
 
   void _handleComplete() {
+    if (_isCompleting) return;
+    _isCompleting = true;
+    if (mounted) setState(() {});
+
     if (widget.onComplete != null) {
       widget.onComplete!();
     } else {
@@ -102,9 +109,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   }
 
   void _showDemoQrCode() {
+    final state = ref.read(tutorialChatNotifierProvider);
+    final chatName = state.selectedTemplate != null
+        ? TutorialData.chatNameForTemplate(state.selectedTemplate)
+        : TutorialData.chatName;
     QrCodeShareDialog.show(
       context,
-      chatName: TutorialData.chatName,
+      chatName: chatName,
       inviteCode: TutorialData.demoInviteCode,
       // Tutorial code URL redirects to tutorial via router
       deepLinkUrl: '${EnvConfig.webAppUrl}/join/${TutorialData.demoInviteCode}',
@@ -112,7 +123,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       showContinueButton: true,
     ).then((_) {
       // After dialog is closed, complete the tutorial
-      ref.read(tutorialChatNotifierProvider.notifier).completeTutorial();
+      if (mounted) _handleComplete();
     });
   }
 
@@ -156,56 +167,24 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     _propositionController.clear();
   }
 
-  /// Translate proposition content from English key to localized string
+  /// Translate proposition content from English key to localized string.
+  /// Covers all template propositions; user-submitted text passes through unchanged.
   String _translateProposition(String englishContent, AppLocalizations l10n) {
-    // Map English content to localized strings
-    switch (englishContent) {
-      case 'Success':
-        return l10n.tutorialPropSuccess;
-      case 'Adventure':
-        return l10n.tutorialPropAdventure;
-      case 'Growth':
-        return l10n.tutorialPropGrowth;
-      case 'Harmony':
-        return l10n.tutorialPropHarmony;
-      case 'Innovation':
-        return l10n.tutorialPropInnovation;
-      case 'Freedom':
-        return l10n.tutorialPropFreedom;
-      case 'Security':
-        return l10n.tutorialPropSecurity;
-      case 'Stability':
-        return l10n.tutorialPropStability;
-      default:
-        // User's own propositions are not translated
-        return englishContent;
-    }
+    return TutorialTemplate.translateProp(englishContent, l10n);
   }
 
   /// Get existing propositions for current round (for duplicate detection)
   List<String> _getExistingPropositionsForRound(TutorialChatState state, AppLocalizations l10n) {
+    final templateKey = state.selectedTemplate;
     if (state.currentStep == TutorialStep.round1Proposing) {
-      return [
-        l10n.tutorialPropSuccess,
-        l10n.tutorialPropAdventure,
-        l10n.tutorialPropGrowth,
-      ];
+      return TutorialData.round1Props(templateKey);
     } else if (state.currentStep == TutorialStep.round2Proposing ||
                state.currentStep == TutorialStep.round2Prompt) {
-      return [
-        l10n.tutorialPropSuccess,
-        l10n.tutorialPropHarmony,
-        l10n.tutorialPropInnovation,
-      ];
+      return TutorialData.round2Props(templateKey);
     } else if (state.currentStep == TutorialStep.round3Proposing) {
       // Include the user's carried forward proposition
       final carried = state.userProposition2 ?? '';
-      return [
-        carried,
-        l10n.tutorialPropFreedom,
-        l10n.tutorialPropSecurity,
-        l10n.tutorialPropStability,
-      ];
+      return [carried, ...TutorialData.round3Props(templateKey)];
     }
     return [];
   }
@@ -260,11 +239,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     // Watch locale to rebuild when language changes
     ref.watch(localeProvider);
 
-    // Handle complete state
-    if (state.currentStep == TutorialStep.complete) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _handleComplete();
-      });
+    // Show blank screen while tutorial completion is in progress.
+    // This is only visible briefly (~300ms) before GoRouter navigates to Home.
+    // Using PopScope to prevent back navigation during completion.
+    if (_isCompleting) {
+      return const PopScope(
+        canPop: false,
+        child: Scaffold(
+          body: SizedBox.shrink(),
+        ),
+      );
     }
 
     // Auto-switch to Previous Winner tab when new winners arrive
@@ -287,8 +271,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final showShareButton = state.currentStep == TutorialStep.shareDemo;
 
     return Scaffold(
-      // Hide app bar on intro - panel has its own skip button
-      appBar: state.currentStep == TutorialStep.intro
+      // Hide app bar on intro and template selection - panels have their own navigation
+      appBar: (state.currentStep == TutorialStep.intro ||
+              state.currentStep == TutorialStep.templateSelection)
           ? null
           : AppBar(
               automaticallyImplyLeading: false,
@@ -300,7 +285,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                       final l10n = AppLocalizations.of(context);
                       return IconButton(
                         key: const Key('tutorial-share-button'),
-                        icon: const Icon(Icons.group_add),
+                        icon: const Icon(Icons.ios_share),
                         tooltip: l10n.tutorialShareTooltip,
                         onPressed: _showDemoQrCode,
                       );
@@ -325,12 +310,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 ),
               ],
             ),
-      body: state.currentStep == TutorialStep.intro
-          // Intro: full screen with SafeArea, no app bar
+      body: (state.currentStep == TutorialStep.intro ||
+              state.currentStep == TutorialStep.templateSelection)
+          // Intro/Template Selection: full screen with SafeArea, no app bar
           ? SafeArea(
               child: _buildTutorialPanel(state),
             )
-          // After intro: Column with progress dots, chat history, bottom area
+          // After template selection: Column with progress dots, chat history, bottom area
           : Column(
               children: [
                 // Progress dots (not shown on complete)
@@ -342,8 +328,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                   child: Builder(
                     builder: (bodyContext) {
                       final l10n = AppLocalizations.of(bodyContext);
-                      // Use localized question instead of hardcoded value
-                      final initialMessage = l10n.tutorialQuestion;
+                      // Use template-specific question (translated), or localized default
+                      final templateKey = state.selectedTemplate;
+                      final initialMessage = state.customQuestion ??
+                          TutorialTemplate.translateQuestion(templateKey, l10n);
 
                       return ListView(
                         padding: const EdgeInsets.all(16),
@@ -394,8 +382,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   /// Determine if we should show a tutorial-specific panel (not chat-like)
   bool _shouldShowTutorialPanel(TutorialStep step) {
-    // Intro, consensus, and shareDemo use tutorial panels (no tabbar)
+    // Intro, template selection, consensus, and shareDemo use tutorial panels (no tabbar)
     return step == TutorialStep.intro ||
+        step == TutorialStep.templateSelection ||
         step == TutorialStep.round3Consensus ||
         step == TutorialStep.shareDemo ||
         step == TutorialStep.complete;
@@ -555,6 +544,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   String _getResultMessage(TutorialChatState state, AppLocalizations l10n) {
     if (state.currentStep == TutorialStep.round1Result) {
+      final templateKey = state.selectedTemplate;
+      if (templateKey != null && templateKey != 'classic') {
+        final winner = _translateProposition(
+          TutorialData.round1WinnerForTemplate(templateKey), l10n);
+        return l10n.tutorialRound1ResultTemplate(winner);
+      }
       return l10n.tutorialRound1Result;
     } else if (state.currentStep == TutorialStep.round1SeeResults) {
       // Different message depending on whether user has viewed the grid
@@ -803,6 +798,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   String _getEducationalMessage(TutorialChatState state, AppLocalizations l10n) {
     if (state.currentStep == TutorialStep.round2Prompt) {
+      final templateKey = state.selectedTemplate;
+      if (templateKey != null && templateKey != 'classic') {
+        final winner = _translateProposition(
+          TutorialData.round1WinnerForTemplate(templateKey), l10n);
+        return l10n.tutorialRound2PromptTemplate(winner);
+      }
       return l10n.tutorialRound2Prompt;
     }
     return '';
@@ -893,9 +894,19 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       case TutorialStep.intro:
         return TutorialIntroPanel(
           onStart: () {
-            notifier.beginRound1();
+            notifier.nextStep();
           },
           onSkip: _handleSkip,
+        );
+
+      case TutorialStep.templateSelection:
+        return TutorialTemplatePanel(
+          onSelect: (templateKey) {
+            notifier.selectTemplate(templateKey);
+          },
+          onBack: () {
+            notifier.startTutorial(); // Go back to intro
+          },
         );
 
       case TutorialStep.round3Consensus:
@@ -966,7 +977,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.group_add,
+                Icons.ios_share,
                 size: 48,
                 color: theme.colorScheme.primary,
               ),

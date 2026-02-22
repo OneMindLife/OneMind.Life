@@ -29,17 +29,6 @@ void main() {
       expect(find.text('Welcome to OneMind'), findsOneWidget);
     });
 
-    testWidgets('displays the question', (tester) async {
-      await tester.pumpApp(
-        TutorialIntroPanel(
-          onStart: () {},
-          onSkip: () {},
-        ),
-      );
-
-      expect(find.textContaining('What do we value?'), findsOneWidget);
-    });
-
     testWidgets('displays bullet points of what user will learn', (tester) async {
       await tester.pumpApp(
         TutorialIntroPanel(
@@ -53,7 +42,7 @@ void main() {
       expect(find.text('See how consensus is reached'), findsOneWidget);
     });
 
-    testWidgets('displays start button', (tester) async {
+    testWidgets('displays next button', (tester) async {
       await tester.pumpApp(
         TutorialIntroPanel(
           onStart: () {},
@@ -61,7 +50,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Start Tutorial'), findsOneWidget);
+      expect(find.text('Next'), findsOneWidget);
     });
 
     testWidgets('displays skip button', (tester) async {
@@ -75,7 +64,7 @@ void main() {
       expect(find.text('Skip tutorial'), findsOneWidget);
     });
 
-    testWidgets('calls onStart when start button tapped', (tester) async {
+    testWidgets('calls onStart when next button tapped', (tester) async {
       var startCalled = false;
 
       await tester.pumpApp(
@@ -85,9 +74,9 @@ void main() {
         ),
       );
 
-      await tester.ensureVisible(find.text('Start Tutorial'));
+      await tester.ensureVisible(find.text('Next'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Start Tutorial'));
+      await tester.tap(find.text('Next'));
       await tester.pumpAndSettle();
 
       expect(startCalled, isTrue);

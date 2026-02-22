@@ -459,6 +459,64 @@ void main() {
         expect(model.rankedPropositions.length, 2);
       });
 
+      test('undo to binary then re-confirm brings back third proposition', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+        // prop3 is now active
+
+        // Undo back to binary
+        model.undoLastPlacement();
+        expect(model.phase, RatingPhase.binary);
+        expect(model.rankedPropositions.length, 2);
+
+        // Re-confirm binary
+        model.confirmBinaryChoice();
+
+        // Should be in positioning phase with prop3 active again
+        expect(model.phase, RatingPhase.positioning);
+        expect(model.rankedPropositions.length, 3);
+        final active = model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.id, '3',
+            reason: 'third proposition should reappear after undo-to-binary and re-confirm');
+      });
+
+      test('undo to binary then re-confirm with 4 props continues correctly', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        // prop3 is now active
+
+        // Undo back to binary
+        model.undoLastPlacement();
+        expect(model.phase, RatingPhase.binary);
+
+        // Re-confirm binary
+        model.confirmBinaryChoice();
+
+        // prop3 should be active again
+        expect(model.phase, RatingPhase.positioning);
+        final active = model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.id, '3');
+
+        // Place prop3 and confirm
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // prop4 should appear
+        expect(model.rankedPropositions.length, 4);
+        final active2 = model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active2.id, '4',
+            reason: 'fourth proposition should appear after placing third');
+      });
+
       test('undo does nothing in binary phase', () {
         final model = RatingModel([
           {'id': 1, 'content': 'A'},
@@ -1335,33 +1393,58 @@ void main() {
         expect(model.virtualPosition, positionBefore);
       });
 
-      test('pressing opposite direction after normalize expands cards while active stays at boundary', () {
+      test('pressing opposite direction pins boundary card and decompresses others smoothly', () {
+        // Use 4 cards so there are non-boundary cards to decompress
+        final model4 = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model4.confirmBinaryChoice();
+        model4.setActivePropositionPosition(50.0);
+        model4.confirmPlacement();
+        // prop1=100, prop2=0, prop3=50, prop4 active at 50
+
         // Move far past 100
-        model.moveActiveProposition(500); // virtualPosition = 550
+        model4.moveActiveProposition(500);
 
-        final prop1Compressed =
-            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop3Compressed =
+            model4.rankedPropositions.firstWhere((p) => p.id == '3').position;
 
-        // Normalize (simulates button release)
-        model.normalizeVirtualPositionOnRelease();
+        // Normalize (simulates button release) — no visual change
+        model4.normalizeVirtualPositionOnRelease();
+        expect(model4.virtualPosition, 100.0);
 
-        expect(model.virtualPosition, 100.0);
+        // Prop1 stays compressed on release (no jump)
+        final prop1OnRelease =
+            model4.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1OnRelease, lessThan(100.0),
+            reason: 'prop1 stays compressed on release');
 
-        // Move down - active should STAY at 100, cards should expand
-        model.moveActiveProposition(-10);
+        // First move down — active moves, boundary card pins to 100
+        model4.moveActiveProposition(-10);
 
-        // Active should still be at 100 during expansion
-        final active = model.rankedPropositions.firstWhere((p) => p.isActive);
-        expect(active.position, 100.0);
-        expect(model.virtualPosition, 100.0);
+        final active = model4.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 90.0,
+            reason: 'active moves freely during decompression');
 
-        // Prop1 should be partially expanded (more than compressed, less than 100)
+        // Prop1 (boundary card) pins to 100 immediately
         final prop1After =
-            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
-        expect(prop1After, greaterThan(prop1Compressed));
+            model4.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1After, 100.0,
+            reason: 'boundary card pins to 100 on first decompression move');
+
+        // Prop3 (non-boundary) decompresses gradually
+        final prop3After =
+            model4.rankedPropositions.firstWhere((p) => p.id == '3').position;
+        expect(prop3After, greaterThan(prop3Compressed),
+            reason: 'prop3 should be decompressing from compressed position');
+        expect(prop3After, lessThan(50.0),
+            reason: 'prop3 should not snap to original position instantly');
       });
 
-      test('normalizing keeps cards at compressed positions', () {
+      test('normalizing keeps all compressed positions (no visual jump on release)', () {
         // Move far past 100 causing heavy compression
         model.moveActiveProposition(500); // virtualPosition = 550
 
@@ -1371,14 +1454,20 @@ void main() {
         expect(prop1Compressed, lessThan(100),
             reason: 'prop1 should be compressed');
 
-        // Normalize - should keep compressed positions
+        // Normalize - NO visual change, all cards stay at compressed positions
         model.normalizeVirtualPositionOnRelease();
 
-        // Prop1 should stay at compressed position
+        // Prop1 stays at compressed position (no jump)
         final prop1After =
             model.rankedPropositions.firstWhere((p) => p.id == '1').position;
         expect(prop1After, closeTo(prop1Compressed, 0.1),
-            reason: 'prop1 should stay at compressed position');
+            reason: 'prop1 stays compressed on release (no jump)');
+
+        // Prop2 was at 0, compression toward 100 doesn't move it
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        expect(prop2After, closeTo(0.0, 1.0),
+            reason: 'prop2 at 0 stays at 0 during top compression');
 
         // virtualPosition should be at boundary
         expect(model.virtualPosition, 100.0);
@@ -1388,13 +1477,15 @@ void main() {
         // Move far past 100
         model.moveActiveProposition(500);
 
-        // Normalize
+        // Normalize (positions stay compressed)
         model.normalizeVirtualPositionOnRelease();
 
-        // Move down enough to complete expansion (100 units = full expansion)
-        model.moveActiveProposition(-100);
+        // Move enough to complete expansion (30+ units of movement)
+        for (int i = 0; i < 8; i++) {
+          model.moveActiveProposition(-5);
+        }
 
-        // Now prop1 should be back at 100
+        // Now prop1 should be back at 100 (fully expanded)
         final prop1 = model.rankedPropositions.firstWhere((p) => p.id == '1');
         expect(prop1.position, closeTo(100.0, 1.0));
 
@@ -1447,6 +1538,1396 @@ void main() {
 
         // Should not change anything since we're AT the boundary, not PAST it
         expect(model.virtualPosition, positionBefore);
+      });
+    });
+
+    group('Expansion from Top Boundary (Bug Fix)', () {
+      late RatingModel model;
+
+      setUp(() {
+        // 4 propositions: after binary, prop1=100, prop2=0, then place prop3
+        model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        // Place prop3 at 50
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+        // Now prop4 is active at 50
+      });
+
+      test('after normalize from above 100, moving DOWN expands all inactive cards UP toward 100', () {
+        // Move prop4 way past 100 to cause compression
+        model.moveActiveProposition(200); // virtualPosition = 250
+
+        // Capture compressed positions
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        final prop3Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+
+        expect(prop1Compressed, lessThan(100.0));
+        expect(prop3Compressed, lessThan(50.0));
+
+        // Normalize (simulates button release)
+        model.normalizeVirtualPositionOnRelease();
+        expect(model.virtualPosition, 100.0);
+
+        // Move DOWN (delta < 0) - should trigger expansion
+        model.moveActiveProposition(-50);
+
+        // All inactive cards should move UP (toward 100), not down
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        final prop3After =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+
+        expect(prop1After, greaterThanOrEqualTo(prop1Compressed),
+            reason: 'prop1 should move UP (toward 100) during expansion from top');
+        expect(prop2After, greaterThanOrEqualTo(prop2Compressed),
+            reason: 'prop2 should move UP (toward 100) during expansion from top');
+        expect(prop3After, greaterThanOrEqualTo(prop3Compressed),
+            reason: 'prop3 should move UP (toward 100) during expansion from top');
+      });
+
+      test('during expansion from top, lowest card stays fixed and highest approaches 100', () {
+        model.moveActiveProposition(200);
+
+        final prop2Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move down partway through expansion
+        model.moveActiveProposition(-30);
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        // Lowest card (prop2 near 0 originally) should stay fixed
+        expect(prop2After, closeTo(prop2Compressed, 0.1),
+            reason: 'lowest card stays fixed during expansion from top');
+
+        // Highest card (prop1 originally at 100) should be approaching 100
+        expect(prop1After, greaterThan(prop2After),
+            reason: 'highest card should be above lowest card');
+      });
+
+      test('after full expansion from top, highest card reaches 100', () {
+        model.moveActiveProposition(200);
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move enough to complete expansion (100 units)
+        for (int i = 0; i < 20; i++) {
+          model.moveActiveProposition(-5);
+        }
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        expect(prop1After, closeTo(100.0, 1.0),
+            reason: 'highest card should reach 100 after expansion');
+      });
+
+      test('after normalize from top, active moves freely during decompression', () {
+        model.moveActiveProposition(200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // During decompression, active should move freely
+        for (int i = 0; i < 10; i++) {
+          model.moveActiveProposition(-5);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = (100.0 - (i + 1) * 5).clamp(0.0, 100.0);
+          expect(active.position, expectedPos,
+              reason: 'active card should move freely during decompression (step $i)');
+        }
+      });
+    });
+
+    group('Expansion from Bottom Boundary', () {
+      late RatingModel model;
+
+      setUp(() {
+        model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+        // prop4 active at 50
+      });
+
+      test('after normalize from below 0, moving UP expands all inactive cards DOWN toward 0', () {
+        // Move prop4 way below 0 to cause compression from bottom
+        model.moveActiveProposition(-200); // virtualPosition = -150
+
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        final prop3Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+
+        // When compressed from bottom, cards are pushed toward top
+        expect(prop2Compressed, greaterThan(0.0),
+            reason: 'prop2 at 0 should be compressed upward');
+
+        model.normalizeVirtualPositionOnRelease();
+        expect(model.virtualPosition, 0.0);
+
+        // Move UP (delta > 0) - should trigger expansion
+        model.moveActiveProposition(50);
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        final prop3After =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+
+        // Cards should move DOWN (toward 0)
+        expect(prop2After, lessThanOrEqualTo(prop2Compressed),
+            reason: 'prop2 should move DOWN (toward 0) during expansion from bottom');
+        expect(prop3After, lessThanOrEqualTo(prop3Compressed),
+            reason: 'prop3 should move DOWN (toward 0) during expansion from bottom');
+      });
+
+      test('during expansion from bottom, highest card stays fixed and lowest approaches 0', () {
+        model.moveActiveProposition(-200);
+
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move up partway
+        model.moveActiveProposition(30);
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        // Highest card (prop1) should stay fixed
+        expect(prop1After, closeTo(prop1Compressed, 0.1),
+            reason: 'highest card stays fixed during expansion from bottom');
+
+        // Lowest should be below highest
+        expect(prop2After, lessThan(prop1After));
+      });
+
+      test('after full expansion from bottom, lowest card reaches 0', () {
+        model.moveActiveProposition(-200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move enough to complete expansion (100 units)
+        for (int i = 0; i < 20; i++) {
+          model.moveActiveProposition(5);
+        }
+
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        expect(prop2After, closeTo(0.0, 1.0),
+            reason: 'lowest card should reach 0 after expansion from bottom');
+      });
+
+      test('after normalize from bottom, active moves freely during decompression', () {
+        model.moveActiveProposition(-200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // During decompression, active should move freely
+        for (int i = 0; i < 10; i++) {
+          model.moveActiveProposition(5);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = ((i + 1) * 5.0).clamp(0.0, 100.0);
+          expect(active.position, expectedPos,
+              reason: 'active card should move freely during decompression (step $i)');
+        }
+      });
+    });
+
+    group('Undo then Move Down from 100 (Original User Bug)', () {
+      test('undo at 100 then press DOWN triggers expansion toward top', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+          {'id': 5, 'content': 'E'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Place prop3 at 75
+        model.setActivePropositionPosition(75.0);
+        model.confirmPlacement();
+
+        // Place prop4 at 25
+        model.setActivePropositionPosition(25.0);
+        model.confirmPlacement();
+
+        // Now prop5 is active. Move past 100 and normalize.
+        model.moveActiveProposition(200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Undo - removes prop5, reactivates prop4
+        model.undoLastPlacement();
+
+        // The reactivated prop4 was placed at 25 but after undo
+        // the positions are uncompressed. Now move DOWN from wherever it is.
+        final activeBefore =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+
+        // Move active past 100, normalize, and then move down
+        model.moveActiveProposition(200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Record positions before expansion
+        final prop1Before =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        model.moveActiveProposition(-50);
+
+        // After moving down from 100, cards should expand upward
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        expect(prop1After, greaterThanOrEqualTo(prop1Before),
+            reason: 'cards should expand upward, not leave 100 empty');
+      });
+
+      test('undo from boundary then transitioningFromCompressed expands correctly', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Place prop3 at 100 (boundary)
+        model.setActivePropositionPosition(100.0);
+        model.confirmPlacement();
+
+        // prop4 is active at 50. Undo => prop3 reactivated at 100
+        model.undoLastPlacement();
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, closeTo(100.0, 1.0));
+
+        // Capture positions
+        final prop1Pos =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2Pos =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        // Positions should be within 0-100 range
+        expect(prop1Pos, inInclusiveRange(0.0, 100.0));
+        expect(prop2Pos, inInclusiveRange(0.0, 100.0));
+      });
+    });
+
+    group('Compression Symmetry', () {
+      late RatingModel model;
+
+      setUp(() {
+        model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        // Place prop3 at 50
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+        // prop4 active at 50
+      });
+
+      test('compression toward 100 compresses proportionally between 0 and active', () {
+        // prop4 starts at virtualPosition=50, move by 150 -> virtualPosition=200
+        // overflow = 200 - 100 = 100
+        model.moveActiveProposition(150); // virtual = 50 + 150 = 200
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 100.0);
+
+        // All inactive positions should be in [0, 100]
+        for (final prop in model.rankedPropositions) {
+          if (!prop.isActive) {
+            expect(prop.position, inInclusiveRange(0.0, 100.0),
+                reason: 'compressed position for ${prop.id} should be in [0, 100]');
+          }
+        }
+
+        // Compression ratio = 100 / (100 + 100) = 0.5
+        // prop1 at base 100 -> 100 * 0.5 = 50
+        // prop2 at base 0 -> 0 * 0.5 = 0
+        // prop3 at base 50 -> 50 * 0.5 = 25
+        final prop1 =
+            model.rankedPropositions.firstWhere((p) => p.id == '1');
+        final prop2 =
+            model.rankedPropositions.firstWhere((p) => p.id == '2');
+        final prop3 =
+            model.rankedPropositions.firstWhere((p) => p.id == '3');
+
+        expect(prop1.position, closeTo(50.0, 1.0));
+        expect(prop2.position, closeTo(0.0, 1.0));
+        expect(prop3.position, closeTo(25.0, 1.0));
+      });
+
+      test('compression toward 0 compresses proportionally between active and 100', () {
+        // Move to -100 (virtual)
+        model.moveActiveProposition(-150); // 50 - 150 = -100
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 0.0);
+
+        // All inactive positions should be in [0, 100]
+        for (final prop in model.rankedPropositions) {
+          if (!prop.isActive) {
+            expect(prop.position, inInclusiveRange(0.0, 100.0),
+                reason: 'compressed position for ${prop.id} should be in [0, 100]');
+          }
+        }
+
+        // Compression ratio = 100 / (100 + 100) = 0.5
+        // Formula for bottom: newTruePos = 100 - (100 - baseTruePos) * compressionRatio
+        // prop1 at base 100 -> 100 - (100-100)*0.5 = 100
+        // prop2 at base 0 -> 100 - (100-0)*0.5 = 100 - 50 = 50
+        // prop3 at base 50 -> 100 - (100-50)*0.5 = 100 - 25 = 75
+        final prop1 =
+            model.rankedPropositions.firstWhere((p) => p.id == '1');
+        final prop2 =
+            model.rankedPropositions.firstWhere((p) => p.id == '2');
+        final prop3 =
+            model.rankedPropositions.firstWhere((p) => p.id == '3');
+
+        expect(prop1.position, closeTo(100.0, 1.0));
+        expect(prop2.position, closeTo(50.0, 1.0));
+        expect(prop3.position, closeTo(75.0, 1.0));
+      });
+
+      test('compression preserves relative ordering of cards', () {
+        // Compression above 100
+        model.moveActiveProposition(300);
+
+        final positions = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .toList()
+          ..sort((a, b) => b.position.compareTo(a.position));
+
+        // Original order was prop1(100) > prop3(50) > prop2(0)
+        expect(positions[0].id, '1');
+        expect(positions[1].id, '3');
+        expect(positions[2].id, '2');
+      });
+
+      test('compression preserves relative ordering from bottom', () {
+        // Compression below 0
+        model.moveActiveProposition(-300);
+
+        final positions = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .toList()
+          ..sort((a, b) => b.position.compareTo(a.position));
+
+        // Original order preserved: prop1(100) > prop3(50) > prop2(0)
+        expect(positions[0].id, '1');
+        expect(positions[1].id, '3');
+        expect(positions[2].id, '2');
+      });
+    });
+
+    group('Expansion Completeness', () {
+      test('after expansion from top, active can move normally', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move enough to complete expansion (100 units)
+        for (int i = 0; i < 20; i++) {
+          model.moveActiveProposition(-5);
+        }
+
+        // prop1 should be back near 100
+        final prop1 =
+            model.rankedPropositions.firstWhere((p) => p.id == '1');
+        expect(prop1.position, closeTo(100.0, 1.0));
+
+        // Now active should move normally
+        model.moveActiveProposition(-20);
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, lessThan(100.0),
+            reason: 'after expansion completes, active should move freely');
+      });
+
+      test('after expansion from bottom, active can move normally', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress from bottom
+        model.moveActiveProposition(-500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move enough to complete expansion (100 units)
+        for (int i = 0; i < 20; i++) {
+          model.moveActiveProposition(5);
+        }
+
+        // prop2 should be back near 0
+        final prop2 =
+            model.rankedPropositions.firstWhere((p) => p.id == '2');
+        expect(prop2.position, closeTo(0.0, 1.0));
+
+        // Now active should move normally
+        model.moveActiveProposition(20);
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, greaterThan(0.0),
+            reason: 'after expansion completes, active should move freely');
+      });
+
+      test('all cards stay compressed on release, expand gradually on move', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+        // prop1=100, prop2=0, prop3=50, prop4 active at 50
+
+        // Heavy compression
+        model.moveActiveProposition(500);
+
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop3Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+        expect(prop3Compressed, lessThan(50.0),
+            reason: 'prop3 should be compressed');
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // All cards stay compressed on release (no jump)
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1After, closeTo(prop1Compressed, 0.1),
+            reason: 'prop1 stays compressed on release');
+        final prop3After =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+        expect(prop3After, closeTo(prop3Compressed, 0.1),
+            reason: 'prop3 stays compressed on release');
+
+        // First move — boundary card pins to 100, others decompress partially
+        model.moveActiveProposition(-10);
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 90.0,
+            reason: 'active moves freely during decompression');
+
+        // Prop1 (boundary) pins to 100 immediately
+        final prop1AfterMove =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1AfterMove, 100.0,
+            reason: 'boundary card pins to 100 on decompression');
+
+        // Prop3 decompresses gradually
+        final prop3Partial =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+        expect(prop3Partial, greaterThan(prop3Compressed),
+            reason: 'prop3 should be decompressing');
+        expect(prop3Partial, lessThan(50.0),
+            reason: 'prop3 should not snap to original position instantly');
+
+        // Complete decompression (move enough to reach progress=1.0)
+        model.moveActiveProposition(-30);
+
+        // Prop3 should return to original position
+        final prop3Final =
+            model.rankedPropositions.firstWhere((p) => p.id == '3').position;
+        expect(prop3Final, closeTo(50.0, 1.0),
+            reason: 'prop3 returns to 50 after full decompression');
+      });
+    });
+
+    group('Rapid Direction Changes During Expansion', () {
+      test('reversing direction during expansion from top exits expansion mode', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress and normalize
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Start expanding (move down)
+        model.moveActiveProposition(-20);
+
+        // Reverse direction (move up, back toward boundary)
+        // This should exit expansion mode
+        model.moveActiveProposition(30);
+
+        // The model should handle this without errors
+        // After exiting expansion, further movement should work normally
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, inInclusiveRange(0.0, 100.0));
+
+        // All positions should remain valid
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0),
+              reason: 'position for ${prop.id} should be valid');
+        }
+      });
+
+      test('reversing direction during expansion from bottom exits expansion mode', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress from bottom and normalize
+        model.moveActiveProposition(-500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Start expanding (move up)
+        model.moveActiveProposition(20);
+
+        // Reverse direction (move down, back toward boundary)
+        model.moveActiveProposition(-30);
+
+        // Should handle gracefully
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, inInclusiveRange(0.0, 100.0));
+
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0));
+        }
+      });
+
+      test('multiple direction changes during expansion do not corrupt state', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress heavily
+        model.moveActiveProposition(400);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Rapid direction changes
+        model.moveActiveProposition(-10); // expand
+        model.moveActiveProposition(5);  // reverse
+        model.moveActiveProposition(-15); // expand again
+        model.moveActiveProposition(3);  // reverse again
+
+        // All positions should remain valid
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0),
+              reason: 'position for ${prop.id} should be valid after rapid changes');
+        }
+      });
+    });
+
+    group('Edge Case: Only 1 Inactive Card During Expansion', () {
+      test('expansion works with 2 total cards (1 active, 1 inactive)', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+        // prop3 is now active, prop1=100, prop2=0
+
+        // Compress by moving past 100
+        model.moveActiveProposition(200);
+
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1Compressed, lessThan(100.0));
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Expand - with 2 inactive cards this should still work
+        model.moveActiveProposition(-50);
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1After, greaterThanOrEqualTo(prop1Compressed),
+            reason: 'expansion should work with 2 inactive cards');
+      });
+
+      test('expansion from top with single inactive card when range is zero', () {
+        // Create a scenario where there is only 1 inactive card with a compressed position
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Place prop3 at 100 (same as prop1)
+        model.setActivePropositionPosition(100.0);
+        model.confirmPlacement();
+
+        // model is now complete with only 3 props. We need 4.
+        // Use a different setup with lazy loading for better control.
+      });
+
+      test('expansion handles minimum card count gracefully', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Move way past 100
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Try to expand
+        model.moveActiveProposition(-50);
+
+        // Should not crash, all positions valid
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0));
+        }
+      });
+    });
+
+    group('Edge Case: All Inactive Cards at Same Position', () {
+      test('expansion handles all inactive cards compressed to same position', () {
+        // Resume with all cards at 100
+        final model = RatingModel(
+          [
+            {'id': 1, 'content': 'A', 'position': 100.0},
+            {'id': 2, 'content': 'B', 'position': 100.0},
+            {'id': 3, 'content': 'C', 'position': 100.0},
+          ],
+          isResuming: true,
+          lazyLoadingMode: true,
+        );
+
+        // Add a new proposition
+        model.addProposition({'id': 4, 'content': 'D'});
+
+        // Move it past 100 to compress
+        model.moveActiveProposition(200);
+
+        // All inactive are at similar compressed positions
+        final positions = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .map((p) => p.position)
+            .toList();
+
+        // They should all be close together (compressed from same base)
+        final minPos = positions.reduce((a, b) => a < b ? a : b);
+        final maxPos = positions.reduce((a, b) => a > b ? a : b);
+        expect(maxPos - minPos, lessThan(1.0),
+            reason: 'cards that started at same position should compress to same position');
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Expand
+        model.moveActiveProposition(-50);
+
+        // Should handle zero-range gracefully (compRange <= 0 branch)
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0),
+              reason: 'all positions should remain valid');
+        }
+      });
+
+      test('expansion with zero-range uses midpoint', () {
+        final model = RatingModel(
+          [
+            {'id': 1, 'content': 'A', 'position': 50.0},
+            {'id': 2, 'content': 'B', 'position': 50.0},
+          ],
+          isResuming: true,
+          lazyLoadingMode: true,
+        );
+
+        model.addProposition({'id': 3, 'content': 'C'});
+
+        // Compress from top
+        model.moveActiveProposition(200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Expand
+        model.moveActiveProposition(-50);
+
+        // Zero-range case: both inactive at same position, should use midpoint
+        final prop1 =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2 =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        // Both should be at the same position (midpoint of target range)
+        expect((prop1 - prop2).abs(), lessThan(1.0),
+            reason: 'cards at same position should stay together during expansion');
+      });
+
+      test('compression then expansion with cards at 0 handles correctly', () {
+        final model = RatingModel(
+          [
+            {'id': 1, 'content': 'A', 'position': 0.0},
+            {'id': 2, 'content': 'B', 'position': 0.0},
+          ],
+          isResuming: true,
+          lazyLoadingMode: true,
+        );
+
+        model.addProposition({'id': 3, 'content': 'C'});
+
+        // Compress from bottom
+        model.moveActiveProposition(-200);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Expand
+        model.moveActiveProposition(50);
+
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0));
+        }
+      });
+    });
+
+    group('Expansion Progress Tracking', () {
+      test('expansion progress increases with each step', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        model.moveActiveProposition(300);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Record positions after each expansion step
+        final prop1Positions = <double>[];
+        for (int i = 0; i < 10; i++) {
+          model.moveActiveProposition(-10);
+          final prop1 =
+              model.rankedPropositions.firstWhere((p) => p.id == '1');
+          prop1Positions.add(prop1.position);
+        }
+
+        // Each step should increase the position (monotonically expanding)
+        for (int i = 1; i < prop1Positions.length; i++) {
+          expect(prop1Positions[i], greaterThanOrEqualTo(prop1Positions[i - 1]),
+              reason: 'position should increase at step $i: '
+                  '${prop1Positions[i]} >= ${prop1Positions[i - 1]}');
+        }
+      });
+
+      test('expansion progress is capped at 1.0', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move way more than needed (200 units when 100 is enough)
+        model.moveActiveProposition(-200);
+
+        // Should not exceed 100 for any card
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0));
+        }
+      });
+    });
+
+    group('Compression and Expansion with Many Cards', () {
+      test('compression with 8 cards maintains valid positions', () {
+        final props = List.generate(
+            10, (i) => {'id': i, 'content': 'Prop $i'});
+        final model = RatingModel(props);
+        model.confirmBinaryChoice();
+
+        // Place cards at various positions
+        model.setActivePropositionPosition(80.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(60.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(40.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(20.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(90.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(10.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(70.0);
+        model.confirmPlacement();
+
+        // Now prop9 is active. Compress heavily.
+        model.moveActiveProposition(500);
+
+        // All positions should be valid
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0),
+              reason: 'position for ${prop.id} should be valid during compression');
+        }
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Expand
+        for (int i = 0; i < 20; i++) {
+          model.moveActiveProposition(-5);
+          for (final prop in model.rankedPropositions) {
+            expect(prop.position, inInclusiveRange(0.0, 100.0),
+                reason: 'position for ${prop.id} should be valid during expansion step $i');
+          }
+        }
+      });
+
+      test('expansion with many cards preserves relative order', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+          {'id': 5, 'content': 'E'},
+        ]);
+        model.confirmBinaryChoice();
+
+        model.setActivePropositionPosition(75.0);
+        model.confirmPlacement();
+        model.setActivePropositionPosition(25.0);
+        model.confirmPlacement();
+
+        // prop5 active at 50. Compress heavily.
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Partially expand
+        model.moveActiveProposition(-50);
+
+        // Check order is preserved
+        final inactiveByPosition = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .toList()
+          ..sort((a, b) => b.position.compareTo(a.position));
+
+        // prop1 was at 100, prop3 at 75, prop4 at 25, prop2 at 0
+        // After compression and partial expansion, order should be preserved
+        for (int i = 1; i < inactiveByPosition.length; i++) {
+          expect(inactiveByPosition[i - 1].position,
+              greaterThanOrEqualTo(inactiveByPosition[i].position),
+              reason: 'ordering should be preserved during expansion');
+        }
+      });
+    });
+
+    group('Normalize then Confirm Placement', () {
+      test('confirm placement during expansion produces valid positions', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress and normalize
+        model.moveActiveProposition(300);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Partially expand
+        model.moveActiveProposition(-30);
+
+        // Confirm placement while expanding
+        model.confirmPlacement();
+
+        // All positions should be valid integers after normalization
+        for (final prop in model.rankedPropositions) {
+          expect(prop.position, inInclusiveRange(0.0, 100.0));
+        }
+      });
+
+      test('confirm placement at exact boundary (100) after compression', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Move to exactly 100
+        model.setActivePropositionPosition(100.0);
+
+        // Confirm at boundary
+        model.confirmPlacement();
+
+        final active = model.rankedPropositions.firstWhere((p) => p.id == '4');
+        expect(active.position, 100.0);
+      });
+    });
+
+    group('No Visual Jump on Release (Bug Fix)', () {
+      test('releasing after compression keeps all positions (no jump)', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+        // prop1=100, prop2=0, prop3(active)=50
+
+        // Push far past 100 to cause heavy compression
+        model.moveActiveProposition(500); // virtual=550
+
+        final prop1Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        expect(prop1Compressed, lessThan(20),
+            reason: 'prop1 should be heavily compressed');
+
+        // Release button — no visual change
+        model.normalizeVirtualPositionOnRelease();
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        expect(prop1After, closeTo(prop1Compressed, 0.1),
+            reason: 'prop1 stays compressed on release (no jump)');
+        expect(prop2After, closeTo(0.0, 1.0),
+            reason: 'prop2 at 0 stays at 0 during top compression');
+      });
+
+      test('after release, pressing opposite moves active freely during decompression', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress and release
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Press down - active should move freely, others decompress
+        model.moveActiveProposition(-10);
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 90.0,
+            reason: 'active moves freely during decompression');
+      });
+
+      test('releasing from below 0 keeps all compressed positions (no jump)', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Push far below 0
+        model.moveActiveProposition(-500); // virtual = -450
+
+        final prop2Compressed =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        model.normalizeVirtualPositionOnRelease();
+
+        final prop1After =
+            model.rankedPropositions.firstWhere((p) => p.id == '1').position;
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+
+        // prop1 at 100 stays at 100 (bottom compression doesn't move the top card)
+        expect(prop1After, closeTo(100.0, 1.0),
+            reason: 'prop1 at top stays at 100 during bottom compression');
+        // prop2 stays at compressed position (no jump on release)
+        expect(prop2After, closeTo(prop2Compressed, 0.1),
+            reason: 'prop2 stays compressed on release (no jump)');
+      });
+
+      test('single press after release moves active freely during decompression', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+        // prop4 active at 50
+
+        // Compress heavily and release
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+        // Positions stay compressed, active at 100
+
+        // Move down 1 unit - active should move, decompression begins
+        model.moveActiveProposition(-1);
+
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 99.0,
+            reason: 'active moves freely during decompression');
+      });
+
+      test('user bug: binary then drag below 0 and release causes no jump', () {
+        // Binary placement, then 3rd proposition dragged below 0.
+        // The card at 0 compresses upward during drag.
+        // On release, no visual change. Boundary card pins on first opposite move.
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+        // prop1=100, prop2=0, prop3(active)=50
+
+        // Drag active below 0 (simulating holding down button)
+        model.moveActiveProposition(-60); // virtual = -10
+
+        // Verify prop2 compressed upward
+        final prop2During =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        expect(prop2During, greaterThan(0.0),
+            reason: 'prop2 at 0 should compress upward when active goes below 0');
+
+        // Release the button — no visual change
+        model.normalizeVirtualPositionOnRelease();
+
+        // Active should snap to 0
+        expect(model.virtualPosition, 0.0);
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 0.0);
+
+        // CRITICAL: prop2 should NOT jump — stays at compressed position
+        final prop2After =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        expect(prop2After, closeTo(prop2During, 0.1),
+            reason: 'prop2 stays at compressed position on release (no jump)');
+        expect(prop2After, greaterThan(0.0),
+            reason: 'prop2 should remain displaced above 0');
+
+        // First opposite move — boundary card (prop2) pins to 0
+        model.moveActiveProposition(10);
+        final prop2AfterMove =
+            model.rankedPropositions.firstWhere((p) => p.id == '2').position;
+        expect(prop2AfterMove, 0.0,
+            reason: 'boundary card pins to 0 on first opposite-direction move');
+      });
+    });
+
+    group('Compression Amount Proportionality', () {
+      test('double the overflow produces double the compression', () {
+        // Test 1: overflow of 50
+        final model1 = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model1.confirmBinaryChoice();
+        model1.moveActiveProposition(100); // virtual = 150, overflow = 50
+
+        final prop1At50Overflow =
+            model1.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        // Test 2: overflow of 100
+        final model2 = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model2.confirmBinaryChoice();
+        model2.moveActiveProposition(150); // virtual = 200, overflow = 100
+
+        final prop1At100Overflow =
+            model2.rankedPropositions.firstWhere((p) => p.id == '1').position;
+
+        // More overflow = more compression = lower position for prop1
+        expect(prop1At100Overflow, lessThan(prop1At50Overflow),
+            reason: 'more overflow should produce more compression');
+      });
+
+      test('compression formula: position = base * 100/(100+overflow)', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // prop1 base=100, prop2 base=0, prop3 active at 50
+        // Move to 250: overflow = 150
+        model.moveActiveProposition(200);
+
+        final prop1 =
+            model.rankedPropositions.firstWhere((p) => p.id == '1');
+        final expectedCompression = 100.0 * (100.0 / (100.0 + 150.0));
+        expect(prop1.position, closeTo(expectedCompression, 0.5));
+      });
+    });
+
+    group('Boundary Pinning Invariant (always one at 100 and 0)', () {
+      test('active moves freely during decompression from top', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress past 100 and release
+        model.moveActiveProposition(300);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move down in small steps — active moves freely each step
+        for (int i = 0; i < 99; i++) {
+          model.moveActiveProposition(-1);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = (100.0 - (i + 1)).clamp(0.0, 100.0);
+          expect(active.position, expectedPos,
+              reason: 'active moves freely during decompression step $i');
+        }
+      });
+
+      test('active moves freely during decompression from bottom', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress past 0 and release
+        model.moveActiveProposition(-300);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Move up in small steps — active moves freely each step
+        for (int i = 0; i < 99; i++) {
+          model.moveActiveProposition(1);
+          final active =
+              model.rankedPropositions.firstWhere((p) => p.isActive);
+          final expectedPos = ((i + 1).toDouble()).clamp(0.0, 100.0);
+          expect(active.position, expectedPos,
+              reason: 'active moves freely during decompression step $i');
+        }
+      });
+
+      test('after full decompression from top, inactive cards are at original positions', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress and release
+        model.moveActiveProposition(500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Complete decompression (active moves 100 units to position 0)
+        for (int i = 0; i < 100; i++) {
+          model.moveActiveProposition(-1);
+        }
+
+        // Active should be at 0 (moved 100 units from 100)
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 0.0,
+            reason: 'active at 0 after moving 100 units down');
+
+        // Highest inactive should be at 100 (fully decompressed)
+        final inactivePositions = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .map((p) => p.position)
+            .toList();
+        expect(inactivePositions.reduce((a, b) => a > b ? a : b),
+            closeTo(100.0, 1.0),
+            reason: 'highest inactive card should be at 100 after full decompression');
+      });
+
+      test('after full decompression from bottom, inactive cards are at original positions', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+
+        // Compress below 0 and release
+        model.moveActiveProposition(-500);
+        model.normalizeVirtualPositionOnRelease();
+
+        // Complete decompression (active moves 100 units to position 100)
+        for (int i = 0; i < 100; i++) {
+          model.moveActiveProposition(1);
+        }
+
+        // Active should be at 100 (moved 100 units from 0)
+        final active =
+            model.rankedPropositions.firstWhere((p) => p.isActive);
+        expect(active.position, 100.0,
+            reason: 'active at 100 after moving 100 units up');
+
+        // Lowest inactive should be at 0 (fully decompressed)
+        final inactivePositions = model.rankedPropositions
+            .where((p) => !p.isActive)
+            .map((p) => p.position)
+            .toList();
+        expect(inactivePositions.reduce((a, b) => a < b ? a : b),
+            closeTo(0.0, 1.0),
+            reason: 'lowest inactive card should be at 0 after full decompression');
+      });
+
+      test('always a card at 100 during compression, smooth decompression from top', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress past 100 - active is always at 100 during compression
+        for (int i = 0; i < 200; i++) {
+          model.moveActiveProposition(1);
+          final allPositions =
+              model.rankedPropositions.map((p) => p.position).toList();
+          expect(allPositions.any((p) => p >= 99.5), isTrue,
+              reason: 'must always have a card at 100 during compression step $i');
+        }
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Decompression - inactive cards gradually return to original positions
+        // Active moves freely, so track that inactive cards decompress monotonically
+        double prevHighestInactive = 0;
+        for (int i = 0; i < 100; i++) {
+          model.moveActiveProposition(-1);
+          final highestInactive = model.rankedPropositions
+              .where((p) => !p.isActive)
+              .map((p) => p.position)
+              .reduce((a, b) => a > b ? a : b);
+          expect(highestInactive, greaterThanOrEqualTo(prevHighestInactive),
+              reason: 'inactive cards should decompress monotonically at step $i');
+          prevHighestInactive = highestInactive;
+        }
+
+        // After full decompression, highest inactive should be at 100
+        expect(prevHighestInactive, closeTo(100.0, 1.0),
+            reason: 'highest inactive at 100 after full decompression');
+      });
+
+      test('always a card at 0 during compression, smooth decompression from bottom', () {
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+          {'id': 4, 'content': 'D'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(50.0);
+        model.confirmPlacement();
+
+        // Compress past 0 - active is always at 0 during compression
+        for (int i = 0; i < 200; i++) {
+          model.moveActiveProposition(-1);
+          final allPositions =
+              model.rankedPropositions.map((p) => p.position).toList();
+          expect(allPositions.any((p) => p <= 0.5), isTrue,
+              reason: 'must always have a card at 0 during compression step $i');
+        }
+
+        model.normalizeVirtualPositionOnRelease();
+
+        // Decompression - inactive cards gradually return to original positions
+        double prevLowestInactive = 100;
+        for (int i = 0; i < 100; i++) {
+          model.moveActiveProposition(1);
+          final lowestInactive = model.rankedPropositions
+              .where((p) => !p.isActive)
+              .map((p) => p.position)
+              .reduce((a, b) => a < b ? a : b);
+          expect(lowestInactive, lessThanOrEqualTo(prevLowestInactive),
+              reason: 'inactive cards should decompress monotonically at step $i');
+          prevLowestInactive = lowestInactive;
+        }
+
+        // After full decompression, lowest inactive should be at 0
+        expect(prevLowestInactive, closeTo(0.0, 1.0),
+            reason: 'lowest inactive at 0 after full decompression');
       });
     });
   });

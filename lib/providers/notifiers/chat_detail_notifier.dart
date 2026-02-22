@@ -1,8 +1,10 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../models/chat_credits.dart';
 import '../../models/models.dart';
 import '../../services/chat_service.dart';
 import '../../services/participant_service.dart';
@@ -15,7 +17,7 @@ class ChatDetailState extends Equatable {
   final Chat? chat; // Fresh chat data (includes schedulePaused, etc.)
   final Cycle? currentCycle;
   final Round? currentRound;
-  final List<Proposition> consensusItems;
+  final List<ConsensusItem> consensusItems;
   final List<Proposition> propositions;
   final List<Participant> participants;
   final Participant? myParticipant;
@@ -32,6 +34,20 @@ class ChatDetailState extends Equatable {
   // Skip proposing state
   final int skipCount;
   final bool hasSkipped;
+  // Skip rating state
+  final int ratingSkipCount;
+  final bool hasSkippedRating;
+  // Credit state
+  final ChatCredits? chatCredits;
+  final bool isMyParticipantFunded;
+  // Allowed proposition categories for current cycle
+  final List<String> allowedCategories;
+
+  /// Whether the UI should show simplified task result mode.
+  /// True when the only allowed category is 'human_task_result'.
+  bool get isTaskResultMode =>
+      allowedCategories.length == 1 &&
+      allowedCategories.first == 'human_task_result';
 
   const ChatDetailState({
     this.chat,
@@ -53,6 +69,11 @@ class ChatDetailState extends Equatable {
     this.pendingJoinRequests = const [],
     this.skipCount = 0,
     this.hasSkipped = false,
+    this.ratingSkipCount = 0,
+    this.hasSkippedRating = false,
+    this.chatCredits,
+    this.isMyParticipantFunded = true,
+    this.allowedCategories = const [],
   });
 
   /// Number of active participants (used for skip quota calculation)
@@ -75,11 +96,27 @@ class ChatDetailState extends Equatable {
     return !hasSkipped && newSubmissions == 0 && skipCount < maxSkips;
   }
 
+  /// Maximum number of rating skips allowed (participants - rating_minimum)
+  int get maxRatingSkips {
+    final minimum = chat?.ratingMinimum ?? 2;
+    return (activeParticipantCount - minimum).clamp(0, activeParticipantCount);
+  }
+
+  /// Whether the current user can skip rating
+  /// - Must not have already rated (fully completed)
+  /// - Must not have already skipped rating
+  /// - Rating skip quota must not be exceeded
+  bool get canSkipRating {
+    return !hasSkippedRating &&
+        !hasRated &&
+        ratingSkipCount < maxRatingSkips;
+  }
+
   ChatDetailState copyWith({
     Chat? chat,
     Cycle? currentCycle,
     Round? currentRound,
-    List<Proposition>? consensusItems,
+    List<ConsensusItem>? consensusItems,
     List<Proposition>? propositions,
     List<Participant>? participants,
     Participant? myParticipant,
@@ -95,6 +132,11 @@ class ChatDetailState extends Equatable {
     List<Map<String, dynamic>>? pendingJoinRequests,
     int? skipCount,
     bool? hasSkipped,
+    int? ratingSkipCount,
+    bool? hasSkippedRating,
+    ChatCredits? chatCredits,
+    bool? isMyParticipantFunded,
+    List<String>? allowedCategories,
   }) {
     return ChatDetailState(
       chat: chat ?? this.chat,
@@ -116,6 +158,11 @@ class ChatDetailState extends Equatable {
       pendingJoinRequests: pendingJoinRequests ?? this.pendingJoinRequests,
       skipCount: skipCount ?? this.skipCount,
       hasSkipped: hasSkipped ?? this.hasSkipped,
+      ratingSkipCount: ratingSkipCount ?? this.ratingSkipCount,
+      hasSkippedRating: hasSkippedRating ?? this.hasSkippedRating,
+      chatCredits: chatCredits ?? this.chatCredits,
+      isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
+      allowedCategories: allowedCategories ?? this.allowedCategories,
     );
   }
 
@@ -140,6 +187,11 @@ class ChatDetailState extends Equatable {
         pendingJoinRequests,
         skipCount,
         hasSkipped,
+        ratingSkipCount,
+        hasSkippedRating,
+        chatCredits,
+        isMyParticipantFunded,
+        allowedCategories,
       ];
 }
 
@@ -180,18 +232,22 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   RealtimeChannel? _propositionChannel;
   RealtimeChannel? _joinRequestChannel;
   RealtimeChannel? _skipChannel;
+  RealtimeChannel? _ratingSkipChannel;
+  RealtimeChannel? _creditChannel;
 
   // Debounce timers
   Timer? _refreshDebounce;
   Timer? _propositionDebounce;
   Timer? _joinRequestDebounce;
   Timer? _skipDebounce;
+  Timer? _ratingSkipDebounce;
 
   // Rate limiting
   DateTime? _lastRefreshTime;
   DateTime? _lastPropositionRefreshTime;
   DateTime? _lastJoinRequestRefreshTime;
   DateTime? _lastSkipRefreshTime;
+  DateTime? _lastRatingSkipRefreshTime;
 
   // Cache last known state for use during loading
   ChatDetailState? _cachedState;
@@ -221,17 +277,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _refreshForLanguageChange();
   }
 
-  /// Refresh when language changes (silent refresh for chat data only)
+  /// Refresh all translatable data when language changes.
   Future<void> _refreshForLanguageChange() async {
-    final currentState = state.valueOrNull;
-    if (currentState == null) return;
-
-    try {
-      final chat = await _chatService.getChatById(chatId, languageCode: languageCode);
-      state = AsyncData(currentState.copyWith(chat: chat));
-    } catch (e) {
-      // Silent failure - keep existing data on language refresh error
-    }
+    if (state.valueOrNull == null) return;
+    // Full reload picks up translated consensus items, propositions, winners, etc.
+    await _loadData();
   }
 
   @override
@@ -240,6 +290,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _propositionDebounce?.cancel();
     _joinRequestDebounce?.cancel();
     _skipDebounce?.cancel();
+    _ratingSkipDebounce?.cancel();
     disposeLanguageSupport();
     _unsubscribeAll();
     super.dispose();
@@ -253,6 +304,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _propositionChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
     _skipChannel?.unsubscribe();
+    _ratingSkipChannel?.unsubscribe();
+    _creditChannel?.unsubscribe();
   }
 
   Future<void> _loadData({bool setupSubscriptions = false}) async {
@@ -267,7 +320,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       ]);
       final chat = results[0] as Chat?;
       final currentCycle = results[1] as Cycle?;
-      final consensusItems = results[2] as List<Proposition>;
+      final consensusItems = results[2] as List<ConsensusItem>;
       var participants = results[3] as List<Participant>;
       var myParticipant = results[4] as Participant?;
 
@@ -289,6 +342,21 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
             await _participantService.getPendingRequests(chatId);
       }
 
+      // Fetch chat credits
+      ChatCredits? chatCredits;
+      try {
+        final creditData = await _supabase
+            .from('chat_credits')
+            .select()
+            .eq('chat_id', chatId)
+            .maybeSingle();
+        if (creditData != null) {
+          chatCredits = ChatCredits.fromJson(creditData);
+        }
+      } catch (e) {
+        debugPrint('[ChatDetail] Error fetching chat credits: $e');
+      }
+
       Round? currentRound;
       List<RoundWinner> previousRoundWinners = [];
       bool isSoleWinner = false;
@@ -301,6 +369,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       bool hasStartedRating = false;
       int skipCount = 0;
       bool hasSkipped = false;
+      int ratingSkipCount = 0;
+      bool hasSkippedRating = false;
+      bool isMyParticipantFunded = true;
+      List<String> allowedCategories = [];
 
       if (currentCycle != null) {
         currentRound = await _chatService.getCurrentRound(currentCycle.id);
@@ -343,6 +415,8 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
             ),
             _propositionService.getSkipCount(currentRound.id),
             _propositionService.hasSkipped(currentRound.id, myParticipant.id),
+            _propositionService.getRatingSkipCount(currentRound.id),
+            _propositionService.hasSkippedRating(currentRound.id, myParticipant.id),
           ]);
 
           propositions = roundResults[0] as List<Proposition>;
@@ -352,7 +426,59 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           hasStartedRating = ratingProgress['started'] as bool;
           skipCount = roundResults[3] as int;
           hasSkipped = roundResults[4] as bool;
+          ratingSkipCount = roundResults[5] as int;
+          hasSkippedRating = roundResults[6] as bool;
+
+          // Check if my participant is funded for this round
+          try {
+            final fundingData = await _supabase
+                .from('round_funding')
+                .select('id')
+                .eq('round_id', currentRound.id)
+                .eq('participant_id', myParticipant.id)
+                .maybeSingle();
+            // If round has any funding records, check if we're funded
+            // If no funding exists yet, assume funded (backward compat)
+            if (fundingData != null) {
+              isMyParticipantFunded = true;
+            } else {
+              final countData = await _supabase.rpc(
+                'get_funded_participant_count',
+                params: {'p_round_id': currentRound.id},
+              );
+              isMyParticipantFunded = (countData as int? ?? 0) == 0;
+            }
+          } catch (e) {
+            debugPrint('[ChatDetail] Error checking funding: $e');
+          }
         }
+
+        // Fetch allowed proposition categories for current cycle
+        try {
+          final catData = await _supabase.rpc(
+            'get_chat_allowed_categories',
+            params: {'p_chat_id': chatId},
+          );
+          allowedCategories = (catData as List).cast<String>();
+        } catch (e) {
+          debugPrint('[ChatDetail] Error fetching allowed categories: $e');
+        }
+      }
+
+      // Guard against stale API data reverting a phase that Realtime already
+      // advanced. Realtime events can fire before the DB transaction commits,
+      // so a follow-up refresh may read the old phase. If the round ID matches
+      // and the current state has a more advanced phase, keep it.
+      final existingRound = state.valueOrNull?.currentRound;
+      if (currentRound != null &&
+          existingRound != null &&
+          currentRound.id == existingRound.id &&
+          existingRound.phase.index > currentRound.phase.index) {
+        currentRound = currentRound.copyWith(
+          phase: existingRound.phase,
+          phaseStartedAt: existingRound.phaseStartedAt,
+          phaseEndsAt: existingRound.phaseEndsAt,
+        );
       }
 
       final newState = ChatDetailState(
@@ -374,6 +500,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         pendingJoinRequests: pendingJoinRequests,
         skipCount: skipCount,
         hasSkipped: hasSkipped,
+        ratingSkipCount: ratingSkipCount,
+        hasSkippedRating: hasSkippedRating,
+        chatCredits: chatCredits,
+        isMyParticipantFunded: isMyParticipantFunded,
+        allowedCategories: allowedCategories,
       );
       state = AsyncData(newState);
       _cachedState = newState;
@@ -415,6 +546,41 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         _onParticipantsChanged(participants);
       },
     );
+
+    // Subscribe to credit balance changes
+    _creditChannel = _supabase
+        .channel('chat_credits:$chatId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'chat_credits',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chat_id',
+            value: chatId,
+          ),
+          callback: (payload) {
+            final newData = payload.newRecord;
+            if (newData.isNotEmpty) {
+              final currentState = state.valueOrNull;
+              if (currentState != null) {
+                try {
+                  final credits = ChatCredits.fromJson(newData);
+                  state = AsyncData(currentState.copyWith(chatCredits: credits));
+                  // If user is currently unfunded, credits changing may mean
+                  // they were just funded by fund_unfunded_spectators().
+                  // Trigger full refresh to re-check funding status.
+                  if (!currentState.isMyParticipantFunded) {
+                    _scheduleRefresh();
+                  }
+                } catch (e) {
+                  debugPrint('[ChatDetail] Error parsing credit update: $e');
+                }
+              }
+            }
+          },
+        )
+        .subscribe();
 
     // Set up join request subscription if host
     _setupJoinRequestSubscription();
@@ -484,6 +650,15 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         currentState.currentRound!.id,
         () {
           _scheduleSkipRefresh();
+        },
+      );
+
+      // Update rating skip subscription for current round
+      _ratingSkipChannel?.unsubscribe();
+      _ratingSkipChannel = _propositionService.subscribeToRatingSkips(
+        currentState.currentRound!.id,
+        () {
+          _scheduleRatingSkipRefresh();
         },
       );
     } else {
@@ -712,6 +887,58 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     }
   }
 
+  void _scheduleRatingSkipRefresh() {
+    final now = DateTime.now();
+    if (_lastRatingSkipRefreshTime != null &&
+        now.difference(_lastRatingSkipRefreshTime!) < _minRefreshInterval) {
+      // Defer instead of drop
+      final timeSinceLastRefresh = now.difference(_lastRatingSkipRefreshTime!);
+      final delay = _minRefreshInterval - timeSinceLastRefresh;
+      _ratingSkipDebounce?.cancel();
+      _ratingSkipDebounce = Timer(delay + _debounceDuration, () {
+        _lastRatingSkipRefreshTime = DateTime.now();
+        _refreshRatingSkips();
+      });
+      return;
+    }
+
+    _ratingSkipDebounce?.cancel();
+    _ratingSkipDebounce = Timer(_debounceDuration, () {
+      _lastRatingSkipRefreshTime = DateTime.now();
+      _refreshRatingSkips();
+    });
+  }
+
+  Future<void> _refreshRatingSkips() async {
+    final currentState = state.valueOrNull;
+    if (currentState?.currentRound == null ||
+        currentState?.myParticipant == null) {
+      return;
+    }
+
+    try {
+      final results = await Future.wait([
+        _propositionService.getRatingSkipCount(currentState!.currentRound!.id),
+        _propositionService.hasSkippedRating(
+          currentState.currentRound!.id,
+          currentState.myParticipant!.id,
+        ),
+      ]);
+
+      final ratingSkipCount = results[0] as int;
+      final hasSkippedRating = results[1] as bool;
+
+      final updatedState = currentState.copyWith(
+        ratingSkipCount: ratingSkipCount,
+        hasSkippedRating: hasSkippedRating,
+      );
+      state = AsyncData(updatedState);
+      _cachedState = updatedState;
+    } catch (e) {
+      // Log but don't fail - next event will retry
+    }
+  }
+
   Future<void> _refreshPropositions() async {
     final currentState = state.valueOrNull;
     if (currentState?.currentRound == null ||
@@ -742,6 +969,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   /// Submit a new proposition
   Future<void> submitProposition(String content) async {
+    final sw = Stopwatch()..start();
     final currentState = state.valueOrNull;
     if (currentState?.currentRound == null ||
         currentState?.myParticipant == null) {
@@ -753,9 +981,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       participantId: currentState.myParticipant!.id,
       content: content,
     );
+    debugPrint('[submitProposition] edge function call: ${sw.elapsedMilliseconds}ms');
 
     // Immediately refresh to show own submission (don't wait for debounced realtime)
     await _refreshPropositions();
+    debugPrint('[submitProposition] total (incl refresh): ${sw.elapsedMilliseconds}ms');
   }
 
   /// Skip proposing for the current round
@@ -789,6 +1019,47 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
     // Refresh to get accurate skip count from server
     await _refreshSkips();
+  }
+
+  /// Skip rating for the current round
+  ///
+  /// User must not have already rated or started rating, and skip quota must not be exceeded.
+  /// Skippers count toward participation for early advance calculations.
+  Future<void> skipRating() async {
+    final currentState = state.valueOrNull;
+    if (currentState?.currentRound == null ||
+        currentState?.myParticipant == null) {
+      return;
+    }
+
+    // Validate canSkipRating before calling service
+    if (!currentState!.canSkipRating) {
+      throw Exception('Cannot skip rating: already rated, already skipped, or skip quota exceeded');
+    }
+
+    if (currentState.hasStartedRating) {
+      // Use cleanup version to delete intermediate grid_rankings first
+      await _propositionService.skipRatingWithCleanup(
+        roundId: currentState.currentRound!.id,
+        participantId: currentState.myParticipant!.id,
+      );
+    } else {
+      await _propositionService.skipRating(
+        roundId: currentState.currentRound!.id,
+        participantId: currentState.myParticipant!.id,
+      );
+    }
+
+    // Immediately update local state (optimistic)
+    final updatedState = currentState.copyWith(
+      hasSkippedRating: true,
+      ratingSkipCount: currentState.ratingSkipCount + 1,
+    );
+    state = AsyncData(updatedState);
+    _cachedState = updatedState;
+
+    // Refresh to get accurate skip count from server
+    await _refreshRatingSkips();
   }
 
   /// Start the next phase (host only)
@@ -968,6 +1239,79 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     } catch (_) {
       // Revert on failure
       state = AsyncData(currentState);
+      rethrow;
+    }
+  }
+
+  /// Delete a consensus on the server (host only).
+  /// Used from Dismissible.confirmDismiss — no local state changes,
+  /// so the Dismissible can snap back on failure.
+  Future<void> deleteConsensusOnServer(int cycleId) async {
+    await _chatService.deleteConsensus(cycleId);
+  }
+
+  /// Called from Dismissible.onDismissed after consensus delete succeeds.
+  /// Removes the item from local state immediately (cleans up task result
+  /// card too), then refreshes from server to pick up cycle restart.
+  void onConsensusDismissed(int cycleId) {
+    final current = state.valueOrNull;
+    if (current != null) {
+      final updatedItems = current.consensusItems
+          .where((item) => item.cycleId != cycleId)
+          .toList();
+      state = AsyncData(current.copyWith(consensusItems: updatedItems));
+    }
+    _loadData(); // Refresh to pick up new round from cycle restart
+  }
+
+  /// Delete research results on the server (host only).
+  /// Used from Dismissible.confirmDismiss — no local state changes.
+  Future<void> deleteTaskResultOnServer(int cycleId) async {
+    await _chatService.deleteTaskResult(cycleId);
+  }
+
+  /// Called from Dismissible.onDismissed after task result delete succeeds.
+  /// Removes the task result from local state, then refreshes from server.
+  void onTaskResultDismissed(int cycleId) {
+    final current = state.valueOrNull;
+    if (current != null) {
+      final updatedItems = current.consensusItems.map((item) {
+        if (item.cycleId == cycleId) {
+          return item.copyWith(taskResult: () => null);
+        }
+        return item;
+      }).toList();
+      state = AsyncData(current.copyWith(consensusItems: updatedItems));
+    }
+    _loadData(); // Refresh to pick up changes
+  }
+
+  /// Force a proposition directly as consensus (host only)
+  Future<void> forceConsensus(String content) async {
+    try {
+      await _chatService.forceConsensus(chatId, content);
+      await _loadData(); // Full refresh to pick up new consensus + new cycle
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update the initial message (host only)
+  Future<void> updateInitialMessage(String newMessage) async {
+    try {
+      await _chatService.updateInitialMessage(chatId, newMessage);
+      await _loadData(); // Refresh to pick up new message + potential restart
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete the initial message (host only)
+  Future<void> deleteInitialMessage() async {
+    try {
+      await _chatService.deleteInitialMessage(chatId);
+      await _loadData();
+    } catch (e) {
       rethrow;
     }
   }

@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/user_credits.dart';
 import '../../services/billing_service.dart';
+import '../../widgets/glossary_term.dart';
 
 /// Screen for viewing and purchasing credits
 class CreditsScreen extends StatefulWidget {
@@ -296,11 +297,26 @@ class _CreditsScreenState extends State<CreditsScreen> {
                   l10n.totalAvailable,
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
-                Text(
-                  '${_credits?.totalAvailable ?? UserCredits.freeTierMonthlyLimit} ${l10n.userRounds}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
+                Text.rich(
+                  TextSpan(children: [
+                    TextSpan(
+                      text: '${_credits?.totalAvailable ?? UserCredits.freeTierMonthlyLimit} ',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    WidgetSpan(
+                      alignment: PlaceholderAlignment.baseline,
+                      baseline: TextBaseline.alphabetic,
+                      child: GlossaryTerm(
+                        term: l10n.glossaryUserRoundTitle,
+                        definition: l10n.glossaryUserRoundDef,
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
+                    ),
+                  ]),
                 ),
               ],
             ),
@@ -355,11 +371,30 @@ class _CreditsScreenState extends State<CreditsScreen> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
             const SizedBox(height: 8),
-            Text(
-              l10n.pricingInfo,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey,
+            Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                  text: '1 credit = 1 ',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
+                ),
+                WidgetSpan(
+                  alignment: PlaceholderAlignment.baseline,
+                  baseline: TextBaseline.alphabetic,
+                  child: GlossaryTerm(
+                    term: l10n.glossaryUserRoundTitle,
+                    definition: l10n.glossaryUserRoundDef,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
+                ),
+                TextSpan(
+                  text: ' = \$0.01',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Colors.grey,
+                      ),
+                ),
+              ]),
             ),
             const SizedBox(height: 24),
             Row(

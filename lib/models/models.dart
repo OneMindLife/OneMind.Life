@@ -1,7 +1,9 @@
 // Export all models
 export 'chat.dart';
+export 'consensus_item.dart';
 export 'cycle.dart';
 export 'join_request.dart';
+export 'rating_skip.dart';
 export 'round.dart';
 export 'round_skip.dart';
 export 'round_winner.dart';

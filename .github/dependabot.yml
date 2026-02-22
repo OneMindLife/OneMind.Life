@@ -1,0 +1,47 @@
+# Dependabot configuration for automatic dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  # Flutter/Dart dependencies
+  - package-ecosystem: "pub"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps(flutter):"
+    labels:
+      - "dependencies"
+      - "flutter"
+    groups:
+      flutter-deps:
+        patterns:
+          - "*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci:"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # npm (for Edge Functions if using package.json)
+  - package-ecosystem: "npm"
+    directory: "/supabase/functions"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "deps(supabase):"
+    labels:
+      - "dependencies"
+      - "supabase"

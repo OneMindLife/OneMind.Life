@@ -49,7 +49,11 @@ class ChatService {
         },
       );
 
-      return (response as List).map((json) => Chat.fromJson(json)).toList();
+      final chats = (response as List).map((json) => Chat.fromJson(json)).toList();
+      for (final c in chats) {
+        print('[DEBUG getMyChats] id=${c.id} name="${c.name}" (translated)');
+      }
+      return chats;
     }
 
     // Default: no translations
@@ -61,7 +65,11 @@ class ChatService {
         .eq('is_active', true)
         .order('last_activity_at', ascending: false);
 
-    return (response as List).map((json) => Chat.fromJson(json)).toList();
+    final chats = (response as List).map((json) => Chat.fromJson(json)).toList();
+    for (final c in chats) {
+      print('[DEBUG getMyChats] id=${c.id} name="${c.name}" (no translation)');
+    }
+    return chats;
   }
 
   /// Get the official OneMind chat
@@ -243,14 +251,22 @@ class ChatService {
 
       final list = response as List;
       if (list.isEmpty) return null;
-      return Chat.fromJson(list.first);
+      final chat = Chat.fromJson(list.first);
+      print('[DEBUG getChatById] id=$id lang=$languageCode name="${chat.name}" initialMessage="${chat.initialMessage?.substring(0, chat.initialMessage!.length.clamp(0, 60))}"');
+      return chat;
     }
 
     // Default: no translations
     final response =
         await _client.from('chats').select().eq('id', id).maybeSingle();
 
-    return response != null ? Chat.fromJson(response) : null;
+    if (response != null) {
+      final chat = Chat.fromJson(response);
+      print('[DEBUG getChatById] id=$id (no lang) name="${chat.name}" initialMessage="${chat.initialMessage?.substring(0, chat.initialMessage!.length.clamp(0, 60))}"');
+      return chat;
+    }
+    print('[DEBUG getChatById] id=$id returned null');
+    return null;
   }
 
   /// Delete a chat (host only - CASCADE deletes all related data)
@@ -280,6 +296,11 @@ class ChatService {
     int? ratingThresholdCount,
     required bool enableAiParticipant,
     int? aiPropositionsCount,
+    bool enableAgents = false,
+    int proposingAgentCount = 3,
+    int ratingAgentCount = 3,
+    String? agentInstructions,
+    List<Map<String, String>>? agentConfigs,
     required int confirmationRoundsRequired,
     required bool showPreviousResults,
     required int propositionsPerUser,
@@ -344,6 +365,11 @@ class ChatService {
       'rating_threshold_count': ratingThresholdCount,
       'enable_ai_participant': enableAiParticipant,
       'ai_propositions_count': aiPropositionsCount,
+      'enable_agents': enableAgents,
+      'proposing_agent_count': proposingAgentCount,
+      'rating_agent_count': ratingAgentCount,
+      'agent_instructions': agentInstructions,
+      'agent_configs': agentConfigs,
       'confirmation_rounds_required': confirmationRoundsRequired,
       'show_previous_results': showPreviousResults,
       'propositions_per_user': propositionsPerUser,
@@ -410,26 +436,35 @@ class ChatService {
     return response != null ? Round.fromJson(response) : null;
   }
 
-  /// Get all consensus items (cycle winners) for a chat
+  /// Get all consensus items (cycle winners) for a chat.
+  /// Returns [ConsensusItem] with cycle IDs for host deletion support.
   /// If [languageCode] is provided, returns translated content.
-  Future<List<Proposition>> getConsensusItems(
+  Future<List<ConsensusItem>> getConsensusItems(
     int chatId, {
     String? languageCode,
   }) async {
     final response = await _client
         .from('cycles')
         .select('''
+          id,
           winning_proposition_id,
+          task_result,
+          host_override,
           propositions:winning_proposition_id(*)
         ''')
         .eq('chat_id', chatId)
         .not('winning_proposition_id', 'is', null)
         .order('completed_at', ascending: true);
 
-    final List<Proposition> items = [];
+    final List<ConsensusItem> items = [];
     for (final cycle in response as List) {
       if (cycle['propositions'] != null) {
-        items.add(Proposition.fromJson(cycle['propositions']));
+        items.add(ConsensusItem(
+          cycleId: cycle['id'] as int,
+          proposition: Proposition.fromJson(cycle['propositions']),
+          taskResult: cycle['task_result'] as String?,
+          isHostOverride: cycle['host_override'] as bool? ?? false,
+        ));
       }
     }
 
@@ -439,7 +474,7 @@ class ChatService {
     }
 
     // Fetch translations for all proposition IDs
-    final propositionIds = items.map((p) => p.id).toList();
+    final propositionIds = items.map((i) => i.proposition.id).toList();
     final translationsResponse = await _client
         .from('translations')
         .select('proposition_id, translated_text, language_code')
@@ -453,24 +488,30 @@ class ChatService {
       translationMap[t['proposition_id'] as int] = t['translated_text'] as String;
     }
 
-    // Return propositions with translations applied
-    return items.map((p) {
+    // Return items with translations applied
+    return items.map((item) {
+      final p = item.proposition;
       final translated = translationMap[p.id];
       if (translated != null) {
-        return Proposition(
-          id: p.id,
-          roundId: p.roundId,
-          participantId: p.participantId,
-          content: p.content,
-          createdAt: p.createdAt,
-          carriedFromId: p.carriedFromId,
-          finalRating: p.finalRating,
-          rank: p.rank,
-          contentTranslated: translated,
-          translationLanguage: languageCode,
+        return ConsensusItem(
+          cycleId: item.cycleId,
+          proposition: Proposition(
+            id: p.id,
+            roundId: p.roundId,
+            participantId: p.participantId,
+            content: p.content,
+            createdAt: p.createdAt,
+            carriedFromId: p.carriedFromId,
+            finalRating: p.finalRating,
+            rank: p.rank,
+            contentTranslated: translated,
+            translationLanguage: languageCode,
+          ),
+          taskResult: item.taskResult,
+          isHostOverride: item.isHostOverride,
         );
       }
-      return p;
+      return item;
     }).toList();
   }
 
@@ -935,5 +976,41 @@ class ChatService {
   /// Restores timer from saved state if schedule is not also paused
   Future<void> hostResumeChat(int chatId) async {
     await _client.rpc('host_resume_chat', params: {'p_chat_id': chatId});
+  }
+
+  /// Delete a consensus (host only). Returns whether cycle was restarted.
+  Future<Map<String, dynamic>> deleteConsensus(int cycleId) async {
+    final response = await _client.rpc('delete_consensus', params: {'p_cycle_id': cycleId});
+    return response as Map<String, dynamic>;
+  }
+
+  /// Delete research results from a cycle (host only).
+  Future<void> deleteTaskResult(int cycleId) async {
+    await _client.rpc('delete_task_result', params: {'p_cycle_id': cycleId});
+  }
+
+  /// Force a proposition directly as consensus (host only).
+  /// Returns {cycle_id, proposition_id}.
+  Future<Map<String, dynamic>> forceConsensus(int chatId, String content) async {
+    final response = await _client.rpc('host_force_consensus', params: {
+      'p_chat_id': chatId,
+      'p_content': content,
+    });
+    return response as Map<String, dynamic>;
+  }
+
+  /// Update the initial message (host only). Returns whether cycle was restarted.
+  Future<Map<String, dynamic>> updateInitialMessage(int chatId, String newMessage) async {
+    final response = await _client.rpc('update_initial_message', params: {
+      'p_chat_id': chatId,
+      'p_new_message': newMessage,
+    });
+    return response as Map<String, dynamic>;
+  }
+
+  /// Delete the initial message (host only). Returns whether cycle was restarted.
+  Future<Map<String, dynamic>> deleteInitialMessage(int chatId) async {
+    final response = await _client.rpc('delete_initial_message', params: {'p_chat_id': chatId});
+    return response as Map<String, dynamic>;
   }
 }

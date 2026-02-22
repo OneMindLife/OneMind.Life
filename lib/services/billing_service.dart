@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/errors/app_exception.dart';
+import '../models/chat_credits.dart';
 import '../models/user_credits.dart';
 
 /// Service for billing and credits operations
@@ -76,9 +77,37 @@ class BillingService {
         .toList();
   }
 
-  /// Create a Stripe checkout session for purchasing credits
+  // ============================================================================
+  // Chat-based credits
+  // ============================================================================
+
+  /// Get credit balance for a chat
+  Future<ChatCredits?> getChatCredits(int chatId) async {
+    final response = await _client
+        .from('chat_credits')
+        .select()
+        .eq('chat_id', chatId)
+        .maybeSingle();
+
+    if (response == null) return null;
+    return ChatCredits.fromJson(response);
+  }
+
+  /// Check if a participant is funded for a round
+  Future<bool> isParticipantFunded(int roundId, int participantId) async {
+    final response = await _client.rpc(
+      'is_participant_funded',
+      params: {
+        'p_round_id': roundId,
+        'p_participant_id': participantId,
+      },
+    );
+    return response == true;
+  }
+
+  /// Create a Stripe checkout session for purchasing chat credits
   /// Returns the checkout URL to redirect the user to
-  Future<String?> createCheckoutSession(int credits) async {
+  Future<String?> createCheckoutSession(int credits, {int? chatId}) async {
     if (credits < 1 || credits > 100000) {
       throw AppException.invalidCreditAmount(
         min: 1,
@@ -87,9 +116,14 @@ class BillingService {
       );
     }
 
+    final body = <String, dynamic>{'credits': credits};
+    if (chatId != null) {
+      body['chat_id'] = chatId;
+    }
+
     final response = await _client.functions.invoke(
       'create-checkout-session',
-      body: {'credits': credits},
+      body: body,
     );
 
     if (response.status != 200) {

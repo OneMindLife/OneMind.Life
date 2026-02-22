@@ -250,6 +250,13 @@ class ProposingStatePanel extends StatelessWidget {
   final int skipCount;
   final int maxSkips;
   final bool hasSkipped;
+  // Credit/funding
+  final bool isFunded;
+  // Force consensus (host only)
+  final bool forceConsensusMode;
+  final ValueChanged<bool>? onForceConsensusModeChanged;
+  // Task result mode (simplified UI)
+  final bool isTaskResultMode;
 
   const ProposingStatePanel({
     super.key,
@@ -271,11 +278,30 @@ class ProposingStatePanel extends StatelessWidget {
     this.skipCount = 0,
     this.maxSkips = 0,
     this.hasSkipped = false,
+    this.isFunded = true,
+    this.forceConsensusMode = false,
+    this.onForceConsensusModeChanged,
+    this.isTaskResultMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // Spectator mode: show banner and disable interaction
+    if (!isFunded) {
+      return Container(
+        key: const Key('proposing-state-panel'),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SpectatorBanner(phaseEndsAt: phaseEndsAt, onPhaseExpired: onPhaseExpired),
+          ],
+        ),
+      );
+    }
+
     // Don't count carried forward propositions against the submission limit
     // Carried forward propositions show in Previous Winner tab, not here
     final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
@@ -375,9 +401,11 @@ class ProposingStatePanel extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: isPaused
                         ? l10n.chatIsPaused
-                        : newSubmissions == 0
-                            ? l10n.shareYourIdea
-                            : l10n.addAnotherIdea,
+                        : isTaskResultMode
+                            ? l10n.enterTaskResult
+                            : newSubmissions == 0
+                                ? l10n.shareYourIdea
+                                : l10n.addAnotherIdea,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -414,7 +442,11 @@ class ProposingStatePanel extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         else
-                          Text(newSubmissions == 0 ? l10n.submit : l10n.addProposition),
+                          Text(isTaskResultMode
+                              ? l10n.submitResult
+                              : forceConsensusMode
+                                  ? l10n.forceConsensus
+                                  : (newSubmissions == 0 ? l10n.submit : l10n.addProposition)),
                         if (phaseEndsAt != null && !isSubmitting) ...[
                           const SizedBox(width: 4),
                           const Text('('),
@@ -430,7 +462,7 @@ class ProposingStatePanel extends StatelessWidget {
                   ),
                 ),
                 // Show skip button if user can skip and hasn't submitted yet
-                if (canSkip && newSubmissions == 0 && maxSkips > 0) ...[
+                if (canSkip && newSubmissions == 0 && maxSkips > 0 && !isTaskResultMode) ...[
                   const SizedBox(width: 8),
                   OutlinedButton(
                     key: const Key('skip-proposing-button'),
@@ -484,6 +516,21 @@ class ProposingStatePanel extends StatelessWidget {
                   ),
                 ],
               ],
+            ),
+          ],
+
+          // Host force consensus checkbox
+          if (onForceConsensusModeChanged != null && !isTaskResultMode) ...[
+            const SizedBox(height: 8),
+            const Divider(),
+            CheckboxListTile(
+              key: const Key('force-consensus-checkbox'),
+              value: forceConsensusMode,
+              onChanged: (value) => onForceConsensusModeChanged?.call(value ?? false),
+              title: Text(l10n.forceAsConsensus),
+              subtitle: Text(l10n.forceAsConsensusDescription),
+              dense: true,
+              controlAffinity: ListTileControlAffinity.leading,
             ),
           ],
 
@@ -669,6 +716,15 @@ class RatingStatePanel extends StatelessWidget {
   final bool isHost;
   final VoidCallback? onAdvancePhase;
   final bool isPaused;
+  // Skip rating feature
+  final VoidCallback? onSkipRating;
+  final bool canSkipRating;
+  final int ratingSkipCount;
+  final int maxRatingSkips;
+  final bool hasSkippedRating;
+  final bool isSkipping;
+  // Credit/funding
+  final bool isFunded;
 
   const RatingStatePanel({
     super.key,
@@ -682,11 +738,33 @@ class RatingStatePanel extends StatelessWidget {
     this.isHost = false,
     this.onAdvancePhase,
     this.isPaused = false,
+    this.onSkipRating,
+    this.canSkipRating = false,
+    this.ratingSkipCount = 0,
+    this.maxRatingSkips = 0,
+    this.hasSkippedRating = false,
+    this.isSkipping = false,
+    this.isFunded = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // Spectator mode: show banner and disable interaction
+    if (!isFunded) {
+      return Container(
+        key: const Key('rating-state-panel'),
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SpectatorBanner(phaseEndsAt: phaseEndsAt, onPhaseExpired: onPhaseExpired),
+          ],
+        ),
+      );
+    }
+
     return Container(
       key: const Key('rating-state-panel'),
       padding: const EdgeInsets.all(16),
@@ -729,29 +807,100 @@ class RatingStatePanel extends StatelessWidget {
                 ],
               ),
             )
-          else ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                key: const Key('start-rating-button'),
-                onPressed: isPaused ? null : onStartRating,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
-                    if (phaseEndsAt != null) ...[
-                      const SizedBox(width: 4),
-                      const Text('('),
-                      CountdownTimer(
-                        endsAt: phaseEndsAt!,
-                        onExpired: onPhaseExpired,
-                        showIcon: false,
-                      ),
-                      const Text(')'),
-                    ],
-                  ],
-                ),
+          // Show skipped indicator if user has skipped rating
+          else if (hasSkippedRating) ...[
+            Container(
+              key: const Key('rating-skipped-indicator'),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.secondaryContainer.withAlpha(50),
+                borderRadius: BorderRadius.circular(8),
               ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.skip_next,
+                    color: Theme.of(context).colorScheme.secondary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    l10n.skipped,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  l10n.waitingForRatingPhaseEnd,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                if (phaseEndsAt != null) ...[
+                  const SizedBox(width: 4),
+                  Text(
+                    '(',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                  CountdownTimer(
+                    endsAt: phaseEndsAt!,
+                    onExpired: onPhaseExpired,
+                    showIcon: false,
+                  ),
+                  Text(
+                    ')',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ],
+            ),
+          ]
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    key: const Key('start-rating-button'),
+                    onPressed: isPaused ? null : onStartRating,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
+                        if (phaseEndsAt != null) ...[
+                          const SizedBox(width: 4),
+                          const Text('('),
+                          CountdownTimer(
+                            endsAt: phaseEndsAt!,
+                            onExpired: onPhaseExpired,
+                            showIcon: false,
+                          ),
+                          const Text(')'),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+                // Show skip button if user can skip and hasn't started rating
+                if (canSkipRating && !hasStartedRating && maxRatingSkips > 0) ...[
+                  const SizedBox(width: 8),
+                  OutlinedButton(
+                    key: const Key('skip-rating-button'),
+                    onPressed: isPaused || isSkipping ? null : onSkipRating,
+                    child: Text(l10n.skip),
+                  ),
+                ],
+              ],
             ),
           ],
 
@@ -826,6 +975,155 @@ class HostPausedBanner extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Banner shown to unfunded participants who are spectating a round.
+class _SpectatorBanner extends StatelessWidget {
+  final DateTime? phaseEndsAt;
+  final VoidCallback? onPhaseExpired;
+
+  const _SpectatorBanner({this.phaseEndsAt, this.onPhaseExpired});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.3),
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.visibility,
+                color: theme.colorScheme.onSurfaceVariant,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  l10n.spectatingInsufficientCredits,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (phaseEndsAt != null) ...[
+          const SizedBox(height: 8),
+          CountdownTimer(
+            endsAt: phaseEndsAt!,
+            onExpired: onPhaseExpired,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Panel displayed when a round is paused due to insufficient credits.
+class CreditPausedPanel extends StatelessWidget {
+  final bool isHost;
+  final int creditBalance;
+  final int activeParticipantCount;
+  final VoidCallback? onBuyCredits;
+
+  const CreditPausedPanel({
+    super.key,
+    required this.isHost,
+    required this.creditBalance,
+    required this.activeParticipantCount,
+    this.onBuyCredits,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+
+    return Container(
+      key: const Key('credit-paused-panel'),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                size: 20,
+                color: theme.colorScheme.error,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                l10n.creditPausedTitle,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.errorContainer.withAlpha(50),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: theme.colorScheme.error.withAlpha(50),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.creditBalance(creditBalance),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.creditsNeeded(activeParticipantCount),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (isHost && onBuyCredits != null)
+            ElevatedButton.icon(
+              key: const Key('buy-credits-button'),
+              onPressed: onBuyCredits,
+              icon: const Icon(Icons.shopping_cart),
+              label: Text(l10n.buyMoreCredits),
+            )
+          else if (!isHost)
+            Text(
+              l10n.waitingForHostCredits,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
         ],
       ),
     );

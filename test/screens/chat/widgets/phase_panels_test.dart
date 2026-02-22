@@ -872,6 +872,315 @@ void main() {
     });
   });
 
+  group('RatingStatePanel - Skip Rating', () {
+    testWidgets('shows skip button when canSkipRating is true and maxRatingSkips > 0',
+        (tester) async {
+      var skipCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            hasStartedRating: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            canSkipRating: true,
+            maxRatingSkips: 2,
+            onSkipRating: () => skipCalled = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show both Start Rating and Skip buttons
+      expect(find.text('Start Rating'), findsOneWidget);
+      expect(find.byKey(const Key('skip-rating-button')), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
+
+      // Tapping skip should call onSkipRating
+      await tester.tap(find.text('Skip'));
+      expect(skipCalled, isTrue);
+    });
+
+    testWidgets('hides skip button when canSkipRating is false',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            hasStartedRating: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            canSkipRating: false,
+            maxRatingSkips: 2,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start Rating'), findsOneWidget);
+      expect(find.byKey(const Key('skip-rating-button')), findsNothing);
+    });
+
+    testWidgets('hides skip button when maxRatingSkips is 0',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            hasStartedRating: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            canSkipRating: true,
+            maxRatingSkips: 0, // No skips allowed
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Start Rating'), findsOneWidget);
+      expect(find.byKey(const Key('skip-rating-button')), findsNothing);
+    });
+
+    testWidgets('hides skip button when hasStartedRating is true',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            hasStartedRating: true, // Already started
+            propositionCount: 5,
+            onStartRating: () {},
+            canSkipRating: true,
+            maxRatingSkips: 2,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Continue Rating'), findsOneWidget);
+      expect(find.byKey(const Key('skip-rating-button')), findsNothing);
+    });
+
+    testWidgets('shows skipped indicator when hasSkippedRating is true',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            hasSkippedRating: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Should show skipped indicator
+      expect(find.byKey(const Key('rating-skipped-indicator')), findsOneWidget);
+      expect(find.text('Skipped'), findsOneWidget);
+      // Should show waiting message
+      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // Should NOT show Start Rating button
+      expect(find.byKey(const Key('start-rating-button')), findsNothing);
+    });
+
+    testWidgets('shows countdown timer in skipped indicator when phaseEndsAt is set',
+        (tester) async {
+      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 3));
+
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            hasSkippedRating: true,
+            phaseEndsAt: phaseEndsAt,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byKey(const Key('rating-skipped-indicator')), findsOneWidget);
+      // Timer should show minutes
+      expect(find.textContaining('m'), findsWidgets);
+    });
+
+    testWidgets('disables skip button when isPaused is true',
+        (tester) async {
+      var skipCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            canSkipRating: true,
+            maxRatingSkips: 2,
+            onSkipRating: () => skipCalled = true,
+            isPaused: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Skip button should be disabled when paused
+      final skipButton = tester.widget<OutlinedButton>(
+        find.byKey(const Key('skip-rating-button')),
+      );
+      expect(skipButton.onPressed, isNull);
+
+      await tester.tap(find.byKey(const Key('skip-rating-button')));
+      expect(skipCalled, isFalse);
+    });
+
+    testWidgets('default skip values show no skip button',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          RatingStatePanel(
+            roundCustomId: 1,
+            hasRated: false,
+            propositionCount: 5,
+            onStartRating: () {},
+            // All skip params at defaults
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // By default canSkipRating=false and maxRatingSkips=0, so no skip button
+      expect(find.byKey(const Key('skip-rating-button')), findsNothing);
+      expect(find.text('Start Rating'), findsOneWidget);
+    });
+  });
+
+  group('ProposingStatePanel - Task Result Mode', () {
+    testWidgets('hides skip button in task result mode', (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isTaskResultMode: true,
+            canSkip: true,
+            maxSkips: 5,
+            onSkip: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Skip button should be hidden in task result mode
+      expect(find.byKey(const Key('skip-proposing-button')), findsNothing);
+      expect(find.text('Skip'), findsNothing);
+    });
+
+    testWidgets('hides force consensus checkbox in task result mode',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isTaskResultMode: true,
+            onForceConsensusModeChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Force consensus checkbox should be hidden
+      expect(find.byKey(const Key('force-consensus-checkbox')), findsNothing);
+      expect(find.text('Force as Consensus'), findsNothing);
+    });
+
+    testWidgets('shows "Submit Result" button text in task result mode',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isTaskResultMode: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Submit Result'), findsOneWidget);
+      expect(find.text('Submit'), findsNothing);
+    });
+
+    testWidgets('shows task result hint text in task result mode',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () {},
+            isTaskResultMode: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Enter task result...'), findsOneWidget);
+      expect(find.text('Share your idea...'), findsNothing);
+    });
+
+    testWidgets('submit fires callback in task result mode', (tester) async {
+      final controller = TextEditingController();
+      var submitCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [],
+            propositionController: controller,
+            onSubmit: () => submitCalled = true,
+            isTaskResultMode: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Submit Result'));
+      expect(submitCalled, isTrue);
+    });
+  });
+
   group('RatingStatePanel - Countdown Timer After Rating', () {
     testWidgets('shows countdown timer after completing rating',
         (tester) async {

@@ -97,3 +97,27 @@ policy = "oneshot"
 # Disable JWT verification for translate function (workaround for ES256 bug in local dev)
 verify_jwt = false
 
+[functions.create-checkout-session]
+# Disable JWT verification — function handles its own auth via getUser()
+verify_jwt = false
+
+[functions.submit-ratings]
+# Disable JWT verification — function handles its own auth via getUser()
+verify_jwt = false
+
+[functions.agent-orchestrator]
+# Disable JWT verification — trigger uses pg_net with service role key, not gateway auth
+verify_jwt = false
+
+[functions.agent-propose]
+# Disable JWT verification — uses custom API key auth (onemind_sk_*), not JWTs
+verify_jwt = false
+
+[functions.submit-proposition]
+# Disable JWT verification — accepts service role calls from agent-propose
+verify_jwt = false
+
+[functions.moltbook-agent]
+# Disable JWT verification — cron-invoked, uses X-Cron-Secret for auth
+verify_jwt = false
+

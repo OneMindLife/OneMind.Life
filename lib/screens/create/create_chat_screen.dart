@@ -10,8 +10,7 @@ import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
 // NOTE: AdaptiveDurationSection hidden - see docs/FEATURE_REQUESTS.md
 // import 'widgets/adaptive_duration_section.dart';
-// NOTE: AISection hidden - not implemented yet
-// import 'widgets/ai_section.dart';
+import 'widgets/agent_section.dart';
 import 'widgets/auto_advance_section.dart';
 import 'widgets/basic_info_section.dart';
 import 'widgets/consensus_section.dart';
@@ -65,8 +64,10 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
       state.AdaptiveDurationSettings.defaults();
   // Schedule: one-time, 1 hour in future (schedule is hidden by default)
   state.ScheduleSettings _scheduleSettings = state.ScheduleSettings.defaults();
-  // AI settings hidden - not implemented yet
+  // AI proposer retired - always disabled
   final state.AISettings _aiSettings = state.AISettings.defaults();
+  // Agent settings - configurable via UI
+  state.AgentSettings _agentSettings = state.AgentSettings.defaults();
   state.ConsensusSettings _consensusSettings =
       state.ConsensusSettings.defaults();
 
@@ -219,13 +220,25 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         proposingThresholdCount: _autoAdvanceSettings.enableProposing
             ? _autoAdvanceSettings.proposingThresholdCount
             : null,
-        ratingThresholdPercent: null, // Removed - only count threshold used for rating
+        ratingThresholdPercent: 100, // 100% = all eligible raters must rate (capped to participants-1)
         ratingThresholdCount: _autoAdvanceSettings.enableRating
             ? _autoAdvanceSettings.ratingThresholdCount
             : null,
-        enableAiParticipant: _aiSettings.enabled,
-        aiPropositionsCount:
-            _aiSettings.enabled ? _aiSettings.propositionCount : null,
+        enableAiParticipant: false, // AI proposer retired
+        aiPropositionsCount: null,
+        enableAgents: _agentSettings.enabled,
+        proposingAgentCount: _agentSettings.proposingAgentCount,
+        ratingAgentCount: _agentSettings.useSameCount
+            ? _agentSettings.proposingAgentCount
+            : _agentSettings.ratingAgentCount,
+        agentInstructions: _agentSettings.sharedInstructions.isNotEmpty
+            ? _agentSettings.sharedInstructions
+            : null,
+        agentConfigs: _agentSettings.customizeIndividually
+            ? _agentSettings.agents
+                .map((a) => a.toJson())
+                .toList()
+            : null,
         confirmationRoundsRequired:
             _consensusSettings.confirmationRoundsRequired,
         showPreviousResults: _consensusSettings.showPreviousResults,
@@ -283,7 +296,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
       // Log analytics event
       ref.read(analyticsServiceProvider).logChatCreated(
         chatId: chat.id.toString(),
-        hasAiParticipant: _aiSettings.enabled,
+        hasAiParticipant: _agentSettings.enabled,
         confirmationRounds: _consensusSettings.confirmationRoundsRequired,
         autoAdvanceProposing: _autoAdvanceSettings.enableProposing,
         autoAdvanceRating: _autoAdvanceSettings.enableRating,
@@ -298,7 +311,9 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
           onContinue: () => Navigator.pop(context, chat),
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[CreateChatScreen] Error creating chat: $e');
+      debugPrint('[CreateChatScreen] Stack trace: $stackTrace');
       if (mounted) {
         context.showErrorSnackBar(e);
       }
@@ -410,12 +425,11 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
             //     });
             //   },
             // ),
-            // NOTE: AISection hidden - not implemented yet
-            // const SizedBox(height: 32),
-            // AISection(
-            //   settings: _aiSettings,
-            //   onChanged: (v) => setState(() => _aiSettings = v),
-            // ),
+            const SizedBox(height: 32),
+            AgentSection(
+              settings: _agentSettings,
+              onChanged: (v) => setState(() => _agentSettings = v),
+            ),
             // PropositionLimitsSection hidden - default to 1 proposition per user
             // PropositionLimitsSection(
             //   propositionsPerUser: _consensusSettings.propositionsPerUser,
@@ -429,7 +443,29 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
               settings: _consensusSettings,
               onChanged: (v) => setState(() => _consensusSettings = v),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.toll, size: 18, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '50 free credits included (1 credit = 1 participant per round)',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _isLoading ? null : _createChat,
               child: _isLoading

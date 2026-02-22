@@ -190,9 +190,8 @@ class AdaptiveDurationSettings extends Equatable {
       ];
 }
 
-/// AI participant settings
-/// AI is always enabled by default and generates 1 proposition per round.
-/// The UI section is hidden - this is controlled at the database level.
+/// AI participant settings (DEPRECATED - use AgentSettings instead)
+/// Kept for backward compatibility during transition.
 class AISettings extends Equatable {
   final bool enabled;
   final int propositionCount;
@@ -203,8 +202,8 @@ class AISettings extends Equatable {
   });
 
   factory AISettings.defaults() => const AISettings(
-        enabled: true,  // AI always enabled by default
-        propositionCount: 1,  // One thoughtful proposition per round
+        enabled: false,  // Deprecated - always disabled
+        propositionCount: 1,
       );
 
   AISettings copyWith({
@@ -219,6 +218,115 @@ class AISettings extends Equatable {
 
   @override
   List<Object?> get props => [enabled, propositionCount];
+}
+
+/// Configuration for a single AI agent
+class AgentConfig extends Equatable {
+  final String name;
+  final String personality;
+
+  const AgentConfig({
+    required this.name,
+    this.personality = '',
+  });
+
+  AgentConfig copyWith({
+    String? name,
+    String? personality,
+  }) {
+    return AgentConfig(
+      name: name ?? this.name,
+      personality: personality ?? this.personality,
+    );
+  }
+
+  Map<String, String> toJson() => {
+        'name': name,
+        'personality': personality,
+      };
+
+  @override
+  List<Object?> get props => [name, personality];
+}
+
+/// Settings for AI agents in a chat
+class AgentSettings extends Equatable {
+  final bool enabled;
+  final bool customizeIndividually;
+  final bool useSameCount;
+  final int proposingAgentCount;
+  final int ratingAgentCount;
+  final String sharedInstructions;
+  final List<AgentConfig> agents;
+
+  const AgentSettings({
+    required this.enabled,
+    required this.customizeIndividually,
+    required this.useSameCount,
+    required this.proposingAgentCount,
+    required this.ratingAgentCount,
+    required this.sharedInstructions,
+    required this.agents,
+  });
+
+  factory AgentSettings.defaults() => const AgentSettings(
+        enabled: false,
+        customizeIndividually: false,
+        useSameCount: true,
+        proposingAgentCount: 1,
+        ratingAgentCount: 1,
+        sharedInstructions: '',
+        agents: [AgentConfig(name: 'Agent 1')],
+      );
+
+  /// Returns a copy with updated count, growing/shrinking agents list to match.
+  AgentSettings withCount(int count) {
+    final clampedCount = count.clamp(1, 5);
+    return copyWith(
+      proposingAgentCount: clampedCount,
+      ratingAgentCount: useSameCount ? clampedCount : ratingAgentCount,
+      agents: List.generate(
+        clampedCount,
+        (i) => i < agents.length
+            ? agents[i]
+            : AgentConfig(name: 'Agent ${i + 1}'),
+      ),
+    );
+  }
+
+  AgentSettings copyWith({
+    bool? enabled,
+    bool? customizeIndividually,
+    bool? useSameCount,
+    int? proposingAgentCount,
+    int? ratingAgentCount,
+    String? sharedInstructions,
+    List<AgentConfig>? agents,
+  }) {
+    return AgentSettings(
+      enabled: enabled ?? this.enabled,
+      customizeIndividually:
+          customizeIndividually ?? this.customizeIndividually,
+      useSameCount: useSameCount ?? this.useSameCount,
+      proposingAgentCount:
+          proposingAgentCount ?? this.proposingAgentCount,
+      ratingAgentCount: ratingAgentCount ?? this.ratingAgentCount,
+      sharedInstructions:
+          sharedInstructions ?? this.sharedInstructions,
+      agents: agents ?? this.agents,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        enabled,
+        customizeIndividually,
+        useSameCount,
+        proposingAgentCount,
+        ratingAgentCount,
+        sharedInstructions,
+        agents,
+      ];
 }
 
 /// Consensus and results settings

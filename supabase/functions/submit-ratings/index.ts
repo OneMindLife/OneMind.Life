@@ -82,6 +82,29 @@ Deno.serve(async (req: Request) => {
     return corsErrorResponse("Participant not active", req, 403);
   }
 
+  // 0. Check if participant is funded for this round
+  const { data: isFunded, error: fundedErr2 } = await supabase
+    .rpc("is_participant_funded", { p_round_id: round_id, p_participant_id: participant_id });
+
+  if (fundedErr2) {
+    console.error("Funding check error:", fundedErr2);
+    return corsErrorResponse("Funding check failed", req, 500);
+  }
+
+  if (isFunded === false) {
+    const { data: fundedCount } = await supabase
+      .rpc("get_funded_participant_count", { p_round_id: round_id });
+
+    if (fundedCount && fundedCount > 0) {
+      return corsErrorResponse(
+        "Insufficient credits — spectating this round",
+        req,
+        403,
+        "NOT_FUNDED",
+      );
+    }
+  }
+
   // 1. Check round exists and is in rating phase
   const { data: round, error: roundErr } = await supabase
    .from("rounds")

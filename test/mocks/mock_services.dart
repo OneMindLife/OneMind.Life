@@ -107,7 +107,7 @@ extension MockChatServiceSetup on MockChatService {
   }
 
   /// Setup getConsensusItems
-  void setupGetConsensusItems(int chatId, List<Proposition> items) {
+  void setupGetConsensusItems(int chatId, List<ConsensusItem> items) {
     when(() => getConsensusItems(chatId)).thenAnswer((_) async => items);
   }
 

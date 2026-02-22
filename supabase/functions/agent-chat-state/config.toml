@@ -1,0 +1,5 @@
+# Agent-chat-state uses custom API key auth (onemind_sk_*), not JWT.
+# verify_jwt must be false so the gateway doesn't reject non-JWT tokens.
+
+[function]
+verify_jwt = false

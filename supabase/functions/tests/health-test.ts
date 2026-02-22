@@ -5,7 +5,7 @@
 //
 // This test validates that the health function properly checks for:
 // - Database connectivity
-// - Required secrets configuration (CRON_SECRET, STRIPE_SECRET_KEY, ANTHROPIC_API_KEY)
+// - Required secrets configuration (CRON_SECRET, STRIPE_SECRET_KEY, NVIDIA_API_KEY)
 
 import {
   assertEquals,
@@ -24,7 +24,7 @@ Deno.test("health check - secrets validation logic", async (t) => {
   const REQUIRED_SECRETS = [
     { name: "CRON_SECRET", desc: "Cron job authentication", critical: true },
     { name: "STRIPE_SECRET_KEY", desc: "Payment processing", critical: false },
-    { name: "ANTHROPIC_API_KEY", desc: "AI translations", critical: false },
+    { name: "NVIDIA_API_KEY", desc: "AI translations (Kimi K2.5 via NVIDIA)", critical: false },
   ];
 
   await t.step("identifies missing secrets correctly", () => {
@@ -32,7 +32,7 @@ Deno.test("health check - secrets validation logic", async (t) => {
     const mockEnv: Record<string, string | undefined> = {
       "CRON_SECRET": undefined,
       "STRIPE_SECRET_KEY": "sk_test_xxx",
-      "ANTHROPIC_API_KEY": undefined,
+      "NVIDIA_API_KEY": undefined,
     };
 
     const missingSecrets: string[] = [];
@@ -57,7 +57,7 @@ Deno.test("health check - secrets validation logic", async (t) => {
     const mockEnv: Record<string, string | undefined> = {
       "CRON_SECRET": "test-secret",
       "STRIPE_SECRET_KEY": "sk_test_xxx",
-      "ANTHROPIC_API_KEY": "sk-ant-xxx",
+      "NVIDIA_API_KEY": "nvapi-xxx",
     };
 
     const missingSecrets: string[] = [];
@@ -76,7 +76,7 @@ Deno.test("health check - secrets validation logic", async (t) => {
     const mockEnv: Record<string, string | undefined> = {
       "CRON_SECRET": "",
       "STRIPE_SECRET_KEY": "sk_test_xxx",
-      "ANTHROPIC_API_KEY": "sk-ant-xxx",
+      "NVIDIA_API_KEY": "nvapi-xxx",
     };
 
     const missingSecrets: string[] = [];
@@ -173,9 +173,9 @@ Deno.test("health check - response structure", async (t) => {
 //    - Purpose: Payment processing for credits system
 //    - Value: From Stripe Dashboard > API Keys
 //
-// 3. ANTHROPIC_API_KEY
+// 3. NVIDIA_API_KEY
 //    - Purpose: AI-powered translations
-//    - Value: From Anthropic Console
+//    - Value: From NVIDIA Developer Program (build.nvidia.com)
 //
 // To set secrets:
 // 1. Go to Supabase Dashboard > Edge Functions > Manage Secrets

@@ -7,6 +7,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:onemind_app/models/models.dart';
+import 'package:onemind_app/models/chat_credits.dart';
 import 'package:onemind_app/providers/providers.dart';
 import 'package:onemind_app/providers/chat_providers.dart';
 import 'package:onemind_app/core/l10n/locale_provider.dart';
@@ -176,7 +177,31 @@ class FakeChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   Future<void> resumeChat() async {}
 
   @override
+  Future<void> deleteConsensusOnServer(int cycleId) async {}
+
+  @override
+  void onConsensusDismissed(int cycleId) {}
+
+  @override
+  Future<void> deleteTaskResultOnServer(int cycleId) async {}
+
+  @override
+  void onTaskResultDismissed(int cycleId) {}
+
+  @override
+  Future<void> forceConsensus(String content) async {}
+
+  @override
+  Future<void> updateInitialMessage(String newMessage) async {}
+
+  @override
+  Future<void> deleteInitialMessage() async {}
+
+  @override
   Future<void> skipProposing() async {}
+
+  @override
+  Future<void> skipRating() async {}
 }
 
 void main() {
@@ -283,7 +308,7 @@ void main() {
     Participant? myParticipant,
     List<Proposition>? propositions,
     List<Proposition>? myPropositions,
-    List<Proposition>? consensusItems,
+    List<ConsensusItem>? consensusItems,
     List<RoundWinner>? previousRoundWinners,
     List<Proposition>? previousRoundResults,
     List<Map<String, dynamic>>? pendingJoinRequests,
@@ -293,6 +318,8 @@ void main() {
     int consecutiveSoleWins = 0,
     int? previousRoundId,
     bool isDeleted = false,
+    ChatCredits? chatCredits,
+    bool isMyParticipantFunded = true,
   }) {
     return ChatDetailState(
       chat: chat ?? ChatFixtures.model(),
@@ -312,6 +339,8 @@ void main() {
       consecutiveSoleWins: consecutiveSoleWins,
       previousRoundId: previousRoundId,
       isDeleted: isDeleted,
+      chatCredits: chatCredits,
+      isMyParticipantFunded: isMyParticipantFunded,
     );
   }
 
@@ -538,8 +567,8 @@ void main() {
       testWidgets('displays consensus items', (tester) async {
         final chat = ChatFixtures.model();
         final consensusItems = [
-          PropositionFixtures.winner(id: 1, content: 'First consensus'),
-          PropositionFixtures.winner(id: 2, content: 'Second consensus'),
+          ConsensusItem(cycleId: 1, proposition: PropositionFixtures.winner(id: 1, content: 'First consensus')),
+          ConsensusItem(cycleId: 2, proposition: PropositionFixtures.winner(id: 2, content: 'Second consensus')),
         ];
         final participant = ParticipantFixtures.model();
 
@@ -556,6 +585,83 @@ void main() {
         // The consensus items should show in the ListView
         expect(find.text('First consensus'), findsOneWidget);
         expect(find.text('Second consensus'), findsOneWidget);
+      });
+
+      testWidgets('displays task result card when present', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'List 5 DAOs with public emails'),
+            taskResult: 'Summary: Found Uniswap DAO, Aave DAO...',
+          ),
+        ];
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // The consensus content should show
+        expect(find.text('List 5 DAOs with public emails'), findsOneWidget);
+        // The research results header should show (collapsed by default)
+        expect(find.text('Research Results'), findsOneWidget);
+      });
+
+      testWidgets('hides task result card when null', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'Some consensus'),
+          ),
+        ];
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Some consensus'), findsOneWidget);
+        expect(find.text('Research Results'), findsNothing);
+      });
+
+      testWidgets('task result card expands to show content', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'Research task'),
+            taskResult: 'Summary: Found relevant results here',
+          ),
+        ];
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Tap to expand
+        await tester.tap(find.text('Research Results'));
+        await tester.pumpAndSettle();
+
+        // Content should now be visible
+        expect(find.text('Summary: Found relevant results here'), findsOneWidget);
       });
     });
 
@@ -1308,6 +1414,467 @@ void main() {
           find.text('The timer is stopped. Tap Resume in the app bar to continue.'),
           findsOneWidget,
         );
+      });
+    });
+
+    group('Credit UI', () {
+      // Helper to create a ChatCredits instance for tests
+      ChatCredits testCredits({int balance = 50, int chatId = 1}) {
+        return ChatCredits(
+          id: 1,
+          chatId: chatId,
+          creditBalance: balance,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        );
+      }
+
+      group('Spectator mode', () {
+        testWidgets('unfunded participant sees spectator banner during proposing',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final round = RoundFixtures.proposing();
+
+          final state = createTestState(
+            chat: chat,
+            round: round,
+            isMyParticipantFunded: false,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show spectator banner
+          expect(find.text('Spectating — insufficient credits'), findsOneWidget);
+          // Should NOT show proposition input
+          expect(find.byKey(const Key('proposition-input')), findsNothing);
+        });
+
+        testWidgets('unfunded participant sees spectator banner during rating',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final round = RoundFixtures.rating();
+
+          final state = createTestState(
+            chat: chat,
+            round: round,
+            isMyParticipantFunded: false,
+            hasRated: false,
+            hasStartedRating: true, // Prevent auto-navigate to rating screen
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show spectator banner
+          expect(find.text('Spectating — insufficient credits'), findsOneWidget);
+          // Should NOT show rate button
+          expect(find.byKey(const Key('start-rating-button')), findsNothing);
+        });
+
+        testWidgets('funded participant sees normal proposing panel',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final round = RoundFixtures.proposing();
+
+          final state = createTestState(
+            chat: chat,
+            round: round,
+            isMyParticipantFunded: true,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show text field, no spectator banner
+          expect(find.byKey(const Key('proposition-input')), findsOneWidget);
+          expect(find.text('Spectating — insufficient credits'), findsNothing);
+        });
+
+        testWidgets('funded participant sees normal rating panel',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final round = RoundFixtures.rating();
+
+          final state = createTestState(
+            chat: chat,
+            round: round,
+            isMyParticipantFunded: true,
+            hasStartedRating: true, // Prevent auto-navigate
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show continue rating button, no spectator banner
+          expect(find.text('Continue Rating'), findsOneWidget);
+          expect(find.text('Spectating — insufficient credits'), findsNothing);
+        });
+      });
+
+      group('Credit-paused', () {
+        testWidgets('credit-paused round shows credit paused panel for host',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host();
+          final participants = ParticipantFixtures.list(count: 3);
+
+          final state = createTestState(
+            chat: chat,
+            myParticipant: hostParticipant,
+            participants: participants,
+            chatCredits: testCredits(balance: 0), // Can't afford 3 participants
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show credit paused panel
+          expect(find.byKey(const Key('credit-paused-panel')), findsOneWidget);
+          expect(find.text('Paused — Insufficient Credits'), findsOneWidget);
+          expect(find.text('Balance: 0 credits'), findsOneWidget);
+          // Host sees buy button
+          expect(find.byKey(const Key('buy-credits-button')), findsOneWidget);
+        });
+
+        testWidgets('credit-paused round shows waiting message for non-host',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final nonHostParticipant = ParticipantFixtures.model();
+          final participants = ParticipantFixtures.list(count: 3);
+
+          final state = createTestState(
+            chat: chat,
+            myParticipant: nonHostParticipant,
+            participants: participants,
+            chatCredits: testCredits(balance: 0),
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show credit paused panel with non-host message
+          expect(find.byKey(const Key('credit-paused-panel')), findsOneWidget);
+          expect(find.text('Waiting for host to add credits'), findsOneWidget);
+          // Should NOT show buy button
+          expect(find.byKey(const Key('buy-credits-button')), findsNothing);
+        });
+
+        testWidgets('normal waiting round shows participant counter when credits sufficient',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final participants = ParticipantFixtures.list(count: 3);
+
+          final state = createTestState(
+            chat: chat,
+            participants: participants,
+            chatCredits: testCredits(balance: 50), // Can afford 3 participants
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show waiting panel, not credit-paused
+          expect(find.byKey(const Key('waiting-state-panel')), findsOneWidget);
+          expect(find.byKey(const Key('credit-paused-panel')), findsNothing);
+        });
+      });
+
+      // Credit chip is currently hidden from UI
+      group('Credit balance chip', skip: 'Credit chip hidden from UI', () {
+        testWidgets('host sees credit balance chip in AppBar',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host();
+
+          final state = createTestState(
+            chat: chat,
+            myParticipant: hostParticipant,
+            chatCredits: testCredits(balance: 47),
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show chip with balance
+          expect(find.byKey(const Key('credit-balance-chip')), findsOneWidget);
+          expect(find.text('47'), findsOneWidget);
+        });
+
+        testWidgets('non-host does not see credit balance chip',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final nonHostParticipant = ParticipantFixtures.model();
+
+          final state = createTestState(
+            chat: chat,
+            myParticipant: nonHostParticipant,
+            chatCredits: testCredits(balance: 47),
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should NOT show chip
+          expect(find.byKey(const Key('credit-balance-chip')), findsNothing);
+        });
+
+        testWidgets('credit chip shows warning color when low',
+            (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host();
+          final participants = ParticipantFixtures.list(count: 5);
+
+          final state = createTestState(
+            chat: chat,
+            myParticipant: hostParticipant,
+            participants: participants,
+            chatCredits: testCredits(balance: 2), // Less than 5 participants
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          // Should show chip
+          expect(find.byKey(const Key('credit-balance-chip')), findsOneWidget);
+          expect(find.text('2'), findsOneWidget);
+
+          // Verify the chip has amber/warning styling
+          final chipContainer = tester.widget<Container>(
+            find.descendant(
+              of: find.byKey(const Key('credit-balance-chip')),
+              matching: find.byType(Container),
+            ).first,
+          );
+          final decoration = chipContainer.decoration as BoxDecoration;
+          expect(decoration.color, Colors.amber.shade100);
+        });
+      });
+    });
+
+    group('Host Force Consensus', () {
+      testWidgets('host sees force consensus checkbox in proposing phase', (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+
+        final state = createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          myParticipant: hostParticipant,
+          isMyParticipantFunded: true,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('force-consensus-checkbox')), findsOneWidget);
+      });
+
+      testWidgets('non-host does not see force consensus checkbox', (tester) async {
+        final chat = ChatFixtures.model();
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          myParticipant: participant,
+          isMyParticipantFunded: true,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('force-consensus-checkbox')), findsNothing);
+      });
+
+      testWidgets('host-overridden consensus shows host name instead of Consensus #N', (tester) async {
+        final chat = ChatFixtures.model();
+        final participant = ParticipantFixtures.model();
+
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'Normal consensus'),
+            isHostOverride: false,
+          ),
+          ConsensusItem(
+            cycleId: 2,
+            proposition: PropositionFixtures.winner(id: 2, content: 'Host forced this'),
+            isHostOverride: true,
+          ),
+        ];
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Normal consensus shows "Consensus #1"
+        expect(find.text('Consensus #1'), findsOneWidget);
+
+        // Host-overridden shows "Host" (since hostDisplayName is null in fixture)
+        expect(find.text('Host'), findsOneWidget);
+
+        // Should NOT show "Consensus #2" for the overridden one
+        expect(find.text('Consensus #2'), findsNothing);
+      });
+
+      testWidgets('regular consensus still shows Consensus #N', (tester) async {
+        final chat = ChatFixtures.model();
+        final participant = ParticipantFixtures.model();
+
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'First idea'),
+            isHostOverride: false,
+          ),
+          ConsensusItem(
+            cycleId: 2,
+            proposition: PropositionFixtures.winner(id: 2, content: 'Second idea'),
+            isHostOverride: false,
+          ),
+        ];
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Consensus #1'), findsOneWidget);
+        expect(find.text('Consensus #2'), findsOneWidget);
+      });
+    });
+
+    group('Consensus Deletion Restriction', () {
+      testWidgets('only last consensus is swipeable for hosts', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(cycleId: 1, proposition: PropositionFixtures.winner(id: 1, content: 'First consensus')),
+          ConsensusItem(cycleId: 2, proposition: PropositionFixtures.winner(id: 2, content: 'Second consensus')),
+        ];
+        final host = ParticipantFixtures.host();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: host,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Last consensus should be wrapped in Dismissible
+        expect(find.byKey(const ValueKey('consensus_2')), findsOneWidget);
+        // First consensus should NOT be wrapped in Dismissible
+        expect(find.byKey(const ValueKey('consensus_1')), findsNothing);
+      });
+
+      testWidgets('no consensus is swipeable for non-hosts', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(cycleId: 1, proposition: PropositionFixtures.winner(id: 1, content: 'First consensus')),
+        ];
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // No Dismissible keys should be present
+        expect(find.byKey(const ValueKey('consensus_1')), findsNothing);
+      });
+
+      testWidgets('single consensus is swipeable for hosts', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(cycleId: 1, proposition: PropositionFixtures.winner(id: 1, content: 'Only consensus')),
+        ];
+        final host = ParticipantFixtures.host();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: host,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Single item is the last item, so it should be swipeable
+        expect(find.byKey(const ValueKey('consensus_1')), findsOneWidget);
+      });
+    });
+
+    group('Task Result Deletion', () {
+      testWidgets('task result on last consensus is swipeable for hosts', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'First'),
+            taskResult: 'First research',
+          ),
+          ConsensusItem(
+            cycleId: 2,
+            proposition: PropositionFixtures.winner(id: 2, content: 'Second'),
+            taskResult: 'Second research',
+          ),
+        ];
+        final host = ParticipantFixtures.host();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: host,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Last task result should be wrapped in Dismissible
+        expect(find.byKey(const ValueKey('task_result_2')), findsOneWidget);
+        // First task result should NOT be wrapped in Dismissible
+        expect(find.byKey(const ValueKey('task_result_1')), findsNothing);
+      });
+
+      testWidgets('task result is not swipeable for non-hosts', (tester) async {
+        final chat = ChatFixtures.model();
+        final consensusItems = [
+          ConsensusItem(
+            cycleId: 1,
+            proposition: PropositionFixtures.winner(id: 1, content: 'Consensus'),
+            taskResult: 'Some research',
+          ),
+        ];
+        final participant = ParticipantFixtures.model();
+
+        final state = createTestState(
+          chat: chat,
+          myParticipant: participant,
+          consensusItems: consensusItems,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // No task result Dismissible should be present
+        expect(find.byKey(const ValueKey('task_result_1')), findsNothing);
+        // But the research results should still show
+        expect(find.text('Research Results'), findsOneWidget);
       });
     });
   });

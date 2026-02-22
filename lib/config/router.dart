@@ -7,7 +7,9 @@ import '../screens/chat/chat_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/join/invite_join_screen.dart';
 import '../screens/legal/legal_document_screen.dart';
+import '../screens/demo/demo_screen.dart';
 import '../screens/tutorial/tutorial_screen.dart';
+import '../utils/seo/seo_meta.dart';
 
 /// Global navigator key for accessing navigator from anywhere
 final rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -27,10 +29,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     observers: observer != null ? [observer] : [],
     // Redirect first-time users to tutorial
     redirect: (context, state) {
+      updateMetaTags(state.matchedLocation);
       final isGoingToTutorial = state.matchedLocation == '/tutorial';
       final isJoinRoute = state.matchedLocation.startsWith('/join');
       final isLegalRoute = state.matchedLocation == '/privacy' ||
           state.matchedLocation == '/terms';
+      final isDemoRoute = state.matchedLocation == '/demo';
 
       // Don't redirect if already going to tutorial
       if (isGoingToTutorial) return null;
@@ -40,6 +44,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Don't redirect legal routes (accessible from tutorial)
       if (isLegalRoute) return null;
+
+      // Don't redirect demo route (accessible without tutorial)
+      if (isDemoRoute) return null;
 
       // Redirect to tutorial if not completed
       if (!hasCompletedTutorial) {
@@ -62,6 +69,27 @@ final routerProvider = Provider<GoRouter>((ref) {
             _tutorialCompletionInProgress = true;
 
             try {
+              // Check if this is a returning user (already completed tutorial,
+              // opened it from "How It Works" button)
+              final isFirstTime = !ref.read(hasCompletedTutorialProvider);
+
+              // Mark tutorial as complete FIRST so user is never stuck
+              // on a broken tutorial screen if network calls fail
+              ref.read(tutorialServiceProvider).markTutorialComplete();
+
+              // Invalidate the provider to trigger rebuild
+              // This will cause the router to rebuild and navigate to '/' automatically
+              ref.invalidate(hasCompletedTutorialProvider);
+
+              if (!isFirstTime) {
+                // Returning user - just navigate back to Home
+                await Future.delayed(const Duration(milliseconds: 100));
+                rootNavigatorKey.currentState?.pop();
+                return;
+              }
+
+              // First-time user: auto-join official chat and navigate
+
               // Check if user came via join link
               final pendingJoinChatId = ref.read(pendingJoinChatIdProvider);
 
@@ -87,27 +115,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               }
 
               // 2. Fetch user's chats and pending requests
-              final chats = await chatService.getMyChats();
-              final pendingRequests =
-                  await participantService.getMyPendingRequests();
-
-              // 3. Check invite status
               Chat? approvedChat;
               bool hasPendingInvite = false;
-              if (pendingJoinChatId != null) {
-                approvedChat = chats
-                    .where((c) => c.id == pendingJoinChatId)
-                    .firstOrNull;
-                hasPendingInvite =
-                    pendingRequests.any((r) => r.chatId == pendingJoinChatId);
+              try {
+                final chats = await chatService.getMyChats();
+                final pendingRequests =
+                    await participantService.getMyPendingRequests();
+
+                // 3. Check invite status
+                if (pendingJoinChatId != null) {
+                  approvedChat = chats
+                      .where((c) => c.id == pendingJoinChatId)
+                      .firstOrNull;
+                  hasPendingInvite =
+                      pendingRequests.any((r) => r.chatId == pendingJoinChatId);
+                }
+              } catch (e) {
+                // Network error fetching chats - user goes to Home anyway
               }
-
-              // Mark tutorial as complete
-              ref.read(tutorialServiceProvider).markTutorialComplete();
-
-              // Invalidate the provider to trigger rebuild
-              // This will cause the router to rebuild and navigate to '/' automatically
-              ref.invalidate(hasCompletedTutorialProvider);
 
               // Wait for router to rebuild and home screen to mount
               await Future.delayed(const Duration(milliseconds: 300));
@@ -147,7 +172,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) {
+          // Support ?chat_id=X for returning from Stripe checkout
+          final chatIdParam = state.uri.queryParameters['chat_id'];
+          final returnToChatId = chatIdParam != null ? int.tryParse(chatIdParam) : null;
+          return HomeScreen(returnToChatId: returnToChatId);
+        },
+      ),
+      // Demo route
+      GoRoute(
+        path: '/demo',
+        name: 'demo',
+        builder: (context, state) => const DemoScreen(),
       ),
       // Legal routes
       GoRoute(
@@ -187,31 +223,34 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
       ),
     ],
-    errorBuilder: (context, state) => Scaffold(
-      appBar: AppBar(title: const Text('Page Not Found')),
-      body: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              'Page not found',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              state.uri.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: () => context.go('/'),
-              child: const Text('Go Home'),
-            ),
-          ],
+    errorBuilder: (context, state) {
+      setNoIndex();
+      return Scaffold(
+        appBar: AppBar(title: const Text('Page Not Found')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(
+                'Page not found',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                state.uri.toString(),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 24),
+              FilledButton(
+                onPressed: () => context.go('/'),
+                child: const Text('Go Home'),
+              ),
+            ],
+          ),
         ),
-      ),
-    ),
+      );
+    },
   );
 });

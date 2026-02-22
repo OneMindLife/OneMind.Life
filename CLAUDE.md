@@ -39,10 +39,6 @@ Screens (UI) → Notifiers (State) → Services (Business Logic) → Supabase (B
 - `ChatService` - Chat CRUD, cycles, rounds, winner calculation
 - `ParticipantService` - Join/leave/kick, approval workflow
 - `PropositionService` - Submit and rate propositions
-- `AnalyticsService` - Firebase Analytics event tracking
-- `BillingService` - Credits and billing operations
-- `InviteService` - Invite codes and email invitations
-- `TutorialService` - Tutorial completion state
 
 **Utils** (`lib/utils/`) - Standalone utility functions:
 - `timezone_utils.dart` - Timezone auto-detection and mapping
@@ -50,7 +46,7 @@ Screens (UI) → Notifiers (State) → Services (Business Logic) → Supabase (B
 **Notifiers** (`lib/providers/notifiers/`) - Stateful controllers with Realtime subscriptions:
 - `MyChatsNotifier` - User's chat list with debounced refresh (150ms)
 - `ChatDetailNotifier` - Individual chat state with phase management
-- `RatingNotifier` - Proposition ranking state
+- `GridRankingNotifier` - Proposition ranking state
 - `PublicChatsNotifier` - Public chat discovery with pagination
 
 **Providers** (`lib/providers/providers.dart`) - Dependency injection:
@@ -123,7 +119,7 @@ setUpAll(() => registerFallbackValues());
 - All services use `auth.uid()` for user identification (RLS enforced)
 - Realtime subscriptions use `PostgresChangeFilter` on user_id or chat_id
 - Services return domain models, not raw JSON
-- Migrations live in `supabase/` with ~1100 pgtap tests
+- Migrations live in `supabase/` with 799 pgtap tests
 
 ## Models
 
@@ -180,6 +176,8 @@ This ensures invited users learn the app before participating, while returning u
 - `lib/services/tutorial_service.dart` - Tutorial completion state (persisted locally)
 
 ## Local Development
+
+See `docs/LOCAL_DEVELOPMENT.md` for detailed instructions.
 
 ### CRITICAL: After Database Reset
 

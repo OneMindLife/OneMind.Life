@@ -6,7 +6,7 @@
 //
 // Process:
 // 1. Fetch context: chat info, consensus history, carried forward propositions
-// 2. Call Claude API with context to generate propositions
+// 2. Call Kimi K2.5 API with context to generate propositions
 // 3. Insert AI propositions with participant_id = NULL
 //
 // AUTH: This function uses internal auth validation (verify_jwt should be false at Supabase level)
@@ -15,7 +15,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import OpenAI from "npm:openai@4.77.0";
 import { z } from "npm:zod@3.23.8";
 import {
   getCorsHeaders,
@@ -29,9 +29,10 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+// Initialize OpenAI client pointing to NVIDIA-hosted Kimi K2.5
+const openai = new OpenAI({
+  apiKey: Deno.env.get("NVIDIA_API_KEY") ?? "",
+  baseURL: "https://integrate.api.nvidia.com/v1",
 });
 
 // Initialize Supabase client with service role for DB operations
@@ -366,9 +367,9 @@ Return ONLY a JSON array of strings, no markdown:
 
       const fullPrompt = prompt + taskPrompt;
 
-      const message = await anthropic.messages.create({
-        model: "claude-opus-4-5-20251101", // Most capable model
-        max_tokens: 1024,
+      const message = await openai.chat.completions.create({
+        model: "moonshotai/kimi-k2.5",
+        max_tokens: 8192, // Kimi K2.5 is a reasoning model — thinking tokens count against this limit
         messages: [
           {
             role: "user",
@@ -378,9 +379,7 @@ Return ONLY a JSON array of strings, no markdown:
       });
 
       // Extract text from response
-      const responseText = message.content[0].type === "text"
-        ? message.content[0].text
-        : "";
+      const responseText = message.choices[0]?.message?.content ?? "";
 
       // Clean up the response
       let cleanedResponse = responseText.trim();

@@ -1,7 +1,8 @@
 # Configuration for submit-proposition Edge Function
 #
-# verify_jwt = true: Supabase gateway verifies JWT signatures before the
-# function is invoked. The function then validates participant ownership.
+# verify_jwt = false: Function validates auth internally (validateAuth).
+# Supports both user JWTs and service role keys (for agent-propose calls).
+# Gateway JWT check blocked service_role tokens, breaking agent flow.
 
 [function]
-verify_jwt = true
+verify_jwt = false

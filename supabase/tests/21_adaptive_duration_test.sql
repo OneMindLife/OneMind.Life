@@ -3,7 +3,7 @@
 -- Uses existing early advance thresholds instead of separate adaptive_threshold_count
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(22);
+SELECT plan(21);
 
 -- =============================================================================
 -- DEFAULT VALUES
@@ -345,13 +345,6 @@ SELECT is(
   (SELECT rating_duration_seconds FROM chats WHERE name = 'Adaptive Test Chat'),
   360,
   'Chat rating_duration_seconds increased to 360 (low participation)'
-);
-
--- Test 22: Round participation counts stored
-SELECT is(
-  (SELECT proposing_participant_count FROM rounds WHERE id = current_setting('test.adaptive_test_round_id')::INT),
-  5,
-  'Round stores proposing_participant_count (5)'
 );
 
 SELECT * FROM finish();

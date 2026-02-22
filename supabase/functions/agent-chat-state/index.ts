@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
     // Get chat info
     const { data: chat, error: chatError } = await supabase
       .from("chats")
-      .select("id, name, propositions_per_user, confirmation_rounds")
+      .select("id, name, initial_message, description, propositions_per_user, confirmation_rounds")
       .eq("id", chatId)
       .single();
 
@@ -290,6 +290,9 @@ Deno.serve(async (req: Request) => {
     return corsJsonResponse(
       {
         chat_id: chatId,
+        chat_name: chat.name,
+        chat_description: chat.description ?? null,
+        chat_initial_message: chat.initial_message ?? null,
         current_round: {
           id: currentRound.id,
           round_number: currentRound.custom_id,

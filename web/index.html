@@ -18,8 +18,8 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The meeting you don't have to schedule. Get your team to consensus in 10 minutes. Anonymous proposals, fair ranking, done. Free, no accounts required.">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
+  <meta name="description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
   <meta name="keywords" content="group decision making tool, team consensus app, anonymous voting, async decision making, meeting alternative, consensus without meetings, Loomio alternative">
   <meta name="author" content="OneMind.Life LLC">
 
@@ -31,17 +31,17 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://onemind.life/">
-  <meta property="og:title" content="OneMind - The Meeting You Don't Have to Schedule">
-  <meta property="og:description" content="Get your team to consensus in 10 minutes. Anonymous proposals, fair ranking, done. Free, no accounts required.">
-  <meta property="og:image" content="https://onemind.life/og-image.png">
+  <meta property="og:title" content="OneMind - Direction Without Division">
+  <meta property="og:description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
+  <meta property="og:image" content="https://onemind.life/OMLogo.png">
   <meta property="og:site_name" content="OneMind">
 
   <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:card" content="summary">
   <meta name="twitter:url" content="https://onemind.life/">
-  <meta name="twitter:title" content="OneMind - The Meeting You Don't Have to Schedule">
-  <meta name="twitter:description" content="Get your team to consensus in 10 minutes. Anonymous proposals, fair ranking, done. Free, no accounts required.">
-  <meta name="twitter:image" content="https://onemind.life/og-image.png">
+  <meta name="twitter:title" content="OneMind - Direction Without Division">
+  <meta name="twitter:description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
+  <meta name="twitter:image" content="https://onemind.life/OMLogo.png">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -60,5 +60,17 @@
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Fix mobile keyboard dismiss bug: viewInsets.bottom gets stuck on iOS Safari
+    // and some Android browsers, leaving the app squished after keyboard closes.
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', function() {
+        // Force the document height to match visual viewport on keyboard dismiss
+        document.documentElement.style.height = window.visualViewport.height + 'px';
+      });
+      // Set initial height
+      document.documentElement.style.height = window.visualViewport.height + 'px';
+    }
+  </script>
 </body>
 </html>

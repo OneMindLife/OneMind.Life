@@ -427,6 +427,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tiedWinNoConsensus => 'Unentschieden (zaehlt nicht fuer Konsens)';
 
   @override
+  String nWayTie(int count) {
+    return '$count-WAY TIE';
+  }
+
+  @override
+  String winnerIndexOfTotal(int current, int total) {
+    return '$current of $total';
+  }
+
+  @override
   String get seeAllResults => 'Alle Ergebnisse Anzeigen';
 
   @override
@@ -1647,6 +1657,77 @@ class AppLocalizationsDe extends AppLocalizations {
   String get orScan => 'oder scannen';
 
   @override
+  String get tutorialNextButton => 'Weiter';
+
+  @override
+  String get tutorialChooseTemplate => 'Tutorial personalisieren';
+
+  @override
+  String get tutorialChooseTemplateSubtitle =>
+      'Wähle ein Szenario, das dir wichtig ist';
+
+  @override
+  String get tutorialTemplateCommunity => 'Gemeinschaftsentscheidung';
+
+  @override
+  String get tutorialTemplateCommunityDesc =>
+      'Was sollte unsere Nachbarschaft gemeinsam tun?';
+
+  @override
+  String get tutorialTemplateWorkplace => 'Arbeitskultur';
+
+  @override
+  String get tutorialTemplateWorkplaceDesc =>
+      'Worauf sollte unser Team sich konzentrieren?';
+
+  @override
+  String get tutorialTemplateWorld => 'Globale Themen';
+
+  @override
+  String get tutorialTemplateWorldDesc =>
+      'Welches globale Thema ist am wichtigsten?';
+
+  @override
+  String get tutorialTemplateFamily => 'Familie';
+
+  @override
+  String get tutorialTemplateFamilyDesc =>
+      'Wohin sollen wir in den Urlaub fahren?';
+
+  @override
+  String get tutorialTemplatePersonal => 'Persönliche Entscheidung';
+
+  @override
+  String get tutorialTemplatePersonalDesc =>
+      'Was soll ich nach dem Abschluss tun?';
+
+  @override
+  String get tutorialTemplateGovernment => 'Stadthaushalt';
+
+  @override
+  String get tutorialTemplateGovernmentDesc =>
+      'Wie sollen wir den Stadthaushalt ausgeben?';
+
+  @override
+  String get tutorialTemplateCustom => 'Eigenes Thema';
+
+  @override
+  String get tutorialTemplateCustomDesc => 'Eigene Frage eingeben';
+
+  @override
+  String get tutorialCustomQuestionHint => 'Frage eingeben...';
+
+  @override
+  String tutorialRound1ResultTemplate(String winner) {
+    return '\'$winner\' hat diese Runde gewonnen! Um eine dauerhafte Antwort zu werden, muss es nächste Runde erneut gewinnen.';
+  }
+
+  @override
+  String tutorialRound2PromptTemplate(String winner) {
+    return '\'$winner\' ist die aktuelle Antwort der Gruppe – fällt dir etwas Besseres ein?';
+  }
+
+  @override
   String get tutorialWelcomeTitle => 'Willkommen bei OneMind';
 
   @override
@@ -1742,6 +1823,150 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialPropStability => 'Stabilitaet';
 
   @override
+  String get tutorialPropTravelAbroad => 'Auslandsreise';
+
+  @override
+  String get tutorialPropStartABusiness => 'Unternehmen gruenden';
+
+  @override
+  String get tutorialPropGraduateSchool => 'Masterstudium';
+
+  @override
+  String get tutorialPropGetAJobFirst => 'Erst einen Job finden';
+
+  @override
+  String get tutorialPropTakeAGapYear => 'Auszeit nehmen';
+
+  @override
+  String get tutorialPropFreelance => 'Freiberuflich arbeiten';
+
+  @override
+  String get tutorialPropMoveToANewCity => 'In eine neue Stadt ziehen';
+
+  @override
+  String get tutorialPropVolunteerProgram => 'Freiwilligenprogramm';
+
+  @override
+  String get tutorialPropBeachResort => 'Strandresort';
+
+  @override
+  String get tutorialPropMountainCabin => 'Berghuette';
+
+  @override
+  String get tutorialPropCityTrip => 'Staedtereise';
+
+  @override
+  String get tutorialPropRoadTrip => 'Roadtrip';
+
+  @override
+  String get tutorialPropCampingAdventure => 'Campingabenteuer';
+
+  @override
+  String get tutorialPropCruise => 'Kreuzfahrt';
+
+  @override
+  String get tutorialPropThemePark => 'Freizeitpark';
+
+  @override
+  String get tutorialPropCulturalExchange => 'Kulturaustausch';
+
+  @override
+  String get tutorialPropBlockParty => 'Strassenfest';
+
+  @override
+  String get tutorialPropCommunityGarden => 'Gemeinschaftsgarten';
+
+  @override
+  String get tutorialPropNeighborhoodWatch => 'Nachbarschaftswache';
+
+  @override
+  String get tutorialPropToolLibrary => 'Werkzeugbibliothek';
+
+  @override
+  String get tutorialPropMutualAidFund => 'Solidaritaetsfonds';
+
+  @override
+  String get tutorialPropFreeLittleLibrary => 'Offener Buecherschrank';
+
+  @override
+  String get tutorialPropStreetMural => 'Strassenwandbild';
+
+  @override
+  String get tutorialPropSkillShareNight => 'Faehigkeiten-Abend';
+
+  @override
+  String get tutorialPropFlexibleHours => 'Flexible Arbeitszeiten';
+
+  @override
+  String get tutorialPropMentalHealthSupport => 'Psychische Gesundheit';
+
+  @override
+  String get tutorialPropTeamBuilding => 'Teambildung';
+
+  @override
+  String get tutorialPropSkillsTraining => 'Weiterbildung';
+
+  @override
+  String get tutorialPropOpenCommunication => 'Offene Kommunikation';
+
+  @override
+  String get tutorialPropFairCompensation => 'Faire Verguetung';
+
+  @override
+  String get tutorialPropWorkLifeBalance => 'Work-Life-Balance';
+
+  @override
+  String get tutorialPropInnovationTime => 'Innovationszeit';
+
+  @override
+  String get tutorialPropPublicTransportation => 'Nahverkehr';
+
+  @override
+  String get tutorialPropSchoolFunding => 'Schulfinanzierung';
+
+  @override
+  String get tutorialPropEmergencyServices => 'Rettungsdienste';
+
+  @override
+  String get tutorialPropRoadRepairs => 'Strassensanierung';
+
+  @override
+  String get tutorialPropPublicHealth => 'Gesundheitswesen';
+
+  @override
+  String get tutorialPropAffordableHousing => 'Bezahlbarer Wohnraum';
+
+  @override
+  String get tutorialPropSmallBusinessGrants => 'KMU-Foerderung';
+
+  @override
+  String get tutorialPropParksAndRecreation => 'Parks & Erholung';
+
+  @override
+  String get tutorialPropClimateChange => 'Klimawandel';
+
+  @override
+  String get tutorialPropGlobalPoverty => 'Globale Armut';
+
+  @override
+  String get tutorialPropAiGovernance => 'KI-Governance';
+
+  @override
+  String get tutorialPropPandemicPreparedness => 'Pandemievorsorge';
+
+  @override
+  String get tutorialPropNuclearDisarmament => 'Nukleare Abruestung';
+
+  @override
+  String get tutorialPropOceanConservation => 'Meeresschutz';
+
+  @override
+  String get tutorialPropDigitalRights => 'Digitale Rechte';
+
+  @override
+  String get tutorialPropSpaceCooperation => 'Weltraumkooperation';
+
+  @override
   String get tutorialDuplicateProposition =>
       'Diese Idee existiert bereits in dieser Runde. Versuche etwas anderes!';
 
@@ -1797,6 +2022,64 @@ class AppLocalizationsDe extends AppLocalizations {
       'Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.';
 
   @override
+  String deleteConsensusTitle(int number) {
+    return 'Delete Consensus #$number?';
+  }
+
+  @override
+  String get deleteConsensusMessage =>
+      'This will restart the current cycle with a fresh round.';
+
+  @override
+  String get deleteInitialMessageTitle => 'Delete Initial Message?';
+
+  @override
+  String get deleteInitialMessageMessage =>
+      'This will restart the current cycle with a fresh round.';
+
+  @override
+  String get editInitialMessage => 'Edit Initial Message';
+
+  @override
+  String get consensusDeleted => 'Consensus deleted';
+
+  @override
+  String get initialMessageUpdated => 'Initial message updated';
+
+  @override
+  String get initialMessageDeleted => 'Initial message deleted';
+
+  @override
+  String failedToDeleteConsensus(String error) {
+    return 'Failed to delete consensus: $error';
+  }
+
+  @override
+  String failedToUpdateInitialMessage(String error) {
+    return 'Failed to update initial message: $error';
+  }
+
+  @override
+  String failedToDeleteInitialMessage(String error) {
+    return 'Failed to delete initial message: $error';
+  }
+
+  @override
+  String get deleteTaskResultTitle => 'Delete Research Results?';
+
+  @override
+  String get deleteTaskResultMessage =>
+      'The agent will re-research on the next heartbeat.';
+
+  @override
+  String get taskResultDeleted => 'Research results deleted';
+
+  @override
+  String failedToDeleteTaskResult(String error) {
+    return 'Failed to delete research results: $error';
+  }
+
+  @override
   String get wizardStep1Title => 'Worueber moechtest du sprechen?';
 
   @override
@@ -1819,4 +2102,103 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get back => 'Zurueck';
+
+  @override
+  String get spectatingInsufficientCredits =>
+      'Spectating — insufficient credits';
+
+  @override
+  String get creditPausedTitle => 'Paused — Insufficient Credits';
+
+  @override
+  String creditBalance(int balance) {
+    return 'Balance: $balance credits';
+  }
+
+  @override
+  String creditsNeeded(int count) {
+    return 'Need $count credits to start round';
+  }
+
+  @override
+  String get waitingForHostCredits => 'Waiting for host to add credits';
+
+  @override
+  String get buyMoreCredits => 'Buy Credits';
+
+  @override
+  String get forceAsConsensus => 'Force as Consensus';
+
+  @override
+  String get forceAsConsensusDescription =>
+      'Submit directly as consensus, skipping voting';
+
+  @override
+  String get forceConsensus => 'Force Consensus';
+
+  @override
+  String get forceConsensusTitle => 'Force Consensus?';
+
+  @override
+  String get forceConsensusMessage =>
+      'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.';
+
+  @override
+  String get forceConsensusSuccess => 'Consensus forced successfully';
+
+  @override
+  String failedToForceConsensus(String error) {
+    return 'Failed to force consensus: $error';
+  }
+
+  @override
+  String get glossaryUserRoundTitle => 'user-round';
+
+  @override
+  String get glossaryUserRoundDef =>
+      'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
+
+  @override
+  String get glossaryConsensusTitle => 'consensus';
+
+  @override
+  String get glossaryConsensusDef =>
+      'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.';
+
+  @override
+  String get glossaryProposingTitle => 'proposing';
+
+  @override
+  String get glossaryProposingDef =>
+      'The phase where participants submit their ideas anonymously for the group to consider.';
+
+  @override
+  String get glossaryRatingTitle => 'rating';
+
+  @override
+  String get glossaryRatingDef =>
+      'The phase where participants rank all propositions on a 0–100 grid to determine the winner.';
+
+  @override
+  String get glossaryCycleTitle => 'cycle';
+
+  @override
+  String get glossaryCycleDef =>
+      'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.';
+
+  @override
+  String get glossaryCreditBalanceTitle => 'credit balance';
+
+  @override
+  String get glossaryCreditBalanceDef =>
+      'Credits fund rounds. 1 credit = 1 user-round = \$0.01. Free credits reset monthly.';
+
+  @override
+  String get enterTaskResult => 'Enter task result...';
+
+  @override
+  String get submitResult => 'Submit Result';
+
+  @override
+  String get taskResultSubmitted => 'Task result submitted';
 }

@@ -1,5 +1,5 @@
 // Edge Function: translate
-// AI-powered translation using Anthropic Claude
+// AI-powered translation using Kimi K2.5 via NVIDIA
 //
 // Accepts one of:
 // - { text, proposition_id, entity_type?, field_name? } - Single text for proposition
@@ -18,7 +18,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
+import OpenAI from "npm:openai@4.77.0";
 import { z } from "npm:zod@3.23.8";
 import {
   getCorsHeaders,
@@ -32,9 +32,10 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-// Initialize Anthropic client
-const anthropic = new Anthropic({
-  apiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+// Initialize OpenAI client pointing to NVIDIA-hosted Kimi K2.5
+const openai = new OpenAI({
+  apiKey: Deno.env.get("NVIDIA_API_KEY") ?? "",
+  baseURL: "https://integrate.api.nvidia.com/v1",
 });
 
 // Initialize Supabase client with service role for DB operations
@@ -88,7 +89,7 @@ const RequestSchema = z.object({
 );
 
 /**
- * Generate translations for text using Anthropic Claude
+ * Generate translations for text using Kimi K2.5 via NVIDIA
  * Includes retry logic with exponential backoff
  */
 async function getTranslations(text: string): Promise<Translations> {
@@ -109,9 +110,9 @@ Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
 
   while (attempts < MAX_RETRIES) {
     try {
-      const message = await anthropic.messages.create({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 1024,
+      const message = await openai.chat.completions.create({
+        model: "moonshotai/kimi-k2.5",
+        max_tokens: 4096, // Kimi K2.5 is a reasoning model — thinking tokens count against this limit
         messages: [
           {
             role: "user",
@@ -121,9 +122,7 @@ Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
       });
 
       // Extract text from response
-      const responseText = message.content[0].type === "text"
-        ? message.content[0].text
-        : "";
+      const responseText = message.choices[0]?.message?.content ?? "";
 
       // Clean up the response - remove any markdown code blocks
       let cleanedResponse = responseText.trim();

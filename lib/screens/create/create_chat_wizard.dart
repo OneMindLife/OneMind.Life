@@ -9,6 +9,7 @@ import '../../widgets/error_view.dart';
 import 'dialogs/create_chat_dialogs.dart';
 import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
+import 'widgets/wizard_step_agents.dart';
 import 'widgets/wizard_step_indicator.dart';
 import 'widgets/wizard_step_question.dart';
 import 'widgets/wizard_step_timing.dart';
@@ -62,7 +63,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   final state.AdaptiveDurationSettings _adaptiveSettings =
       state.AdaptiveDurationSettings.defaults();
   state.ScheduleSettings _scheduleSettings = state.ScheduleSettings.defaults();
-  final state.AISettings _aiSettings = state.AISettings.defaults();
+  state.AgentSettings _agentSettings = state.AgentSettings.defaults();
   final state.ConsensusSettings _consensusSettings =
       state.ConsensusSettings.defaults();
 
@@ -112,7 +113,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   }
 
   void _nextStep() {
-    if (_currentStep < 1) {
+    if (_currentStep < 2) {
       _goToStep(_currentStep + 1);
     }
   }
@@ -207,13 +208,23 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
         proposingThresholdCount: _autoAdvanceSettings.enableProposing
             ? _autoAdvanceSettings.proposingThresholdCount
             : null,
-        ratingThresholdPercent: null,
+        ratingThresholdPercent: 100, // 100% = all eligible raters must rate (capped to participants-1)
         ratingThresholdCount: _autoAdvanceSettings.enableRating
             ? _autoAdvanceSettings.ratingThresholdCount
             : null,
-        enableAiParticipant: _aiSettings.enabled,
-        aiPropositionsCount:
-            _aiSettings.enabled ? _aiSettings.propositionCount : null,
+        enableAiParticipant: false, // AI proposer retired
+        aiPropositionsCount: null,
+        enableAgents: _agentSettings.enabled,
+        proposingAgentCount: _agentSettings.proposingAgentCount,
+        ratingAgentCount: _agentSettings.useSameCount
+            ? _agentSettings.proposingAgentCount
+            : _agentSettings.ratingAgentCount,
+        agentInstructions: _agentSettings.sharedInstructions.isNotEmpty
+            ? _agentSettings.sharedInstructions
+            : null,
+        agentConfigs: _agentSettings.customizeIndividually
+            ? _agentSettings.agents.map((a) => a.toJson()).toList()
+            : null,
         confirmationRoundsRequired:
             _consensusSettings.confirmationRoundsRequired,
         showPreviousResults: _consensusSettings.showPreviousResults,
@@ -271,7 +282,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
       // Log analytics event
       ref.read(analyticsServiceProvider).logChatCreated(
         chatId: chat.id.toString(),
-        hasAiParticipant: _aiSettings.enabled,
+        hasAiParticipant: _agentSettings.enabled,
         confirmationRounds: _consensusSettings.confirmationRoundsRequired,
         autoAdvanceProposing: _autoAdvanceSettings.enableProposing,
         autoAdvanceRating: _autoAdvanceSettings.enableRating,
@@ -288,7 +299,9 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
           },
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('[CreateChatWizard] Error creating chat: $e');
+      debugPrint('[CreateChatWizard] Stack trace: $stackTrace');
       if (mounted) {
         context.showErrorSnackBar(e);
       }
@@ -313,7 +326,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
             // Progress indicator
             WizardStepIndicator(
               currentStep: _currentStep,
-              totalSteps: 2,
+              totalSteps: 3,
             ),
 
             // Step content
@@ -333,11 +346,21 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 2: Timing + Host Name (final step)
+                  // Step 2: Set the Pace (timers)
                   WizardStepTiming(
                     timerSettings: _timerSettings,
                     onTimerSettingsChanged: (settings) {
                       setState(() => _timerSettings = settings);
+                    },
+                    onBack: _previousStep,
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 3: AI Agents (optional, final step)
+                  WizardStepAgents(
+                    agentSettings: _agentSettings,
+                    onAgentSettingsChanged: (settings) {
+                      setState(() => _agentSettings = settings);
                     },
                     hostNameController: _hostNameController,
                     needsHostName: _needsHostName,

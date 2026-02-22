@@ -243,6 +243,19 @@
     }
   },
   "tiedWinNoConsensus": "Tied win (does not count toward consensus)",
+  "nWayTie": "{count}-WAY TIE",
+  "@nWayTie": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "winnerIndexOfTotal": "{current} of {total}",
+  "@winnerIndexOfTotal": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "seeAllResults": "See All Results",
   "startPhase": "Start Phase",
   "waiting": "Waiting",
@@ -921,6 +934,37 @@
   "shareNotSupported": "Share not available - link copied instead",
   "orScan": "or scan",
 
+  "tutorialNextButton": "Next",
+  "tutorialChooseTemplate": "Personalize Your Tutorial",
+  "tutorialChooseTemplateSubtitle": "Choose a scenario that matters to you",
+  "tutorialTemplateCommunity": "Community Decision",
+  "tutorialTemplateCommunityDesc": "What should our neighborhood do together?",
+  "tutorialTemplateWorkplace": "Workplace Culture",
+  "tutorialTemplateWorkplaceDesc": "What should our team focus on?",
+  "tutorialTemplateWorld": "Global Issues",
+  "tutorialTemplateWorldDesc": "What global issue matters most?",
+  "tutorialTemplateFamily": "Family",
+  "tutorialTemplateFamilyDesc": "Where should we go on vacation?",
+  "tutorialTemplatePersonal": "Personal Decision",
+  "tutorialTemplatePersonalDesc": "What should I do after graduation?",
+  "tutorialTemplateGovernment": "City Budget",
+  "tutorialTemplateGovernmentDesc": "How should we spend the city budget?",
+  "tutorialTemplateCustom": "Custom Topic",
+  "tutorialTemplateCustomDesc": "Enter your own question",
+  "tutorialCustomQuestionHint": "Type your question...",
+  "tutorialRound1ResultTemplate": "'{winner}' won this round! To become a permanent answer, it must win again next round.",
+  "@tutorialRound1ResultTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
+  "tutorialRound2PromptTemplate": "Seeing '{winner}' as the group's current answer - can you think of something better?",
+  "@tutorialRound2PromptTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
+
   "tutorialWelcomeTitle": "Welcome to OneMind",
   "tutorialWelcomeSubtitle": "Learn how groups reach consensus together",
   "tutorialWhatYoullLearn": "In this tutorial, you'll:",
@@ -959,6 +1003,61 @@
   "tutorialPropFreedom": "Freedom",
   "tutorialPropSecurity": "Security",
   "tutorialPropStability": "Stability",
+
+  "tutorialPropTravelAbroad": "Travel Abroad",
+  "tutorialPropStartABusiness": "Start a Business",
+  "tutorialPropGraduateSchool": "Graduate School",
+  "tutorialPropGetAJobFirst": "Get a Job First",
+  "tutorialPropTakeAGapYear": "Take a Gap Year",
+  "tutorialPropFreelance": "Freelance",
+  "tutorialPropMoveToANewCity": "Move to a New City",
+  "tutorialPropVolunteerProgram": "Volunteer Program",
+
+  "tutorialPropBeachResort": "Beach Resort",
+  "tutorialPropMountainCabin": "Mountain Cabin",
+  "tutorialPropCityTrip": "City Trip",
+  "tutorialPropRoadTrip": "Road Trip",
+  "tutorialPropCampingAdventure": "Camping Adventure",
+  "tutorialPropCruise": "Cruise",
+  "tutorialPropThemePark": "Theme Park",
+  "tutorialPropCulturalExchange": "Cultural Exchange",
+
+  "tutorialPropBlockParty": "Block Party",
+  "tutorialPropCommunityGarden": "Community Garden",
+  "tutorialPropNeighborhoodWatch": "Neighborhood Watch",
+  "tutorialPropToolLibrary": "Tool Library",
+  "tutorialPropMutualAidFund": "Mutual Aid Fund",
+  "tutorialPropFreeLittleLibrary": "Free Little Library",
+  "tutorialPropStreetMural": "Street Mural",
+  "tutorialPropSkillShareNight": "Skill-Share Night",
+
+  "tutorialPropFlexibleHours": "Flexible Hours",
+  "tutorialPropMentalHealthSupport": "Mental Health Support",
+  "tutorialPropTeamBuilding": "Team Building",
+  "tutorialPropSkillsTraining": "Skills Training",
+  "tutorialPropOpenCommunication": "Open Communication",
+  "tutorialPropFairCompensation": "Fair Compensation",
+  "tutorialPropWorkLifeBalance": "Work-Life Balance",
+  "tutorialPropInnovationTime": "Innovation Time",
+
+  "tutorialPropPublicTransportation": "Public Transportation",
+  "tutorialPropSchoolFunding": "School Funding",
+  "tutorialPropEmergencyServices": "Emergency Services",
+  "tutorialPropRoadRepairs": "Road Repairs",
+  "tutorialPropPublicHealth": "Public Health",
+  "tutorialPropAffordableHousing": "Affordable Housing",
+  "tutorialPropSmallBusinessGrants": "Small Business Grants",
+  "tutorialPropParksAndRecreation": "Parks & Recreation",
+
+  "tutorialPropClimateChange": "Climate Change",
+  "tutorialPropGlobalPoverty": "Global Poverty",
+  "tutorialPropAiGovernance": "AI Governance",
+  "tutorialPropPandemicPreparedness": "Pandemic Preparedness",
+  "tutorialPropNuclearDisarmament": "Nuclear Disarmament",
+  "tutorialPropOceanConservation": "Ocean Conservation",
+  "tutorialPropDigitalRights": "Digital Rights",
+  "tutorialPropSpaceCooperation": "Space Cooperation",
+
   "tutorialDuplicateProposition": "This idea already exists in this round. Try something different!",
   "tutorialShareTitle": "Share Your Chat",
   "tutorialShareExplanation": "To invite others to join your chat, tap the share button at the top of your screen.",
@@ -976,6 +1075,47 @@
   "tutorialSeeResultsContinueHint": "Great! Now you understand how the ranking works. Continue to try again in Round 2.",
   "tutorialResultsBackHint": "Press the back arrow when done viewing the results.",
 
+  "deleteConsensusTitle": "Delete Consensus #{number}?",
+  "@deleteConsensusTitle": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "deleteConsensusMessage": "This will restart the current cycle with a fresh round.",
+  "deleteInitialMessageTitle": "Delete Initial Message?",
+  "deleteInitialMessageMessage": "This will restart the current cycle with a fresh round.",
+  "editInitialMessage": "Edit Initial Message",
+  "consensusDeleted": "Consensus deleted",
+  "initialMessageUpdated": "Initial message updated",
+  "initialMessageDeleted": "Initial message deleted",
+  "failedToDeleteConsensus": "Failed to delete consensus: {error}",
+  "@failedToDeleteConsensus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToUpdateInitialMessage": "Failed to update initial message: {error}",
+  "@failedToUpdateInitialMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "failedToDeleteInitialMessage": "Failed to delete initial message: {error}",
+  "@failedToDeleteInitialMessage": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "deleteTaskResultTitle": "Delete Research Results?",
+  "deleteTaskResultMessage": "The agent will re-research on the next heartbeat.",
+  "taskResultDeleted": "Research results deleted",
+  "failedToDeleteTaskResult": "Failed to delete research results: {error}",
+  "@failedToDeleteTaskResult": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
   "wizardStep1Title": "What do you want to talk about?",
   "wizardStep1Subtitle": "This is the heart of your chat",
   "wizardStep2Title": "Set the pace",
@@ -983,5 +1123,52 @@
   "wizardOneLastThing": "One last thing...",
   "wizardProposingLabel": "Proposing (submit ideas)",
   "wizardRatingLabel": "Rating (rank ideas)",
-  "back": "Back"
+  "back": "Back",
+
+  "spectatingInsufficientCredits": "Spectating — insufficient credits",
+  "creditPausedTitle": "Paused — Insufficient Credits",
+  "creditBalance": "Balance: {balance} credits",
+  "@creditBalance": {
+    "placeholders": {
+      "balance": { "type": "int" }
+    }
+  },
+  "creditsNeeded": "Need {count} credits to start round",
+  "@creditsNeeded": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "waitingForHostCredits": "Waiting for host to add credits",
+  "buyMoreCredits": "Buy Credits",
+
+  "forceAsConsensus": "Force as Consensus",
+  "forceAsConsensusDescription": "Submit directly as consensus, skipping voting",
+  "forceConsensus": "Force Consensus",
+  "forceConsensusTitle": "Force Consensus?",
+  "forceConsensusMessage": "This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.",
+  "forceConsensusSuccess": "Consensus forced successfully",
+  "failedToForceConsensus": "Failed to force consensus: {error}",
+  "@failedToForceConsensus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+
+  "glossaryUserRoundTitle": "user-round",
+  "glossaryUserRoundDef": "One participant completing one round of rating. Each user-round costs 1 credit ($0.01).",
+  "glossaryConsensusTitle": "consensus",
+  "glossaryConsensusDef": "When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.",
+  "glossaryProposingTitle": "proposing",
+  "glossaryProposingDef": "The phase where participants submit their ideas anonymously for the group to consider.",
+  "glossaryRatingTitle": "rating",
+  "glossaryRatingDef": "The phase where participants rank all propositions on a 0\u2013100 grid to determine the winner.",
+  "glossaryCycleTitle": "cycle",
+  "glossaryCycleDef": "A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.",
+  "glossaryCreditBalanceTitle": "credit balance",
+  "glossaryCreditBalanceDef": "Credits fund rounds. 1 credit = 1 user-round = $0.01. Free credits reset monthly.",
+
+  "enterTaskResult": "Enter task result...",
+  "submitResult": "Submit Result",
+  "taskResultSubmitted": "Task result submitted"
 }

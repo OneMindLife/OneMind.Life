@@ -1,6 +1,7 @@
 /**
  * Edge Function: agent-propose
  *
+ * AUTH: verify_jwt = false in config.toml — uses custom API key auth (onemind_sk_*).
  * Submit a proposition during proposing phase.
  * Uses the existing submit-proposition function internally for duplicate detection.
  *
@@ -39,6 +40,7 @@ const MAX_CONTENT_LENGTH = 200;
 const RequestSchema = z.object({
   chat_id: z.number().int().positive("Chat ID must be a positive integer"),
   content: z.string().min(1, "Content is required"),
+  category: z.string().nullable().optional(),
 });
 
 Deno.serve(async (req: Request) => {
@@ -78,7 +80,7 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  const { chat_id, content: rawContent } = validationResult.data;
+  const { chat_id, content: rawContent, category } = validationResult.data;
 
   // Sanitize content - remove control characters, normalize whitespace
   const content = sanitizeString(rawContent);
@@ -289,6 +291,7 @@ Deno.serve(async (req: Request) => {
           content: content,
           round_id: currentRound.id,
           participant_id: authResult.participantId,
+          category: category || null,
         }),
       }
     );

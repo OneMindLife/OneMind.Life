@@ -1,14 +1,242 @@
+import 'package:flutter/material.dart';
+
 import '../../models/models.dart';
 import 'models/tutorial_state.dart';
+
+/// Template definition for tutorial topics
+class TutorialTemplate {
+  final String key;
+  final String nameKey;
+  final String descriptionKey;
+  final IconData icon;
+  final String question;
+  final String chatName;
+  final List<String> round1Props;
+  final String round1Winner;
+  final List<String> round2Props;
+  final List<String> round3Props;
+
+  const TutorialTemplate({
+    required this.key,
+    required this.nameKey,
+    required this.descriptionKey,
+    required this.icon,
+    required this.question,
+    required this.chatName,
+    required this.round1Props,
+    required this.round1Winner,
+    required this.round2Props,
+    required this.round3Props,
+  });
+
+  static const templates = <String, TutorialTemplate>{
+    'family': TutorialTemplate(
+      key: 'family',
+      nameKey: 'tutorialTemplateFamily',
+      descriptionKey: 'tutorialTemplateFamilyDesc',
+      icon: Icons.family_restroom,
+      question: 'Where should we go on vacation?',
+      chatName: 'Tutorial: Family',
+      round1Props: ['Beach Resort', 'Mountain Cabin', 'City Trip'],
+      round1Winner: 'Beach Resort',
+      round2Props: ['Beach Resort', 'Road Trip', 'Camping Adventure'],
+      round3Props: ['Cruise', 'Theme Park', 'Cultural Exchange'],
+    ),
+    'community': TutorialTemplate(
+      key: 'community',
+      nameKey: 'tutorialTemplateCommunity',
+      descriptionKey: 'tutorialTemplateCommunityDesc',
+      icon: Icons.location_city,
+      question: 'What should our neighborhood do together?',
+      chatName: 'Tutorial: Community',
+      round1Props: ['Block Party', 'Community Garden', 'Neighborhood Watch'],
+      round1Winner: 'Community Garden',
+      round2Props: ['Community Garden', 'Tool Library', 'Mutual Aid Fund'],
+      round3Props: ['Free Little Library', 'Street Mural', 'Skill-Share Night'],
+    ),
+    'workplace': TutorialTemplate(
+      key: 'workplace',
+      nameKey: 'tutorialTemplateWorkplace',
+      descriptionKey: 'tutorialTemplateWorkplaceDesc',
+      icon: Icons.business,
+      question: 'What should our team focus on?',
+      chatName: 'Tutorial: Workplace',
+      round1Props: ['Flexible Hours', 'Mental Health Support', 'Team Building'],
+      round1Winner: 'Mental Health Support',
+      round2Props: ['Mental Health Support', 'Skills Training', 'Open Communication'],
+      round3Props: ['Fair Compensation', 'Work-Life Balance', 'Innovation Time'],
+    ),
+    'government': TutorialTemplate(
+      key: 'government',
+      nameKey: 'tutorialTemplateGovernment',
+      descriptionKey: 'tutorialTemplateGovernmentDesc',
+      icon: Icons.account_balance,
+      question: 'How should we spend the city budget?',
+      chatName: 'Tutorial: City Budget',
+      round1Props: ['Public Transportation', 'School Funding', 'Emergency Services'],
+      round1Winner: 'Emergency Services',
+      round2Props: ['Emergency Services', 'Road Repairs', 'Public Health'],
+      round3Props: ['Affordable Housing', 'Small Business Grants', 'Parks & Recreation'],
+    ),
+    'world': TutorialTemplate(
+      key: 'world',
+      nameKey: 'tutorialTemplateWorld',
+      descriptionKey: 'tutorialTemplateWorldDesc',
+      icon: Icons.public,
+      question: 'What global issue matters most?',
+      chatName: 'Tutorial: Global Issues',
+      round1Props: ['Climate Change', 'Global Poverty', 'AI Governance'],
+      round1Winner: 'Climate Change',
+      round2Props: ['Climate Change', 'Pandemic Preparedness', 'Nuclear Disarmament'],
+      round3Props: ['Ocean Conservation', 'Digital Rights', 'Space Cooperation'],
+    ),
+    'personal': TutorialTemplate(
+      key: 'personal',
+      nameKey: 'tutorialTemplatePersonal',
+      descriptionKey: 'tutorialTemplatePersonalDesc',
+      icon: Icons.person,
+      question: 'What should I do after graduation?',
+      chatName: 'Tutorial: Personal Decision',
+      round1Props: ['Travel Abroad', 'Start a Business', 'Graduate School'],
+      round1Winner: 'Graduate School',
+      round2Props: ['Graduate School', 'Get a Job First', 'Take a Gap Year'],
+      round3Props: ['Freelance', 'Move to a New City', 'Volunteer Program'],
+    ),
+    'classic': TutorialTemplate(
+      key: 'classic',
+      nameKey: 'tutorialTemplateCustom',
+      descriptionKey: 'tutorialTemplateCustomDesc',
+      icon: Icons.edit_note,
+      question: 'What do we value?',
+      chatName: 'Tutorial: Values',
+      round1Props: ['Success', 'Adventure', 'Growth'],
+      round1Winner: 'Success',
+      round2Props: ['Success', 'Harmony', 'Innovation'],
+      round3Props: ['Freedom', 'Security', 'Stability'],
+    ),
+  };
+
+  static TutorialTemplate getTemplate(String? key) {
+    return templates[key] ?? templates['classic']!;
+  }
+
+  /// Translate a template question using l10n description keys.
+  static String translateQuestion(String? templateKey, dynamic l10n) {
+    switch (templateKey) {
+      case 'personal':
+        return l10n.tutorialTemplatePersonalDesc;
+      case 'family':
+        return l10n.tutorialTemplateFamilyDesc;
+      case 'community':
+        return l10n.tutorialTemplateCommunityDesc;
+      case 'workplace':
+        return l10n.tutorialTemplateWorkplaceDesc;
+      case 'government':
+        return l10n.tutorialTemplateGovernmentDesc;
+      case 'world':
+        return l10n.tutorialTemplateWorldDesc;
+      default:
+        return l10n.tutorialQuestion;
+    }
+  }
+
+  /// Translate a proposition content string using l10n.
+  /// Returns the translated string if a key exists, otherwise the original.
+  static String translateProp(String content, dynamic l10n) {
+    // Map English content → l10n getter name
+    return _propTranslations[content]?.call(l10n) ?? content;
+  }
+
+  /// Translate a list of proposition content strings.
+  static List<String> translateProps(List<String> contents, dynamic l10n) {
+    return contents.map((c) => translateProp(c, l10n)).toList();
+  }
+
+  static final Map<String, String Function(dynamic)> _propTranslations = {
+    // Classic
+    'Success': (l10n) => l10n.tutorialPropSuccess,
+    'Adventure': (l10n) => l10n.tutorialPropAdventure,
+    'Growth': (l10n) => l10n.tutorialPropGrowth,
+    'Harmony': (l10n) => l10n.tutorialPropHarmony,
+    'Innovation': (l10n) => l10n.tutorialPropInnovation,
+    'Freedom': (l10n) => l10n.tutorialPropFreedom,
+    'Security': (l10n) => l10n.tutorialPropSecurity,
+    'Stability': (l10n) => l10n.tutorialPropStability,
+    // Personal
+    'Travel Abroad': (l10n) => l10n.tutorialPropTravelAbroad,
+    'Start a Business': (l10n) => l10n.tutorialPropStartABusiness,
+    'Graduate School': (l10n) => l10n.tutorialPropGraduateSchool,
+    'Get a Job First': (l10n) => l10n.tutorialPropGetAJobFirst,
+    'Take a Gap Year': (l10n) => l10n.tutorialPropTakeAGapYear,
+    'Freelance': (l10n) => l10n.tutorialPropFreelance,
+    'Move to a New City': (l10n) => l10n.tutorialPropMoveToANewCity,
+    'Volunteer Program': (l10n) => l10n.tutorialPropVolunteerProgram,
+    // Family
+    'Beach Resort': (l10n) => l10n.tutorialPropBeachResort,
+    'Mountain Cabin': (l10n) => l10n.tutorialPropMountainCabin,
+    'City Trip': (l10n) => l10n.tutorialPropCityTrip,
+    'Road Trip': (l10n) => l10n.tutorialPropRoadTrip,
+    'Camping Adventure': (l10n) => l10n.tutorialPropCampingAdventure,
+    'Cruise': (l10n) => l10n.tutorialPropCruise,
+    'Theme Park': (l10n) => l10n.tutorialPropThemePark,
+    'Cultural Exchange': (l10n) => l10n.tutorialPropCulturalExchange,
+    // Community
+    'Block Party': (l10n) => l10n.tutorialPropBlockParty,
+    'Community Garden': (l10n) => l10n.tutorialPropCommunityGarden,
+    'Neighborhood Watch': (l10n) => l10n.tutorialPropNeighborhoodWatch,
+    'Tool Library': (l10n) => l10n.tutorialPropToolLibrary,
+    'Mutual Aid Fund': (l10n) => l10n.tutorialPropMutualAidFund,
+    'Free Little Library': (l10n) => l10n.tutorialPropFreeLittleLibrary,
+    'Street Mural': (l10n) => l10n.tutorialPropStreetMural,
+    'Skill-Share Night': (l10n) => l10n.tutorialPropSkillShareNight,
+    // Workplace
+    'Flexible Hours': (l10n) => l10n.tutorialPropFlexibleHours,
+    'Mental Health Support': (l10n) => l10n.tutorialPropMentalHealthSupport,
+    'Team Building': (l10n) => l10n.tutorialPropTeamBuilding,
+    'Skills Training': (l10n) => l10n.tutorialPropSkillsTraining,
+    'Open Communication': (l10n) => l10n.tutorialPropOpenCommunication,
+    'Fair Compensation': (l10n) => l10n.tutorialPropFairCompensation,
+    'Work-Life Balance': (l10n) => l10n.tutorialPropWorkLifeBalance,
+    'Innovation Time': (l10n) => l10n.tutorialPropInnovationTime,
+    // Government
+    'Public Transportation': (l10n) => l10n.tutorialPropPublicTransportation,
+    'School Funding': (l10n) => l10n.tutorialPropSchoolFunding,
+    'Emergency Services': (l10n) => l10n.tutorialPropEmergencyServices,
+    'Road Repairs': (l10n) => l10n.tutorialPropRoadRepairs,
+    'Public Health': (l10n) => l10n.tutorialPropPublicHealth,
+    'Affordable Housing': (l10n) => l10n.tutorialPropAffordableHousing,
+    'Small Business Grants': (l10n) => l10n.tutorialPropSmallBusinessGrants,
+    'Parks & Recreation': (l10n) => l10n.tutorialPropParksAndRecreation,
+    // World
+    'Climate Change': (l10n) => l10n.tutorialPropClimateChange,
+    'Global Poverty': (l10n) => l10n.tutorialPropGlobalPoverty,
+    'AI Governance': (l10n) => l10n.tutorialPropAiGovernance,
+    'Pandemic Preparedness': (l10n) => l10n.tutorialPropPandemicPreparedness,
+    'Nuclear Disarmament': (l10n) => l10n.tutorialPropNuclearDisarmament,
+    'Ocean Conservation': (l10n) => l10n.tutorialPropOceanConservation,
+    'Digital Rights': (l10n) => l10n.tutorialPropDigitalRights,
+    'Space Cooperation': (l10n) => l10n.tutorialPropSpaceCooperation,
+  };
+}
 
 /// Hardcoded data for the interactive tutorial
 class TutorialData {
   TutorialData._();
 
-  // Tutorial question
+  // Default tutorial question (classic template / fallback)
   static const String question = 'What do we value?';
   static const String chatName = 'Tutorial: Values';
   static const String initialMessage = question;
+
+  /// Get question for a given template key (falls back to classic)
+  static String questionForTemplate(String? templateKey) {
+    return TutorialTemplate.getTemplate(templateKey).question;
+  }
+
+  /// Get chat name for a given template key
+  static String chatNameForTemplate(String? templateKey) {
+    return TutorialTemplate.getTemplate(templateKey).chatName;
+  }
 
   // === MOCK MODELS ===
 
@@ -138,6 +366,16 @@ class TutorialData {
   /// Round 3 propositions (user's carried + 3 new = 4 total)
   static const round3PropositionContents = ['Freedom', 'Security', 'Stability'];
 
+  /// Template-aware proposition getters
+  static List<String> round1Props(String? templateKey) =>
+      TutorialTemplate.getTemplate(templateKey).round1Props;
+
+  static List<String> round2Props(String? templateKey) =>
+      TutorialTemplate.getTemplate(templateKey).round2Props;
+
+  static List<String> round3Props(String? templateKey) =>
+      TutorialTemplate.getTemplate(templateKey).round3Props;
+
   /// Create Proposition objects for rating
   static List<Proposition> createPropositions(
     List<String> contents, {
@@ -186,16 +424,20 @@ class TutorialData {
 
   // === WINNERS ===
 
-  /// Round 1 winner (always "Success")
+  /// Round 1 winner (always "Success" for classic template)
   static const round1WinnerContent = 'Success';
 
-  static RoundWinner round1Winner() => RoundWinner(
+  /// Template-aware round 1 winner content
+  static String round1WinnerForTemplate(String? templateKey) =>
+      TutorialTemplate.getTemplate(templateKey).round1Winner;
+
+  static RoundWinner round1Winner({String? templateKey}) => RoundWinner(
         id: -1,
         roundId: -1,
         propositionId: -100,
         rank: 1,
         createdAt: DateTime.now(),
-        content: round1WinnerContent,
+        content: round1WinnerForTemplate(templateKey),
       );
 
   /// Round 2 winner (user's proposition)
@@ -272,15 +514,17 @@ class TutorialData {
   static const String demoInviteCode = 'ABC123';
 
   /// Round 1 results with predetermined final ratings for grid display.
-  /// Shows user why "Success" won and where their proposition landed.
+  /// Shows user why the R1 winner won and where their proposition landed.
   /// Ratings are normalized so the highest is 100 and lowest is 0.
-  static List<Proposition> round1ResultsWithRatings(String userProposition) {
+  static List<Proposition> round1ResultsWithRatings(String userProposition, {String? templateKey}) {
+    final template = TutorialTemplate.getTemplate(templateKey);
+    final props = template.round1Props;
     return [
       Proposition(
         id: -100,
         roundId: -1,
         participantId: -2, // Alice
-        content: 'Success',
+        content: props[0],
         finalRating: 100.0, // Winner - normalized to top
         createdAt: DateTime.now(),
       ),
@@ -288,7 +532,7 @@ class TutorialData {
         id: -101,
         roundId: -1,
         participantId: -3, // Bob
-        content: 'Adventure',
+        content: props[1],
         finalRating: 58.0,
         createdAt: DateTime.now(),
       ),
@@ -296,7 +540,7 @@ class TutorialData {
         id: -102,
         roundId: -1,
         participantId: -4, // Carol
-        content: 'Growth',
+        content: props[2],
         finalRating: 33.0,
         createdAt: DateTime.now(),
       ),
@@ -312,8 +556,10 @@ class TutorialData {
   }
 
   /// Round 2 results - user's proposition wins!
-  /// Success is carried forward, user's new idea beats it.
-  static List<Proposition> round2ResultsWithRatings(String userProposition) {
+  /// R1 winner is carried forward, user's new idea beats it.
+  static List<Proposition> round2ResultsWithRatings(String userProposition, {String? templateKey}) {
+    final template = TutorialTemplate.getTemplate(templateKey);
+    final props = template.round2Props;
     return [
       Proposition(
         id: -200,
@@ -327,7 +573,7 @@ class TutorialData {
         id: -201,
         roundId: -2,
         participantId: -2, // Alice (carried forward)
-        content: 'Success',
+        content: props[0], // R1 winner carried forward
         finalRating: 67.0,
         createdAt: DateTime.now(),
       ),
@@ -335,7 +581,7 @@ class TutorialData {
         id: -202,
         roundId: -2,
         participantId: -3, // Bob
-        content: 'Harmony',
+        content: props[1],
         finalRating: 33.0,
         createdAt: DateTime.now(),
       ),
@@ -343,7 +589,7 @@ class TutorialData {
         id: -203,
         roundId: -2,
         participantId: -4, // Carol
-        content: 'Innovation',
+        content: props[2],
         finalRating: 0.0,
         createdAt: DateTime.now(),
       ),
@@ -352,7 +598,9 @@ class TutorialData {
 
   /// Round 3 results - user's proposition wins again = CONSENSUS!
   /// User's idea carried forward and wins again.
-  static List<Proposition> round3ResultsWithRatings(String userProposition) {
+  static List<Proposition> round3ResultsWithRatings(String userProposition, {String? templateKey}) {
+    final template = TutorialTemplate.getTemplate(templateKey);
+    final props = template.round3Props;
     return [
       Proposition(
         id: -300,
@@ -366,7 +614,7 @@ class TutorialData {
         id: -301,
         roundId: -3,
         participantId: -2, // Alice
-        content: 'Freedom',
+        content: props[0],
         finalRating: 67.0,
         createdAt: DateTime.now(),
       ),
@@ -374,7 +622,7 @@ class TutorialData {
         id: -302,
         roundId: -3,
         participantId: -3, // Bob
-        content: 'Security',
+        content: props[1],
         finalRating: 33.0,
         createdAt: DateTime.now(),
       ),
@@ -382,7 +630,7 @@ class TutorialData {
         id: -303,
         roundId: -3,
         participantId: -4, // Carol
-        content: 'Stability',
+        content: props[2],
         finalRating: 0.0,
         createdAt: DateTime.now(),
       ),

@@ -842,6 +842,18 @@ abstract class AppLocalizations {
   /// **'Tied win (does not count toward consensus)'**
   String get tiedWinNoConsensus;
 
+  /// No description provided for @nWayTie.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}-WAY TIE'**
+  String nWayTie(int count);
+
+  /// No description provided for @winnerIndexOfTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'{current} of {total}'**
+  String winnerIndexOfTotal(int current, int total);
+
   /// No description provided for @seeAllResults.
   ///
   /// In en, this message translates to:
@@ -2964,6 +2976,126 @@ abstract class AppLocalizations {
   /// **'or scan'**
   String get orScan;
 
+  /// No description provided for @tutorialNextButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get tutorialNextButton;
+
+  /// No description provided for @tutorialChooseTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Personalize Your Tutorial'**
+  String get tutorialChooseTemplate;
+
+  /// No description provided for @tutorialChooseTemplateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a scenario that matters to you'**
+  String get tutorialChooseTemplateSubtitle;
+
+  /// No description provided for @tutorialTemplateCommunity.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Decision'**
+  String get tutorialTemplateCommunity;
+
+  /// No description provided for @tutorialTemplateCommunityDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What should our neighborhood do together?'**
+  String get tutorialTemplateCommunityDesc;
+
+  /// No description provided for @tutorialTemplateWorkplace.
+  ///
+  /// In en, this message translates to:
+  /// **'Workplace Culture'**
+  String get tutorialTemplateWorkplace;
+
+  /// No description provided for @tutorialTemplateWorkplaceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What should our team focus on?'**
+  String get tutorialTemplateWorkplaceDesc;
+
+  /// No description provided for @tutorialTemplateWorld.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Issues'**
+  String get tutorialTemplateWorld;
+
+  /// No description provided for @tutorialTemplateWorldDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What global issue matters most?'**
+  String get tutorialTemplateWorldDesc;
+
+  /// No description provided for @tutorialTemplateFamily.
+  ///
+  /// In en, this message translates to:
+  /// **'Family'**
+  String get tutorialTemplateFamily;
+
+  /// No description provided for @tutorialTemplateFamilyDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Where should we go on vacation?'**
+  String get tutorialTemplateFamilyDesc;
+
+  /// No description provided for @tutorialTemplatePersonal.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Decision'**
+  String get tutorialTemplatePersonal;
+
+  /// No description provided for @tutorialTemplatePersonalDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I do after graduation?'**
+  String get tutorialTemplatePersonalDesc;
+
+  /// No description provided for @tutorialTemplateGovernment.
+  ///
+  /// In en, this message translates to:
+  /// **'City Budget'**
+  String get tutorialTemplateGovernment;
+
+  /// No description provided for @tutorialTemplateGovernmentDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'How should we spend the city budget?'**
+  String get tutorialTemplateGovernmentDesc;
+
+  /// No description provided for @tutorialTemplateCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom Topic'**
+  String get tutorialTemplateCustom;
+
+  /// No description provided for @tutorialTemplateCustomDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your own question'**
+  String get tutorialTemplateCustomDesc;
+
+  /// No description provided for @tutorialCustomQuestionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Type your question...'**
+  String get tutorialCustomQuestionHint;
+
+  /// No description provided for @tutorialRound1ResultTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'\'{winner}\' won this round! To become a permanent answer, it must win again next round.'**
+  String tutorialRound1ResultTemplate(String winner);
+
+  /// No description provided for @tutorialRound2PromptTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Seeing \'{winner}\' as the group\'s current answer - can you think of something better?'**
+  String tutorialRound2PromptTemplate(String winner);
+
   /// No description provided for @tutorialWelcomeTitle.
   ///
   /// In en, this message translates to:
@@ -3132,6 +3264,294 @@ abstract class AppLocalizations {
   /// **'Stability'**
   String get tutorialPropStability;
 
+  /// No description provided for @tutorialPropTravelAbroad.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel Abroad'**
+  String get tutorialPropTravelAbroad;
+
+  /// No description provided for @tutorialPropStartABusiness.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a Business'**
+  String get tutorialPropStartABusiness;
+
+  /// No description provided for @tutorialPropGraduateSchool.
+  ///
+  /// In en, this message translates to:
+  /// **'Graduate School'**
+  String get tutorialPropGraduateSchool;
+
+  /// No description provided for @tutorialPropGetAJobFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Get a Job First'**
+  String get tutorialPropGetAJobFirst;
+
+  /// No description provided for @tutorialPropTakeAGapYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Take a Gap Year'**
+  String get tutorialPropTakeAGapYear;
+
+  /// No description provided for @tutorialPropFreelance.
+  ///
+  /// In en, this message translates to:
+  /// **'Freelance'**
+  String get tutorialPropFreelance;
+
+  /// No description provided for @tutorialPropMoveToANewCity.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to a New City'**
+  String get tutorialPropMoveToANewCity;
+
+  /// No description provided for @tutorialPropVolunteerProgram.
+  ///
+  /// In en, this message translates to:
+  /// **'Volunteer Program'**
+  String get tutorialPropVolunteerProgram;
+
+  /// No description provided for @tutorialPropBeachResort.
+  ///
+  /// In en, this message translates to:
+  /// **'Beach Resort'**
+  String get tutorialPropBeachResort;
+
+  /// No description provided for @tutorialPropMountainCabin.
+  ///
+  /// In en, this message translates to:
+  /// **'Mountain Cabin'**
+  String get tutorialPropMountainCabin;
+
+  /// No description provided for @tutorialPropCityTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'City Trip'**
+  String get tutorialPropCityTrip;
+
+  /// No description provided for @tutorialPropRoadTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Road Trip'**
+  String get tutorialPropRoadTrip;
+
+  /// No description provided for @tutorialPropCampingAdventure.
+  ///
+  /// In en, this message translates to:
+  /// **'Camping Adventure'**
+  String get tutorialPropCampingAdventure;
+
+  /// No description provided for @tutorialPropCruise.
+  ///
+  /// In en, this message translates to:
+  /// **'Cruise'**
+  String get tutorialPropCruise;
+
+  /// No description provided for @tutorialPropThemePark.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme Park'**
+  String get tutorialPropThemePark;
+
+  /// No description provided for @tutorialPropCulturalExchange.
+  ///
+  /// In en, this message translates to:
+  /// **'Cultural Exchange'**
+  String get tutorialPropCulturalExchange;
+
+  /// No description provided for @tutorialPropBlockParty.
+  ///
+  /// In en, this message translates to:
+  /// **'Block Party'**
+  String get tutorialPropBlockParty;
+
+  /// No description provided for @tutorialPropCommunityGarden.
+  ///
+  /// In en, this message translates to:
+  /// **'Community Garden'**
+  String get tutorialPropCommunityGarden;
+
+  /// No description provided for @tutorialPropNeighborhoodWatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Neighborhood Watch'**
+  String get tutorialPropNeighborhoodWatch;
+
+  /// No description provided for @tutorialPropToolLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Tool Library'**
+  String get tutorialPropToolLibrary;
+
+  /// No description provided for @tutorialPropMutualAidFund.
+  ///
+  /// In en, this message translates to:
+  /// **'Mutual Aid Fund'**
+  String get tutorialPropMutualAidFund;
+
+  /// No description provided for @tutorialPropFreeLittleLibrary.
+  ///
+  /// In en, this message translates to:
+  /// **'Free Little Library'**
+  String get tutorialPropFreeLittleLibrary;
+
+  /// No description provided for @tutorialPropStreetMural.
+  ///
+  /// In en, this message translates to:
+  /// **'Street Mural'**
+  String get tutorialPropStreetMural;
+
+  /// No description provided for @tutorialPropSkillShareNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Skill-Share Night'**
+  String get tutorialPropSkillShareNight;
+
+  /// No description provided for @tutorialPropFlexibleHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Flexible Hours'**
+  String get tutorialPropFlexibleHours;
+
+  /// No description provided for @tutorialPropMentalHealthSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Mental Health Support'**
+  String get tutorialPropMentalHealthSupport;
+
+  /// No description provided for @tutorialPropTeamBuilding.
+  ///
+  /// In en, this message translates to:
+  /// **'Team Building'**
+  String get tutorialPropTeamBuilding;
+
+  /// No description provided for @tutorialPropSkillsTraining.
+  ///
+  /// In en, this message translates to:
+  /// **'Skills Training'**
+  String get tutorialPropSkillsTraining;
+
+  /// No description provided for @tutorialPropOpenCommunication.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Communication'**
+  String get tutorialPropOpenCommunication;
+
+  /// No description provided for @tutorialPropFairCompensation.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair Compensation'**
+  String get tutorialPropFairCompensation;
+
+  /// No description provided for @tutorialPropWorkLifeBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Work-Life Balance'**
+  String get tutorialPropWorkLifeBalance;
+
+  /// No description provided for @tutorialPropInnovationTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Innovation Time'**
+  String get tutorialPropInnovationTime;
+
+  /// No description provided for @tutorialPropPublicTransportation.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Transportation'**
+  String get tutorialPropPublicTransportation;
+
+  /// No description provided for @tutorialPropSchoolFunding.
+  ///
+  /// In en, this message translates to:
+  /// **'School Funding'**
+  String get tutorialPropSchoolFunding;
+
+  /// No description provided for @tutorialPropEmergencyServices.
+  ///
+  /// In en, this message translates to:
+  /// **'Emergency Services'**
+  String get tutorialPropEmergencyServices;
+
+  /// No description provided for @tutorialPropRoadRepairs.
+  ///
+  /// In en, this message translates to:
+  /// **'Road Repairs'**
+  String get tutorialPropRoadRepairs;
+
+  /// No description provided for @tutorialPropPublicHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Public Health'**
+  String get tutorialPropPublicHealth;
+
+  /// No description provided for @tutorialPropAffordableHousing.
+  ///
+  /// In en, this message translates to:
+  /// **'Affordable Housing'**
+  String get tutorialPropAffordableHousing;
+
+  /// No description provided for @tutorialPropSmallBusinessGrants.
+  ///
+  /// In en, this message translates to:
+  /// **'Small Business Grants'**
+  String get tutorialPropSmallBusinessGrants;
+
+  /// No description provided for @tutorialPropParksAndRecreation.
+  ///
+  /// In en, this message translates to:
+  /// **'Parks & Recreation'**
+  String get tutorialPropParksAndRecreation;
+
+  /// No description provided for @tutorialPropClimateChange.
+  ///
+  /// In en, this message translates to:
+  /// **'Climate Change'**
+  String get tutorialPropClimateChange;
+
+  /// No description provided for @tutorialPropGlobalPoverty.
+  ///
+  /// In en, this message translates to:
+  /// **'Global Poverty'**
+  String get tutorialPropGlobalPoverty;
+
+  /// No description provided for @tutorialPropAiGovernance.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Governance'**
+  String get tutorialPropAiGovernance;
+
+  /// No description provided for @tutorialPropPandemicPreparedness.
+  ///
+  /// In en, this message translates to:
+  /// **'Pandemic Preparedness'**
+  String get tutorialPropPandemicPreparedness;
+
+  /// No description provided for @tutorialPropNuclearDisarmament.
+  ///
+  /// In en, this message translates to:
+  /// **'Nuclear Disarmament'**
+  String get tutorialPropNuclearDisarmament;
+
+  /// No description provided for @tutorialPropOceanConservation.
+  ///
+  /// In en, this message translates to:
+  /// **'Ocean Conservation'**
+  String get tutorialPropOceanConservation;
+
+  /// No description provided for @tutorialPropDigitalRights.
+  ///
+  /// In en, this message translates to:
+  /// **'Digital Rights'**
+  String get tutorialPropDigitalRights;
+
+  /// No description provided for @tutorialPropSpaceCooperation.
+  ///
+  /// In en, this message translates to:
+  /// **'Space Cooperation'**
+  String get tutorialPropSpaceCooperation;
+
   /// No description provided for @tutorialDuplicateProposition.
   ///
   /// In en, this message translates to:
@@ -3228,6 +3648,96 @@ abstract class AppLocalizations {
   /// **'Press the back arrow when done viewing the results.'**
   String get tutorialResultsBackHint;
 
+  /// No description provided for @deleteConsensusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Consensus #{number}?'**
+  String deleteConsensusTitle(int number);
+
+  /// No description provided for @deleteConsensusMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will restart the current cycle with a fresh round.'**
+  String get deleteConsensusMessage;
+
+  /// No description provided for @deleteInitialMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Initial Message?'**
+  String get deleteInitialMessageTitle;
+
+  /// No description provided for @deleteInitialMessageMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will restart the current cycle with a fresh round.'**
+  String get deleteInitialMessageMessage;
+
+  /// No description provided for @editInitialMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Initial Message'**
+  String get editInitialMessage;
+
+  /// No description provided for @consensusDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Consensus deleted'**
+  String get consensusDeleted;
+
+  /// No description provided for @initialMessageUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial message updated'**
+  String get initialMessageUpdated;
+
+  /// No description provided for @initialMessageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial message deleted'**
+  String get initialMessageDeleted;
+
+  /// No description provided for @failedToDeleteConsensus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete consensus: {error}'**
+  String failedToDeleteConsensus(String error);
+
+  /// No description provided for @failedToUpdateInitialMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to update initial message: {error}'**
+  String failedToUpdateInitialMessage(String error);
+
+  /// No description provided for @failedToDeleteInitialMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete initial message: {error}'**
+  String failedToDeleteInitialMessage(String error);
+
+  /// No description provided for @deleteTaskResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Research Results?'**
+  String get deleteTaskResultTitle;
+
+  /// No description provided for @deleteTaskResultMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent will re-research on the next heartbeat.'**
+  String get deleteTaskResultMessage;
+
+  /// No description provided for @taskResultDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Research results deleted'**
+  String get taskResultDeleted;
+
+  /// No description provided for @failedToDeleteTaskResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to delete research results: {error}'**
+  String failedToDeleteTaskResult(String error);
+
   /// No description provided for @wizardStep1Title.
   ///
   /// In en, this message translates to:
@@ -3275,6 +3785,174 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get back;
+
+  /// No description provided for @spectatingInsufficientCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Spectating — insufficient credits'**
+  String get spectatingInsufficientCredits;
+
+  /// No description provided for @creditPausedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Paused — Insufficient Credits'**
+  String get creditPausedTitle;
+
+  /// No description provided for @creditBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Balance: {balance} credits'**
+  String creditBalance(int balance);
+
+  /// No description provided for @creditsNeeded.
+  ///
+  /// In en, this message translates to:
+  /// **'Need {count} credits to start round'**
+  String creditsNeeded(int count);
+
+  /// No description provided for @waitingForHostCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for host to add credits'**
+  String get waitingForHostCredits;
+
+  /// No description provided for @buyMoreCredits.
+  ///
+  /// In en, this message translates to:
+  /// **'Buy Credits'**
+  String get buyMoreCredits;
+
+  /// No description provided for @forceAsConsensus.
+  ///
+  /// In en, this message translates to:
+  /// **'Force as Consensus'**
+  String get forceAsConsensus;
+
+  /// No description provided for @forceAsConsensusDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit directly as consensus, skipping voting'**
+  String get forceAsConsensusDescription;
+
+  /// No description provided for @forceConsensus.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Consensus'**
+  String get forceConsensus;
+
+  /// No description provided for @forceConsensusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Force Consensus?'**
+  String get forceConsensusTitle;
+
+  /// No description provided for @forceConsensusMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.'**
+  String get forceConsensusMessage;
+
+  /// No description provided for @forceConsensusSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Consensus forced successfully'**
+  String get forceConsensusSuccess;
+
+  /// No description provided for @failedToForceConsensus.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to force consensus: {error}'**
+  String failedToForceConsensus(String error);
+
+  /// No description provided for @glossaryUserRoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'user-round'**
+  String get glossaryUserRoundTitle;
+
+  /// No description provided for @glossaryUserRoundDef.
+  ///
+  /// In en, this message translates to:
+  /// **'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).'**
+  String get glossaryUserRoundDef;
+
+  /// No description provided for @glossaryConsensusTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'consensus'**
+  String get glossaryConsensusTitle;
+
+  /// No description provided for @glossaryConsensusDef.
+  ///
+  /// In en, this message translates to:
+  /// **'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.'**
+  String get glossaryConsensusDef;
+
+  /// No description provided for @glossaryProposingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'proposing'**
+  String get glossaryProposingTitle;
+
+  /// No description provided for @glossaryProposingDef.
+  ///
+  /// In en, this message translates to:
+  /// **'The phase where participants submit their ideas anonymously for the group to consider.'**
+  String get glossaryProposingDef;
+
+  /// No description provided for @glossaryRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'rating'**
+  String get glossaryRatingTitle;
+
+  /// No description provided for @glossaryRatingDef.
+  ///
+  /// In en, this message translates to:
+  /// **'The phase where participants rank all propositions on a 0–100 grid to determine the winner.'**
+  String get glossaryRatingDef;
+
+  /// No description provided for @glossaryCycleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'cycle'**
+  String get glossaryCycleTitle;
+
+  /// No description provided for @glossaryCycleDef.
+  ///
+  /// In en, this message translates to:
+  /// **'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.'**
+  String get glossaryCycleDef;
+
+  /// No description provided for @glossaryCreditBalanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'credit balance'**
+  String get glossaryCreditBalanceTitle;
+
+  /// No description provided for @glossaryCreditBalanceDef.
+  ///
+  /// In en, this message translates to:
+  /// **'Credits fund rounds. 1 credit = 1 user-round = \$0.01. Free credits reset monthly.'**
+  String get glossaryCreditBalanceDef;
+
+  /// No description provided for @enterTaskResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter task result...'**
+  String get enterTaskResult;
+
+  /// No description provided for @submitResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Result'**
+  String get submitResult;
+
+  /// No description provided for @taskResultSubmitted.
+  ///
+  /// In en, this message translates to:
+  /// **'Task result submitted'**
+  String get taskResultSubmitted;
 }
 
 class _AppLocalizationsDelegate

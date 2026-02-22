@@ -82,30 +82,14 @@ class TutorialIntroPanel extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          // The question
-          Text(
-            l10n.tutorialTheQuestion,
-            style: theme.textTheme.labelMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '"${l10n.tutorialQuestion}"',
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontStyle: FontStyle.italic,
-              color: theme.colorScheme.primary,
-            ),
-            textAlign: TextAlign.center,
-          ),
           const SizedBox(height: 32),
-          // Start button
+          // Next button (proceeds to template selection)
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: onStart,
-              icon: const Icon(Icons.play_arrow),
-              label: Text(l10n.tutorialStartButton),
+              icon: const Icon(Icons.arrow_forward),
+              label: Text(l10n.tutorialNextButton),
             ),
           ),
           const SizedBox(height: 16),

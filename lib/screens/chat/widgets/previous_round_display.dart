@@ -104,7 +104,7 @@ class PreviousWinnerPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(
-                '${currentWinnerIndex + 1} of ${previousRoundWinners.length}',
+                l10n.winnerIndexOfTotal(currentWinnerIndex + 1, previousRoundWinners.length),
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
@@ -186,6 +186,7 @@ class TieBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -193,7 +194,7 @@ class TieBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
-        '$count-WAY TIE',
+        l10n.nWayTie(count),
         style: TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,

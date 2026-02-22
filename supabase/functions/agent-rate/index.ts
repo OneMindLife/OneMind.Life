@@ -230,7 +230,7 @@ Deno.serve(async (req: Request) => {
       proposition_id: number;
       participant_id: number;
       round_id: number;
-      score: number;
+      grid_position: number;
     }> = [];
 
     for (const [propIdStr, score] of Object.entries(ratings)) {
@@ -269,7 +269,7 @@ Deno.serve(async (req: Request) => {
         proposition_id: propId,
         participant_id: authResult.participantId!,
         round_id: currentRound.id,
-        score: score,
+        grid_position: score,
       });
     }
 
@@ -277,7 +277,7 @@ Deno.serve(async (req: Request) => {
     const { error: upsertError } = await supabase.from("grid_rankings").upsert(
       ratingsToInsert,
       {
-        onConflict: "proposition_id,participant_id",
+        onConflict: "round_id,proposition_id,participant_id",
         ignoreDuplicates: false,
       }
     );
