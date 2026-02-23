@@ -32,13 +32,6 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     );
   }
 
-  /// Move from intro to template selection
-  void showTemplateSelection() {
-    state = state.copyWith(
-      currentStep: TutorialStep.templateSelection,
-    );
-  }
-
   /// Select a template and advance to round 1
   void selectTemplate(String templateKey, {String? customQuestion}) {
     state = state.copyWith(
@@ -159,6 +152,8 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         TutorialData.round2Props(state.selectedTemplate),
         roundId: -2,
         userProposition: content,
+        carriedPropIndex: TutorialData.round2Props(state.selectedTemplate).length - 1,
+        carriedFromId: -100, // reference to R1 winner
       ),
     );
   }
@@ -301,9 +296,6 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   /// Generic next step handler
   void nextStep() {
     switch (state.currentStep) {
-      case TutorialStep.intro:
-        showTemplateSelection();
-        break;
       case TutorialStep.round1Result:
         continueToSeeResults();
         break;

@@ -4,18 +4,56 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/locale_provider.dart';
 import '../../../l10n/generated/app_localizations.dart';
-import '../../../widgets/language_selector.dart';
+import '../tutorial_data.dart';
 
-/// Welcome panel shown at the start of the tutorial
+/// Welcome panel with template selection — the first screen of the tutorial
 class TutorialIntroPanel extends ConsumerWidget {
-  final VoidCallback onStart;
+  final void Function(String templateKey) onSelect;
   final VoidCallback onSkip;
 
   const TutorialIntroPanel({
     super.key,
-    required this.onStart,
+    required this.onSelect,
     required this.onSkip,
   });
+
+  String _getTemplateName(String key, AppLocalizations l10n) {
+    switch (key) {
+      case 'personal':
+        return l10n.tutorialTemplatePersonal;
+      case 'family':
+        return l10n.tutorialTemplateFamily;
+      case 'community':
+        return l10n.tutorialTemplateCommunity;
+      case 'workplace':
+        return l10n.tutorialTemplateWorkplace;
+      case 'government':
+        return l10n.tutorialTemplateGovernment;
+      case 'world':
+        return l10n.tutorialTemplateWorld;
+      default:
+        return key;
+    }
+  }
+
+  String _getTemplateDescription(String key, AppLocalizations l10n) {
+    switch (key) {
+      case 'personal':
+        return l10n.tutorialTemplatePersonalDesc;
+      case 'family':
+        return l10n.tutorialTemplateFamilyDesc;
+      case 'community':
+        return l10n.tutorialTemplateCommunityDesc;
+      case 'workplace':
+        return l10n.tutorialTemplateWorkplaceDesc;
+      case 'government':
+        return l10n.tutorialTemplateGovernmentDesc;
+      case 'world':
+        return l10n.tutorialTemplateWorldDesc;
+      default:
+        return '';
+    }
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -24,18 +62,14 @@ class TutorialIntroPanel extends ConsumerWidget {
     // Watch locale to rebuild when language changes
     ref.watch(localeProvider);
 
+    const templateKeys = ['personal', 'family', 'community', 'workplace', 'government', 'world'];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Language selector at top right
-          const Align(
-            alignment: Alignment.topRight,
-            child: LanguageSelector(compact: true),
-          ),
-          const SizedBox(height: 16),
-          // App icon or logo placeholder
+          // App icon
           Icon(
             Icons.groups_rounded,
             size: 80,
@@ -57,41 +91,21 @@ class TutorialIntroPanel extends ConsumerWidget {
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          // What you'll learn
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.tutorialWhatYoullLearn,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildBulletPoint(context, l10n.tutorialBullet1),
-                _buildBulletPoint(context, l10n.tutorialBullet2),
-                _buildBulletPoint(context, l10n.tutorialBullet3),
-              ],
-            ),
-          ),
           const SizedBox(height: 24),
-          const SizedBox(height: 32),
-          // Next button (proceeds to template selection)
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onStart,
-              icon: const Icon(Icons.arrow_forward),
-              label: Text(l10n.tutorialNextButton),
-            ),
-          ),
+          // Template cards
+          ...templateKeys.map((key) {
+            final template = TutorialTemplate.templates[key]!;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildTemplateCard(
+                context,
+                icon: template.icon,
+                name: _getTemplateName(key, l10n),
+                description: _getTemplateDescription(key, l10n),
+                onTap: () => onSelect(key),
+              ),
+            );
+          }),
           const SizedBox(height: 16),
           // Legal agreement text
           _buildAgreementText(context, l10n),
@@ -106,26 +120,60 @@ class TutorialIntroPanel extends ConsumerWidget {
     );
   }
 
-  Widget _buildBulletPoint(BuildContext context, String text) {
+  Widget _buildTemplateCard(
+    BuildContext context, {
+    required IconData icon,
+    required String name,
+    required String description,
+    required VoidCallback onTap,
+  }) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.check_circle,
-            size: 20,
-            color: theme.colorScheme.primary,
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainerHighest,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 32,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -258,7 +258,7 @@
       }
     }
   },
-  "tiedWinNoConsensus": "Unentschieden (zaehlt nicht fuer Konsens)",
+  "tiedWinNoConsensus": "Unentschieden (zaehlt nicht fuer Konvergenz)",
   "seeAllResults": "Alle Ergebnisse Anzeigen",
   "startPhase": "Phase Starten",
   "waiting": "Warten",
@@ -552,7 +552,7 @@
   "approve": "Genehmigen",
   "deny": "Ablehnen",
   "initialMessage": "Initiale Nachricht",
-  "consensusNumber": "Konsens #{number}",
+  "consensusNumber": "Konvergenz #{number}",
   "@consensusNumber": {
     "placeholders": {
       "number": {
@@ -695,9 +695,9 @@
       "threshold": {"type": "int"}
     }
   },
-  "consensusSettings": "Konsens-Einstellungen",
+  "consensusSettings": "Konvergenz-Einstellungen",
   "confirmationRounds": "Bestaetigungsrunden",
-  "firstWinnerConsensus": "Der erste Gewinner erreicht sofort Konsens",
+  "firstWinnerConsensus": "Der erste Gewinner erreicht sofort Konvergenz",
   "mustWinConsecutive": "Derselbe Vorschlag muss {count} Runden hintereinander gewinnen",
   "@mustWinConsecutive": {
     "placeholders": {
@@ -956,7 +956,7 @@
   "accessAndVisibility": "Zugang und Sichtbarkeit",
   "autoMode": "Automatisch",
   "avgRatersPerProposition": "durchschnittliche Bewerter pro Vorschlag",
-  "consensus": "Konsens",
+  "consensus": "Konvergenz",
   "aiPropositions": "KI-Vorschläge",
   "perRound": "pro Runde",
   "schedule": "Zeitplan",
@@ -978,9 +978,6 @@
   "shareNotSupported": "Teilen nicht verfuegbar - Link kopiert",
   "orScan": "oder scannen",
 
-  "tutorialNextButton": "Weiter",
-  "tutorialChooseTemplate": "Tutorial personalisieren",
-  "tutorialChooseTemplateSubtitle": "Wähle ein Szenario, das dir wichtig ist",
   "tutorialTemplateCommunity": "Gemeinschaftsentscheidung",
   "tutorialTemplateCommunityDesc": "Was sollte unsere Nachbarschaft gemeinsam tun?",
   "tutorialTemplateWorkplace": "Arbeitskultur",
@@ -996,7 +993,7 @@
   "tutorialTemplateCustom": "Eigenes Thema",
   "tutorialTemplateCustomDesc": "Eigene Frage eingeben",
   "tutorialCustomQuestionHint": "Frage eingeben...",
-  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen!",
+  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss eine weitere Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1009,17 +1006,14 @@
     }
   },
 
-  "tutorialWelcomeTitle": "Willkommen bei OneMind",
-  "tutorialWelcomeSubtitle": "Lerne, wie Gruppen gemeinsam einen Konsens erreichen",
-  "tutorialWhatYoullLearn": "In diesem Tutorial:",
-  "tutorialBullet1": "Reiche deine Ideen anonym ein",
-  "tutorialBullet2": "Bewerte Ideen von anderen",
-  "tutorialBullet3": "Sieh, wie der Konsens erreicht wird",
+  "tutorialAppBarTitle": "OneMind-Tutorial",
+  "tutorialWelcomeTitle": "Willkommen!",
+  "tutorialWelcomeSubtitle": "Wähle ein Übungsszenario",
   "tutorialTheQuestion": "Die Frage:",
   "tutorialQuestion": "Was schaetzen wir?",
   "tutorialStartButton": "Tutorial Starten",
   "tutorialSkipButton": "Tutorial ueberspringen",
-  "tutorialConsensusReached": "Konsens Erreicht!",
+  "tutorialConsensusReached": "Konvergenz Erreicht!",
   "tutorialWonTwoRounds": "\"{proposition}\" hat 2 Runden hintereinander gewonnen.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
@@ -1028,12 +1022,12 @@
   },
   "tutorialAddedToChat": "Es wurde jetzt zum Chat oben hinzugefuegt.",
   "tutorialFinishButton": "Tutorial Beenden",
-  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen!",
+  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss eine weitere Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
   "tutorialProposingHint": "Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.",
-  "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein. Sie wird zusammen mit dem uebernommenen Gewinner bewertet.",
+  "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein. Sie wird zusammen mit dem vorherigen Gewinner bewertet.",
   "tutorialRatingHint": "Jetzt bewertet jeder die Ideen der anderen. Tippe auf die Schaltflaeche, um mit der Bewertung zu beginnen.",
-  "tutorialRatingBinaryHint": "Deine eigene Idee siehst du hier nicht — andere bewerten sie fuer dich. Welche davon bevorzugst du? Setze sie nach oben (100). Setze die weniger bevorzugte nach unten (0). Benutze [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen.",
-  "tutorialRatingPositioningHint": "Benutze [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Benutze [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.",
+  "tutorialRatingBinaryHint": "Welche davon bevorzugst du? Setze sie nach oben (100). Setze die weniger bevorzugte nach unten (0). Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Deine eigene Idee siehst du hier nicht — andere bewerten sie fuer dich.",
+  "tutorialRatingPositioningHint": "Tippe und halte [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Tippe auf [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.",
   "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie auch die naechste Runde gewinnt, wird sie eine dauerhafte Antwort.",
   "@tutorialRound2Result": {
     "placeholders": {
@@ -1041,6 +1035,14 @@
     }
   },
   "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
+  "tutorialRatingCarryForwardHint": "Dies ist der uebernommene Vorschlag. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
+  "tutorialRound2PromptSimplified": "Zeit fuer eine neue Runde! Faellt dir etwas Besseres ein?",
+  "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer eine neue Runde! Faellt dir etwas Besseres ein als '{winner}'?",
+  "@tutorialRound2PromptSimplifiedTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
   "tutorialPropSuccess": "Erfolg",
   "tutorialPropAdventure": "Abenteuer",
   "tutorialPropGrowth": "Wachstum",
@@ -1118,7 +1120,12 @@
   "tutorialYourIdea": "Deine Idee",
   "tutorialRateIdeas": "Ideen Bewerten",
   "tutorialSeeResultsHint": "Tippe auf die Schaltflaeche unten, um zu sehen, wie alle Ideen bewertet wurden.",
-  "tutorialSeeResultsContinueHint": "Sehr gut! Jetzt verstehst du, wie die Bewertung funktioniert. In Runde 2 reichst du eine neue Idee ein und alle bewerten erneut.",
+  "tutorialSeeResultsContinueHint": "Zeit für eine neue Runde! Fällt dir etwas Besseres ein als \"{winner}\"?",
+  "@tutorialSeeResultsContinueHint": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
   "tutorialResultsBackHint": "Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.",
 
   "wizardStep1Title": "Worueber moechtest du sprechen?",
@@ -1129,6 +1136,35 @@
   "wizardProposingLabel": "Vorschlagen (Ideen einreichen)",
   "wizardRatingLabel": "Bewerten (Ideen ranken)",
   "back": "Zurueck",
+
+  "deleteConsensusTitle": "Konvergenz #{number} loeschen?",
+  "@deleteConsensusTitle": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "consensusDeleted": "Konvergenz geloescht",
+  "failedToDeleteConsensus": "Fehler beim Loeschen der Konvergenz: {error}",
+  "@failedToDeleteConsensus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "forceAsConsensus": "Als Konvergenz erzwingen",
+  "forceAsConsensusDescription": "Direkt als Konvergenz einreichen, Abstimmung ueberspringen",
+  "forceConsensus": "Konvergenz Erzwingen",
+  "forceConsensusTitle": "Konvergenz Erzwingen?",
+  "forceConsensusMessage": "Dies wird deinen Vorschlag sofort als Konvergenz festlegen und einen neuen Zyklus starten. Aller aktuelle Rundenfortschritt geht verloren.",
+  "forceConsensusSuccess": "Konvergenz erfolgreich erzwungen",
+  "failedToForceConsensus": "Fehler beim Erzwingen der Konvergenz: {error}",
+  "@failedToForceConsensus": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "glossaryConsensusTitle": "Konvergenz",
+  "glossaryConsensusDef": "Wenn derselbe Vorschlag mehrere aufeinanderfolgende Runden gewinnt, hat die Gruppe eine Konvergenz zu dieser Idee erreicht.",
+  "glossaryCycleDef": "Eine Abfolge von Runden auf dem Weg zur Konvergenz. Ein neuer Zyklus beginnt, nachdem die Konvergenz erreicht wurde.",
 
   "enterTaskResult": "Enter task result...",
   "submitResult": "Submit Result",

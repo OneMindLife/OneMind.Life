@@ -426,7 +426,7 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get tiedWinNoConsensus => 'Empate (no cuenta para el consenso)';
+  String get tiedWinNoConsensus => 'Empate (no cuenta para la convergencia)';
 
   @override
   String nWayTie(int count) {
@@ -890,7 +890,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String consensusNumber(int number) {
-    return 'Consenso #$number';
+    return 'Convergencia #$number';
   }
 
   @override
@@ -1181,14 +1181,14 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get consensusSettings => 'Configuracion de Consenso';
+  String get consensusSettings => 'Configuracion de Convergencia';
 
   @override
   String get confirmationRounds => 'Rondas de confirmacion';
 
   @override
   String get firstWinnerConsensus =>
-      'El primer ganador alcanza consenso inmediatamente';
+      'El primer ganador alcanza convergencia inmediatamente';
 
   @override
   String mustWinConsecutive(int count) {
@@ -1591,7 +1591,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'calificadores promedio por proposición';
 
   @override
-  String get consensus => 'Consenso';
+  String get consensus => 'Convergencia';
 
   @override
   String get aiPropositions => 'Proposiciones de IA';
@@ -1658,16 +1658,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get orScan => 'o escanea';
 
   @override
-  String get tutorialNextButton => 'Siguiente';
-
-  @override
-  String get tutorialChooseTemplate => 'Personaliza tu tutorial';
-
-  @override
-  String get tutorialChooseTemplateSubtitle =>
-      'Elige un escenario que te importe';
-
-  @override
   String get tutorialTemplateCommunity => 'Decisión comunitaria';
 
   @override
@@ -1720,7 +1710,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' gano esta ronda!';
+    return '¡\'$winner\' ganó esta ronda! Pero aún no es definitivo. Debe ganar otra ronda para ser añadido permanentemente al chat grupal.';
   }
 
   @override
@@ -1729,23 +1719,13 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get tutorialWelcomeTitle => 'Bienvenido a OneMind';
+  String get tutorialAppBarTitle => 'Tutorial de OneMind';
 
   @override
-  String get tutorialWelcomeSubtitle =>
-      'Aprende como los grupos alcanzan consenso juntos';
+  String get tutorialWelcomeTitle => '¡Bienvenido!';
 
   @override
-  String get tutorialWhatYoullLearn => 'En este tutorial:';
-
-  @override
-  String get tutorialBullet1 => 'Envia tus ideas de forma anonima';
-
-  @override
-  String get tutorialBullet2 => 'Califica ideas de otros';
-
-  @override
-  String get tutorialBullet3 => 'Ve como se alcanza el consenso';
+  String get tutorialWelcomeSubtitle => 'Elige un escenario de práctica';
 
   @override
   String get tutorialTheQuestion => 'La pregunta:';
@@ -1760,7 +1740,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialSkipButton => 'Saltar tutorial';
 
   @override
-  String get tutorialConsensusReached => 'Consenso Alcanzado!';
+  String get tutorialConsensusReached => 'Convergencia Alcanzada!';
 
   @override
   String tutorialWonTwoRounds(String proposition) {
@@ -1774,7 +1754,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialFinishButton => 'Terminar Tutorial';
 
   @override
-  String get tutorialRound1Result => '\'Exito\' gano esta ronda!';
+  String get tutorialRound1Result =>
+      '\'Éxito\' ganó esta ronda! Pero aún no es definitivo. Debe ganar otra ronda para ser añadido permanentemente al chat grupal.';
 
   @override
   String get tutorialProposingHint =>
@@ -1782,19 +1763,19 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutorialProposingHintWithWinner =>
-      'Envia una nueva idea. Sera calificada junto con el ganador de la ronda anterior.';
+      'Envia una nueva idea. Sera calificada junto con el ganador anterior.';
 
   @override
   String get tutorialRatingHint =>
-      'Ahora todos califican las ideas de los demas. Toca el boton para empezar a clasificar.';
+      'Ahora todos califican las ideas de los demas. Toca el boton para empezar a calificar.';
 
   @override
   String get tutorialRatingBinaryHint =>
-      'No veras tu propia idea aqui — otros la califican por ti. Cual de estas prefieres? Colocala en la parte superior (100). Coloca la que menos prefieras en la parte inferior (0). Usa [swap] para invertirlas, luego toca [check] para confirmar.';
+      'Cual de estas prefieres? Colocala en la parte superior (100). Coloca la que menos prefieras en la parte inferior (0). Toca [swap] para invertirlas, luego toca [check] para confirmar. No veras tu propia idea aqui — otros la califican por ti.';
 
   @override
   String get tutorialRatingPositioningHint =>
-      'Usa [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Usa [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.';
+      'Toca y manten [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Toca [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.';
 
   @override
   String tutorialRound2Result(String proposition) {
@@ -1804,6 +1785,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get tutorialRound2Prompt =>
       'El ganador \'Exito\' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.';
+
+  @override
+  String get tutorialRatingCarryForwardHint =>
+      'Esta es la propuesta que paso de la ronda anterior. Si gana de nuevo esta ronda, se agrega permanentemente al chat.';
+
+  @override
+  String get tutorialRound2PromptSimplified =>
+      'Es hora de una nueva ronda! Puedes pensar en algo mejor?';
+
+  @override
+  String tutorialRound2PromptSimplifiedTemplate(String winner) {
+    return 'Es hora de una nueva ronda! Puedes pensar en algo mejor que \'$winner\'?';
+  }
 
   @override
   String get tutorialPropSuccess => 'Exito';
@@ -2018,11 +2012,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get tutorialSeeResultsHint =>
-      'Toca el boton de abajo para ver como se clasificaron todas las ideas.';
+      'Toca el boton de abajo para ver como fueron calificadas todas las ideas.';
 
   @override
-  String get tutorialSeeResultsContinueHint =>
-      'Genial! Ahora entiendes como funciona la clasificacion. En la Ronda 2, enviaras una nueva idea y todos calificaran de nuevo.';
+  String tutorialSeeResultsContinueHint(String winner) {
+    return '¡Hora de una nueva ronda! ¿Se te ocurre algo mejor que \"$winner\"?';
+  }
 
   @override
   String get tutorialResultsBackHint =>
@@ -2030,7 +2025,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String deleteConsensusTitle(int number) {
-    return 'Delete Consensus #$number?';
+    return 'Eliminar Convergencia #$number?';
   }
 
   @override
@@ -2048,7 +2043,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editInitialMessage => 'Edit Initial Message';
 
   @override
-  String get consensusDeleted => 'Consensus deleted';
+  String get consensusDeleted => 'Convergencia eliminada';
 
   @override
   String get initialMessageUpdated => 'Initial message updated';
@@ -2058,7 +2053,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String failedToDeleteConsensus(String error) {
-    return 'Failed to delete consensus: $error';
+    return 'Error al eliminar la convergencia: $error';
   }
 
   @override
@@ -2134,28 +2129,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get buyMoreCredits => 'Buy Credits';
 
   @override
-  String get forceAsConsensus => 'Force as Consensus';
+  String get forceAsConsensus => 'Forzar como Convergencia';
 
   @override
   String get forceAsConsensusDescription =>
-      'Submit directly as consensus, skipping voting';
+      'Enviar directamente como convergencia, saltando la votacion';
 
   @override
-  String get forceConsensus => 'Force Consensus';
+  String get forceConsensus => 'Forzar Convergencia';
 
   @override
-  String get forceConsensusTitle => 'Force Consensus?';
+  String get forceConsensusTitle => 'Forzar Convergencia?';
 
   @override
   String get forceConsensusMessage =>
-      'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.';
+      'Esto establecera inmediatamente tu propuesta como la convergencia e iniciara un nuevo ciclo. Todo el progreso actual de la ronda se perdera.';
 
   @override
-  String get forceConsensusSuccess => 'Consensus forced successfully';
+  String get forceConsensusSuccess => 'Convergencia forzada exitosamente';
 
   @override
   String failedToForceConsensus(String error) {
-    return 'Failed to force consensus: $error';
+    return 'Error al forzar la convergencia: $error';
   }
 
   @override
@@ -2166,11 +2161,11 @@ class AppLocalizationsEs extends AppLocalizations {
       'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
 
   @override
-  String get glossaryConsensusTitle => 'consensus';
+  String get glossaryConsensusTitle => 'convergencia';
 
   @override
   String get glossaryConsensusDef =>
-      'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.';
+      'Cuando la misma propuesta gana multiples rondas consecutivas, el grupo ha alcanzado convergencia en esa idea.';
 
   @override
   String get glossaryProposingTitle => 'proposing';
@@ -2191,7 +2186,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get glossaryCycleDef =>
-      'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.';
+      'Una secuencia de rondas trabajando hacia la convergencia. Un nuevo ciclo comienza despues de alcanzar la convergencia.';
 
   @override
   String get glossaryCreditBalanceTitle => 'credit balance';

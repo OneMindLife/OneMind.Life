@@ -39,7 +39,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Family',
       round1Props: ['Beach Resort', 'Mountain Cabin', 'City Trip'],
       round1Winner: 'Beach Resort',
-      round2Props: ['Beach Resort', 'Road Trip', 'Camping Adventure'],
+      round2Props: ['Road Trip', 'Camping Adventure', 'Beach Resort'],
       round3Props: ['Cruise', 'Theme Park', 'Cultural Exchange'],
     ),
     'community': TutorialTemplate(
@@ -51,7 +51,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Community',
       round1Props: ['Block Party', 'Community Garden', 'Neighborhood Watch'],
       round1Winner: 'Community Garden',
-      round2Props: ['Community Garden', 'Tool Library', 'Mutual Aid Fund'],
+      round2Props: ['Tool Library', 'Mutual Aid Fund', 'Community Garden'],
       round3Props: ['Free Little Library', 'Street Mural', 'Skill-Share Night'],
     ),
     'workplace': TutorialTemplate(
@@ -63,7 +63,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Workplace',
       round1Props: ['Flexible Hours', 'Mental Health Support', 'Team Building'],
       round1Winner: 'Mental Health Support',
-      round2Props: ['Mental Health Support', 'Skills Training', 'Open Communication'],
+      round2Props: ['Skills Training', 'Open Communication', 'Mental Health Support'],
       round3Props: ['Fair Compensation', 'Work-Life Balance', 'Innovation Time'],
     ),
     'government': TutorialTemplate(
@@ -75,7 +75,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: City Budget',
       round1Props: ['Public Transportation', 'School Funding', 'Emergency Services'],
       round1Winner: 'Emergency Services',
-      round2Props: ['Emergency Services', 'Road Repairs', 'Public Health'],
+      round2Props: ['Road Repairs', 'Public Health', 'Emergency Services'],
       round3Props: ['Affordable Housing', 'Small Business Grants', 'Parks & Recreation'],
     ),
     'world': TutorialTemplate(
@@ -87,7 +87,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Global Issues',
       round1Props: ['Climate Change', 'Global Poverty', 'AI Governance'],
       round1Winner: 'Climate Change',
-      round2Props: ['Climate Change', 'Pandemic Preparedness', 'Nuclear Disarmament'],
+      round2Props: ['Pandemic Preparedness', 'Nuclear Disarmament', 'Climate Change'],
       round3Props: ['Ocean Conservation', 'Digital Rights', 'Space Cooperation'],
     ),
     'personal': TutorialTemplate(
@@ -99,7 +99,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Personal Decision',
       round1Props: ['Travel Abroad', 'Start a Business', 'Graduate School'],
       round1Winner: 'Graduate School',
-      round2Props: ['Graduate School', 'Get a Job First', 'Take a Gap Year'],
+      round2Props: ['Get a Job First', 'Take a Gap Year', 'Graduate School'],
       round3Props: ['Freelance', 'Move to a New City', 'Volunteer Program'],
     ),
     'classic': TutorialTemplate(
@@ -111,7 +111,7 @@ class TutorialTemplate {
       chatName: 'Tutorial: Values',
       round1Props: ['Success', 'Adventure', 'Growth'],
       round1Winner: 'Success',
-      round2Props: ['Success', 'Harmony', 'Innovation'],
+      round2Props: ['Harmony', 'Innovation', 'Success'],
       round3Props: ['Freedom', 'Security', 'Stability'],
     ),
   };
@@ -358,9 +358,9 @@ class TutorialData {
 
   /// Round 2 propositions (Success carried + 2 new + user's = 4 total)
   static const round2PropositionContents = [
-    'Success',
     'Harmony',
-    'Innovation'
+    'Innovation',
+    'Success'
   ];
 
   /// Round 3 propositions (user's carried + 3 new = 4 total)
@@ -382,17 +382,20 @@ class TutorialData {
     int roundId = -1,
     String? userProposition,
     bool includeUserProp = true,
+    int? carriedPropIndex,
+    int? carriedFromId,
   }) {
     final props = <Proposition>[];
     int id = -100;
 
     // Add other propositions
-    for (final content in contents) {
+    for (int i = 0; i < contents.length; i++) {
       props.add(Proposition(
         id: id--,
         roundId: roundId,
         participantId: -2, // Alice
-        content: content,
+        content: contents[i],
+        carriedFromId: (carriedPropIndex == i) ? carriedFromId : null,
         createdAt: DateTime.now(),
       ));
     }
@@ -502,13 +505,13 @@ class TutorialData {
       "Seeing 'Success' as the group's current answer - what do you think we REALLY value?";
 
   static String round2ResultMessage(String userProp) =>
-      "Your idea '$userProp' is now leading! One more round to confirm consensus.";
+      "Your idea '$userProp' is now leading! One more round to confirm convergence.";
 
   static String round3CarryForwardMessage(String userProp) =>
-      "Your winning idea '$userProp' automatically advances to Round 3. If it wins again, consensus is reached!";
+      "Your winning idea '$userProp' automatically advances to Round 3. If it wins again, convergence is reached!";
 
   static String round3ConsensusMessage(String userProp) =>
-      "The group has reached consensus on '$userProp'! This idea won two consecutive rounds.";
+      "The group has reached convergence on '$userProp'! This idea won two consecutive rounds.";
 
   /// Demo invite code for share screen
   static const String demoInviteCode = 'ABC123';
@@ -572,8 +575,8 @@ class TutorialData {
       Proposition(
         id: -201,
         roundId: -2,
-        participantId: -2, // Alice (carried forward)
-        content: props[0], // R1 winner carried forward
+        participantId: -2, // Alice (carried forward from R1)
+        content: props[2], // R1 winner carried forward (now last)
         finalRating: 67.0,
         createdAt: DateTime.now(),
       ),
@@ -581,7 +584,7 @@ class TutorialData {
         id: -202,
         roundId: -2,
         participantId: -3, // Bob
-        content: props[1],
+        content: props[0],
         finalRating: 33.0,
         createdAt: DateTime.now(),
       ),
@@ -589,7 +592,7 @@ class TutorialData {
         id: -203,
         roundId: -2,
         participantId: -4, // Carol
-        content: props[2],
+        content: props[1],
         finalRating: 0.0,
         createdAt: DateTime.now(),
       ),

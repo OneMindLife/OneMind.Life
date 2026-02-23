@@ -15,7 +15,6 @@ class TutorialProgressDots extends StatelessWidget {
   /// Flow: intro → R1 propose/rate/result → R2 prompt/rate/result → R3 propose/rate/consensus → shareDemo → complete
   static const _stepSegments = {
     TutorialStep.intro: 0,
-    TutorialStep.templateSelection: 0,
     // Round 1
     TutorialStep.round1Proposing: 1,
     TutorialStep.round1Rating: 2,

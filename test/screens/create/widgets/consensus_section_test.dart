@@ -21,7 +21,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Consensus Settings'), findsOneWidget);
+      expect(find.text('Convergence Settings'), findsOneWidget);
     });
 
     // Confirmation rounds input is hidden from UI - defaults to 2

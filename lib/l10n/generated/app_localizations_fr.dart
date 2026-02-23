@@ -426,7 +426,8 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tiedWinNoConsensus => 'Egalite (ne compte pas pour le consensus)';
+  String get tiedWinNoConsensus =>
+      'Egalite (ne compte pas pour la convergence)';
 
   @override
   String nWayTie(int count) {
@@ -891,7 +892,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String consensusNumber(int number) {
-    return 'Consensus #$number';
+    return 'Convergence #$number';
   }
 
   @override
@@ -1182,14 +1183,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get consensusSettings => 'Parametres de Consensus';
+  String get consensusSettings => 'Parametres de Convergence';
 
   @override
   String get confirmationRounds => 'Tours de confirmation';
 
   @override
   String get firstWinnerConsensus =>
-      'Le premier gagnant atteint le consensus immediatement';
+      'Le premier gagnant atteint la convergence immediatement';
 
   @override
   String mustWinConsecutive(int count) {
@@ -1591,7 +1592,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get avgRatersPerProposition => 'évaluateurs moyens par proposition';
 
   @override
-  String get consensus => 'Consensus';
+  String get consensus => 'Convergence';
 
   @override
   String get aiPropositions => 'Propositions IA';
@@ -1658,16 +1659,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get orScan => 'ou scanner';
 
   @override
-  String get tutorialNextButton => 'Suivant';
-
-  @override
-  String get tutorialChooseTemplate => 'Personnalisez votre tutoriel';
-
-  @override
-  String get tutorialChooseTemplateSubtitle =>
-      'Choisissez un scenario qui vous tient a coeur';
-
-  @override
   String get tutorialTemplateCommunity => 'Décision communautaire';
 
   @override
@@ -1720,7 +1711,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' a gagne ce tour!';
+    return '\'$winner\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.';
   }
 
   @override
@@ -1729,23 +1720,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get tutorialWelcomeTitle => 'Bienvenue sur OneMind';
+  String get tutorialAppBarTitle => 'Tutoriel OneMind';
+
+  @override
+  String get tutorialWelcomeTitle => 'Bienvenue !';
 
   @override
   String get tutorialWelcomeSubtitle =>
-      'Apprenez comment les groupes atteignent un consensus ensemble';
-
-  @override
-  String get tutorialWhatYoullLearn => 'Dans ce tutoriel:';
-
-  @override
-  String get tutorialBullet1 => 'Soumettez vos idees de maniere anonyme';
-
-  @override
-  String get tutorialBullet2 => 'Evaluez les idees des autres';
-
-  @override
-  String get tutorialBullet3 => 'Voyez comment le consensus est atteint';
+      'Choisissez un scénario d\'entraînement';
 
   @override
   String get tutorialTheQuestion => 'La question:';
@@ -1760,7 +1742,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialSkipButton => 'Passer le tutoriel';
 
   @override
-  String get tutorialConsensusReached => 'Consensus Atteint!';
+  String get tutorialConsensusReached => 'Convergence Atteinte!';
 
   @override
   String tutorialWonTwoRounds(String proposition) {
@@ -1775,7 +1757,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialFinishButton => 'Terminer le Tutoriel';
 
   @override
-  String get tutorialRound1Result => '\'Succes\' a gagne ce tour!';
+  String get tutorialRound1Result =>
+      '\'Succès\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.';
 
   @override
   String get tutorialProposingHint =>
@@ -1783,19 +1766,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialProposingHintWithWinner =>
-      'Soumettez une nouvelle idee. Elle sera evaluee aux cotes du gagnant reporte.';
+      'Soumettez une nouvelle idee. Elle sera evaluee aux cotes du gagnant precedent.';
 
   @override
   String get tutorialRatingHint =>
-      'Maintenant, chacun evalue les idees des autres. Appuyez sur le bouton pour commencer le classement.';
+      'Maintenant, chacun evalue les idees des autres. Appuyez sur le bouton pour commencer l\'evaluation.';
 
   @override
   String get tutorialRatingBinaryHint =>
-      'Vous ne verrez pas votre propre idee ici — les autres l\'evaluent pour vous. Laquelle preferez-vous? Placez-la en haut (100). Placez celle que vous preferez le moins en bas (0). Utilisez [swap] pour les inverser, puis appuyez sur [check] pour confirmer.';
+      'Laquelle preferez-vous? Placez-la en haut (100). Placez celle que vous preferez le moins en bas (0). Appuyez sur [swap] pour les inverser, puis appuyez sur [check] pour confirmer. Vous ne verrez pas votre propre idee ici — les autres l\'evaluent pour vous.';
 
   @override
   String get tutorialRatingPositioningHint =>
-      'Utilisez [up] et [down] pour deplacer l\'idee en surbrillance. Appuyez sur [check] pour la placer. Utilisez [undo] pour annuler un placement, et [zoomin] [zoomout] pour zoomer et dezoomer.';
+      'Appuyez et maintenez [up] et [down] pour deplacer l\'idee en surbrillance. Appuyez sur [check] pour la placer. Appuyez sur [undo] pour annuler un placement, et [zoomin] [zoomout] pour zoomer et dezoomer.';
 
   @override
   String tutorialRound2Result(String proposition) {
@@ -1805,6 +1788,19 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get tutorialRound2Prompt =>
       'Le gagnant \'Succes\' est automatiquement reporte pour concourir a nouveau. Il doit gagner 2 tours consecutifs pour devenir une reponse permanente.';
+
+  @override
+  String get tutorialRatingCarryForwardHint =>
+      'C\'est la proposition reportee du tour precedent. Si elle gagne a nouveau ce tour, elle sera ajoutee definitivement au chat.';
+
+  @override
+  String get tutorialRound2PromptSimplified =>
+      'C\'est l\'heure d\'un nouveau tour! Pouvez-vous faire mieux?';
+
+  @override
+  String tutorialRound2PromptSimplifiedTemplate(String winner) {
+    return 'C\'est l\'heure d\'un nouveau tour! Pouvez-vous faire mieux que \'$winner\'?';
+  }
 
   @override
   String get tutorialPropSuccess => 'Succes';
@@ -2019,11 +2015,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialSeeResultsHint =>
-      'Appuyez sur le bouton ci-dessous pour voir comment toutes les idees ont ete classees.';
+      'Appuyez sur le bouton ci-dessous pour voir comment toutes les idees ont ete evaluees.';
 
   @override
-  String get tutorialSeeResultsContinueHint =>
-      'Super! Maintenant vous comprenez comment le classement fonctionne. Au Round 2, vous soumettrez une nouvelle idee et tout le monde evaluera a nouveau.';
+  String tutorialSeeResultsContinueHint(String winner) {
+    return 'C\'est l\'heure d\'un nouveau tour ! Pouvez-vous trouver mieux que \"$winner\" ?';
+  }
 
   @override
   String get tutorialResultsBackHint =>
@@ -2031,7 +2028,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String deleteConsensusTitle(int number) {
-    return 'Delete Consensus #$number?';
+    return 'Supprimer la Convergence #$number?';
   }
 
   @override
@@ -2049,7 +2046,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editInitialMessage => 'Edit Initial Message';
 
   @override
-  String get consensusDeleted => 'Consensus deleted';
+  String get consensusDeleted => 'Convergence supprimee';
 
   @override
   String get initialMessageUpdated => 'Initial message updated';
@@ -2059,7 +2056,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String failedToDeleteConsensus(String error) {
-    return 'Failed to delete consensus: $error';
+    return 'Echec de la suppression de la convergence: $error';
   }
 
   @override
@@ -2135,28 +2132,28 @@ class AppLocalizationsFr extends AppLocalizations {
   String get buyMoreCredits => 'Buy Credits';
 
   @override
-  String get forceAsConsensus => 'Force as Consensus';
+  String get forceAsConsensus => 'Forcer comme Convergence';
 
   @override
   String get forceAsConsensusDescription =>
-      'Submit directly as consensus, skipping voting';
+      'Soumettre directement comme convergence, en sautant le vote';
 
   @override
-  String get forceConsensus => 'Force Consensus';
+  String get forceConsensus => 'Forcer la Convergence';
 
   @override
-  String get forceConsensusTitle => 'Force Consensus?';
+  String get forceConsensusTitle => 'Forcer la Convergence?';
 
   @override
   String get forceConsensusMessage =>
-      'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.';
+      'Cela definira immediatement votre proposition comme la convergence et demarrera un nouveau cycle. Toute la progression du tour actuel sera perdue.';
 
   @override
-  String get forceConsensusSuccess => 'Consensus forced successfully';
+  String get forceConsensusSuccess => 'Convergence forcee avec succes';
 
   @override
   String failedToForceConsensus(String error) {
-    return 'Failed to force consensus: $error';
+    return 'Echec du forcage de la convergence: $error';
   }
 
   @override
@@ -2167,11 +2164,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
 
   @override
-  String get glossaryConsensusTitle => 'consensus';
+  String get glossaryConsensusTitle => 'convergence';
 
   @override
   String get glossaryConsensusDef =>
-      'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.';
+      'Lorsque la meme proposition gagne plusieurs tours consecutifs, le groupe a atteint la convergence sur cette idee.';
 
   @override
   String get glossaryProposingTitle => 'proposing';
@@ -2192,7 +2189,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get glossaryCycleDef =>
-      'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.';
+      'Une sequence de tours visant la convergence. Un nouveau cycle commence apres que la convergence est atteinte.';
 
   @override
   String get glossaryCreditBalanceTitle => 'credit balance';

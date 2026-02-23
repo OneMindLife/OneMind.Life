@@ -242,7 +242,7 @@
       "required": {"type": "int"}
     }
   },
-  "tiedWinNoConsensus": "Tied win (does not count toward consensus)",
+  "tiedWinNoConsensus": "Tied win (does not count toward convergence)",
   "nWayTie": "{count}-WAY TIE",
   "@nWayTie": {
     "placeholders": {
@@ -515,7 +515,7 @@
   "approve": "Approve",
   "deny": "Deny",
   "initialMessage": "Initial Message",
-  "consensusNumber": "Consensus #{number}",
+  "consensusNumber": "Convergence #{number}",
   "@consensusNumber": {
     "placeholders": {
       "number": {"type": "int"}
@@ -664,9 +664,9 @@
     }
   },
 
-  "consensusSettings": "Consensus Settings",
+  "consensusSettings": "Convergence Settings",
   "confirmationRounds": "Confirmation rounds",
-  "firstWinnerConsensus": "First winner reaches consensus immediately",
+  "firstWinnerConsensus": "First winner reaches convergence immediately",
   "mustWinConsecutive": "Same proposition must win {count} rounds in a row",
   "@mustWinConsecutive": {
     "placeholders": {
@@ -894,7 +894,7 @@
       "n": {"type": "double"}
     }
   },
-  "consensus": "Consensus",
+  "consensus": "Convergence",
   "nConsecutiveWins": "{n} consecutive wins",
   "@nConsecutiveWins": {
     "placeholders": {
@@ -934,9 +934,6 @@
   "shareNotSupported": "Share not available - link copied instead",
   "orScan": "or scan",
 
-  "tutorialNextButton": "Next",
-  "tutorialChooseTemplate": "Personalize Your Tutorial",
-  "tutorialChooseTemplateSubtitle": "Choose a scenario that matters to you",
   "tutorialTemplateCommunity": "Community Decision",
   "tutorialTemplateCommunityDesc": "What should our neighborhood do together?",
   "tutorialTemplateWorkplace": "Workplace Culture",
@@ -952,7 +949,7 @@
   "tutorialTemplateCustom": "Custom Topic",
   "tutorialTemplateCustomDesc": "Enter your own question",
   "tutorialCustomQuestionHint": "Type your question...",
-  "tutorialRound1ResultTemplate": "'{winner}' won this round!",
+  "tutorialRound1ResultTemplate": "'{winner}' won this round! But it's still not final. It must win another round to be permanently added to the groupchat.",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -965,17 +962,14 @@
     }
   },
 
-  "tutorialWelcomeTitle": "Welcome to OneMind",
-  "tutorialWelcomeSubtitle": "Learn how groups reach consensus together",
-  "tutorialWhatYoullLearn": "In this tutorial, you'll:",
-  "tutorialBullet1": "Submit your ideas anonymously",
-  "tutorialBullet2": "Rate ideas from others",
-  "tutorialBullet3": "See how consensus is reached",
+  "tutorialAppBarTitle": "OneMind Tutorial",
+  "tutorialWelcomeTitle": "Welcome!",
+  "tutorialWelcomeSubtitle": "Pick a practice scenario",
   "tutorialTheQuestion": "The question:",
   "tutorialQuestion": "What do we value?",
   "tutorialStartButton": "Start Tutorial",
   "tutorialSkipButton": "Skip tutorial",
-  "tutorialConsensusReached": "Consensus Reached!",
+  "tutorialConsensusReached": "Convergence Reached!",
   "tutorialWonTwoRounds": "\"{proposition}\" won 2 rounds in a row.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
@@ -984,12 +978,12 @@
   },
   "tutorialAddedToChat": "It's now added to the chat above.",
   "tutorialFinishButton": "Finish Tutorial",
-  "tutorialRound1Result": "'Success' won this round!",
+  "tutorialRound1Result": "'Success' won this round! But it's still not final. It must win another round to be permanently added to the groupchat.",
   "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
-  "tutorialProposingHintWithWinner": "Submit a new idea. It will be rated alongside the carried-forward winner.",
+  "tutorialProposingHintWithWinner": "Submit a new idea. It will be rated alongside the previous winner.",
   "tutorialRatingHint": "Now everyone rates each other's ideas. Tap the button to start rating.",
-  "tutorialRatingBinaryHint": "You won't see your own idea here — others rate it for you. Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.",
-  "tutorialRatingPositioningHint": "Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
+  "tutorialRatingBinaryHint": "Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Tap [swap] to flip them, then tap [check] to confirm. You won't see your own idea here — others rate it for you.",
+  "tutorialRatingPositioningHint": "Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
   "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round too, it becomes a permanent answer.",
   "@tutorialRound2Result": {
     "placeholders": {
@@ -997,6 +991,14 @@
     }
   },
   "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.",
+  "tutorialRatingCarryForwardHint": "This is the carried-forward proposition. If it wins again this round, it gets permanently added to the chat.",
+  "tutorialRound2PromptSimplified": "Time for a new round! Can you think of something better?",
+  "tutorialRound2PromptSimplifiedTemplate": "Time for a new round! Can you think of something better than '{winner}'?",
+  "@tutorialRound2PromptSimplifiedTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
   "tutorialPropSuccess": "Success",
   "tutorialPropAdventure": "Adventure",
   "tutorialPropGrowth": "Growth",
@@ -1074,10 +1076,15 @@
   "tutorialYourIdea": "Your idea",
   "tutorialRateIdeas": "Rate Ideas",
   "tutorialSeeResultsHint": "Tap the button below to see how all ideas were rated.",
-  "tutorialSeeResultsContinueHint": "Great! Now you understand how the rating works. In Round 2, you'll submit a new idea and everyone will rate again.",
+  "tutorialSeeResultsContinueHint": "Time for a new round! Can you think of something better than \"{winner}\"?",
+  "@tutorialSeeResultsContinueHint": {
+    "placeholders": {
+      "winner": {"type": "String"}
+    }
+  },
   "tutorialResultsBackHint": "Press the back arrow when done viewing the results.",
 
-  "deleteConsensusTitle": "Delete Consensus #{number}?",
+  "deleteConsensusTitle": "Delete Convergence #{number}?",
   "@deleteConsensusTitle": {
     "placeholders": {
       "number": {"type": "int"}
@@ -1087,10 +1094,10 @@
   "deleteInitialMessageTitle": "Delete Initial Message?",
   "deleteInitialMessageMessage": "This will restart the current cycle with a fresh round.",
   "editInitialMessage": "Edit Initial Message",
-  "consensusDeleted": "Consensus deleted",
+  "consensusDeleted": "Convergence deleted",
   "initialMessageUpdated": "Initial message updated",
   "initialMessageDeleted": "Initial message deleted",
-  "failedToDeleteConsensus": "Failed to delete consensus: {error}",
+  "failedToDeleteConsensus": "Failed to delete convergence: {error}",
   "@failedToDeleteConsensus": {
     "placeholders": {
       "error": {"type": "String"}
@@ -1144,13 +1151,13 @@
   "waitingForHostCredits": "Waiting for host to add credits",
   "buyMoreCredits": "Buy Credits",
 
-  "forceAsConsensus": "Force as Consensus",
-  "forceAsConsensusDescription": "Submit directly as consensus, skipping voting",
-  "forceConsensus": "Force Consensus",
-  "forceConsensusTitle": "Force Consensus?",
-  "forceConsensusMessage": "This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.",
-  "forceConsensusSuccess": "Consensus forced successfully",
-  "failedToForceConsensus": "Failed to force consensus: {error}",
+  "forceAsConsensus": "Force as Convergence",
+  "forceAsConsensusDescription": "Submit directly as convergence, skipping voting",
+  "forceConsensus": "Force Convergence",
+  "forceConsensusTitle": "Force Convergence?",
+  "forceConsensusMessage": "This will immediately set your proposition as the convergence and start a new cycle. All current round progress will be lost.",
+  "forceConsensusSuccess": "Convergence forced successfully",
+  "failedToForceConsensus": "Failed to force convergence: {error}",
   "@failedToForceConsensus": {
     "placeholders": {
       "error": {"type": "String"}
@@ -1159,14 +1166,14 @@
 
   "glossaryUserRoundTitle": "user-round",
   "glossaryUserRoundDef": "One participant completing one round of rating. Each user-round costs 1 credit ($0.01).",
-  "glossaryConsensusTitle": "consensus",
-  "glossaryConsensusDef": "When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.",
+  "glossaryConsensusTitle": "convergence",
+  "glossaryConsensusDef": "When the same proposition wins multiple consecutive rounds, the group has reached convergence on that idea.",
   "glossaryProposingTitle": "proposing",
   "glossaryProposingDef": "The phase where participants submit their ideas anonymously for the group to consider.",
   "glossaryRatingTitle": "rating",
   "glossaryRatingDef": "The phase where participants rank all propositions on a 0\u2013100 grid to determine the winner.",
   "glossaryCycleTitle": "cycle",
-  "glossaryCycleDef": "A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.",
+  "glossaryCycleDef": "A sequence of rounds working toward convergence. A new cycle starts after convergence is reached.",
   "glossaryCreditBalanceTitle": "credit balance",
   "glossaryCreditBalanceDef": "Credits fund rounds. 1 credit = 1 user-round = $0.01. Free credits reset monthly.",
 

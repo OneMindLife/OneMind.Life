@@ -1679,17 +1679,17 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Normal consensus shows "Consensus #1"
-        expect(find.text('Consensus #1'), findsOneWidget);
+        // Normal consensus shows "Convergence #1"
+        expect(find.text('Convergence #1'), findsOneWidget);
 
         // Host-overridden shows "Host" (since hostDisplayName is null in fixture)
         expect(find.text('Host'), findsOneWidget);
 
-        // Should NOT show "Consensus #2" for the overridden one
-        expect(find.text('Consensus #2'), findsNothing);
+        // Should NOT show "Convergence #2" for the overridden one
+        expect(find.text('Convergence #2'), findsNothing);
       });
 
-      testWidgets('regular consensus still shows Consensus #N', (tester) async {
+      testWidgets('regular consensus still shows Convergence #N', (tester) async {
         final chat = ChatFixtures.model();
         final participant = ParticipantFixtures.model();
 
@@ -1715,8 +1715,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        expect(find.text('Consensus #1'), findsOneWidget);
-        expect(find.text('Consensus #2'), findsOneWidget);
+        expect(find.text('Convergence #1'), findsOneWidget);
+        expect(find.text('Convergence #2'), findsOneWidget);
       });
     });
 

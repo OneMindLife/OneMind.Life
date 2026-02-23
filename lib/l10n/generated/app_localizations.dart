@@ -839,7 +839,7 @@ abstract class AppLocalizations {
   /// No description provided for @tiedWinNoConsensus.
   ///
   /// In en, this message translates to:
-  /// **'Tied win (does not count toward consensus)'**
+  /// **'Tied win (does not count toward convergence)'**
   String get tiedWinNoConsensus;
 
   /// No description provided for @nWayTie.
@@ -1631,7 +1631,7 @@ abstract class AppLocalizations {
   /// No description provided for @consensusNumber.
   ///
   /// In en, this message translates to:
-  /// **'Consensus #{number}'**
+  /// **'Convergence #{number}'**
   String consensusNumber(int number);
 
   /// No description provided for @kickParticipant.
@@ -2145,7 +2145,7 @@ abstract class AppLocalizations {
   /// No description provided for @consensusSettings.
   ///
   /// In en, this message translates to:
-  /// **'Consensus Settings'**
+  /// **'Convergence Settings'**
   String get consensusSettings;
 
   /// No description provided for @confirmationRounds.
@@ -2157,7 +2157,7 @@ abstract class AppLocalizations {
   /// No description provided for @firstWinnerConsensus.
   ///
   /// In en, this message translates to:
-  /// **'First winner reaches consensus immediately'**
+  /// **'First winner reaches convergence immediately'**
   String get firstWinnerConsensus;
 
   /// No description provided for @mustWinConsecutive.
@@ -2853,7 +2853,7 @@ abstract class AppLocalizations {
   /// No description provided for @consensus.
   ///
   /// In en, this message translates to:
-  /// **'Consensus'**
+  /// **'Convergence'**
   String get consensus;
 
   /// No description provided for @aiPropositions.
@@ -2976,24 +2976,6 @@ abstract class AppLocalizations {
   /// **'or scan'**
   String get orScan;
 
-  /// No description provided for @tutorialNextButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Next'**
-  String get tutorialNextButton;
-
-  /// No description provided for @tutorialChooseTemplate.
-  ///
-  /// In en, this message translates to:
-  /// **'Personalize Your Tutorial'**
-  String get tutorialChooseTemplate;
-
-  /// No description provided for @tutorialChooseTemplateSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a scenario that matters to you'**
-  String get tutorialChooseTemplateSubtitle;
-
   /// No description provided for @tutorialTemplateCommunity.
   ///
   /// In en, this message translates to:
@@ -3087,7 +3069,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1ResultTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won this round!'**
+  /// **'\'{winner}\' won this round! But it\'s still not final. It must win another round to be permanently added to the groupchat.'**
   String tutorialRound1ResultTemplate(String winner);
 
   /// No description provided for @tutorialRound2PromptTemplate.
@@ -3096,41 +3078,23 @@ abstract class AppLocalizations {
   /// **'The winner \'{winner}\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
   String tutorialRound2PromptTemplate(String winner);
 
+  /// No description provided for @tutorialAppBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'OneMind Tutorial'**
+  String get tutorialAppBarTitle;
+
   /// No description provided for @tutorialWelcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome to OneMind'**
+  /// **'Welcome!'**
   String get tutorialWelcomeTitle;
 
   /// No description provided for @tutorialWelcomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Learn how groups reach consensus together'**
+  /// **'Pick a practice scenario'**
   String get tutorialWelcomeSubtitle;
-
-  /// No description provided for @tutorialWhatYoullLearn.
-  ///
-  /// In en, this message translates to:
-  /// **'In this tutorial, you\'ll:'**
-  String get tutorialWhatYoullLearn;
-
-  /// No description provided for @tutorialBullet1.
-  ///
-  /// In en, this message translates to:
-  /// **'Submit your ideas anonymously'**
-  String get tutorialBullet1;
-
-  /// No description provided for @tutorialBullet2.
-  ///
-  /// In en, this message translates to:
-  /// **'Rate ideas from others'**
-  String get tutorialBullet2;
-
-  /// No description provided for @tutorialBullet3.
-  ///
-  /// In en, this message translates to:
-  /// **'See how consensus is reached'**
-  String get tutorialBullet3;
 
   /// No description provided for @tutorialTheQuestion.
   ///
@@ -3159,7 +3123,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialConsensusReached.
   ///
   /// In en, this message translates to:
-  /// **'Consensus Reached!'**
+  /// **'Convergence Reached!'**
   String get tutorialConsensusReached;
 
   /// No description provided for @tutorialWonTwoRounds.
@@ -3183,7 +3147,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won this round!'**
+  /// **'\'Success\' won this round! But it\'s still not final. It must win another round to be permanently added to the groupchat.'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
@@ -3195,25 +3159,25 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialProposingHintWithWinner.
   ///
   /// In en, this message translates to:
-  /// **'Submit a new idea. It will be rated alongside the carried-forward winner.'**
+  /// **'Submit a new idea. It will be rated alongside the previous winner.'**
   String get tutorialProposingHintWithWinner;
 
   /// No description provided for @tutorialRatingHint.
   ///
   /// In en, this message translates to:
-  /// **'Now everyone rates each other\'s ideas. Tap the button to start ranking.'**
+  /// **'Now everyone rates each other\'s ideas. Tap the button to start rating.'**
   String get tutorialRatingHint;
 
   /// No description provided for @tutorialRatingBinaryHint.
   ///
   /// In en, this message translates to:
-  /// **'You won\'t see your own idea here — others rate it for you. Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Use [swap] to flip them, then tap [check] to confirm.'**
+  /// **'Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Tap [swap] to flip them, then tap [check] to confirm. You won\'t see your own idea here — others rate it for you.'**
   String get tutorialRatingBinaryHint;
 
   /// No description provided for @tutorialRatingPositioningHint.
   ///
   /// In en, this message translates to:
-  /// **'Use [up] and [down] to move the highlighted idea. Tap [check] to place it. Use [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.'**
+  /// **'Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.'**
   String get tutorialRatingPositioningHint;
 
   /// No description provided for @tutorialRound2Result.
@@ -3227,6 +3191,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The winner \'Success\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
   String get tutorialRound2Prompt;
+
+  /// No description provided for @tutorialRatingCarryForwardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the carried-forward proposition. If it wins again this round, it gets permanently added to the chat.'**
+  String get tutorialRatingCarryForwardHint;
+
+  /// No description provided for @tutorialRound2PromptSimplified.
+  ///
+  /// In en, this message translates to:
+  /// **'Time for a new round! Can you think of something better?'**
+  String get tutorialRound2PromptSimplified;
+
+  /// No description provided for @tutorialRound2PromptSimplifiedTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'Time for a new round! Can you think of something better than \'{winner}\'?'**
+  String tutorialRound2PromptSimplifiedTemplate(String winner);
 
   /// No description provided for @tutorialPropSuccess.
   ///
@@ -3645,14 +3627,14 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialSeeResultsHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap the button below to see how all ideas ranked.'**
+  /// **'Tap the button below to see how all ideas were rated.'**
   String get tutorialSeeResultsHint;
 
   /// No description provided for @tutorialSeeResultsContinueHint.
   ///
   /// In en, this message translates to:
-  /// **'Great! Now you understand how the ranking works. In Round 2, you\'ll submit a new idea and everyone will rate again.'**
-  String get tutorialSeeResultsContinueHint;
+  /// **'Time for a new round! Can you think of something better than \"{winner}\"?'**
+  String tutorialSeeResultsContinueHint(String winner);
 
   /// No description provided for @tutorialResultsBackHint.
   ///
@@ -3663,7 +3645,7 @@ abstract class AppLocalizations {
   /// No description provided for @deleteConsensusTitle.
   ///
   /// In en, this message translates to:
-  /// **'Delete Consensus #{number}?'**
+  /// **'Delete Convergence #{number}?'**
   String deleteConsensusTitle(int number);
 
   /// No description provided for @deleteConsensusMessage.
@@ -3693,7 +3675,7 @@ abstract class AppLocalizations {
   /// No description provided for @consensusDeleted.
   ///
   /// In en, this message translates to:
-  /// **'Consensus deleted'**
+  /// **'Convergence deleted'**
   String get consensusDeleted;
 
   /// No description provided for @initialMessageUpdated.
@@ -3711,7 +3693,7 @@ abstract class AppLocalizations {
   /// No description provided for @failedToDeleteConsensus.
   ///
   /// In en, this message translates to:
-  /// **'Failed to delete consensus: {error}'**
+  /// **'Failed to delete convergence: {error}'**
   String failedToDeleteConsensus(String error);
 
   /// No description provided for @failedToUpdateInitialMessage.
@@ -3837,43 +3819,43 @@ abstract class AppLocalizations {
   /// No description provided for @forceAsConsensus.
   ///
   /// In en, this message translates to:
-  /// **'Force as Consensus'**
+  /// **'Force as Convergence'**
   String get forceAsConsensus;
 
   /// No description provided for @forceAsConsensusDescription.
   ///
   /// In en, this message translates to:
-  /// **'Submit directly as consensus, skipping voting'**
+  /// **'Submit directly as convergence, skipping voting'**
   String get forceAsConsensusDescription;
 
   /// No description provided for @forceConsensus.
   ///
   /// In en, this message translates to:
-  /// **'Force Consensus'**
+  /// **'Force Convergence'**
   String get forceConsensus;
 
   /// No description provided for @forceConsensusTitle.
   ///
   /// In en, this message translates to:
-  /// **'Force Consensus?'**
+  /// **'Force Convergence?'**
   String get forceConsensusTitle;
 
   /// No description provided for @forceConsensusMessage.
   ///
   /// In en, this message translates to:
-  /// **'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.'**
+  /// **'This will immediately set your proposition as the convergence and start a new cycle. All current round progress will be lost.'**
   String get forceConsensusMessage;
 
   /// No description provided for @forceConsensusSuccess.
   ///
   /// In en, this message translates to:
-  /// **'Consensus forced successfully'**
+  /// **'Convergence forced successfully'**
   String get forceConsensusSuccess;
 
   /// No description provided for @failedToForceConsensus.
   ///
   /// In en, this message translates to:
-  /// **'Failed to force consensus: {error}'**
+  /// **'Failed to force convergence: {error}'**
   String failedToForceConsensus(String error);
 
   /// No description provided for @glossaryUserRoundTitle.
@@ -3891,13 +3873,13 @@ abstract class AppLocalizations {
   /// No description provided for @glossaryConsensusTitle.
   ///
   /// In en, this message translates to:
-  /// **'consensus'**
+  /// **'convergence'**
   String get glossaryConsensusTitle;
 
   /// No description provided for @glossaryConsensusDef.
   ///
   /// In en, this message translates to:
-  /// **'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.'**
+  /// **'When the same proposition wins multiple consecutive rounds, the group has reached convergence on that idea.'**
   String get glossaryConsensusDef;
 
   /// No description provided for @glossaryProposingTitle.
@@ -3933,7 +3915,7 @@ abstract class AppLocalizations {
   /// No description provided for @glossaryCycleDef.
   ///
   /// In en, this message translates to:
-  /// **'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.'**
+  /// **'A sequence of rounds working toward convergence. A new cycle starts after convergence is reached.'**
   String get glossaryCycleDef;
 
   /// No description provided for @glossaryCreditBalanceTitle.

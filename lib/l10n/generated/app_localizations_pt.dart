@@ -427,7 +427,7 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get tiedWinNoConsensus => 'Empate (nao conta para o consenso)';
+  String get tiedWinNoConsensus => 'Empate (nao conta para a convergencia)';
 
   @override
   String nWayTie(int count) {
@@ -890,7 +890,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String consensusNumber(int number) {
-    return 'Consenso #$number';
+    return 'Convergencia #$number';
   }
 
   @override
@@ -1181,14 +1181,14 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get consensusSettings => 'Configuracoes de Consenso';
+  String get consensusSettings => 'Configuracoes de Convergencia';
 
   @override
   String get confirmationRounds => 'Rodadas de confirmacao';
 
   @override
   String get firstWinnerConsensus =>
-      'O primeiro vencedor alcanca consenso imediatamente';
+      'O primeiro vencedor alcanca convergencia imediatamente';
 
   @override
   String mustWinConsecutive(int count) {
@@ -1589,7 +1589,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get avgRatersPerProposition => 'avaliadores médios por proposição';
 
   @override
-  String get consensus => 'Consenso';
+  String get consensus => 'Convergencia';
 
   @override
   String get aiPropositions => 'Proposições de IA';
@@ -1657,16 +1657,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get orScan => 'ou escaneie';
 
   @override
-  String get tutorialNextButton => 'Próximo';
-
-  @override
-  String get tutorialChooseTemplate => 'Personalize seu tutorial';
-
-  @override
-  String get tutorialChooseTemplateSubtitle =>
-      'Escolha um cenario que importa para voce';
-
-  @override
   String get tutorialTemplateCommunity => 'Decisão comunitária';
 
   @override
@@ -1718,7 +1708,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' venceu esta rodada!';
+    return '\'$winner\' venceu esta rodada! Mas ainda não é definitivo. Precisa vencer outra rodada para ser adicionado permanentemente ao chat do grupo.';
   }
 
   @override
@@ -1727,23 +1717,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String get tutorialWelcomeTitle => 'Bem-vindo ao OneMind';
+  String get tutorialAppBarTitle => 'Tutorial do OneMind';
 
   @override
-  String get tutorialWelcomeSubtitle =>
-      'Aprenda como grupos alcancam consenso juntos';
+  String get tutorialWelcomeTitle => 'Bem-vindo!';
 
   @override
-  String get tutorialWhatYoullLearn => 'Neste tutorial:';
-
-  @override
-  String get tutorialBullet1 => 'Envie suas ideias anonimamente';
-
-  @override
-  String get tutorialBullet2 => 'Avalie ideias de outros';
-
-  @override
-  String get tutorialBullet3 => 'Veja como o consenso e alcancado';
+  String get tutorialWelcomeSubtitle => 'Escolha um cenário de prática';
 
   @override
   String get tutorialTheQuestion => 'A pergunta:';
@@ -1758,7 +1738,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutorialSkipButton => 'Pular tutorial';
 
   @override
-  String get tutorialConsensusReached => 'Consenso Alcancado!';
+  String get tutorialConsensusReached => 'Convergencia Alcancada!';
 
   @override
   String tutorialWonTwoRounds(String proposition) {
@@ -1772,7 +1752,8 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutorialFinishButton => 'Finalizar Tutorial';
 
   @override
-  String get tutorialRound1Result => '\'Sucesso\' venceu esta rodada!';
+  String get tutorialRound1Result =>
+      '\'Sucesso\' venceu esta rodada! Mas ainda não é definitivo. Precisa vencer outra rodada para ser adicionado permanentemente ao chat do grupo.';
 
   @override
   String get tutorialProposingHint =>
@@ -1780,19 +1761,19 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutorialProposingHintWithWinner =>
-      'Envie uma nova ideia. Ela sera avaliada junto com o vencedor da rodada anterior.';
+      'Envie uma nova ideia. Ela sera avaliada junto com o vencedor anterior.';
 
   @override
   String get tutorialRatingHint =>
-      'Agora todos avaliam as ideias uns dos outros. Toque no botao para comecar a classificar.';
+      'Agora todos avaliam as ideias uns dos outros. Toque no botao para comecar a avaliar.';
 
   @override
   String get tutorialRatingBinaryHint =>
-      'Voce nao vera sua propria ideia aqui — outros a avaliam por voce. Qual destas voce prefere? Coloque-a no topo (100). Coloque a que menos prefere na parte inferior (0). Use [swap] para inverte-las e toque em [check] para confirmar.';
+      'Qual destas voce prefere? Coloque-a no topo (100). Coloque a que menos prefere na parte inferior (0). Toque em [swap] para inverte-las e toque em [check] para confirmar. Voce nao vera sua propria ideia aqui — outros a avaliam por voce.';
 
   @override
   String get tutorialRatingPositioningHint =>
-      'Use [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Use [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.';
+      'Toque e segure [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Toque em [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.';
 
   @override
   String tutorialRound2Result(String proposition) {
@@ -1802,6 +1783,19 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get tutorialRound2Prompt =>
       'O vencedor \'Sucesso\' e automaticamente levado para competir novamente. Precisa vencer 2 rodadas seguidas para se tornar uma resposta permanente.';
+
+  @override
+  String get tutorialRatingCarryForwardHint =>
+      'Esta e a proposta que veio da rodada anterior. Se vencer novamente esta rodada, sera adicionada permanentemente ao chat.';
+
+  @override
+  String get tutorialRound2PromptSimplified =>
+      'Hora de uma nova rodada! Consegue pensar em algo melhor?';
+
+  @override
+  String tutorialRound2PromptSimplifiedTemplate(String winner) {
+    return 'Hora de uma nova rodada! Consegue pensar em algo melhor que \'$winner\'?';
+  }
 
   @override
   String get tutorialPropSuccess => 'Sucesso';
@@ -2016,11 +2010,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutorialSeeResultsHint =>
-      'Toque no botao abaixo para ver como todas as ideias foram classificadas.';
+      'Toque no botao abaixo para ver como todas as ideias foram avaliadas.';
 
   @override
-  String get tutorialSeeResultsContinueHint =>
-      'Otimo! Agora voce entende como a classificacao funciona. Na Rodada 2, voce enviara uma nova ideia e todos avaliarao novamente.';
+  String tutorialSeeResultsContinueHint(String winner) {
+    return 'Hora de uma nova rodada! Consegue pensar em algo melhor que \"$winner\"?';
+  }
 
   @override
   String get tutorialResultsBackHint =>
@@ -2028,7 +2023,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String deleteConsensusTitle(int number) {
-    return 'Delete Consensus #$number?';
+    return 'Excluir Convergencia #$number?';
   }
 
   @override
@@ -2046,7 +2041,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get editInitialMessage => 'Edit Initial Message';
 
   @override
-  String get consensusDeleted => 'Consensus deleted';
+  String get consensusDeleted => 'Convergencia excluida';
 
   @override
   String get initialMessageUpdated => 'Initial message updated';
@@ -2056,7 +2051,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String failedToDeleteConsensus(String error) {
-    return 'Failed to delete consensus: $error';
+    return 'Falha ao excluir a convergencia: $error';
   }
 
   @override
@@ -2132,28 +2127,28 @@ class AppLocalizationsPt extends AppLocalizations {
   String get buyMoreCredits => 'Buy Credits';
 
   @override
-  String get forceAsConsensus => 'Force as Consensus';
+  String get forceAsConsensus => 'Forcar como Convergencia';
 
   @override
   String get forceAsConsensusDescription =>
-      'Submit directly as consensus, skipping voting';
+      'Enviar diretamente como convergencia, pulando a votacao';
 
   @override
-  String get forceConsensus => 'Force Consensus';
+  String get forceConsensus => 'Forcar Convergencia';
 
   @override
-  String get forceConsensusTitle => 'Force Consensus?';
+  String get forceConsensusTitle => 'Forcar Convergencia?';
 
   @override
   String get forceConsensusMessage =>
-      'This will immediately set your proposition as the consensus and start a new cycle. All current round progress will be lost.';
+      'Isso definira imediatamente sua proposta como a convergencia e iniciara um novo ciclo. Todo o progresso da rodada atual sera perdido.';
 
   @override
-  String get forceConsensusSuccess => 'Consensus forced successfully';
+  String get forceConsensusSuccess => 'Convergencia forcada com sucesso';
 
   @override
   String failedToForceConsensus(String error) {
-    return 'Failed to force consensus: $error';
+    return 'Falha ao forcar a convergencia: $error';
   }
 
   @override
@@ -2164,11 +2159,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
 
   @override
-  String get glossaryConsensusTitle => 'consensus';
+  String get glossaryConsensusTitle => 'convergencia';
 
   @override
   String get glossaryConsensusDef =>
-      'When the same proposition wins multiple consecutive rounds, the group has reached consensus on that idea.';
+      'Quando a mesma proposta vence varias rodadas consecutivas, o grupo alcancou convergencia nessa ideia.';
 
   @override
   String get glossaryProposingTitle => 'proposing';
@@ -2189,7 +2184,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get glossaryCycleDef =>
-      'A sequence of rounds working toward consensus. A new cycle starts after consensus is reached.';
+      'Uma sequencia de rodadas trabalhando em direcao a convergencia. Um novo ciclo comeca apos a convergencia ser alcancada.';
 
   @override
   String get glossaryCreditBalanceTitle => 'credit balance';

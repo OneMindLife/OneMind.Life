@@ -181,7 +181,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ],
       ),
       body: myChatsStateAsync.when(
-        data: (myChatsState) => RefreshIndicator(
+        data: (myChatsState) => AnimatedOpacity(
+          opacity: myChatsState.isTranslating ? 0.4 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: RefreshIndicator(
           onRefresh: () async {
             ref.read(myChatsProvider.notifier).refresh();
             ref.invalidate(officialChatProvider);
@@ -259,7 +262,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ),
             ],
           ),
-        ),
+        )),
         loading: () => Semantics(
           label: l10n.loadingChats,
           child: const Center(child: CircularProgressIndicator()),
@@ -450,28 +453,6 @@ class _ChatCard extends StatelessWidget {
                               style: Theme.of(context).textTheme.titleMedium,
                             ),
                           ),
-                          if (isOfficial)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                l10n.official,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .labelSmall
-                                    ?.copyWith(
-                                      color:
-                                          Theme.of(context).colorScheme.onPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ),
                         ],
                       ),
                       const SizedBox(height: 4),

@@ -359,13 +359,7 @@ void main() {
     });
 
     group('template selection', () {
-      test('nextStep from intro goes to templateSelection', () {
-        chatNotifier.nextStep();
-        expect(chatNotifier.state.currentStep, TutorialStep.templateSelection);
-      });
-
       test('selectTemplate sets template and advances to round1Proposing', () {
-        chatNotifier.nextStep(); // intro → templateSelection
         chatNotifier.selectTemplate('community');
 
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
@@ -373,7 +367,6 @@ void main() {
       });
 
       test('selectTemplate with custom question stores question', () {
-        chatNotifier.nextStep();
         chatNotifier.selectTemplate('classic', customQuestion: 'My question?');
 
         expect(chatNotifier.state.selectedTemplate, 'classic');
@@ -381,10 +374,6 @@ void main() {
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
       });
 
-      test('showTemplateSelection goes to templateSelection', () {
-        chatNotifier.showTemplateSelection();
-        expect(chatNotifier.state.currentStep, TutorialStep.templateSelection);
-      });
     });
 
     group('template-aware propositions', () {
@@ -433,7 +422,6 @@ void main() {
 
     group('full flow with template', () {
       test('completes entire flow with community template', () {
-        chatNotifier.nextStep(); // intro → templateSelection
         chatNotifier.selectTemplate('community');
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
         expect(chatNotifier.state.selectedTemplate, 'community');

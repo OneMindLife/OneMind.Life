@@ -6,15 +6,9 @@ import 'package:onemind_app/screens/tutorial/widgets/tutorial_progress_dots.dart
 
 import '../../helpers/pump_app.dart';
 
-/// Helper to navigate from intro through template selection to proposing
+/// Helper to navigate from intro to proposing by tapping a template card
 Future<void> _navigateToProposing(WidgetTester tester) async {
-  // Tap Next on intro
-  await tester.ensureVisible(find.text('Next'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Next'));
-  await tester.pumpAndSettle();
-
-  // Select Community Decision template
+  // Select Community Decision template directly from intro
   await tester.ensureVisible(find.text('Community Decision'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Community Decision'));
@@ -23,7 +17,7 @@ Future<void> _navigateToProposing(WidgetTester tester) async {
 
 void main() {
   group('TutorialScreen', () {
-    testWidgets('displays intro panel on start', (tester) async {
+    testWidgets('displays intro panel with template cards on start', (tester) async {
       var completed = false;
 
       await tester.pumpApp(
@@ -35,35 +29,12 @@ void main() {
       // Wait for post-frame callback to start tutorial
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome to OneMind'), findsOneWidget);
-      expect(find.text('Next'), findsOneWidget);
-    });
-
-    testWidgets('tapping Next shows template selection', (tester) async {
-      await tester.pumpApp(
-        TutorialScreen(
-          onComplete: () {},
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Tap Next
-      await tester.ensureVisible(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-
-      // Template selection should appear
-      expect(find.text('Personalize Your Tutorial'), findsOneWidget);
+      expect(find.text('Welcome!'), findsOneWidget);
       expect(find.text('Personal Decision'), findsOneWidget);
-      expect(find.text('Family'), findsOneWidget);
       expect(find.text('Community Decision'), findsOneWidget);
-      expect(find.text('Workplace Culture'), findsOneWidget);
-      expect(find.text('City Budget'), findsOneWidget);
-      expect(find.text('Global Issues'), findsOneWidget);
     });
 
-    testWidgets('hides app bar on intro and template selection, shows after template pick', (tester) async {
+    testWidgets('shows app bar with tutorial title on intro and after template pick', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -71,17 +42,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // No app bar on intro screen
-      expect(find.byType(AppBar), findsNothing);
-
-      // Go to template selection
-      await tester.ensureVisible(find.text('Next'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Next'));
-      await tester.pumpAndSettle();
-
-      // Still no app bar on template selection
-      expect(find.byType(AppBar), findsNothing);
+      // App bar visible on intro with title
+      expect(find.byType(AppBar), findsOneWidget);
+      expect(find.text('OneMind Tutorial'), findsOneWidget);
 
       // Select a template
       await tester.ensureVisible(find.text('Community Decision'));
@@ -89,9 +52,8 @@ void main() {
       await tester.tap(find.text('Community Decision'));
       await tester.pumpAndSettle();
 
-      // App bar appears with 3-dot menu (Skip is now inside PopupMenu)
+      // App bar still visible with 3-dot menu after template pick
       expect(find.byType(AppBar), findsOneWidget);
-      expect(find.byType(PopupMenuButton<String>), findsOneWidget);
     });
 
     testWidgets('navigates to round 1 proposing after selecting template',
@@ -202,7 +164,7 @@ void main() {
 
       // Should still be on intro, not completed
       expect(completed, isFalse);
-      expect(find.text('Welcome to OneMind'), findsOneWidget);
+      expect(find.text('Welcome!'), findsOneWidget);
     });
 
 
@@ -243,7 +205,7 @@ void main() {
     });
 
     group('Tutorial panel widgets', () {
-      testWidgets('intro panel has next and skip buttons', (tester) async {
+      testWidgets('intro panel has template cards and skip button', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -251,7 +213,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Next'), findsOneWidget);
+        expect(find.text('Personal Decision'), findsOneWidget);
         expect(find.text('Skip tutorial'), findsOneWidget);
       });
 
@@ -306,11 +268,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // These strings come from l10n, not hardcoded
-        expect(find.text('Welcome to OneMind'), findsOneWidget);
-        expect(find.text('Learn how groups reach consensus together'), findsOneWidget);
+        expect(find.text('Welcome!'), findsOneWidget);
+        expect(find.text('Pick a practice scenario'), findsOneWidget);
       });
 
-      testWidgets('displays localized bullet points', (tester) async {
+      testWidgets('displays template cards', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -318,9 +280,9 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Submit your ideas anonymously'), findsOneWidget);
-        expect(find.text('Rate ideas from others'), findsOneWidget);
-        expect(find.text('See how consensus is reached'), findsOneWidget);
+        expect(find.text('Personal Decision'), findsOneWidget);
+        expect(find.text('Family'), findsOneWidget);
+        expect(find.text('Community Decision'), findsOneWidget);
       });
 
       testWidgets('displays localized button labels', (tester) async {
@@ -331,7 +293,6 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Next'), findsOneWidget);
         expect(find.text('Skip tutorial'), findsOneWidget);
       });
 
@@ -367,7 +328,7 @@ void main() {
         expect(find.byKey(const Key('tutorial-share-button')), findsNothing);
       });
 
-      testWidgets('skip option is accessible via 3-dot menu', (tester) async {
+      testWidgets('close button shows skip confirmation', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -378,12 +339,12 @@ void main() {
         // Navigate to proposing
         await _navigateToProposing(tester);
 
-        // Tap the 3-dot menu
-        await tester.tap(find.byType(PopupMenuButton<String>));
+        // Tap the close button in AppBar
+        await tester.tap(find.byIcon(Icons.close));
         await tester.pumpAndSettle();
 
-        // Skip option should be visible in the menu
-        expect(find.text('Skip Tutorial'), findsOneWidget);
+        // Skip confirmation dialog should appear
+        expect(find.text('Skip Tutorial?'), findsOneWidget);
       });
     });
 
@@ -478,33 +439,6 @@ void main() {
         // Should be on rating state now
         expect(find.text('Start Rating'), findsOneWidget);
       });
-    });
-
-    group('Template selection', () {
-      testWidgets('back button on template selection returns to intro', (tester) async {
-        await tester.pumpApp(
-          TutorialScreen(
-            onComplete: () {},
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        // Go to template selection
-        await tester.ensureVisible(find.text('Next'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.text('Next'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Personalize Your Tutorial'), findsOneWidget);
-
-        // Tap back button
-        await tester.tap(find.byKey(const Key('template-back-button')));
-        await tester.pumpAndSettle();
-
-        // Should be back on intro
-        expect(find.text('Welcome to OneMind'), findsOneWidget);
-      });
-
     });
   });
 }

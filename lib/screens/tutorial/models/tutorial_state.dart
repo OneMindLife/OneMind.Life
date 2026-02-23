@@ -5,7 +5,6 @@ import '../../../models/models.dart';
 enum TutorialStep {
   // Intro
   intro,
-  templateSelection,
 
   // Round 1
   round1Proposing,

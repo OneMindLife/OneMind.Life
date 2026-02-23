@@ -5,6 +5,7 @@ import '../../config/env_config.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
+import '../../widgets/language_selector.dart';
 import '../../widgets/qr_code_share.dart';
 import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
@@ -15,7 +16,6 @@ import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
 import 'widgets/tutorial_intro_panel.dart';
 import 'widgets/tutorial_progress_dots.dart';
-import 'widgets/tutorial_template_panel.dart';
 
 /// Provider for tutorial chat state (new version using real ChatScreen layout)
 /// Uses autoDispose so state resets when tutorial screen is closed
@@ -218,6 +218,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         builder: (context) => _TutorialRatingScreen(
           propositions: translatedPropositions,
           showHints: state.currentStep == TutorialStep.round1Rating,
+          isRound2: state.currentStep == TutorialStep.round2Rating,
           onComplete: () {
             // Complete the rating based on current step
             final currentState = ref.read(tutorialChatNotifierProvider);
@@ -273,13 +274,18 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final showShareButton = state.currentStep == TutorialStep.shareDemo;
 
     return Scaffold(
-      // Hide app bar on intro and template selection - panels have their own navigation
-      appBar: (state.currentStep == TutorialStep.intro ||
-              state.currentStep == TutorialStep.templateSelection)
-          ? null
-          : AppBar(
+      appBar: AppBar(
               automaticallyImplyLeading: false,
+              title: Builder(
+                builder: (context) {
+                  final l10n = AppLocalizations.of(context);
+                  return Text(l10n.tutorialAppBarTitle);
+                },
+              ),
               actions: [
+                // Language selector on intro screen
+                if (state.currentStep == TutorialStep.intro)
+                  const LanguageSelector(compact: true),
                 // Share button - only shown at shareDemo step
                 if (showShareButton)
                   Builder(
@@ -293,31 +299,23 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                       );
                     },
                   ),
-                // 3-dot menu with Skip option
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'skip') {
-                      _handleSkip();
-                    }
-                  },
-                  itemBuilder: (context) {
-                    final l10n = AppLocalizations.of(context);
-                    return [
-                      PopupMenuItem<String>(
-                        value: 'skip',
-                        child: Text(l10n.tutorialSkipMenuItem),
-                      ),
-                    ];
-                  },
-                ),
+                // Exit button (not on intro - skip is in panel)
+                if (state.currentStep != TutorialStep.intro)
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: l10n.tutorialSkipMenuItem,
+                        onPressed: _handleSkip,
+                      );
+                    },
+                  ),
               ],
             ),
-      body: (state.currentStep == TutorialStep.intro ||
-              state.currentStep == TutorialStep.templateSelection)
-          // Intro/Template Selection: full screen with SafeArea, no app bar
-          ? SafeArea(
-              child: _buildTutorialPanel(state),
-            )
+      body: state.currentStep == TutorialStep.intro
+          // Intro: full screen panel (AppBar provides safe area)
+          ? _buildTutorialPanel(state)
           // After template selection: Column with progress dots, chat history, bottom area
           : Column(
               children: [
@@ -339,21 +337,25 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                         padding: const EdgeInsets.all(16),
                         children: [
                           // Initial Message (the tutorial question)
-                          _buildMessageCard(
-                            l10n.initialMessage,
-                            initialMessage,
-                            isPrimary: true,
+                          Center(
+                            child: _buildMessageCard(
+                              l10n.initialMessage,
+                              initialMessage,
+                              isPrimary: true,
+                            ),
                           ),
                           const SizedBox(height: 16),
 
                           // Consensus Items
                           ...state.consensusItems.asMap().entries.map((entry) {
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: _buildMessageCard(
-                                l10n.consensusNumber(entry.key + 1),
-                                entry.value.displayContent,
-                                isPrimary: true,
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
+                                child: _buildMessageCard(
+                                  l10n.consensusNumber(entry.key + 1),
+                                  entry.value.displayContent,
+                                  isPrimary: true,
+                                ),
                               ),
                             );
                           }),
@@ -384,9 +386,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   /// Determine if we should show a tutorial-specific panel (not chat-like)
   bool _shouldShowTutorialPanel(TutorialStep step) {
-    // Intro, template selection, consensus, and shareDemo use tutorial panels (no tabbar)
+    // Intro, consensus, and shareDemo use tutorial panels (no tabbar)
     return step == TutorialStep.intro ||
-        step == TutorialStep.templateSelection ||
         step == TutorialStep.round3Consensus ||
         step == TutorialStep.shareDemo ||
         step == TutorialStep.complete;
@@ -556,7 +557,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     } else if (state.currentStep == TutorialStep.round1SeeResults) {
       // Different message depending on whether user has viewed the grid
       if (state.hasViewedRound1Grid) {
-        return l10n.tutorialSeeResultsContinueHint;
+        final winnerContent = state.previousRoundWinners.isNotEmpty
+            ? _translateProposition(
+                state.previousRoundWinners.first.content ?? '', l10n)
+            : '';
+        return l10n.tutorialSeeResultsContinueHint(winnerContent);
       } else {
         return l10n.tutorialSeeResultsHint;
       }
@@ -804,9 +809,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       if (templateKey != null && templateKey != 'classic') {
         final winner = _translateProposition(
           TutorialData.round1WinnerForTemplate(templateKey), l10n);
-        return l10n.tutorialRound2PromptTemplate(winner);
+        return l10n.tutorialRound2PromptSimplifiedTemplate(winner);
       }
-      return l10n.tutorialRound2Prompt;
+      return l10n.tutorialRound2PromptSimplified;
     }
     return '';
   }
@@ -836,21 +841,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         );
       case RoundPhase.proposing:
         final l10n = AppLocalizations.of(context);
-        // Show proposing hint only when user hasn't submitted yet
-        // Round 1: explain what to submit
-        // Round 2: explain they're challenging the winner (first time seeing it)
-        // Round 3: no hint needed (they already understand)
+        // Show proposing hint only for Round 1 when user hasn't submitted yet
         final isFirstRound = state.currentRound?.customId == 1;
-        final isSecondRound = state.currentRound?.customId == 2;
-        final showProposingHint = state.myPropositions.isEmpty && (isFirstRound || isSecondRound);
-        final proposingHintText = isSecondRound
-            ? l10n.tutorialProposingHintWithWinner
-            : l10n.tutorialProposingHint;
+        final showProposingHint = state.myPropositions.isEmpty && isFirstRound;
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showProposingHint)
-              _buildEducationalHint(proposingHintText),
+              _buildEducationalHint(l10n.tutorialProposingHint),
             ProposingStatePanel(
               roundCustomId: state.currentRound!.customId,
               propositionsPerUser: state.chat.propositionsPerUser,
@@ -895,20 +893,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     switch (state.currentStep) {
       case TutorialStep.intro:
         return TutorialIntroPanel(
-          onStart: () {
-            notifier.nextStep();
-          },
-          onSkip: _handleSkip,
-        );
-
-      case TutorialStep.templateSelection:
-        return TutorialTemplatePanel(
           onSelect: (templateKey) {
             notifier.selectTemplate(templateKey);
           },
-          onBack: () {
-            notifier.startTutorial(); // Go back to intro
-          },
+          onSkip: _handleSkip,
         );
 
       case TutorialStep.round3Consensus:
@@ -1011,11 +999,13 @@ class _TutorialRatingScreen extends StatefulWidget {
   final List<Proposition> propositions;
   final VoidCallback onComplete;
   final bool showHints;
+  final bool isRound2;
 
   const _TutorialRatingScreen({
     required this.propositions,
     required this.onComplete,
     this.showHints = false,
+    this.isRound2 = false,
   });
 
   @override
@@ -1046,13 +1036,16 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
             _buildHint(context, l10n.tutorialRatingBinaryHint),
           if (widget.showHints && _currentPhase == RatingPhase.positioning)
             _buildHint(context, l10n.tutorialRatingPositioningHint),
+          // Round 2: only show carry-forward hint when positioning starts
+          if (!widget.showHints && widget.isRound2 && _currentPhase == RatingPhase.positioning)
+            _buildHint(context, l10n.tutorialRatingCarryForwardHint),
           Expanded(
             child: RatingWidget(
               propositions: propsForRating,
               onRankingComplete: (_) => widget.onComplete(),
               lazyLoadingMode: false,
               isResuming: false,
-              onPhaseChanged: widget.showHints
+              onPhaseChanged: (widget.showHints || widget.isRound2)
                   ? (phase) {
                       if (mounted) setState(() => _currentPhase = phase);
                     }

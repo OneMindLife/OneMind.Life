@@ -14,24 +14,28 @@ import '../providers.dart';
 class MyChatsState extends Equatable {
   final List<Chat> chats;
   final List<JoinRequest> pendingRequests;
+  final bool isTranslating;
 
   const MyChatsState({
     this.chats = const [],
     this.pendingRequests = const [],
+    this.isTranslating = false,
   });
 
   MyChatsState copyWith({
     List<Chat>? chats,
     List<JoinRequest>? pendingRequests,
+    bool? isTranslating,
   }) {
     return MyChatsState(
       chats: chats ?? this.chats,
       pendingRequests: pendingRequests ?? this.pendingRequests,
+      isTranslating: isTranslating ?? this.isTranslating,
     );
   }
 
   @override
-  List<Object?> get props => [chats, pendingRequests];
+  List<Object?> get props => [chats, pendingRequests, isTranslating];
 }
 
 /// Notifier for managing the user's chat list with Realtime updates.
@@ -88,10 +92,14 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     _refreshForLanguageChange();
   }
 
-  /// Refresh when language changes (silent refresh, no loading state)
+  /// Refresh when language changes.
+  /// Sets isTranslating immediately so the UI can show feedback.
   Future<void> _refreshForLanguageChange() async {
     final currentState = state.valueOrNull;
     if (currentState == null) return;
+
+    // Show translating state immediately
+    state = AsyncData(currentState.copyWith(isTranslating: true));
 
     try {
       final results = await Future.wait([
@@ -104,7 +112,8 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         pendingRequests: results[1] as List<JoinRequest>,
       ));
     } catch (e) {
-      // Silent failure - keep existing data on language refresh error
+      // Revert translating state on failure
+      state = AsyncData(currentState);
     }
   }
 
