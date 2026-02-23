@@ -10,15 +10,21 @@ class WaitingStatePanel extends StatelessWidget {
   final int participantCount;
   final int autoStartParticipantCount;
 
+  /// Whether the share button is visible in the app bar.
+  /// When true and only the host is present, shows a hint to use it.
+  final bool showShareHint;
+
   const WaitingStatePanel({
     super.key,
     required this.participantCount,
     this.autoStartParticipantCount = 3,
+    this.showShareHint = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final remaining = autoStartParticipantCount - participantCount;
     final waitingCount = remaining > 0 ? remaining : 0;
 
@@ -37,9 +43,30 @@ class WaitingStatePanel extends StatelessWidget {
           Text(
             l10n.waitingForMoreParticipants(waitingCount),
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: colorScheme.onSurfaceVariant,
                 ),
           ),
+          if (showShareHint && participantCount <= 1) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.ios_share,
+                  size: 16,
+                  color: colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.noMembersYetShareHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.primary,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );

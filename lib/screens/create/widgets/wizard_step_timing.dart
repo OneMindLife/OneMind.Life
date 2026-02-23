@@ -50,111 +50,107 @@ class WizardStepTiming extends StatelessWidget {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
-
-                  // Subtitle
-                  Text(
-                    l10n.wizardStep2Subtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
                   const SizedBox(height: 24),
 
-                  // Toggle for same duration
-                  SwitchListTile(
-                    title: Text(l10n.useSameDuration),
-                    subtitle: Text(l10n.useSameDurationDesc),
-                    value: timerSettings.useSameDuration,
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (value) {
-                      if (value) {
-                        onTimerSettingsChanged(timerSettings.copyWith(
-                          useSameDuration: true,
-                          ratingPreset: timerSettings.proposingPreset,
-                          ratingDuration: timerSettings.proposingDuration,
-                        ));
-                      } else {
-                        onTimerSettingsChanged(
-                            timerSettings.copyWith(useSameDuration: false));
-                      }
-                    },
+                  // Proposing duration — always shown first
+                  SettingTile(
+                    question: 'How long for proposing?',
+                    description:
+                        'Currently: ${formatDurationDescription(timerSettings.proposingPreset, timerSettings.proposingDuration, l10n)}',
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color:
+                              theme.colorScheme.outline.withAlpha(77),
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TimerPresets(
+                        label: '',
+                        selected: timerSettings.proposingPreset,
+                        customDuration:
+                            timerSettings.proposingPreset == 'custom'
+                                ? timerSettings.proposingDuration
+                                : null,
+                        onChanged: (preset, duration) {
+                          if (timerSettings.useSameDuration) {
+                            onTimerSettingsChanged(
+                                timerSettings.copyWith(
+                              proposingPreset: preset,
+                              proposingDuration: duration,
+                              ratingPreset: preset,
+                              ratingDuration: duration,
+                            ));
+                          } else {
+                            onTimerSettingsChanged(
+                                timerSettings.copyWith(
+                              proposingPreset: preset,
+                              proposingDuration: duration,
+                            ));
+                          }
+                        },
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 8),
 
-                  if (timerSettings.useSameDuration) ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withAlpha(77),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TimerPresets(
-                        label: l10n.phaseDuration,
-                        selected: timerSettings.proposingPreset,
-                        customDuration: timerSettings.proposingPreset == 'custom'
-                            ? timerSettings.proposingDuration
-                            : null,
-                        onChanged: (preset, duration) {
+                  // Same duration toggle
+                  SettingTile(
+                    question: 'Same duration for rating phase?',
+                    description: timerSettings.useSameDuration
+                        ? 'Yes, rating uses the same time'
+                        : 'No, rating has a different duration',
+                    trailing: Switch(
+                      value: timerSettings.useSameDuration,
+                      onChanged: (value) {
+                        if (value) {
                           onTimerSettingsChanged(timerSettings.copyWith(
-                            proposingPreset: preset,
-                            proposingDuration: duration,
-                            ratingPreset: preset,
-                            ratingDuration: duration,
+                            useSameDuration: true,
+                            ratingPreset: timerSettings.proposingPreset,
+                            ratingDuration: timerSettings.proposingDuration,
                           ));
-                        },
-                      ),
+                        } else {
+                          onTimerSettingsChanged(timerSettings.copyWith(
+                              useSameDuration: false));
+                        }
+                      },
                     ),
-                  ] else ...[
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withAlpha(77),
+                  ),
+
+                  // Rating duration — only shown when different from proposing
+                  if (!timerSettings.useSameDuration) ...[
+                    const SizedBox(height: 8),
+                    SettingTile(
+                      question: 'How long for rating?',
+                      description:
+                          'Currently: ${formatDurationDescription(timerSettings.ratingPreset, timerSettings.ratingDuration, l10n)}',
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color:
+                                theme.colorScheme.outline.withAlpha(77),
+                          ),
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TimerPresets(
-                        label: l10n.wizardProposingLabel,
-                        selected: timerSettings.proposingPreset,
-                        customDuration: timerSettings.proposingPreset == 'custom'
-                            ? timerSettings.proposingDuration
-                            : null,
-                        onChanged: (preset, duration) {
-                          onTimerSettingsChanged(timerSettings.copyWith(
-                            proposingPreset: preset,
-                            proposingDuration: duration,
-                          ));
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withAlpha(77),
+                        child: TimerPresets(
+                          label: '',
+                          selected: timerSettings.ratingPreset,
+                          customDuration:
+                              timerSettings.ratingPreset == 'custom'
+                                  ? timerSettings.ratingDuration
+                                  : null,
+                          onChanged: (preset, duration) {
+                            onTimerSettingsChanged(
+                                timerSettings.copyWith(
+                              ratingPreset: preset,
+                              ratingDuration: duration,
+                            ));
+                          },
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TimerPresets(
-                        label: l10n.wizardRatingLabel,
-                        selected: timerSettings.ratingPreset,
-                        customDuration: timerSettings.ratingPreset == 'custom'
-                            ? timerSettings.ratingDuration
-                            : null,
-                        onChanged: (preset, duration) {
-                          onTimerSettingsChanged(timerSettings.copyWith(
-                            ratingPreset: preset,
-                            ratingDuration: duration,
-                          ));
-                        },
                       ),
                     ),
                   ],

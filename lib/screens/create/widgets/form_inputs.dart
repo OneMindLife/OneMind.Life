@@ -156,6 +156,104 @@ class SectionHeader extends StatelessWidget {
   }
 }
 
+/// A reusable question-answer tile for wizard settings.
+///
+/// Renders a bold question, optional description, and either an inline
+/// [trailing] control (switch, stepper) or a block-level [child] (text field)
+/// shown below the question.
+class SettingTile extends StatelessWidget {
+  final String question;
+  final String? description;
+  final Widget? trailing;
+  final Widget? child;
+  final EdgeInsetsGeometry padding;
+
+  const SettingTile({
+    super.key,
+    required this.question,
+    this.description,
+    this.trailing,
+    this.child,
+    this.padding = const EdgeInsets.symmetric(vertical: 8),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: padding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
+                  question,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          if (description != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              description!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+          if (child != null) ...[
+            const SizedBox(height: 8),
+            child!,
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Returns a human-readable label for a timer preset key.
+String formatPresetLabel(String preset, AppLocalizations l10n) {
+  switch (preset) {
+    case '5min':
+      return l10n.preset5min;
+    case '30min':
+      return l10n.preset30min;
+    case '1hour':
+      return l10n.preset1hour;
+    case '1day':
+      return l10n.preset1day;
+    case 'custom':
+      return l10n.presetCustom;
+    default:
+      return preset;
+  }
+}
+
+/// Returns a description string for a duration, including custom formatting.
+String formatDurationDescription(
+    String preset, int durationSeconds, AppLocalizations l10n) {
+  if (preset == 'custom') {
+    final hours = durationSeconds ~/ 3600;
+    final minutes = (durationSeconds % 3600) ~/ 60;
+    if (hours > 0 && minutes > 0) {
+      return '${hours}h ${minutes}m';
+    } else if (hours > 0) {
+      return '${hours}h';
+    } else {
+      return '${minutes}m';
+    }
+  }
+  return formatPresetLabel(preset, l10n);
+}
+
 /// Timer preset chips for selecting duration.
 class TimerPresets extends StatefulWidget {
   final String label;
@@ -268,8 +366,10 @@ class _TimerPresetsState extends State<TimerPresets> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(widget.label, style: Theme.of(context).textTheme.bodyMedium),
-        const SizedBox(height: 8),
+        if (widget.label.isNotEmpty) ...[
+          Text(widget.label, style: Theme.of(context).textTheme.bodyMedium),
+          const SizedBox(height: 8),
+        ],
         Wrap(
           spacing: 8,
           children: TimerPresets.presets.keys.map((preset) {

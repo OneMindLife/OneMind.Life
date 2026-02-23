@@ -300,7 +300,7 @@
   "chatPausedByHostTitle": "Chat vom Gastgeber Pausiert",
   "timerStoppedTapResume": "Der Timer ist gestoppt. Tippe auf Fortsetzen in der Leiste, um fortzufahren.",
   "hostPausedPleaseWait": "Der Gastgeber hat diesen Chat pausiert. Bitte warte, bis er fortgesetzt wird.",
-  "previousWinner": "Gewinner",
+  "previousWinner": "Vorheriger Gewinner",
   "yourProposition": "Dein Vorschlag",
   "yourPropositions": "Deine Vorschlaege",
   "rate": "Bewerten",
@@ -435,6 +435,7 @@
       }
     }
   },
+  "noMembersYetShareHint": "Noch keine anderen Mitglieder. Tippe oben auf den Teilen-Button, um Personen einzuladen.",
   "scheduled": "Geplant",
   "chatOutsideSchedule": "Chat ausserhalb des geplanten Zeitfensters",
   "nextWindowStarts": "Naechstes Fenster beginnt {dateTime}",
@@ -993,7 +994,7 @@
   "tutorialTemplateCustom": "Eigenes Thema",
   "tutorialTemplateCustomDesc": "Eigene Frage eingeben",
   "tutorialCustomQuestionHint": "Frage eingeben...",
-  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss eine weitere Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
+  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1022,11 +1023,14 @@
   },
   "tutorialAddedToChat": "Es wurde jetzt zum Chat oben hinzugefuegt.",
   "tutorialFinishButton": "Tutorial Beenden",
-  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss eine weitere Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
+  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
   "tutorialProposingHint": "Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.",
+  "tutorialTimeRemaining": "Du hast noch {time}.",
   "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein. Sie wird zusammen mit dem vorherigen Gewinner bewertet.",
   "tutorialRatingHint": "Jetzt bewertet jeder die Ideen der anderen. Tippe auf die Schaltflaeche, um mit der Bewertung zu beginnen.",
-  "tutorialRatingBinaryHint": "Welche davon bevorzugst du? Setze sie nach oben (100). Setze die weniger bevorzugte nach unten (0). Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Deine eigene Idee siehst du hier nicht — andere bewerten sie fuer dich.",
+  "tutorialRatingPhaseExplanation": "Die Bewertungsphase beginnt, sobald alle Nutzer ihre Ideen eingereicht haben oder der Timer ablaeuft.",
+  "tutorialRatingTimeRemaining": "Du hast noch {time}, um die Bewertungsphase abzuschliessen.",
+  "tutorialRatingBinaryHint": "Dir werden zuerst 2 zufaellige, von Nutzern eingereichte Vorschlaege praesentiert. Setze den, den du mehr bevorzugst, auf 100. Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Hinweis: Dein eigener Vorschlag wird dir nicht zur Bewertung angezeigt.",
   "tutorialRatingPositioningHint": "Tippe und halte [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Tippe auf [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.",
   "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie auch die naechste Runde gewinnt, wird sie eine dauerhafte Antwort.",
   "@tutorialRound2Result": {
@@ -1035,9 +1039,9 @@
     }
   },
   "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
-  "tutorialRatingCarryForwardHint": "Dies ist der uebernommene Vorschlag. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
-  "tutorialRound2PromptSimplified": "Zeit fuer eine neue Runde! Faellt dir etwas Besseres ein?",
-  "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer eine neue Runde! Faellt dir etwas Besseres ein als '{winner}'?",
+  "tutorialRatingCarryForwardHint": "Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
+  "tutorialRound2PromptSimplified": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?",
+  "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein als '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1119,14 +1123,12 @@
   "tutorialShareTooltip": "Chat Teilen",
   "tutorialYourIdea": "Deine Idee",
   "tutorialRateIdeas": "Ideen Bewerten",
-  "tutorialSeeResultsHint": "Tippe auf die Schaltflaeche unten, um zu sehen, wie alle Ideen bewertet wurden.",
-  "tutorialSeeResultsContinueHint": "Zeit für eine neue Runde! Fällt dir etwas Besseres ein als \"{winner}\"?",
-  "@tutorialSeeResultsContinueHint": {
+  "tutorialResultsBackHint": "'{winner}' hat gewonnen! Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.",
+  "@tutorialResultsBackHint": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialResultsBackHint": "Druecke den Zurueck-Pfeil, wenn du mit dem Ansehen der Ergebnisse fertig bist.",
 
   "wizardStep1Title": "Worueber moechtest du sprechen?",
   "wizardStep1Subtitle": "Dies ist das Herzstück deines Chats",

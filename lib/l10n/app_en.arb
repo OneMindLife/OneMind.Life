@@ -294,7 +294,7 @@
   "timerStoppedTapResume": "The timer is stopped. Tap Resume in the app bar to continue.",
   "hostPausedPleaseWait": "The host has paused this chat. Please wait for them to resume.",
 
-  "previousWinner": "Winner",
+  "previousWinner": "Previous Winner",
   "yourProposition": "Your Proposition",
   "yourPropositions": "Your Propositions",
   "rate": "Rate",
@@ -411,6 +411,7 @@
       "count": {"type": "int"}
     }
   },
+  "noMembersYetShareHint": "No other members yet. Tap the share button above to invite people.",
 
   "scheduled": "Scheduled",
   "chatOutsideSchedule": "Chat is outside schedule window",
@@ -949,7 +950,7 @@
   "tutorialTemplateCustom": "Custom Topic",
   "tutorialTemplateCustomDesc": "Enter your own question",
   "tutorialCustomQuestionHint": "Type your question...",
-  "tutorialRound1ResultTemplate": "'{winner}' won this round! But it's still not final. It must win another round to be permanently added to the groupchat.",
+  "tutorialRound1ResultTemplate": "'{winner}' won this round! But it's still not final. It must win the next round to be permanently added to the groupchat.",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -978,11 +979,24 @@
   },
   "tutorialAddedToChat": "It's now added to the chat above.",
   "tutorialFinishButton": "Finish Tutorial",
-  "tutorialRound1Result": "'Success' won this round! But it's still not final. It must win another round to be permanently added to the groupchat.",
+  "tutorialRound1Result": "'Success' won this round! But it's still not final. It must win the next round to be permanently added to the groupchat.",
   "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
+  "tutorialTimeRemaining": "You have {time} left.",
+  "@tutorialTimeRemaining": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
   "tutorialProposingHintWithWinner": "Submit a new idea. It will be rated alongside the previous winner.",
   "tutorialRatingHint": "Now everyone rates each other's ideas. Tap the button to start rating.",
-  "tutorialRatingBinaryHint": "Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Tap [swap] to flip them, then tap [check] to confirm. You won't see your own idea here — others rate it for you.",
+  "tutorialRatingPhaseExplanation": "The rating phase begins once all users submit their ideas or the timer runs out.",
+  "tutorialRatingTimeRemaining": "You have {time} left to complete the rating phase.",
+  "@tutorialRatingTimeRemaining": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "tutorialRatingBinaryHint": "You are first presented 2 random user-submitted propositions. Place the one you prefer more at 100. Tap [swap] to switch them, then tap [check] to confirm. Note: Your own proposition will not be presented to you for rating.",
   "tutorialRatingPositioningHint": "Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
   "tutorialRound2Result": "Your idea \"{proposition}\" won! If it wins next round too, it becomes a permanent answer.",
   "@tutorialRound2Result": {
@@ -991,9 +1005,9 @@
     }
   },
   "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.",
-  "tutorialRatingCarryForwardHint": "This is the carried-forward proposition. If it wins again this round, it gets permanently added to the chat.",
-  "tutorialRound2PromptSimplified": "Time for a new round! Can you think of something better?",
-  "tutorialRound2PromptSimplifiedTemplate": "Time for a new round! Can you think of something better than '{winner}'?",
+  "tutorialRatingCarryForwardHint": "This is last round's winner. If it wins again this round, it gets permanently added to the chat.",
+  "tutorialRound2PromptSimplified": "Time for the next round! Can you think of something better?",
+  "tutorialRound2PromptSimplifiedTemplate": "Time for the next round! Can you think of something better than '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1075,14 +1089,12 @@
   "tutorialShareTooltip": "Share Chat",
   "tutorialYourIdea": "Your idea",
   "tutorialRateIdeas": "Rate Ideas",
-  "tutorialSeeResultsHint": "Tap the button below to see how all ideas were rated.",
-  "tutorialSeeResultsContinueHint": "Time for a new round! Can you think of something better than \"{winner}\"?",
-  "@tutorialSeeResultsContinueHint": {
+  "tutorialResultsBackHint": "'{winner}' won! Press the back arrow when done viewing the results.",
+  "@tutorialResultsBackHint": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialResultsBackHint": "Press the back arrow when done viewing the results.",
 
   "deleteConsensusTitle": "Delete Convergence #{number}?",
   "@deleteConsensusTitle": {

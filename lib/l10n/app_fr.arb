@@ -300,7 +300,7 @@
   "chatPausedByHostTitle": "Chat Mis en Pause par l'Hote",
   "timerStoppedTapResume": "Le minuteur est arrete. Appuyez sur Reprendre dans la barre pour continuer.",
   "hostPausedPleaseWait": "L'hote a mis ce chat en pause. Veuillez attendre qu'il reprenne.",
-  "previousWinner": "Gagnant",
+  "previousWinner": "Gagnant Precedent",
   "yourProposition": "Votre Proposition",
   "yourPropositions": "Vos Propositions",
   "rate": "Evaluer",
@@ -435,6 +435,7 @@
       }
     }
   },
+  "noMembersYetShareHint": "Pas encore d'autres membres. Appuyez sur le bouton de partage ci-dessus pour inviter des personnes.",
   "scheduled": "Programme",
   "chatOutsideSchedule": "Chat en dehors de la fenetre programmee",
   "nextWindowStarts": "Prochaine fenetre commence {dateTime}",
@@ -992,7 +993,7 @@
   "tutorialTemplateCustom": "Sujet personnalisé",
   "tutorialTemplateCustomDesc": "Entrez votre propre question",
   "tutorialCustomQuestionHint": "Tapez votre question...",
-  "tutorialRound1ResultTemplate": "'{winner}' a gagné ce tour ! Mais ce n'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.",
+  "tutorialRound1ResultTemplate": "'{winner}' a gagné ce tour ! Mais ce n'est pas encore définitif. Il doit gagner le prochain tour pour être ajouté définitivement au chat de groupe.",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1021,11 +1022,14 @@
   },
   "tutorialAddedToChat": "C'est maintenant ajoute au chat ci-dessus.",
   "tutorialFinishButton": "Terminer le Tutoriel",
-  "tutorialRound1Result": "'Succès' a gagné ce tour ! Mais ce n'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.",
+  "tutorialRound1Result": "'Succès' a gagné ce tour ! Mais ce n'est pas encore définitif. Il doit gagner le prochain tour pour être ajouté définitivement au chat de groupe.",
   "tutorialProposingHint": "Soumettez une idee que vous voulez voir devenir la reponse du groupe.",
+  "tutorialTimeRemaining": "Il vous reste {time}.",
   "tutorialProposingHintWithWinner": "Soumettez une nouvelle idee. Elle sera evaluee aux cotes du gagnant precedent.",
   "tutorialRatingHint": "Maintenant, chacun evalue les idees des autres. Appuyez sur le bouton pour commencer l'evaluation.",
-  "tutorialRatingBinaryHint": "Laquelle preferez-vous? Placez-la en haut (100). Placez celle que vous preferez le moins en bas (0). Appuyez sur [swap] pour les inverser, puis appuyez sur [check] pour confirmer. Vous ne verrez pas votre propre idee ici — les autres l'evaluent pour vous.",
+  "tutorialRatingPhaseExplanation": "La phase d'evaluation commence une fois que tous les utilisateurs ont soumis leurs idees ou que le temps est ecoule.",
+  "tutorialRatingTimeRemaining": "Il vous reste {time} pour terminer la phase d'evaluation.",
+  "tutorialRatingBinaryHint": "On vous presente d'abord 2 propositions aleatoires soumises par les utilisateurs. Placez celle que vous preferez a 100. Appuyez sur [swap] pour les inverser, puis appuyez sur [check] pour confirmer. Note : Votre propre proposition ne vous sera pas presentee pour l'evaluation.",
   "tutorialRatingPositioningHint": "Appuyez et maintenez [up] et [down] pour deplacer l'idee en surbrillance. Appuyez sur [check] pour la placer. Appuyez sur [undo] pour annuler un placement, et [zoomin] [zoomout] pour zoomer et dezoomer.",
   "tutorialRound2Result": "Votre idee \"{proposition}\" a gagne! Si elle gagne aussi le prochain tour, elle devient une reponse permanente.",
   "@tutorialRound2Result": {
@@ -1034,9 +1038,9 @@
     }
   },
   "tutorialRound2Prompt": "Le gagnant 'Succes' est automatiquement reporte pour concourir a nouveau. Il doit gagner 2 tours consecutifs pour devenir une reponse permanente.",
-  "tutorialRatingCarryForwardHint": "C'est la proposition reportee du tour precedent. Si elle gagne a nouveau ce tour, elle sera ajoutee definitivement au chat.",
-  "tutorialRound2PromptSimplified": "C'est l'heure d'un nouveau tour! Pouvez-vous faire mieux?",
-  "tutorialRound2PromptSimplifiedTemplate": "C'est l'heure d'un nouveau tour! Pouvez-vous faire mieux que '{winner}'?",
+  "tutorialRatingCarryForwardHint": "C'est le gagnant du tour precedent. S'il gagne a nouveau ce tour, il sera ajoute definitivement au chat.",
+  "tutorialRound2PromptSimplified": "C'est l'heure du prochain tour! Pouvez-vous faire mieux?",
+  "tutorialRound2PromptSimplifiedTemplate": "C'est l'heure du prochain tour! Pouvez-vous faire mieux que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1118,14 +1122,12 @@
   "tutorialShareTooltip": "Partager le Chat",
   "tutorialYourIdea": "Votre idee",
   "tutorialRateIdeas": "Evaluer les Idees",
-  "tutorialSeeResultsHint": "Appuyez sur le bouton ci-dessous pour voir comment toutes les idees ont ete evaluees.",
-  "tutorialSeeResultsContinueHint": "C'est l'heure d'un nouveau tour ! Pouvez-vous trouver mieux que \"{winner}\" ?",
-  "@tutorialSeeResultsContinueHint": {
+  "tutorialResultsBackHint": "'{winner}' a gagné ! Appuyez sur la fleche retour quand vous avez fini de voir les resultats.",
+  "@tutorialResultsBackHint": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
-  "tutorialResultsBackHint": "Appuyez sur la fleche retour quand vous avez fini de voir les resultats.",
 
   "wizardStep1Title": "De quoi voulez-vous parler?",
   "wizardStep1Subtitle": "C'est le coeur de votre chat",

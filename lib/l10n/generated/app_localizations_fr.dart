@@ -532,7 +532,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'L\'hote a mis ce chat en pause. Veuillez attendre qu\'il reprenne.';
 
   @override
-  String get previousWinner => 'Gagnant';
+  String get previousWinner => 'Gagnant Precedent';
 
   @override
   String get yourProposition => 'Votre Proposition';
@@ -690,6 +690,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String waitingForMoreParticipants(int count) {
     return 'En attente de $count participant(s) supplementaire(s)';
   }
+
+  @override
+  String get noMembersYetShareHint =>
+      'Pas encore d\'autres membres. Appuyez sur le bouton de partage ci-dessus pour inviter des personnes.';
 
   @override
   String get scheduled => 'Programme';
@@ -1711,7 +1715,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.';
+    return '\'$winner\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner le prochain tour pour être ajouté définitivement au chat de groupe.';
   }
 
   @override
@@ -1758,11 +1762,16 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialRound1Result =>
-      '\'Succès\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner un autre tour pour être ajouté définitivement au chat de groupe.';
+      '\'Succès\' a gagné ce tour ! Mais ce n\'est pas encore définitif. Il doit gagner le prochain tour pour être ajouté définitivement au chat de groupe.';
 
   @override
   String get tutorialProposingHint =>
       'Soumettez une idee que vous voulez voir devenir la reponse du groupe.';
+
+  @override
+  String tutorialTimeRemaining(String time) {
+    return 'Il vous reste $time.';
+  }
 
   @override
   String get tutorialProposingHintWithWinner =>
@@ -1773,8 +1782,17 @@ class AppLocalizationsFr extends AppLocalizations {
       'Maintenant, chacun evalue les idees des autres. Appuyez sur le bouton pour commencer l\'evaluation.';
 
   @override
+  String get tutorialRatingPhaseExplanation =>
+      'La phase d\'evaluation commence une fois que tous les utilisateurs ont soumis leurs idees ou que le temps est ecoule.';
+
+  @override
+  String tutorialRatingTimeRemaining(String time) {
+    return 'Il vous reste $time pour terminer la phase d\'evaluation.';
+  }
+
+  @override
   String get tutorialRatingBinaryHint =>
-      'Laquelle preferez-vous? Placez-la en haut (100). Placez celle que vous preferez le moins en bas (0). Appuyez sur [swap] pour les inverser, puis appuyez sur [check] pour confirmer. Vous ne verrez pas votre propre idee ici — les autres l\'evaluent pour vous.';
+      'On vous presente d\'abord 2 propositions aleatoires soumises par les utilisateurs. Placez celle que vous preferez a 100. Appuyez sur [swap] pour les inverser, puis appuyez sur [check] pour confirmer. Note : Votre propre proposition ne vous sera pas presentee pour l\'evaluation.';
 
   @override
   String get tutorialRatingPositioningHint =>
@@ -1791,15 +1809,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialRatingCarryForwardHint =>
-      'C\'est la proposition reportee du tour precedent. Si elle gagne a nouveau ce tour, elle sera ajoutee definitivement au chat.';
+      'C\'est le gagnant du tour precedent. S\'il gagne a nouveau ce tour, il sera ajoute definitivement au chat.';
 
   @override
   String get tutorialRound2PromptSimplified =>
-      'C\'est l\'heure d\'un nouveau tour! Pouvez-vous faire mieux?';
+      'C\'est l\'heure du prochain tour! Pouvez-vous faire mieux?';
 
   @override
   String tutorialRound2PromptSimplifiedTemplate(String winner) {
-    return 'C\'est l\'heure d\'un nouveau tour! Pouvez-vous faire mieux que \'$winner\'?';
+    return 'C\'est l\'heure du prochain tour! Pouvez-vous faire mieux que \'$winner\'?';
   }
 
   @override
@@ -2014,17 +2032,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialRateIdeas => 'Evaluer les Idees';
 
   @override
-  String get tutorialSeeResultsHint =>
-      'Appuyez sur le bouton ci-dessous pour voir comment toutes les idees ont ete evaluees.';
-
-  @override
-  String tutorialSeeResultsContinueHint(String winner) {
-    return 'C\'est l\'heure d\'un nouveau tour ! Pouvez-vous trouver mieux que \"$winner\" ?';
+  String tutorialResultsBackHint(String winner) {
+    return '\'$winner\' a gagné ! Appuyez sur la fleche retour quand vous avez fini de voir les resultats.';
   }
-
-  @override
-  String get tutorialResultsBackHint =>
-      'Appuyez sur la fleche retour quand vous avez fini de voir les resultats.';
 
   @override
   String deleteConsensusTitle(int number) {

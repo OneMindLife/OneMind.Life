@@ -252,39 +252,41 @@ class AgentConfig extends Equatable {
 /// Settings for AI agents in a chat
 class AgentSettings extends Equatable {
   final bool enabled;
+  final bool customizeAgents;
   final bool customizeIndividually;
-  final bool useSameCount;
-  final int proposingAgentCount;
-  final int ratingAgentCount;
+  final bool agentsAlsoRate;
+  final int agentCount;
   final String sharedInstructions;
   final List<AgentConfig> agents;
 
   const AgentSettings({
     required this.enabled,
+    required this.customizeAgents,
     required this.customizeIndividually,
-    required this.useSameCount,
-    required this.proposingAgentCount,
-    required this.ratingAgentCount,
+    required this.agentsAlsoRate,
+    required this.agentCount,
     required this.sharedInstructions,
     required this.agents,
   });
 
   factory AgentSettings.defaults() => const AgentSettings(
         enabled: false,
+        customizeAgents: false,
         customizeIndividually: false,
-        useSameCount: true,
-        proposingAgentCount: 1,
-        ratingAgentCount: 1,
+        agentsAlsoRate: true,
+        agentCount: 2,
         sharedInstructions: '',
-        agents: [AgentConfig(name: 'Agent 1')],
+        agents: [
+          AgentConfig(name: 'Agent 1'),
+          AgentConfig(name: 'Agent 2'),
+        ],
       );
 
   /// Returns a copy with updated count, growing/shrinking agents list to match.
   AgentSettings withCount(int count) {
-    final clampedCount = count.clamp(1, 5);
+    final clampedCount = count.clamp(2, 5);
     return copyWith(
-      proposingAgentCount: clampedCount,
-      ratingAgentCount: useSameCount ? clampedCount : ratingAgentCount,
+      agentCount: clampedCount,
       agents: List.generate(
         clampedCount,
         (i) => i < agents.length
@@ -296,21 +298,20 @@ class AgentSettings extends Equatable {
 
   AgentSettings copyWith({
     bool? enabled,
+    bool? customizeAgents,
     bool? customizeIndividually,
-    bool? useSameCount,
-    int? proposingAgentCount,
-    int? ratingAgentCount,
+    bool? agentsAlsoRate,
+    int? agentCount,
     String? sharedInstructions,
     List<AgentConfig>? agents,
   }) {
     return AgentSettings(
       enabled: enabled ?? this.enabled,
+      customizeAgents: customizeAgents ?? this.customizeAgents,
       customizeIndividually:
           customizeIndividually ?? this.customizeIndividually,
-      useSameCount: useSameCount ?? this.useSameCount,
-      proposingAgentCount:
-          proposingAgentCount ?? this.proposingAgentCount,
-      ratingAgentCount: ratingAgentCount ?? this.ratingAgentCount,
+      agentsAlsoRate: agentsAlsoRate ?? this.agentsAlsoRate,
+      agentCount: agentCount ?? this.agentCount,
       sharedInstructions:
           sharedInstructions ?? this.sharedInstructions,
       agents: agents ?? this.agents,
@@ -320,10 +321,10 @@ class AgentSettings extends Equatable {
   @override
   List<Object?> get props => [
         enabled,
+        customizeAgents,
         customizeIndividually,
-        useSameCount,
-        proposingAgentCount,
-        ratingAgentCount,
+        agentsAlsoRate,
+        agentCount,
         sharedInstructions,
         agents,
       ];

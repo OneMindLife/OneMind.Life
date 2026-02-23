@@ -358,6 +358,55 @@ void main() {
       chatNotifier = TutorialChatNotifier();
     });
 
+    group('streamlined round 1 result flow', () {
+      test('nextStep from round1Result goes directly to round2Prompt', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.completeRound1Rating();
+
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
+
+        chatNotifier.nextStep();
+
+        // Should go directly to round2Prompt (no round1SeeResults intermediate)
+        expect(chatNotifier.state.currentStep, TutorialStep.round2Prompt);
+      });
+
+      test('completeRound1Rating stores round1Results for auto-open', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.completeRound1Rating();
+
+        // round1Results should be populated for the results screen
+        expect(chatNotifier.state.round1Results, isNotEmpty);
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
+      });
+
+      test('continueToRound2 works directly from round1Result', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.completeRound1Rating();
+
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
+
+        chatNotifier.continueToRound2();
+
+        expect(chatNotifier.state.currentStep, TutorialStep.round2Prompt);
+        expect(chatNotifier.state.hasRated, false);
+        expect(chatNotifier.state.myPropositions, isEmpty);
+      });
+
+      test('round1Result has previousRoundWinners set', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.completeRound1Rating();
+
+        expect(chatNotifier.state.previousRoundWinners, isNotEmpty);
+        expect(chatNotifier.state.previousRoundWinners.first.content,
+            'Community Garden');
+      });
+    });
+
     group('template selection', () {
       test('selectTemplate sets template and advances to round1Proposing', () {
         chatNotifier.selectTemplate('community');
@@ -433,7 +482,6 @@ void main() {
         expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
         expect(chatNotifier.state.previousRoundWinners.first.content, 'Community Garden');
 
-        chatNotifier.continueToSeeResults();
         chatNotifier.continueToRound2();
         chatNotifier.submitRound2Proposition('Better Education');
         chatNotifier.completeRound2Rating();
@@ -450,6 +498,36 @@ void main() {
         chatNotifier.completeTutorial();
         expect(chatNotifier.state.currentStep, TutorialStep.complete);
       });
+    });
+  });
+
+  group('TutorialStep enum', () {
+    test('does not contain round1SeeResults', () {
+      // round1SeeResults was removed - verify it no longer exists
+      final stepNames = TutorialStep.values.map((s) => s.name).toList();
+      expect(stepNames, isNot(contains('round1SeeResults')));
+    });
+
+    test('round1Result is followed by round2Prompt in flow', () {
+      // Verify the expected flow order
+      final steps = TutorialStep.values;
+      final round1ResultIndex = steps.indexOf(TutorialStep.round1Result);
+      final round2PromptIndex = steps.indexOf(TutorialStep.round2Prompt);
+      expect(round2PromptIndex, round1ResultIndex + 1);
+    });
+  });
+
+  group('TutorialChatState', () {
+    test('does not have hasViewedRound1Grid field', () {
+      // Verify the state can be constructed without hasViewedRound1Grid
+      final chatNotifier = TutorialChatNotifier();
+      chatNotifier.selectTemplate('community');
+      chatNotifier.submitRound1Proposition('Test');
+      chatNotifier.completeRound1Rating();
+
+      // The state should work correctly without hasViewedRound1Grid
+      expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
+      expect(chatNotifier.state.round1Results, isNotEmpty);
     });
   });
 

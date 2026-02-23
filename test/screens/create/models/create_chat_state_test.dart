@@ -220,9 +220,8 @@ void main() {
       final settings = AgentSettings.defaults();
       expect(settings.enabled, false);
       expect(settings.customizeIndividually, false);
-      expect(settings.useSameCount, true);
-      expect(settings.proposingAgentCount, 1);
-      expect(settings.ratingAgentCount, 1);
+      expect(settings.agentsAlsoRate, true);
+      expect(settings.agentCount, 1);
       expect(settings.sharedInstructions, '');
       expect(settings.agents.length, 1);
       expect(settings.agents[0].name, 'Agent 1');
@@ -233,7 +232,7 @@ void main() {
       final updated = settings.copyWith(enabled: true);
       expect(updated.enabled, true);
       expect(updated.customizeIndividually, false);
-      expect(updated.proposingAgentCount, 1);
+      expect(updated.agentCount, 1);
     });
 
     test('copyWith updates sharedInstructions', () {
@@ -245,8 +244,7 @@ void main() {
     test('withCount grows agents list', () {
       final settings = AgentSettings.defaults(); // 3 agents
       final updated = settings.withCount(5);
-      expect(updated.proposingAgentCount, 5);
-      expect(updated.ratingAgentCount, 5); // useSameCount is true
+      expect(updated.agentCount, 5);
       expect(updated.agents.length, 5);
       // Original agents preserved
       expect(updated.agents[0].name, 'Agent 1');
@@ -260,7 +258,7 @@ void main() {
     test('withCount shrinks agents list', () {
       final settings = AgentSettings.defaults(); // 3 agents
       final updated = settings.withCount(1);
-      expect(updated.proposingAgentCount, 1);
+      expect(updated.agentCount, 1);
       expect(updated.agents.length, 1);
       expect(updated.agents[0].name, 'Agent 1');
     });
@@ -279,23 +277,13 @@ void main() {
       expect(updated.agents[3].name, 'Agent 4');
     });
 
-    test('withCount respects useSameCount false', () {
-      final settings = AgentSettings.defaults().copyWith(
-        useSameCount: false,
-        ratingAgentCount: 2,
-      );
-      final updated = settings.withCount(4);
-      expect(updated.proposingAgentCount, 4);
-      expect(updated.ratingAgentCount, 2); // unchanged
-    });
-
     test('withCount clamps to valid range', () {
       final settings = AgentSettings.defaults();
       final tooLow = settings.withCount(0);
-      expect(tooLow.proposingAgentCount, 1);
+      expect(tooLow.agentCount, 1);
 
       final tooHigh = settings.withCount(10);
-      expect(tooHigh.proposingAgentCount, 5);
+      expect(tooHigh.agentCount, 5);
     });
 
     test('equality works correctly', () {

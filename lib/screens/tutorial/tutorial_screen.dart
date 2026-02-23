@@ -11,6 +11,7 @@ import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
 import '../chat/widgets/phase_panels.dart';
 import '../chat/widgets/previous_round_display.dart';
+import '../rating/read_only_results_screen.dart';
 import 'models/tutorial_state.dart';
 import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
@@ -56,6 +57,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   // Track if tutorial completion is in progress (show loading, block back)
   bool _isCompleting = false;
+
+  // Guard to prevent opening results screen more than once
+  bool _hasAutoOpenedRound1Results = false;
 
   @override
   void initState() {
@@ -236,11 +240,52 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     );
   }
 
+  /// Auto-open the results grid after Round 1 rating completes
+  void _openResultsScreenForRound1(TutorialChatState state) {
+    final l10n = AppLocalizations.of(context);
+
+    // Translate results for grid display
+    final translatedResults = state.round1Results.map((p) => Proposition(
+      id: p.id,
+      roundId: p.roundId,
+      participantId: p.participantId,
+      content: _translateProposition(p.content, l10n),
+      finalRating: p.finalRating,
+      createdAt: p.createdAt,
+    )).toList();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReadOnlyResultsScreen(
+          propositions: translatedResults,
+          roundNumber: 1,
+          roundId: -1,
+          myParticipantId: -1,
+          showTutorialHint: true,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(tutorialChatNotifierProvider);
     // Watch locale to rebuild when language changes
     ref.watch(localeProvider);
+
+    // Auto-open results screen when state transitions to round1Result
+    ref.listen<TutorialChatState>(tutorialChatNotifierProvider, (prev, next) {
+      if (prev?.currentStep != TutorialStep.round1Result &&
+          next.currentStep == TutorialStep.round1Result &&
+          !_hasAutoOpenedRound1Results) {
+        _hasAutoOpenedRound1Results = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _openResultsScreenForRound1(next);
+          }
+        });
+      }
+    });
 
     // Show blank screen while tutorial completion is in progress.
     // This is only visible briefly (~300ms) before GoRouter navigates to Home.
@@ -396,7 +441,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   /// Check if current step is a result step (shows tabs + message + continue)
   bool _isResultStep(TutorialStep step) {
     return step == TutorialStep.round1Result ||
-        step == TutorialStep.round1SeeResults ||
         step == TutorialStep.round2Result;
   }
 
@@ -522,10 +566,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
               : _buildCurrentPhasePanel(state),
 
           // For result steps, add Continue button below
-          // But for round1SeeResults, only show Continue after grid has been viewed
-          if (isResultStep &&
-              (state.currentStep != TutorialStep.round1SeeResults ||
-               state.hasViewedRound1Grid)) ...[
+          if (isResultStep) ...[
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -554,17 +595,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         return l10n.tutorialRound1ResultTemplate(winner);
       }
       return l10n.tutorialRound1Result;
-    } else if (state.currentStep == TutorialStep.round1SeeResults) {
-      // Different message depending on whether user has viewed the grid
-      if (state.hasViewedRound1Grid) {
-        final winnerContent = state.previousRoundWinners.isNotEmpty
-            ? _translateProposition(
-                state.previousRoundWinners.first.content ?? '', l10n)
-            : '';
-        return l10n.tutorialSeeResultsContinueHint(winnerContent);
-      } else {
-        return l10n.tutorialSeeResultsHint;
-      }
     } else if (state.currentStep == TutorialStep.round2Result) {
       final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
       return l10n.tutorialRound2Result(userProp);
@@ -576,10 +606,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final notifier = ref.read(tutorialChatNotifierProvider.notifier);
 
     if (state.currentStep == TutorialStep.round1Result) {
-      // First Continue: go to See Results step
-      notifier.continueToSeeResults();
-    } else if (state.currentStep == TutorialStep.round1SeeResults) {
-      // Second Continue (after viewing grid): go to Round 2
+      // Continue: go directly to Round 2
       setState(() {
         _phaseTabUnlocked = true;
         _showPreviousWinner = false;
@@ -707,9 +734,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     // Only show educational content if phase tab is still locked (user hasn't clicked Continue yet)
     final showEducationalContent = isEducationalStep && !_phaseTabUnlocked;
 
-    // Show "See Results" button only during round1SeeResults step (for tutorial hint)
-    final isRound1SeeResultsStep = state.currentStep == TutorialStep.round1SeeResults;
-
     // Translate winner content to current locale
     final translatedWinners = state.previousRoundWinners.map((w) => RoundWinner(
       id: w.id,
@@ -745,10 +769,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       createdAt: p.createdAt,
     )).toList();
 
-    // Show "See All Results" button when we have results, BUT not during round1Result
-    // (we want to explicitly tell them to click it first in round1SeeResults)
-    final hasPassedFirstResultStep = state.currentStep != TutorialStep.round1Result;
-    final showResultsButton = hasPassedFirstResultStep &&
+    // Show "See All Results" button when we have results (not during round1Result
+    // since results auto-open after rating)
+    final showResultsButton = state.currentStep != TutorialStep.round1Result &&
         translatedResults != null && translatedResults.isNotEmpty;
 
     // Determine round number from winner's roundId (-1=Round 1, -2=Round 2, -3=Round 3)
@@ -777,11 +800,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           previousRoundId: winnerRoundId,
           previousRoundNumber: previousRoundNumber,
           myParticipantId: -1,
-          onResultsViewed: isRound1SeeResultsStep ? () {
-            // Mark that user has viewed the grid when they return
-            ref.read(tutorialChatNotifierProvider.notifier).markRound1GridViewed();
-          } : null,
-          showTutorialHintOnResults: isRound1SeeResultsStep,
         ),
         // Continue button (only if not yet clicked)
         if (showEducationalContent) ...[
@@ -844,11 +862,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         // Show proposing hint only for Round 1 when user hasn't submitted yet
         final isFirstRound = state.currentRound?.customId == 1;
         final showProposingHint = state.myPropositions.isEmpty && isFirstRound;
+        final isRound2Prompt = state.currentStep == TutorialStep.round2Prompt;
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showProposingHint)
               _buildEducationalHint(l10n.tutorialProposingHint),
+            if (isRound2Prompt)
+              _buildEducationalHint(
+                _getEducationalMessage(state, l10n),
+                icon: Icons.tips_and_updates_outlined,
+              ),
             ProposingStatePanel(
               roundCustomId: state.currentRound!.customId,
               propositionsPerUser: state.chat.propositionsPerUser,

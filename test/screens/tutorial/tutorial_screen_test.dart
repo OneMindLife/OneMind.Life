@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/screens/tutorial/models/tutorial_state.dart';
 import 'package:onemind_app/screens/tutorial/tutorial_screen.dart';
 import 'package:onemind_app/screens/tutorial/widgets/tutorial_progress_dots.dart';
 
@@ -345,6 +346,100 @@ void main() {
 
         // Skip confirmation dialog should appear
         expect(find.text('Skip Tutorial?'), findsOneWidget);
+      });
+    });
+
+    group('Streamlined round 1 result flow', () {
+      testWidgets('round1Result shows continue button directly (no seeResults gate)',
+          (tester) async {
+        await tester.pumpApp(
+          TutorialScreen(onComplete: () {}),
+        );
+        await tester.pumpAndSettle();
+
+        // Navigate to proposing
+        await _navigateToProposing(tester);
+
+        // Submit proposition
+        await tester.enterText(find.byType(TextField), 'My Idea');
+        await tester.pumpAndSettle();
+        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        await tester.ensureVisible(submitFinder);
+        await tester.pumpAndSettle();
+        await tester.tap(submitFinder);
+        await tester.pumpAndSettle();
+
+        // Should be at rating state
+        expect(find.text('Start Rating'), findsOneWidget);
+
+        // Verify state is at round1Rating via the provider
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TutorialScreen)),
+        );
+        final state = container.read(tutorialChatNotifierProvider);
+        expect(state.currentStep, TutorialStep.round1Rating);
+      });
+
+      testWidgets('notifier transitions directly from round1Result to round2Prompt',
+          (tester) async {
+        await tester.pumpApp(
+          TutorialScreen(onComplete: () {}),
+        );
+        await tester.pumpAndSettle();
+
+        // Navigate to proposing
+        await _navigateToProposing(tester);
+
+        // Get the container to manipulate state directly
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TutorialScreen)),
+        );
+        final notifier = container.read(tutorialChatNotifierProvider.notifier);
+
+        // Fast-forward to round1Result
+        notifier.submitRound1Proposition('My Idea');
+        notifier.completeRound1Rating();
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(tutorialChatNotifierProvider).currentStep,
+          TutorialStep.round1Result,
+        );
+
+        // Call continueToRound2 directly (simulates Continue button)
+        notifier.continueToRound2();
+        await tester.pumpAndSettle();
+
+        expect(
+          container.read(tutorialChatNotifierProvider).currentStep,
+          TutorialStep.round2Prompt,
+        );
+      });
+
+      testWidgets('auto-opens results screen after completing round 1 rating',
+          (tester) async {
+        await tester.pumpApp(
+          TutorialScreen(onComplete: () {}),
+        );
+        await tester.pumpAndSettle();
+
+        // Navigate to proposing
+        await _navigateToProposing(tester);
+
+        // Get the container to manipulate state directly
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(TutorialScreen)),
+        );
+        final notifier = container.read(tutorialChatNotifierProvider.notifier);
+
+        // Submit and complete R1 rating
+        notifier.submitRound1Proposition('My Idea');
+        notifier.completeRound1Rating();
+        await tester.pumpAndSettle();
+
+        // The ReadOnlyResultsScreen should have auto-opened via ref.listen
+        // It shows "Round 1 Results" in the app bar
+        expect(find.text('Round 1 Results'), findsOneWidget);
       });
     });
 

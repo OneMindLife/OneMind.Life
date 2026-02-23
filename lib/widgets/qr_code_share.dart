@@ -31,9 +31,11 @@ class QrCodeShareDialog extends StatelessWidget {
     required String inviteCode,
     String? deepLinkUrl,
     bool showContinueButton = false,
+    bool barrierDismissible = true,
   }) {
     return showDialog(
       context: context,
+      barrierDismissible: barrierDismissible,
       builder: (context) => QrCodeShareDialog(
         chatName: chatName,
         inviteCode: inviteCode,

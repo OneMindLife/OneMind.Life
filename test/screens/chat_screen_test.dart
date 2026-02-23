@@ -1024,7 +1024,7 @@ void main() {
         // Should show Previous Winner content (simplified UI)
         expect(find.text('Winning proposition'), findsOneWidget);
         // Winner tab should be visible
-        expect(find.text('Winner'), findsOneWidget);
+        expect(find.text('Previous Winner'), findsOneWidget);
       });
 
       testWidgets('shows winner content in panel',
@@ -1116,7 +1116,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Winner tab should be VISIBLE during proposing phase
-        expect(find.text('Winner'), findsOneWidget,
+        expect(find.text('Previous Winner'), findsOneWidget,
             reason: 'Winner tab should be visible during proposing phase');
       });
     });

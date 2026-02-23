@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousWinner.
   ///
   /// In en, this message translates to:
-  /// **'Winner'**
+  /// **'Previous Winner'**
   String get previousWinner;
 
   /// No description provided for @yourProposition.
@@ -1279,6 +1279,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Waiting for {count} more participant(s) to join'**
   String waitingForMoreParticipants(int count);
+
+  /// No description provided for @noMembersYetShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'No other members yet. Tap the share button above to invite people.'**
+  String get noMembersYetShareHint;
 
   /// No description provided for @scheduled.
   ///
@@ -3069,7 +3075,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1ResultTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won this round! But it\'s still not final. It must win another round to be permanently added to the groupchat.'**
+  /// **'\'{winner}\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
   String tutorialRound1ResultTemplate(String winner);
 
   /// No description provided for @tutorialRound2PromptTemplate.
@@ -3147,7 +3153,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won this round! But it\'s still not final. It must win another round to be permanently added to the groupchat.'**
+  /// **'\'Success\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
@@ -3155,6 +3161,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Submit an idea you want to become the group\'s answer.'**
   String get tutorialProposingHint;
+
+  /// No description provided for @tutorialTimeRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {time} left.'**
+  String tutorialTimeRemaining(String time);
 
   /// No description provided for @tutorialProposingHintWithWinner.
   ///
@@ -3168,10 +3180,22 @@ abstract class AppLocalizations {
   /// **'Now everyone rates each other\'s ideas. Tap the button to start rating.'**
   String get tutorialRatingHint;
 
+  /// No description provided for @tutorialRatingPhaseExplanation.
+  ///
+  /// In en, this message translates to:
+  /// **'The rating phase begins once all users submit their ideas or the timer runs out.'**
+  String get tutorialRatingPhaseExplanation;
+
+  /// No description provided for @tutorialRatingTimeRemaining.
+  ///
+  /// In en, this message translates to:
+  /// **'You have {time} left to complete the rating phase.'**
+  String tutorialRatingTimeRemaining(String time);
+
   /// No description provided for @tutorialRatingBinaryHint.
   ///
   /// In en, this message translates to:
-  /// **'Which of these do you prefer? Place it at the top (100). Place the one you prefer least at the bottom (0). Tap [swap] to flip them, then tap [check] to confirm. You won\'t see your own idea here — others rate it for you.'**
+  /// **'You are first presented 2 random user-submitted propositions. Place the one you prefer more at 100. Tap [swap] to switch them, then tap [check] to confirm. Note: Your own proposition will not be presented to you for rating.'**
   String get tutorialRatingBinaryHint;
 
   /// No description provided for @tutorialRatingPositioningHint.
@@ -3195,19 +3219,19 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingCarryForwardHint.
   ///
   /// In en, this message translates to:
-  /// **'This is the carried-forward proposition. If it wins again this round, it gets permanently added to the chat.'**
+  /// **'This is last round\'s winner. If it wins again this round, it gets permanently added to the chat.'**
   String get tutorialRatingCarryForwardHint;
 
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
   /// In en, this message translates to:
-  /// **'Time for a new round! Can you think of something better?'**
+  /// **'Time for the next round! Can you think of something better?'**
   String get tutorialRound2PromptSimplified;
 
   /// No description provided for @tutorialRound2PromptSimplifiedTemplate.
   ///
   /// In en, this message translates to:
-  /// **'Time for a new round! Can you think of something better than \'{winner}\'?'**
+  /// **'Time for the next round! Can you think of something better than \'{winner}\'?'**
   String tutorialRound2PromptSimplifiedTemplate(String winner);
 
   /// No description provided for @tutorialPropSuccess.
@@ -3624,23 +3648,11 @@ abstract class AppLocalizations {
   /// **'Rate Ideas'**
   String get tutorialRateIdeas;
 
-  /// No description provided for @tutorialSeeResultsHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the button below to see how all ideas were rated.'**
-  String get tutorialSeeResultsHint;
-
-  /// No description provided for @tutorialSeeResultsContinueHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Time for a new round! Can you think of something better than \"{winner}\"?'**
-  String tutorialSeeResultsContinueHint(String winner);
-
   /// No description provided for @tutorialResultsBackHint.
   ///
   /// In en, this message translates to:
-  /// **'Press the back arrow when done viewing the results.'**
-  String get tutorialResultsBackHint;
+  /// **'\'{winner}\' won! Press the back arrow when done viewing the results.'**
+  String tutorialResultsBackHint(String winner);
 
   /// No description provided for @deleteConsensusTitle.
   ///

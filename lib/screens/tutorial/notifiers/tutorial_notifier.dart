@@ -99,22 +99,6 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     );
   }
 
-  /// Move from round1Result to round1SeeResults (after first Continue)
-  void continueToSeeResults() {
-    print('DEBUG continueToSeeResults: before=${state.currentStep}');
-    state = state.copyWith(
-      currentStep: TutorialStep.round1SeeResults,
-    );
-    print('DEBUG continueToSeeResults: after=${state.currentStep}');
-  }
-
-  /// Mark that user has viewed the Round 1 grid
-  void markRound1GridViewed() {
-    state = state.copyWith(
-      hasViewedRound1Grid: true,
-    );
-  }
-
   /// Move to round 2 - show prompt message and proposing input
   void continueToRound2() {
     state = state.copyWith(
@@ -297,9 +281,6 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   void nextStep() {
     switch (state.currentStep) {
       case TutorialStep.round1Result:
-        continueToSeeResults();
-        break;
-      case TutorialStep.round1SeeResults:
         continueToRound2();
         break;
       case TutorialStep.round2Prompt:
@@ -430,8 +411,6 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
         beginRound1();
         break;
       case TutorialStep.round1Result:
-        // Legacy: goes directly to round2Prompt (skipping round1SeeResults)
-        // New TutorialChatNotifier uses sequential flow
         continueToRound2();
         break;
       case TutorialStep.round2Prompt:

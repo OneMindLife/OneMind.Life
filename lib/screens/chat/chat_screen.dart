@@ -34,6 +34,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   int _currentWinnerIndex = 0;
   int? _lastPreviousWinnerRoundId; // Track to auto-switch when new winners arrive
   int? _lastAutoNavigatedRoundId; // Track to auto-navigate to rating screen once per round
+  bool _initialPhaseRecorded = false; // Whether we've recorded the phase on first load
+  RoundPhase? _phaseOnOpen; // The phase when user first opened this screen
 
   // Prevent duplicate submissions from rapid double-clicks
   bool _isSubmitting = false;
@@ -610,9 +612,24 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Previously pre-filled text field with previous winner — removed per user request.
     // Users should always start with an empty text field in proposing phase.
 
-    // Auto-navigate to rating screen when phase changes to rating (once per round)
+    // Record the phase when user first opens this screen, so we only
+    // auto-navigate to rating if the phase *transitions* while they're here.
+    // If they arrive when rating is already in progress, let them see the
+    // conversation first.
     final state = stateAsync.valueOrNull;
     final currentRound = state?.currentRound;
+    if (!_initialPhaseRecorded && currentRound != null) {
+      _initialPhaseRecorded = true;
+      _phaseOnOpen = currentRound.phase;
+      // If already in rating when opened, mark this round as "already seen"
+      // so we don't auto-navigate for it
+      if (currentRound.phase == RoundPhase.rating) {
+        _lastAutoNavigatedRoundId = currentRound.id;
+      }
+    }
+
+    // Auto-navigate to rating screen only when phase transitions to rating
+    // while user is already viewing this chat (once per round)
     debugPrint('[CHAT_SCREEN] build: roundId=${currentRound?.id}, phase=${currentRound?.phase}, '
         'hasRated=${state?.hasRated}, hasStartedRating=${state?.hasStartedRating}, '
         '_lastAutoNavigatedRoundId=$_lastAutoNavigatedRoundId');
@@ -846,7 +863,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       body: stateAsync.when(
-        data: (state) => Column(
+        data: (state) => AnimatedOpacity(
+          opacity: state.isTranslating ? 0.4 : 1.0,
+          duration: const Duration(milliseconds: 200),
+          child: Column(
           children: [
             // Host paused banner
             if (state.chat?.hostPaused ?? widget.chat.hostPaused)
@@ -963,7 +983,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             // Bottom Action Area
             _buildBottomArea(state),
           ],
-        ),
+        )),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView.fromError(
           error,
@@ -1475,6 +1495,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isCreditPaused = state.chatCredits != null &&
         !state.chatCredits!.canAfford(state.activeParticipantCount);
 
+    final hasShareButton = isHost &&
+        widget.chat.inviteCode != null &&
+        widget.chat.accessMethod == AccessMethod.code;
+
     if (state.currentRound == null) {
       if (isCreditPaused) {
         return CreditPausedPanel(
@@ -1487,6 +1511,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return WaitingStatePanel(
         participantCount: state.participants.length,
         autoStartParticipantCount: widget.chat.autoStartParticipantCount ?? 3,
+        showShareHint: hasShareButton,
       );
     }
 
@@ -1516,6 +1541,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         return WaitingStatePanel(
           participantCount: state.participants.length,
           autoStartParticipantCount: widget.chat.autoStartParticipantCount ?? 3,
+          showShareHint: hasShareButton,
         );
       case RoundPhase.proposing:
         final isTaskResultMode = state.isTaskResultMode;

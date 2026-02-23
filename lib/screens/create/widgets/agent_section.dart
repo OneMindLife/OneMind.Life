@@ -19,46 +19,63 @@ class AgentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader('AI Agents'),
-        const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text('Enable AI agents'),
-          subtitle: const Text(
-            'AI agents propose ideas and rate alongside humans',
+        SettingTile(
+          question: 'Start with AI agents?',
+          description: settings.enabled
+              ? 'Yes, pre-fill the chat with AI agents'
+              : 'No, start without AI agents',
+          trailing: Switch(
+            value: settings.enabled,
+            onChanged: (v) => onChanged(settings.copyWith(enabled: v)),
           ),
-          value: settings.enabled,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => onChanged(settings.copyWith(enabled: v)),
         ),
         if (settings.enabled) ...[
-          const SizedBox(height: 16),
-          NumberInput(
-            label: 'Number of agents',
-            value: settings.proposingAgentCount,
-            onChanged: (v) => onChanged(settings.withCount(v)),
-            min: 1,
-            max: 5,
-          ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            title: const Text('Customize agents individually'),
-            subtitle: const Text(
-              'Set name and personality per agent',
+          SettingTile(
+            question: 'Should agents also rate?',
+            description: settings.agentsAlsoRate
+                ? 'Yes, agents rate alongside humans'
+                : 'No, agents only propose ideas',
+            trailing: Switch(
+              value: settings.agentsAlsoRate,
+              onChanged: (v) =>
+                  onChanged(settings.copyWith(agentsAlsoRate: v)),
             ),
-            value: settings.customizeIndividually,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (v) =>
-                onChanged(settings.copyWith(customizeIndividually: v)),
+          ),
+          SettingTile(
+            question: 'How many agents?',
+            description: '${settings.agentCount} agents will participate',
+            trailing: NumberInput(
+              label: '',
+              value: settings.agentCount,
+              onChanged: (v) => onChanged(settings.withCount(v)),
+              min: 2,
+              max: 5,
+            ),
+          ),
+          SettingTile(
+            question: 'Customize each agent separately?',
+            description: settings.customizeIndividually
+                ? 'Yes, set name and personality per agent'
+                : 'No, use shared instructions for all',
+            trailing: Switch(
+              value: settings.customizeIndividually,
+              onChanged: (v) =>
+                  onChanged(settings.copyWith(customizeIndividually: v)),
+            ),
           ),
           const SizedBox(height: 8),
           if (!settings.customizeIndividually) ...[
             TextFormField(
               key: const Key('agent_shared_instructions'),
               initialValue: settings.sharedInstructions,
-              decoration: const InputDecoration(
-                labelText: 'Instructions for all agents (optional)',
-                hintText: 'e.g., Focus on practical solutions...',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                hintText:
+                    'e.g., Make agents focus on practical solutions...',
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
                 alignLabelWithHint: true,
               ),
               maxLines: 3,
@@ -79,11 +96,16 @@ class AgentSection extends StatelessWidget {
                         initialValue: settings.agents[i].name,
                         decoration: InputDecoration(
                           labelText: 'Agent ${i + 1} name',
-                          border: const OutlineInputBorder(),
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                           isDense: true,
                         ),
                         onChanged: (v) {
-                          final updated = List<AgentConfig>.from(settings.agents);
+                          final updated =
+                              List<AgentConfig>.from(settings.agents);
                           updated[i] = updated[i].copyWith(name: v);
                           onChanged(settings.copyWith(agents: updated));
                         },
@@ -92,17 +114,24 @@ class AgentSection extends StatelessWidget {
                       TextFormField(
                         key: Key('agent_personality_$i'),
                         initialValue: settings.agents[i].personality,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Personality (optional)',
-                          hintText: 'Leave empty for auto-assigned perspective',
-                          border: OutlineInputBorder(),
+                          hintText:
+                              'Leave empty for auto-assigned perspective',
+                          filled: true,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
                           isDense: true,
                           alignLabelWithHint: true,
                         ),
                         maxLines: 2,
                         onChanged: (v) {
-                          final updated = List<AgentConfig>.from(settings.agents);
-                          updated[i] = updated[i].copyWith(personality: v);
+                          final updated =
+                              List<AgentConfig>.from(settings.agents);
+                          updated[i] =
+                              updated[i].copyWith(personality: v);
                           onChanged(settings.copyWith(agents: updated));
                         },
                       ),
@@ -111,43 +140,6 @@ class AgentSection extends StatelessWidget {
                 ),
               ),
             ],
-            if (settings.sharedInstructions.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Text(
-                  'Shared instructions also apply to all agents',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-              ),
-          ],
-          const SizedBox(height: 8),
-          SwitchListTile(
-            title: const Text('Same agent count for both phases'),
-            value: settings.useSameCount,
-            contentPadding: EdgeInsets.zero,
-            onChanged: (v) {
-              if (v) {
-                onChanged(settings.copyWith(
-                  useSameCount: true,
-                  ratingAgentCount: settings.proposingAgentCount,
-                ));
-              } else {
-                onChanged(settings.copyWith(useSameCount: false));
-              }
-            },
-          ),
-          if (!settings.useSameCount) ...[
-            const SizedBox(height: 8),
-            NumberInput(
-              label: 'Rating agents',
-              value: settings.ratingAgentCount,
-              onChanged: (v) =>
-                  onChanged(settings.copyWith(ratingAgentCount: v)),
-              min: 1,
-              max: 5,
-            ),
           ],
         ],
       ],

@@ -10,6 +10,7 @@ import 'dialogs/create_chat_dialogs.dart';
 import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
 import 'widgets/wizard_step_agents.dart';
+import 'widgets/wizard_step_host_name.dart';
 import 'widgets/wizard_step_indicator.dart';
 import 'widgets/wizard_step_question.dart';
 import 'widgets/wizard_step_timing.dart';
@@ -112,8 +113,10 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
+  int get _totalSteps => _needsHostName ? 4 : 3;
+
   void _nextStep() {
-    if (_currentStep < 2) {
+    if (_currentStep < _totalSteps - 1) {
       _goToStep(_currentStep + 1);
     }
   }
@@ -215,14 +218,14 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
         enableAiParticipant: false, // AI proposer retired
         aiPropositionsCount: null,
         enableAgents: _agentSettings.enabled,
-        proposingAgentCount: _agentSettings.proposingAgentCount,
-        ratingAgentCount: _agentSettings.useSameCount
-            ? _agentSettings.proposingAgentCount
-            : _agentSettings.ratingAgentCount,
-        agentInstructions: _agentSettings.sharedInstructions.isNotEmpty
+        proposingAgentCount: _agentSettings.agentCount,
+        ratingAgentCount: _agentSettings.agentsAlsoRate
+            ? _agentSettings.agentCount
+            : 0,
+        agentInstructions: _agentSettings.customizeAgents && _agentSettings.sharedInstructions.isNotEmpty
             ? _agentSettings.sharedInstructions
             : null,
-        agentConfigs: _agentSettings.customizeIndividually
+        agentConfigs: _agentSettings.customizeAgents && _agentSettings.customizeIndividually
             ? _agentSettings.agents.map((a) => a.toJson()).toList()
             : null,
         confirmationRoundsRequired:
@@ -326,7 +329,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
             // Progress indicator
             WizardStepIndicator(
               currentStep: _currentStep,
-              totalSteps: 3,
+              totalSteps: _totalSteps,
             ),
 
             // Step content
@@ -356,19 +359,28 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 3: AI Agents (optional, final step)
+                  // Step 3: AI Agents
                   WizardStepAgents(
                     agentSettings: _agentSettings,
                     onAgentSettingsChanged: (settings) {
                       setState(() => _agentSettings = settings);
                     },
-                    hostNameController: _hostNameController,
-                    needsHostName: _needsHostName,
-                    formKey: _step2FormKey,
                     onBack: _previousStep,
+                    onContinue: _nextStep,
                     onCreate: _createChat,
+                    needsHostName: _needsHostName,
                     isLoading: _isLoading,
                   ),
+
+                  // Step 4: Host name (only if not already set)
+                  if (_needsHostName)
+                    WizardStepHostName(
+                      hostNameController: _hostNameController,
+                      formKey: _step2FormKey,
+                      onBack: _previousStep,
+                      onCreate: _createChat,
+                      isLoading: _isLoading,
+                    ),
                 ],
               ),
             ),

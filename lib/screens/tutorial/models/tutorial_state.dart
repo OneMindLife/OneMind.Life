@@ -10,7 +10,6 @@ enum TutorialStep {
   round1Proposing,
   round1Rating,
   round1Result,
-  round1SeeResults, // NEW: after first Continue, before viewing grid
 
   // Round 2
   round2Prompt,
@@ -80,9 +79,6 @@ class TutorialChatState extends Equatable {
   /// Round 3 results with final ratings (for "See Results" grid)
   final List<Proposition> round3Results;
 
-  /// Whether user has viewed the Round 1 results grid
-  final bool hasViewedRound1Grid;
-
   const TutorialChatState({
     this.currentStep = TutorialStep.intro,
     required this.chat,
@@ -104,7 +100,6 @@ class TutorialChatState extends Equatable {
     this.round1Results = const [],
     this.round2Results = const [],
     this.round3Results = const [],
-    this.hasViewedRound1Grid = false,
   });
 
   /// Get the user's current proposition based on round
@@ -143,7 +138,6 @@ class TutorialChatState extends Equatable {
     List<Proposition>? round1Results,
     List<Proposition>? round2Results,
     List<Proposition>? round3Results,
-    bool? hasViewedRound1Grid,
   }) {
     return TutorialChatState(
       currentStep: currentStep ?? this.currentStep,
@@ -166,7 +160,6 @@ class TutorialChatState extends Equatable {
       round1Results: round1Results ?? this.round1Results,
       round2Results: round2Results ?? this.round2Results,
       round3Results: round3Results ?? this.round3Results,
-      hasViewedRound1Grid: hasViewedRound1Grid ?? this.hasViewedRound1Grid,
     );
   }
 
@@ -192,7 +185,6 @@ class TutorialChatState extends Equatable {
         round1Results,
         round2Results,
         round3Results,
-        hasViewedRound1Grid,
       ];
 }
 

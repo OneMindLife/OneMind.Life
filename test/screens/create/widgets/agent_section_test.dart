@@ -15,7 +15,7 @@ Widget _wrapWidget(Widget child) {
 
 void main() {
   group('AgentSection', () {
-    testWidgets('displays section header', (tester) async {
+    testWidgets('displays first question', (tester) async {
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
           settings: AgentSettings.defaults(),
@@ -23,7 +23,7 @@ void main() {
         ),
       ));
 
-      expect(find.text('AI Agents'), findsOneWidget);
+      expect(find.text('Start with AI agents?'), findsOneWidget);
     });
 
     testWidgets('displays enable toggle', (tester) async {
@@ -34,8 +34,8 @@ void main() {
         ),
       ));
 
-      expect(find.text('Enable AI agents'), findsOneWidget);
-      expect(find.byType(SwitchListTile), findsOneWidget);
+      expect(find.text('Start with AI agents?'), findsOneWidget);
+      expect(find.byType(Switch), findsOneWidget);
     });
 
     testWidgets('hides agent settings when disabled', (tester) async {
@@ -46,8 +46,8 @@ void main() {
         ),
       ));
 
-      expect(find.text('Number of agents'), findsNothing);
-      expect(find.text('Customize agents individually'), findsNothing);
+      expect(find.text('How many agents?'), findsNothing);
+      expect(find.text('Customize each agent separately?'), findsNothing);
     });
 
     testWidgets('shows agent settings when enabled', (tester) async {
@@ -58,9 +58,9 @@ void main() {
         ),
       ));
 
-      expect(find.text('Number of agents'), findsOneWidget);
-      expect(find.text('Customize agents individually'), findsOneWidget);
-      expect(find.text('Same agent count for both phases'), findsOneWidget);
+      expect(find.text('How many agents?'), findsOneWidget);
+      expect(find.text('Customize each agent separately?'), findsOneWidget);
+      expect(find.text('Should agents also rate?'), findsOneWidget);
     });
 
     testWidgets('shows shared instructions field by default', (tester) async {
@@ -72,7 +72,7 @@ void main() {
       ));
 
       expect(
-        find.text('Instructions for all agents (optional)'),
+        find.byKey(const Key('agent_shared_instructions')),
         findsOneWidget,
       );
     });
@@ -89,13 +89,14 @@ void main() {
         ),
       ));
 
-      // Should show per-agent name and personality fields (1 agent default)
+      // Should show per-agent name and personality fields (2 agents default)
       expect(find.text('Agent 1 name'), findsOneWidget);
-      expect(find.text('Personality (optional)'), findsNWidgets(1));
+      expect(find.text('Agent 2 name'), findsOneWidget);
+      expect(find.text('Personality (optional)'), findsNWidgets(2));
 
       // Should NOT show shared instructions field
       expect(
-        find.text('Instructions for all agents (optional)'),
+        find.byKey(const Key('agent_shared_instructions')),
         findsNothing,
       );
     });
@@ -132,8 +133,8 @@ void main() {
       await tester.pump();
 
       expect(updated, isNotNull);
-      expect(updated!.proposingAgentCount, 2);
-      expect(updated!.agents.length, 2);
+      expect(updated!.agentCount, 3);
+      expect(updated!.agents.length, 3);
     });
 
     testWidgets('calls onChanged when decrementing agent count',
@@ -142,7 +143,7 @@ void main() {
 
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
-          settings: AgentSettings.defaults().copyWith(enabled: true).withCount(3),
+          settings: AgentSettings.defaults().copyWith(enabled: true).withCount(4),
           onChanged: (v) => updated = v,
         ),
       ));
@@ -151,18 +152,14 @@ void main() {
       await tester.pump();
 
       expect(updated, isNotNull);
-      expect(updated!.proposingAgentCount, 2);
-      expect(updated!.agents.length, 2);
+      expect(updated!.agentCount, 3);
+      expect(updated!.agents.length, 3);
     });
 
-    testWidgets('respects min of 1 for agent count', (tester) async {
+    testWidgets('respects min of 2 for agent count', (tester) async {
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
-          settings: AgentSettings.defaults().copyWith(
-            enabled: true,
-            proposingAgentCount: 1,
-            agents: [const AgentConfig(name: 'Agent 1')],
-          ),
+          settings: AgentSettings.defaults().copyWith(enabled: true),
           onChanged: (_) {},
         ),
       ));
@@ -178,10 +175,7 @@ void main() {
         AgentSection(
           settings: AgentSettings.defaults().copyWith(
             enabled: true,
-            proposingAgentCount: 5,
-            agents: List.generate(
-                5, (i) => AgentConfig(name: 'Agent ${i + 1}')),
-          ),
+          ).withCount(5),
           onChanged: (_) {},
         ),
       ));
@@ -192,7 +186,7 @@ void main() {
       expect(incrementButton.onPressed, isNull);
     });
 
-    testWidgets('hides rating count when useSameCount is true',
+    testWidgets('shows agents also rate toggle when enabled',
         (tester) async {
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
@@ -201,25 +195,14 @@ void main() {
         ),
       ));
 
-      expect(find.text('Rating agents'), findsNothing);
+      expect(find.text('Should agents also rate?'), findsOneWidget);
+      expect(
+        find.text('Yes, agents rate alongside humans'),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows rating count when useSameCount is false',
-        (tester) async {
-      await tester.pumpWidget(_wrapWidget(
-        AgentSection(
-          settings: AgentSettings.defaults().copyWith(
-            enabled: true,
-            useSameCount: false,
-          ),
-          onChanged: (_) {},
-        ),
-      ));
-
-      expect(find.text('Rating agents'), findsOneWidget);
-    });
-
-    testWidgets('toggling useSameCount calls onChanged correctly',
+    testWidgets('toggling agentsAlsoRate calls onChanged correctly',
         (tester) async {
       AgentSettings? updated;
 
@@ -227,26 +210,19 @@ void main() {
         AgentSection(
           settings: AgentSettings.defaults().copyWith(
             enabled: true,
-            useSameCount: true,
+            agentsAlsoRate: true,
           ),
           onChanged: (v) => updated = v,
         ),
       ));
 
-      // Find the "Same agent count for both phases" switch
-      final sameCountSwitch = find.widgetWithText(
-        SwitchListTile,
-        'Same agent count for both phases',
-      );
-      expect(sameCountSwitch, findsOneWidget);
-
-      // The switch is the last SwitchListTile in the widget
-      // Tap the switch within that SwitchListTile
-      await tester.tap(sameCountSwitch);
+      // "Should agents also rate?" is the 2nd switch (index 1)
+      final switches = find.byType(Switch);
+      await tester.tap(switches.at(1));
       await tester.pump();
 
       expect(updated, isNotNull);
-      expect(updated!.useSameCount, isFalse);
+      expect(updated!.agentsAlsoRate, isFalse);
     });
 
     testWidgets('calls onChanged when toggling customizeIndividually',
@@ -260,11 +236,9 @@ void main() {
         ),
       ));
 
-      final customizeSwitch = find.widgetWithText(
-        SwitchListTile,
-        'Customize agents individually',
-      );
-      await tester.tap(customizeSwitch);
+      // "Customize each agent separately?" is the 3rd switch (index 2)
+      final switches = find.byType(Switch);
+      await tester.tap(switches.at(2));
       await tester.pump();
 
       expect(updated, isNotNull);

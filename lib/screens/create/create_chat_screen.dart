@@ -227,14 +227,14 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         enableAiParticipant: false, // AI proposer retired
         aiPropositionsCount: null,
         enableAgents: _agentSettings.enabled,
-        proposingAgentCount: _agentSettings.proposingAgentCount,
-        ratingAgentCount: _agentSettings.useSameCount
-            ? _agentSettings.proposingAgentCount
-            : _agentSettings.ratingAgentCount,
-        agentInstructions: _agentSettings.sharedInstructions.isNotEmpty
+        proposingAgentCount: _agentSettings.agentCount,
+        ratingAgentCount: _agentSettings.agentsAlsoRate
+            ? _agentSettings.agentCount
+            : 0,
+        agentInstructions: _agentSettings.customizeAgents && _agentSettings.sharedInstructions.isNotEmpty
             ? _agentSettings.sharedInstructions
             : null,
-        agentConfigs: _agentSettings.customizeIndividually
+        agentConfigs: _agentSettings.customizeAgents && _agentSettings.customizeIndividually
             ? _agentSettings.agents
                 .map((a) => a.toJson())
                 .toList()
