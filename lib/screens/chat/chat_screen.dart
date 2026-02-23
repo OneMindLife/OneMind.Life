@@ -863,10 +863,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ],
       ),
       body: stateAsync.when(
-        data: (state) => AnimatedOpacity(
-          opacity: state.isTranslating ? 0.4 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: Column(
+        data: (state) => Column(
           children: [
             // Host paused banner
             if (state.chat?.hostPaused ?? widget.chat.hostPaused)
@@ -983,7 +980,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             // Bottom Action Area
             _buildBottomArea(state),
           ],
-        )),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView.fromError(
           error,

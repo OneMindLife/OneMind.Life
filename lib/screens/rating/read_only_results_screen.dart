@@ -21,6 +21,9 @@ class ReadOnlyResultsScreen extends StatefulWidget {
   /// Whether to show tutorial hint at the bottom
   final bool showTutorialHint;
 
+  /// Winner name to display in tutorial hint (e.g. "Community Garden won!")
+  final String? tutorialWinnerName;
+
   const ReadOnlyResultsScreen({
     super.key,
     required this.propositions,
@@ -28,6 +31,7 @@ class ReadOnlyResultsScreen extends StatefulWidget {
     this.roundId,
     this.myParticipantId,
     this.showTutorialHint = false,
+    this.tutorialWinnerName,
   });
 
   @override
@@ -114,7 +118,7 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              l10n.tutorialResultsBackHint,
+              l10n.tutorialResultsBackHint(widget.tutorialWinnerName ?? ''),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: contentColor,
               ),
