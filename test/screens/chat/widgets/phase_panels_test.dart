@@ -32,7 +32,7 @@ void main() {
       expect(find.text('Waiting'), findsOneWidget);
       expect(find.textContaining('2'), findsOneWidget);
       // No start button - phase auto-starts
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
     });
 
     testWidgets('shows waiting for 1 more when close to auto-start',
@@ -175,7 +175,7 @@ void main() {
       expect(find.text('Only idea'), findsOneWidget);
       expect(find.text('Waiting for rating phase...'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.byType(ElevatedButton), findsNothing);
     });
 
     testWidgets('calls onSubmit when button pressed', (tester) async {
@@ -372,11 +372,11 @@ void main() {
       expect(textField.enabled, isFalse);
 
       // Button should be disabled (onPressed is null)
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull);
 
       // Tapping button should not call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(ElevatedButton));
       expect(submitCalled, isFalse);
     });
 
@@ -407,11 +407,11 @@ void main() {
       expect(textField.enabled, isTrue);
 
       // Button should be enabled
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNotNull);
 
       // Tapping button should call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(ElevatedButton));
       expect(submitCalled, isTrue);
     });
   });
@@ -587,12 +587,12 @@ void main() {
       await tester.pump();
 
       // Button should be disabled when submitting
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull,
           reason: 'Submit button should be disabled when isSubmitting is true');
 
       // Tapping disabled button should not call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(ElevatedButton));
       expect(submitCallCount, 0,
           reason: 'onSubmit should not be called when button is disabled');
     });
@@ -673,12 +673,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be enabled
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNotNull,
           reason: 'Submit button should be enabled when isSubmitting is false');
 
       // Tapping button should call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(ElevatedButton));
       expect(submitCalled, isTrue,
           reason: 'onSubmit should be called when button is tapped');
     });
@@ -709,8 +709,8 @@ void main() {
       await tester.pump();
 
       // Submit button should be disabled
-      final submitButton = tester.widget<FilledButton>(
-        find.byType(FilledButton),
+      final submitButton = tester.widget<ElevatedButton>(
+        find.byType(ElevatedButton),
       );
       expect(submitButton.onPressed, isNull,
           reason: 'Submit button should be disabled when isSubmitting');
@@ -723,7 +723,7 @@ void main() {
           reason: 'Skip button should be disabled when isSubmitting');
 
       // Tapping either should not call the callbacks
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byType(ElevatedButton));
       await tester.tap(find.byType(OutlinedButton));
       expect(submitCalled, isFalse);
       expect(skipCalled, isFalse);
@@ -751,7 +751,7 @@ void main() {
       await tester.pump();
 
       // Button should be disabled due to isSubmitting
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNull,
           reason: 'isSubmitting should disable button even when not paused');
 
@@ -777,7 +777,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be enabled by default
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<ElevatedButton>(find.byType(ElevatedButton));
       expect(button.onPressed, isNotNull,
           reason: 'Button should be enabled when isSubmitting defaults to false');
 
