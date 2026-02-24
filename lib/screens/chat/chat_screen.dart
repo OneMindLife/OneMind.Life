@@ -717,13 +717,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           //       },
           //     ) ??
           //     const SizedBox.shrink(),
-          // QR Code button - host only with invite code
+          // QR Code button - visible to all participants with invite code
           stateAsync.whenOrNull(
                 data: (state) {
-                  final isHost = state.myParticipant?.isHost == true;
                   final hasInviteCode = widget.chat.inviteCode != null &&
                       widget.chat.accessMethod == AccessMethod.code;
-                  if (isHost && hasInviteCode) {
+                  if (hasInviteCode) {
                     return IconButton(
                       key: const Key('share-button'),
                       icon: const Icon(Icons.ios_share),

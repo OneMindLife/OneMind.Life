@@ -42,6 +42,8 @@ class ChatDetailState extends Equatable {
   final bool isMyParticipantFunded;
   // Allowed proposition categories for current cycle
   final List<String> allowedCategories;
+  // True while translations are being fetched after a language change
+  final bool isTranslating;
 
   /// Whether the UI should show simplified task result mode.
   /// True when the only allowed category is 'human_task_result'.
@@ -74,6 +76,7 @@ class ChatDetailState extends Equatable {
     this.chatCredits,
     this.isMyParticipantFunded = true,
     this.allowedCategories = const [],
+    this.isTranslating = false,
   });
 
   /// Number of active participants (used for skip quota calculation)
@@ -137,6 +140,7 @@ class ChatDetailState extends Equatable {
     ChatCredits? chatCredits,
     bool? isMyParticipantFunded,
     List<String>? allowedCategories,
+    bool? isTranslating,
   }) {
     return ChatDetailState(
       chat: chat ?? this.chat,
@@ -163,6 +167,7 @@ class ChatDetailState extends Equatable {
       chatCredits: chatCredits ?? this.chatCredits,
       isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
       allowedCategories: allowedCategories ?? this.allowedCategories,
+      isTranslating: isTranslating ?? this.isTranslating,
     );
   }
 
@@ -192,6 +197,7 @@ class ChatDetailState extends Equatable {
         chatCredits,
         isMyParticipantFunded,
         allowedCategories,
+        isTranslating,
       ];
 }
 
@@ -278,8 +284,12 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   }
 
   /// Refresh all translatable data when language changes.
+  /// Sets isTranslating immediately so the UI can show feedback.
   Future<void> _refreshForLanguageChange() async {
-    if (state.valueOrNull == null) return;
+    final current = state.valueOrNull;
+    if (current == null) return;
+    // Show translating state immediately
+    state = AsyncData(current.copyWith(isTranslating: true));
     // Full reload picks up translated consensus items, propositions, winners, etc.
     await _loadData();
   }
