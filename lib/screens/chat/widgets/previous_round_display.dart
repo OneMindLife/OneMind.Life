@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../widgets/proposition_content_card.dart';
 import '../../rating/read_only_results_screen.dart';
 
 /// Displays the previous round winner(s) with support for tied winners.
@@ -127,15 +126,26 @@ class PreviousWinnerPanel extends StatelessWidget {
                   iconSize: 24,
                 ),
 
-              // Winner content using PropositionContentCard
+              // Winner content styled like convergence items (no header)
               Expanded(
-                child: PropositionContentCard(
-                  content: currentWinner.displayContent ?? l10n.unknownProposition,
-                  maxHeight: 100,
-                  borderColor: hasMultipleWinners
-                      ? Colors.orange.shade300
-                      : AppColors.consensus,
-                  borderWidth: hasMultipleWinners ? 2 : 2,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.consensusLight.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: const Border(
+                      left: BorderSide(
+                        color: AppColors.consensus,
+                        width: 4,
+                      ),
+                    ),
+                  ),
+                  constraints: const BoxConstraints(maxHeight: 100),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      currentWinner.displayContent ?? l10n.unknownProposition,
+                    ),
+                  ),
                 ),
               ),
 
@@ -158,7 +168,7 @@ class PreviousWinnerPanel extends StatelessWidget {
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: FilledButton.tonalIcon(
                 onPressed: () => _navigateToResultsGrid(context),
                 icon: const Icon(Icons.grid_view, size: 18),
                 label: Text(l10n.seeAllResults),

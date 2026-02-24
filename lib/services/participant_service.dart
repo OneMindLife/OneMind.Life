@@ -198,14 +198,29 @@ class ParticipantService {
         .toList();
   }
 
+  /// Update the per-chat viewing language for the current user's participant row
+  Future<void> updateViewingLanguage(int chatId, String languageCode) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await _client
+        .from('participants')
+        .update({'viewing_language_code': languageCode})
+        .eq('chat_id', chatId)
+        .eq('user_id', userId);
+  }
+
   /// Cancel a pending join request (requester only)
   Future<void> cancelJoinRequest(int requestId) async {
     await _client.rpc('cancel_join_request', params: {'p_request_id': requestId});
   }
 
-  /// Join a public chat (no display name required)
-  /// For official/public chats where users can join without approval
-  Future<Participant> joinPublicChat({required int chatId}) async {
+  /// Join a public chat using the display name from auth metadata.
+  /// For official/public chats where users can join without approval.
+  Future<Participant> joinPublicChat({
+    required int chatId,
+    String? displayName,
+  }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
       throw AppException.authRequired(
@@ -226,11 +241,16 @@ class ParticipantService {
       return Participant.fromJson(existing);
     }
 
-    // Join with default display name (column is NOT NULL)
+    // Use provided name or fall back to auth metadata display name
+    final name = displayName ??
+        _client.auth.currentUser?.userMetadata?['display_name'] as String? ??
+        'Anonymous';
+
+    // Join with display name (column is NOT NULL)
     final response = await _client.from('participants').insert({
       'chat_id': chatId,
       'user_id': userId,
-      'display_name': 'Anonymous',
+      'display_name': name,
       'is_host': false,
       'is_authenticated': true,
       'status': 'active',

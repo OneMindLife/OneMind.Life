@@ -17,9 +17,12 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 /// Current user ID provider - ensures user is signed in (anonymously if needed)
+/// Also ensures user has a display name (generates random one if missing).
 final currentUserIdProvider = FutureProvider<String>((ref) async {
   final authService = ref.watch(authServiceProvider);
   final userId = await authService.ensureSignedIn();
+  // Ensure every user has a display name (e.g. "Brave Fox")
+  await authService.ensureDisplayName();
   return userId;
 });
 

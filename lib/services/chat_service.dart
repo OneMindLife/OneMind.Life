@@ -64,6 +64,27 @@ class ChatService {
     return (response as List).map((json) => Chat.fromJson(json)).toList();
   }
 
+  /// Get all active chats with dashboard info (phase, timer, participant count).
+  /// Uses the get_my_chats_dashboard RPC for a single query.
+  Future<List<ChatDashboardInfo>> getMyDashboard({String? languageCode}) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      return [];
+    }
+
+    final response = await _client.rpc(
+      'get_my_chats_dashboard',
+      params: {
+        'p_user_id': userId,
+        'p_language_code': languageCode ?? 'en',
+      },
+    );
+
+    return (response as List)
+        .map((json) => ChatDashboardInfo.fromJson(json))
+        .toList();
+  }
+
   /// Get the official OneMind chat.
   /// If [languageCode] is provided, returns translated fields.
   Future<Chat?> getOfficialChat({String? languageCode}) async {

@@ -3222,6 +3222,12 @@ abstract class AppLocalizations {
   /// **'This is last round\'s winner. If it wins again this round, it gets permanently added to the chat.'**
   String get tutorialRatingCarryForwardHint;
 
+  /// No description provided for @tutorialTapTabHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"{tabName}\" above to continue.'**
+  String tutorialTapTabHint(String tabName);
+
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
   /// In en, this message translates to:
@@ -4223,6 +4229,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto-translated'**
   String get chatAutoTranslated;
+
+  /// No description provided for @welcomeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome, {name}'**
+  String welcomeName(String name);
+
+  /// No description provided for @editName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit name'**
+  String get editName;
+
+  /// No description provided for @primaryLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Language'**
+  String get primaryLanguage;
+
+  /// No description provided for @iAlsoSpeak.
+  ///
+  /// In en, this message translates to:
+  /// **'I also speak'**
+  String get iAlsoSpeak;
+
+  /// No description provided for @spokenLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken Languages'**
+  String get spokenLanguages;
+
+  /// No description provided for @homeTourWelcomeNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Display Name'**
+  String get homeTourWelcomeNameTitle;
+
+  /// No description provided for @homeTourWelcomeNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your display name. Tap the pencil icon to change it anytime!'**
+  String get homeTourWelcomeNameDesc;
 }
 
 class _AppLocalizationsDelegate

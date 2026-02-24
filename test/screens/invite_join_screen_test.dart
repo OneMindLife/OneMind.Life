@@ -168,6 +168,33 @@ void main() {
         // Name field should be hidden when name is already set
         expect(find.byType(TextField), findsNothing);
       });
+
+      testWidgets('does not display a name input field for valid token', (tester) async {
+        when(() => mockAuthService.displayName).thenReturn(null);
+        when(() => mockInviteService.validateInviteToken('valid-token'))
+            .thenAnswer((_) async => InviteTokenResult(
+                  isValid: true,
+                  chatId: 1,
+                  chatName: 'Test Chat',
+                  chatInitialMessage: 'Welcome',
+                  accessMethod: 'invite_only',
+                  requireApproval: false,
+                  email: 'test@example.com',
+                ));
+
+        await tester.pumpWidget(createTestWidget(
+          const InviteJoinScreen(token: 'valid-token'),
+        ));
+        await tester.pumpAndSettle();
+
+        // No display-name-field key should exist anywhere on the screen.
+        expect(find.byKey(const Key('display-name-field')), findsNothing);
+        // No "Your Name" or "Display Name" label should be shown.
+        expect(find.text('Your Name'), findsNothing);
+        expect(find.text('Display Name'), findsNothing);
+        // No TextFormField should be used for name input.
+        expect(find.byType(TextFormField), findsNothing);
+      });
     });
 
     group('with code', () {

@@ -3,133 +3,49 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/l10n/locale_provider.dart';
 import '../l10n/generated/app_localizations.dart';
 
-/// A widget that allows users to select their preferred language.
-/// Can be displayed as a dropdown button or a popup menu.
+/// Language display names keyed by code.
+const _languageNames = {
+  'en': 'English',
+  'es': 'Espanol',
+  'pt': 'Portugues',
+  'fr': 'Francais',
+  'de': 'Deutsch',
+};
+
+/// A compact language selector that opens the enhanced language dialog.
 class LanguageSelector extends ConsumerWidget {
-  /// Whether to show as a compact icon button (true) or a dropdown (false)
   final bool compact;
 
   const LanguageSelector({super.key, this.compact = true});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final locale = ref.watch(localeProvider);
     final l10n = AppLocalizations.of(context);
 
     if (compact) {
-      return PopupMenuButton<String>(
+      return IconButton(
         icon: const Icon(Icons.language),
         tooltip: l10n.language,
-        onSelected: (languageCode) {
-          ref.read(localeProvider.notifier).setLocale(languageCode);
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            value: 'en',
-            child: Row(
-              children: [
-                if (locale.languageCode == 'en')
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                const Text('English'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'es',
-            child: Row(
-              children: [
-                if (locale.languageCode == 'es')
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                const Text('Espanol'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'pt',
-            child: Row(
-              children: [
-                if (locale.languageCode == 'pt')
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                const Text('Portugues'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'fr',
-            child: Row(
-              children: [
-                if (locale.languageCode == 'fr')
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                const Text('Francais'),
-              ],
-            ),
-          ),
-          PopupMenuItem(
-            value: 'de',
-            child: Row(
-              children: [
-                if (locale.languageCode == 'de')
-                  const Icon(Icons.check, size: 18)
-                else
-                  const SizedBox(width: 18),
-                const SizedBox(width: 8),
-                const Text('Deutsch'),
-              ],
-            ),
-          ),
-        ],
+        onPressed: () => showEnhancedLanguageDialog(context, ref),
       );
     }
 
-    // Full dropdown version
-    return DropdownButton<String>(
-      value: locale.languageCode,
-      icon: const Icon(Icons.arrow_drop_down),
-      underline: const SizedBox(),
-      onChanged: (String? newValue) {
-        if (newValue != null) {
-          ref.read(localeProvider.notifier).setLocale(newValue);
-        }
-      },
-      items: const [
-        DropdownMenuItem(
-          value: 'en',
-          child: Text('English'),
-        ),
-        DropdownMenuItem(
-          value: 'es',
-          child: Text('Espanol'),
-        ),
-        DropdownMenuItem(
-          value: 'pt',
-          child: Text('Portugues'),
-        ),
-        DropdownMenuItem(
-          value: 'fr',
-          child: Text('Francais'),
-        ),
-        DropdownMenuItem(
-          value: 'de',
-          child: Text('Deutsch'),
-        ),
-      ],
+    // Full dropdown version (legacy — opens enhanced dialog on tap)
+    final locale = ref.watch(localeProvider);
+    return InkWell(
+      onTap: () => showEnhancedLanguageDialog(context, ref),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(_languageNames[locale.languageCode] ?? 'English'),
+          const Icon(Icons.arrow_drop_down),
+        ],
+      ),
     );
   }
 }
 
-/// A list tile version of the language selector for settings screens
+/// A list tile version of the language selector for settings screens.
 class LanguageSelectorTile extends ConsumerWidget {
   const LanguageSelectorTile({super.key});
 
@@ -142,16 +58,12 @@ class LanguageSelectorTile extends ConsumerWidget {
     switch (locale.languageCode) {
       case 'es':
         languageName = l10n.spanish;
-        break;
       case 'pt':
         languageName = l10n.portuguese;
-        break;
       case 'fr':
         languageName = l10n.french;
-        break;
       case 'de':
         languageName = l10n.german;
-        break;
       case 'en':
       default:
         languageName = l10n.english;
@@ -162,87 +74,143 @@ class LanguageSelectorTile extends ConsumerWidget {
       title: Text(l10n.language),
       subtitle: Text(languageName),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => _showLanguageDialog(context, ref),
+      onTap: () => showEnhancedLanguageDialog(context, ref),
     );
   }
+}
 
-  void _showLanguageDialog(BuildContext context, WidgetRef ref) {
-    final locale = ref.read(localeProvider);
+/// Shows the enhanced language dialog with primary language (radio)
+/// and "I also speak" (checkboxes).
+void showEnhancedLanguageDialog(BuildContext context, WidgetRef ref) {
+  showDialog(
+    context: context,
+    builder: (dialogContext) => _EnhancedLanguageDialog(ref: ref),
+  );
+}
+
+class _EnhancedLanguageDialog extends StatefulWidget {
+  final WidgetRef ref;
+
+  const _EnhancedLanguageDialog({required this.ref});
+
+  @override
+  State<_EnhancedLanguageDialog> createState() =>
+      _EnhancedLanguageDialogState();
+}
+
+class _EnhancedLanguageDialogState extends State<_EnhancedLanguageDialog> {
+  late String _primaryLanguage;
+  late Set<String> _additionalLanguages;
+
+  @override
+  void initState() {
+    super.initState();
+    _primaryLanguage = widget.ref.read(localeProvider).languageCode;
+    final spoken = widget.ref.read(spokenLanguagesProvider);
+    // Additional = spoken minus primary
+    _additionalLanguages =
+        spoken.where((code) => code != _primaryLanguage).toSet();
+  }
+
+  String _localizedName(BuildContext context, String code) {
     final l10n = AppLocalizations.of(context);
+    switch (code) {
+      case 'es':
+        return l10n.spanish;
+      case 'pt':
+        return l10n.portuguese;
+      case 'fr':
+        return l10n.french;
+      case 'de':
+        return l10n.german;
+      case 'en':
+      default:
+        return l10n.english;
+    }
+  }
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.language),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioListTile<String>(
-                title: Text(l10n.english),
-                value: 'en',
-                groupValue: locale.languageCode,
+  void _save() {
+    // Update primary language
+    widget.ref.read(localeProvider.notifier).setLocale(_primaryLanguage);
+
+    // Update spoken languages = primary + additional
+    final spoken = [_primaryLanguage, ..._additionalLanguages];
+    widget.ref.read(spokenLanguagesProvider.notifier).setSpokenLanguages(spoken);
+
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final codes = ['en', 'es', 'pt', 'fr', 'de'];
+
+    return AlertDialog(
+      title: Text(l10n.language),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Primary Language section
+            Text(
+              l10n.primaryLanguage,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            ...codes.map(
+              (code) => RadioListTile<String>(
+                title: Text(_localizedName(context, code)),
+                value: code,
+                groupValue: _primaryLanguage,
+                dense: true,
                 onChanged: (value) {
                   if (value != null) {
-                    ref.read(localeProvider.notifier).setLocale(value);
-                    Navigator.pop(dialogContext);
+                    setState(() {
+                      _primaryLanguage = value;
+                      // Remove from additional if it was there
+                      _additionalLanguages.remove(value);
+                    });
                   }
                 },
               ),
-              RadioListTile<String>(
-                title: Text(l10n.spanish),
-                value: 'es',
-                groupValue: locale.languageCode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(localeProvider.notifier).setLocale(value);
-                    Navigator.pop(dialogContext);
-                  }
-                },
-              ),
-              RadioListTile<String>(
-                title: Text(l10n.portuguese),
-                value: 'pt',
-                groupValue: locale.languageCode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(localeProvider.notifier).setLocale(value);
-                    Navigator.pop(dialogContext);
-                  }
-                },
-              ),
-              RadioListTile<String>(
-                title: Text(l10n.french),
-                value: 'fr',
-                groupValue: locale.languageCode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(localeProvider.notifier).setLocale(value);
-                    Navigator.pop(dialogContext);
-                  }
-                },
-              ),
-              RadioListTile<String>(
-                title: Text(l10n.german),
-                value: 'de',
-                groupValue: locale.languageCode,
-                onChanged: (value) {
-                  if (value != null) {
-                    ref.read(localeProvider.notifier).setLocale(value);
-                    Navigator.pop(dialogContext);
-                  }
-                },
-              ),
-            ],
-          ),
+            ),
+            const Divider(),
+            // "I also speak" section
+            Text(
+              l10n.iAlsoSpeak,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            ...codes
+                .where((code) => code != _primaryLanguage)
+                .map(
+                  (code) => CheckboxListTile(
+                    title: Text(_localizedName(context, code)),
+                    value: _additionalLanguages.contains(code),
+                    dense: true,
+                    onChanged: (checked) {
+                      setState(() {
+                        if (checked == true) {
+                          _additionalLanguages.add(code);
+                        } else {
+                          _additionalLanguages.remove(code);
+                        }
+                      });
+                    },
+                  ),
+                ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.cancel),
-          ),
-        ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(l10n.cancel),
+        ),
+        FilledButton(
+          onPressed: _save,
+          child: Text(l10n.save),
+        ),
+      ],
     );
   }
 }

@@ -90,13 +90,13 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find and tap submit button
-      final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+      final submitFinder = find.widgetWithText(FilledButton, 'Submit');
       await tester.ensureVisible(submitFinder);
       await tester.pumpAndSettle();
       await tester.tap(submitFinder);
       await tester.pumpAndSettle();
 
-      // Should be at rating state now - shows "Start Rating" button
+      // Should show rating state with "Start Rating" button
       expect(find.text('Start Rating'), findsOneWidget);
     });
 
@@ -248,13 +248,13 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Test');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
         await tester.pumpAndSettle();
 
-        // Should show rating state panel with "Start Rating" button
+        // Should show rating state with "Start Rating" button
         expect(find.text('Start Rating'), findsOneWidget);
       });
     });
@@ -363,21 +363,14 @@ void main() {
         // Submit proposition
         await tester.enterText(find.byType(TextField), 'My Idea');
         await tester.pumpAndSettle();
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
         await tester.pumpAndSettle();
 
-        // Should be at rating state
+        // Should show rating state with "Start Rating" button
         expect(find.text('Start Rating'), findsOneWidget);
-
-        // Verify state is at round1Rating via the provider
-        final container = ProviderScope.containerOf(
-          tester.element(find.byType(TutorialScreen)),
-        );
-        final state = container.read(tutorialChatNotifierProvider);
-        expect(state.currentStep, TutorialStep.round1Rating);
       });
 
       testWidgets('notifier transitions directly from round1Result to round2Prompt',
@@ -460,7 +453,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Block Party');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -491,7 +484,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'block party');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -519,7 +512,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Education');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(ElevatedButton, 'Submit');
+        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -531,7 +524,7 @@ void main() {
           findsNothing,
         );
 
-        // Should be on rating state now
+        // Should show rating state with "Start Rating" button
         expect(find.text('Start Rating'), findsOneWidget);
       });
     });

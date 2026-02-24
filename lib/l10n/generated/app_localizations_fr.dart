@@ -1812,6 +1812,11 @@ class AppLocalizationsFr extends AppLocalizations {
       'C\'est le gagnant du tour precedent. S\'il gagne a nouveau ce tour, il sera ajoute definitivement au chat.';
 
   @override
+  String tutorialTapTabHint(String tabName) {
+    return 'Appuyez sur \"$tabName\" ci-dessus pour continuer.';
+  }
+
+  @override
   String get tutorialRound2PromptSimplified =>
       'C\'est l\'heure du prochain tour! Pouvez-vous faire mieux?';
 
@@ -2370,4 +2375,28 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatAutoTranslated => 'Traduit automatiquement';
+
+  @override
+  String welcomeName(String name) {
+    return 'Bienvenue, $name';
+  }
+
+  @override
+  String get editName => 'Modifier le nom';
+
+  @override
+  String get primaryLanguage => 'Langue principale';
+
+  @override
+  String get iAlsoSpeak => 'Je parle aussi';
+
+  @override
+  String get spokenLanguages => 'Langues parlees';
+
+  @override
+  String get homeTourWelcomeNameTitle => 'Votre nom d\'affichage';
+
+  @override
+  String get homeTourWelcomeNameDesc =>
+      'C\'est votre nom d\'affichage. Appuyez sur l\'icone du crayon pour le modifier a tout moment !';
 }

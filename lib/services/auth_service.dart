@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/errors/app_exception.dart';
+import '../utils/random_name_generator.dart';
 
 /// Service for authentication operations using Supabase Auth.
 /// Replaces the custom SessionService with proper JWT-based auth.
@@ -52,6 +53,15 @@ class AuthService {
 
   /// Check if user has a display name set
   bool get hasDisplayName => displayName != null && displayName!.isNotEmpty;
+
+  /// Ensure user has a display name, generating a random one if needed.
+  /// Returns the current or newly generated display name.
+  Future<String> ensureDisplayName() async {
+    if (hasDisplayName) return displayName!;
+    final name = RandomNameGenerator.generate();
+    await setDisplayName(name);
+    return name;
+  }
 
   /// Stream of auth state changes
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

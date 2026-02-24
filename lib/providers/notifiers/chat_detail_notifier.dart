@@ -4,6 +4,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/l10n/language_service.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../models/chat_credits.dart';
 import '../../models/models.dart';
 import '../../services/chat_service.dart';
@@ -44,6 +46,10 @@ class ChatDetailState extends Equatable {
   final List<String> allowedCategories;
   // True while translations are being fetched after a language change
   final bool isTranslating;
+  // Per-chat content language (separate from app UI language)
+  final String? viewingLanguageCode;
+  // True when user must pick a content language (their app language isn't in this chat's languages)
+  final bool needsLanguageSelection;
 
   /// Whether the UI should show simplified task result mode.
   /// True when the only allowed category is 'human_task_result'.
@@ -77,6 +83,8 @@ class ChatDetailState extends Equatable {
     this.isMyParticipantFunded = true,
     this.allowedCategories = const [],
     this.isTranslating = false,
+    this.viewingLanguageCode,
+    this.needsLanguageSelection = false,
   });
 
   /// Number of active participants (used for skip quota calculation)
@@ -141,6 +149,8 @@ class ChatDetailState extends Equatable {
     bool? isMyParticipantFunded,
     List<String>? allowedCategories,
     bool? isTranslating,
+    String? viewingLanguageCode,
+    bool? needsLanguageSelection,
   }) {
     return ChatDetailState(
       chat: chat ?? this.chat,
@@ -168,6 +178,8 @@ class ChatDetailState extends Equatable {
       isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
       allowedCategories: allowedCategories ?? this.allowedCategories,
       isTranslating: isTranslating ?? this.isTranslating,
+      viewingLanguageCode: viewingLanguageCode ?? this.viewingLanguageCode,
+      needsLanguageSelection: needsLanguageSelection ?? this.needsLanguageSelection,
     );
   }
 
@@ -198,6 +210,8 @@ class ChatDetailState extends Equatable {
         isMyParticipantFunded,
         allowedCategories,
         isTranslating,
+        viewingLanguageCode,
+        needsLanguageSelection,
       ];
 }
 
@@ -229,6 +243,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   final ParticipantService _participantService;
   final PropositionService _propositionService;
   final SupabaseClient _supabase;
+  final LanguageService _languageService;
+
+  /// Content language for this chat (per-chat viewing language, falling back to app language).
+  String get contentLanguageCode =>
+      state.valueOrNull?.viewingLanguageCode ?? languageCode;
 
   // Realtime subscriptions
   RealtimeChannel? _chatChannel;
@@ -273,6 +292,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         _participantService = ref.read(participantServiceProvider),
         _propositionService = ref.read(propositionServiceProvider),
         _supabase = ref.read(supabaseProvider),
+        _languageService = ref.read(languageServiceProvider),
         super(const AsyncLoading()) {
     initializeLanguageSupport(ref);
     _loadData(setupSubscriptions: true);
@@ -280,18 +300,81 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   @override
   void onLanguageChanged(String newLanguageCode) {
-    _refreshForLanguageChange();
+    // No-op: app language changes should NOT refresh chat content.
+    // Chat content is controlled by the per-chat viewingLanguageCode.
   }
 
-  /// Refresh all translatable data when language changes.
-  /// Sets isTranslating immediately so the UI can show feedback.
-  Future<void> _refreshForLanguageChange() async {
+  /// Set the per-chat viewing language and reload content.
+  /// Persists locally (SharedPreferences) and remotely (participants table).
+  Future<void> setViewingLanguage(String code) async {
+    await _languageService.setChatViewingLanguage(chatId, code);
+    // Sync to participant row so home screen can use it
+    _participantService.updateViewingLanguage(chatId, code);
     final current = state.valueOrNull;
     if (current == null) return;
-    // Show translating state immediately
-    state = AsyncData(current.copyWith(isTranslating: true));
-    // Full reload picks up translated consensus items, propositions, winners, etc.
+    state = AsyncData(current.copyWith(
+      viewingLanguageCode: code,
+      needsLanguageSelection: false,
+      isTranslating: true,
+    ));
     await _loadData();
+  }
+
+  /// Resolve which content language to use when entering the chat.
+  /// Called after the first _loadData() completes, once we know the chat's translation settings.
+  void _resolveViewingLanguage(Chat? chat) {
+    if (chat == null) return;
+
+    final current = state.valueOrNull;
+    if (current == null) return;
+
+    // If translations aren't enabled or single language, no selection needed
+    if (!chat.translationsEnabled || chat.translationLanguages.length <= 1) {
+      final autoLang = chat.translationLanguages.isNotEmpty
+          ? chat.translationLanguages.first
+          : languageCode;
+      state = AsyncData(current.copyWith(
+        viewingLanguageCode: autoLang,
+        needsLanguageSelection: false,
+      ));
+      return;
+    }
+
+    // Check persisted preference
+    final persisted = _languageService.getChatViewingLanguage(chatId);
+    if (persisted != null && chat.translationLanguages.contains(persisted)) {
+      state = AsyncData(current.copyWith(
+        viewingLanguageCode: persisted,
+        needsLanguageSelection: false,
+      ));
+      return;
+    }
+
+    // Check if app language is in chat's languages
+    if (chat.translationLanguages.contains(languageCode)) {
+      _languageService.setChatViewingLanguage(chatId, languageCode);
+      state = AsyncData(current.copyWith(
+        viewingLanguageCode: languageCode,
+        needsLanguageSelection: false,
+      ));
+      return;
+    }
+
+    // Smart fallback: check user's spoken languages
+    final spokenLanguages = _languageService.getSpokenLanguages();
+    for (final lang in spokenLanguages) {
+      if (chat.translationLanguages.contains(lang)) {
+        _languageService.setChatViewingLanguage(chatId, lang);
+        state = AsyncData(current.copyWith(
+          viewingLanguageCode: lang,
+          needsLanguageSelection: false,
+        ));
+        return;
+      }
+    }
+
+    // User's language not supported — prompt them to choose
+    state = AsyncData(current.copyWith(needsLanguageSelection: true));
   }
 
   @override
@@ -322,9 +405,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     try {
       // Load all data in parallel (including fresh chat data for schedulePaused, etc.)
       final results = await Future.wait([
-        _chatService.getChatById(chatId, languageCode: languageCode),
+        _chatService.getChatById(chatId, languageCode: contentLanguageCode),
         _chatService.getCurrentCycle(chatId),
-        _chatService.getConsensusItems(chatId, languageCode: languageCode),
+        _chatService.getConsensusItems(chatId, languageCode: contentLanguageCode),
         _participantService.getParticipants(chatId),
         _participantService.getMyParticipant(chatId),
       ]);
@@ -364,7 +447,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           chatCredits = ChatCredits.fromJson(creditData);
         }
       } catch (e) {
-        debugPrint('[ChatDetail] Error fetching chat credits: $e');
+        // Error fetching chat credits - continue without them
       }
 
       Round? currentRound;
@@ -391,7 +474,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         final previousWinnersData =
             await _chatService.getPreviousRoundWinners(
               currentCycle.id,
-              languageCode: languageCode,
+              languageCode: contentLanguageCode,
             );
         previousRoundWinners =
             previousWinnersData['winners'] as List<RoundWinner>;
@@ -405,7 +488,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           previousRoundResults = await _propositionService
               .getPropositionsWithRatings(
                 previousRoundId,
-                languageCode: languageCode,
+                languageCode: contentLanguageCode,
               );
         }
 
@@ -413,7 +496,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           final roundResults = await Future.wait([
             _propositionService.getPropositions(
               currentRound.id,
-              languageCode: languageCode,
+              languageCode: contentLanguageCode,
             ),
             _propositionService.getMyPropositions(
               currentRound.id,
@@ -459,7 +542,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
               isMyParticipantFunded = (countData as int? ?? 0) == 0;
             }
           } catch (e) {
-            debugPrint('[ChatDetail] Error checking funding: $e');
+            // Error checking funding - assume funded
           }
         }
 
@@ -471,7 +554,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           );
           allowedCategories = (catData as List).cast<String>();
         } catch (e) {
-          debugPrint('[ChatDetail] Error fetching allowed categories: $e');
+          // Error fetching allowed categories - continue with empty list
         }
       }
 
@@ -490,6 +573,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           phaseEndsAt: existingRound.phaseEndsAt,
         );
       }
+
+      // Preserve per-chat viewing language across reloads
+      final existingViewingLang = state.valueOrNull?.viewingLanguageCode;
+      final existingNeedsLangSelection = state.valueOrNull?.needsLanguageSelection ?? false;
 
       final newState = ChatDetailState(
         chat: chat,
@@ -515,9 +602,16 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         chatCredits: chatCredits,
         isMyParticipantFunded: isMyParticipantFunded,
         allowedCategories: allowedCategories,
+        viewingLanguageCode: existingViewingLang,
+        needsLanguageSelection: existingNeedsLangSelection,
       );
       state = AsyncData(newState);
       _cachedState = newState;
+
+      // On first load, resolve which content language to use
+      if (existingViewingLang == null && !existingNeedsLangSelection) {
+        _resolveViewingLanguage(chat);
+      }
 
       if (setupSubscriptions) {
         _setupSubscriptions();
@@ -584,7 +678,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
                     _scheduleRefresh();
                   }
                 } catch (e) {
-                  debugPrint('[ChatDetail] Error parsing credit update: $e');
+                  // Error parsing credit update - ignore
                 }
               }
             }
@@ -960,7 +1054,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       final results = await Future.wait([
         _propositionService.getPropositions(
           currentState!.currentRound!.id,
-          languageCode: languageCode,
+          languageCode: contentLanguageCode,
         ),
         _propositionService.getMyPropositions(
           currentState.currentRound!.id,

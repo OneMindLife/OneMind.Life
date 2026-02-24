@@ -142,6 +142,19 @@ void main() {
 
         expect(find.text('Cancel'), findsOneWidget);
       });
+
+      testWidgets('does not display a name input field', (tester) async {
+        await openDialog(tester);
+
+        // The dialog should only have the invite code TextField, no name field.
+        // Verify no display-name-field key exists.
+        expect(find.byKey(const Key('display-name-field')), findsNothing);
+        // Verify no "Your Name" or "Display Name" label is shown.
+        expect(find.text('Your Name'), findsNothing);
+        expect(find.text('Display Name'), findsNothing);
+        // Only one TextField should exist (the invite code input).
+        expect(find.byType(TextField), findsOneWidget);
+      });
     });
 
     group('Code Input', () {

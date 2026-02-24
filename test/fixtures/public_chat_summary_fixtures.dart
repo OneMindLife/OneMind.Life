@@ -16,6 +16,12 @@ class PublicChatSummaryFixtures {
     String? initialMessageTranslated,
     String? translationLanguage,
     List<String>? translationLanguages,
+    String? currentRoundPhase,
+    int? currentRoundCustomId,
+    String? currentRoundPhaseEndsAt,
+    String? currentRoundPhaseStartedAt,
+    bool? schedulePaused,
+    bool? hostPaused,
   }) {
     return {
       'id': id,
@@ -30,6 +36,12 @@ class PublicChatSummaryFixtures {
       if (initialMessageTranslated != null) 'initial_message_translated': initialMessageTranslated,
       if (translationLanguage != null) 'translation_language': translationLanguage,
       if (translationLanguages != null) 'translation_languages': translationLanguages,
+      if (currentRoundPhase != null) 'current_round_phase': currentRoundPhase,
+      if (currentRoundCustomId != null) 'current_round_custom_id': currentRoundCustomId,
+      if (currentRoundPhaseEndsAt != null) 'current_round_phase_ends_at': currentRoundPhaseEndsAt,
+      if (currentRoundPhaseStartedAt != null) 'current_round_phase_started_at': currentRoundPhaseStartedAt,
+      if (schedulePaused != null) 'schedule_paused': schedulePaused,
+      if (hostPaused != null) 'host_paused': hostPaused,
     };
   }
 
@@ -47,6 +59,12 @@ class PublicChatSummaryFixtures {
     String? initialMessageTranslated,
     String? translationLanguage,
     List<String> translationLanguages = const ['en'],
+    String? currentRoundPhase,
+    int? currentRoundNumber,
+    DateTime? phaseEndsAt,
+    DateTime? phaseStartedAt,
+    bool schedulePaused = false,
+    bool hostPaused = false,
   }) {
     return PublicChatSummary(
       id: id,
@@ -61,6 +79,12 @@ class PublicChatSummaryFixtures {
       initialMessageTranslated: initialMessageTranslated,
       translationLanguage: translationLanguage,
       translationLanguages: translationLanguages,
+      currentRoundPhase: currentRoundPhase,
+      currentRoundNumber: currentRoundNumber,
+      phaseEndsAt: phaseEndsAt,
+      phaseStartedAt: phaseStartedAt,
+      schedulePaused: schedulePaused,
+      hostPaused: hostPaused,
     );
   }
 
@@ -95,6 +119,46 @@ class PublicChatSummaryFixtures {
       name: 'Simple Chat',
       description: null,
       participantCount: 3,
+    );
+  }
+
+  /// Creates a PublicChatSummary with an active proposing phase.
+  static PublicChatSummary proposing({
+    int id = 1,
+    Duration? timeRemaining,
+  }) {
+    return model(
+      id: id,
+      name: 'Active Chat',
+      currentRoundPhase: 'proposing',
+      currentRoundNumber: 1,
+      phaseStartedAt: DateTime.now(),
+      phaseEndsAt: timeRemaining != null
+          ? DateTime.now().add(timeRemaining)
+          : null,
+    );
+  }
+
+  /// Creates a PublicChatSummary with an active rating phase.
+  static PublicChatSummary rating({int id = 2}) {
+    return model(
+      id: id,
+      name: 'Rating Chat',
+      currentRoundPhase: 'rating',
+      currentRoundNumber: 1,
+      phaseStartedAt: DateTime.now(),
+      phaseEndsAt: DateTime.now().add(const Duration(minutes: 5)),
+    );
+  }
+
+  /// Creates a PublicChatSummary that is paused.
+  static PublicChatSummary paused({int id = 3}) {
+    return model(
+      id: id,
+      name: 'Paused Chat',
+      currentRoundPhase: 'proposing',
+      currentRoundNumber: 1,
+      hostPaused: true,
     );
   }
 

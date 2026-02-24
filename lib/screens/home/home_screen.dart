@@ -9,13 +9,15 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
+import '../../utils/dashboard_sort.dart';
 import '../chat/chat_screen.dart';
 import '../join/join_dialog.dart';
 import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
 import '../tutorial/tutorial_data.dart';
-import '../../utils/language_utils.dart';
+import '../../widgets/chat_dashboard_card.dart';
 import '../../widgets/language_selector.dart';
+import '../../widgets/welcome_header.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, this.returnToChatId});
@@ -33,6 +35,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   final _searchController = TextEditingController();
   bool _isSearching = false;
   bool _hasPlayedEntrance = false;
+  Timer? _tickTimer;
 
   /// Regex to detect a 6 alphanumeric character invite code
   static final _inviteCodeRegex = RegExp(r'^[A-Za-z0-9]{6}$');
@@ -41,6 +44,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
+    // 1-second tick for countdown refresh + re-sort
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
     // Listen for approved join requests to auto-open the chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupApprovedChatListener();
@@ -84,6 +91,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   void dispose() {
     _approvedChatSubscription?.cancel();
     _searchController.dispose();
+    _tickTimer?.cancel();
     super.dispose();
   }
 
@@ -175,7 +183,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             IconButton(
               icon: const Icon(Icons.restart_alt),
               tooltip: 'Restart Home Tour (debug)',
-              onPressed: () => context.go('/home-tour'),
+              onPressed: () async {
+                await ref.read(tutorialServiceProvider).resetHomeTour();
+                ref.invalidate(hasCompletedHomeTourProvider);
+                if (context.mounted) context.go('/home-tour');
+              },
             ),
           IconButton(
             key: const Key('explore-button'),
@@ -200,6 +212,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       body: Column(
         children: [
+          // Welcome header with editable display name
+          const WelcomeHeader(),
           // Persistent search bar (outside RefreshIndicator)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -252,13 +266,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
     return myChatsStateAsync.when(
       data: (myChatsState) {
-        final filtered = myChatsState.chats
-            .where((c) => c.displayName.toLowerCase().contains(query))
+        final filtered = myChatsState.dashboardChats
+            .where((d) => d.chat.displayName.toLowerCase().contains(query))
             .toList();
 
         return ListView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
           children: [
             // Invite code banner
             if (inviteCode != null) ...[
@@ -332,13 +346,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               )
             else
               ...filtered.map(
-                (chat) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: _ChatCard(
-                    chat: chat,
-                    onTap: () => _navigateToChat(context, ref, chat),
-                  ),
-                ),
+                (dashInfo) {
+                  final chat = dashInfo.chat;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ChatDashboardCard(
+                      name: chat.displayName,
+                      initialMessage: chat.displayInitialMessage,
+                      onTap: () => _navigateToChat(context, ref, chat),
+                      participantCount: dashInfo.participantCount,
+                      phase: dashInfo.currentRoundPhase,
+                      isPaused: dashInfo.isPaused,
+                      timeRemaining: dashInfo.timeRemaining,
+                      translationLanguages: chat.translationLanguages,
+                      viewingLanguageCode: dashInfo.viewingLanguageCode,
+                      phaseBarColorOverride: chat.isOfficial
+                          ? Theme.of(context).colorScheme.primary
+                          : null,
+                    ),
+                  );
+                },
               ),
           ],
         );
@@ -365,7 +392,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           },
           child: ListView(
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
             children: [
               // Pending Join Requests Section
               if (myChatsState.pendingRequests.isNotEmpty) ...[
@@ -388,12 +415,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               const SizedBox(height: 8),
               Builder(
                 builder: (context) {
-                  final chats = myChatsState.chats;
-                  if (chats.isEmpty &&
+                  final sorted = sortByUrgency(myChatsState.dashboardChats);
+                  if (sorted.isEmpty &&
                       myChatsState.pendingRequests.isEmpty) {
                     return _buildEmptyState(context, ref);
                   }
-                  if (chats.isEmpty) {
+                  if (sorted.isEmpty) {
                     return _buildNoChatsYet(context);
                   }
                   // Mark entrance animation as played
@@ -402,19 +429,35 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     _hasPlayedEntrance = true;
                   }
                   return Column(
-                    children: chats
+                    children: sorted
                         .asMap()
                         .entries
                         .map(
                           (entry) {
                             final index = entry.key;
-                            final chat = entry.value;
+                            final dashInfo = entry.value;
+                            final chat = dashInfo.chat;
+                            final semanticLabel = chat.isOfficial
+                                ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
+                                : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';
                             final child = Padding(
                               padding: const EdgeInsets.only(bottom: 8),
-                              child: _ChatCard(
-                                chat: chat,
+                              child: ChatDashboardCard(
+                                key: Key('chat-card-${chat.id}'),
+                                name: chat.displayName,
+                                initialMessage: chat.displayInitialMessage,
                                 onTap: () =>
                                     _navigateToChat(context, ref, chat),
+                                participantCount: dashInfo.participantCount,
+                                phase: dashInfo.currentRoundPhase,
+                                isPaused: dashInfo.isPaused,
+                                timeRemaining: dashInfo.timeRemaining,
+                                translationLanguages: chat.translationLanguages,
+                                viewingLanguageCode: dashInfo.viewingLanguageCode,
+                                phaseBarColorOverride: chat.isOfficial
+                                    ? Theme.of(context).colorScheme.primary
+                                    : null,
+                                semanticLabel: semanticLabel,
                               ),
                             );
                             if (!shouldAnimate) return child;
@@ -542,91 +585,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 }
 
-class _ChatCard extends StatelessWidget {
-  final Chat chat;
-  final bool isOfficial;
-  final VoidCallback onTap;
-
-  const _ChatCard({
-    required this.chat,
-    this.isOfficial = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final semanticLabel = isOfficial
-        ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
-        : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';
-
-    return Semantics(
-      key: Key('chat-card-${chat.id}'),
-      button: true,
-      label: semanticLabel,
-      hint: 'Double tap to open',
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: IntrinsicHeight(
-            child: Row(
-              children: [
-                // Vertical color bar indicating chat type
-                ExcludeSemantics(
-                  child: Container(
-                    width: 4,
-                    decoration: BoxDecoration(
-                      color: isOfficial
-                          ? Theme.of(context).colorScheme.primary
-                          : AppColors.proposing,
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                      ),
-                    ),
-                  ),
-                ),
-                // Content
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          chat.displayName,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          chat.displayInitialMessage,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          LanguageUtils.shortLabel(chat.translationLanguages),
-                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _PendingRequestCard extends StatelessWidget {
   final JoinRequest request;
   final VoidCallback onCancel;
@@ -679,27 +637,6 @@ class _PendingRequestCard extends StatelessWidget {
                                   child: Text(
                                     chatName,
                                     style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.consensusLight,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: Text(
-                                    l10n.pending,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .labelSmall
-                                        ?.copyWith(
-                                          color: const Color(0xFF92400E), // amber-800
-                                          fontWeight: FontWeight.bold,
-                                        ),
                                   ),
                                 ),
                               ],

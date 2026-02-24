@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../fixtures/fixtures.dart';
+import '../fixtures/chat_dashboard_info_fixtures.dart';
 import '../mocks/mock_supabase_client.dart';
 
 class MockChatService extends Mock implements ChatService {}
@@ -35,7 +36,10 @@ class MockLanguageService extends Mock implements LanguageService {}
 class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     implements MyChatsNotifier {
   MockMyChatsNotifier(List<Chat> chats, {List<JoinRequest> pendingRequests = const []})
-      : super(AsyncData(MyChatsState(chats: chats, pendingRequests: pendingRequests)));
+      : super(AsyncData(MyChatsState(
+          dashboardChats: ChatDashboardInfoFixtures.fromChats(chats),
+          pendingRequests: pendingRequests,
+        )));
 
   @override
   Future<void> refresh() async {}
@@ -45,7 +49,7 @@ class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     final current = state.valueOrNull;
     if (current != null) {
       state = AsyncData(current.copyWith(
-        chats: current.chats.where((c) => c.id != chatId).toList(),
+        dashboardChats: current.dashboardChats.where((d) => d.chat.id != chatId).toList(),
       ));
     }
   }

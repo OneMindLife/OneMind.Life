@@ -1039,6 +1039,7 @@
   },
   "tutorialRound2Prompt": "Le gagnant 'Succes' est automatiquement reporte pour concourir a nouveau. Il doit gagner 2 tours consecutifs pour devenir une reponse permanente.",
   "tutorialRatingCarryForwardHint": "C'est le gagnant du tour precedent. S'il gagne a nouveau ce tour, il sera ajoute definitivement au chat.",
+  "tutorialTapTabHint": "Appuyez sur \"{tabName}\" ci-dessus pour continuer.",
   "tutorialRound2PromptSimplified": "C'est l'heure du prochain tour! Pouvez-vous faire mieux?",
   "tutorialRound2PromptSimplifiedTemplate": "C'est l'heure du prochain tour! Pouvez-vous faire mieux que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
@@ -1227,5 +1228,13 @@
   "translationLanguagesLabel": "Langues",
   "autoTranslateLabel": "Traduction automatique",
 
-  "chatAutoTranslated": "Traduit automatiquement"
+  "chatAutoTranslated": "Traduit automatiquement",
+
+  "welcomeName": "Bienvenue, {name}",
+  "editName": "Modifier le nom",
+  "primaryLanguage": "Langue principale",
+  "iAlsoSpeak": "Je parle aussi",
+  "spokenLanguages": "Langues parlees",
+  "homeTourWelcomeNameTitle": "Votre nom d'affichage",
+  "homeTourWelcomeNameDesc": "C'est votre nom d'affichage. Appuyez sur l'icone du crayon pour le modifier a tout moment !"
 }

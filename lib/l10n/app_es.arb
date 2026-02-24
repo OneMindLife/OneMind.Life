@@ -1039,6 +1039,7 @@
   },
   "tutorialRound2Prompt": "El ganador 'Exito' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.",
   "tutorialRatingCarryForwardHint": "Este es el ganador de la ronda anterior. Si gana de nuevo esta ronda, se agrega permanentemente al chat.",
+  "tutorialTapTabHint": "Toca \"{tabName}\" arriba para continuar.",
   "tutorialRound2PromptSimplified": "Es hora de la siguiente ronda! Puedes pensar en algo mejor?",
   "tutorialRound2PromptSimplifiedTemplate": "Es hora de la siguiente ronda! Puedes pensar en algo mejor que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
@@ -1227,5 +1228,13 @@
   "translationLanguagesLabel": "Idiomas",
   "autoTranslateLabel": "Traduccion automatica",
 
-  "chatAutoTranslated": "Traducido automaticamente"
+  "chatAutoTranslated": "Traducido automaticamente",
+
+  "welcomeName": "Bienvenido, {name}",
+  "editName": "Editar nombre",
+  "primaryLanguage": "Idioma principal",
+  "iAlsoSpeak": "Tambien hablo",
+  "spokenLanguages": "Idiomas hablados",
+  "homeTourWelcomeNameTitle": "Tu nombre visible",
+  "homeTourWelcomeNameDesc": "Este es tu nombre visible. Toca el icono del lapiz para cambiarlo en cualquier momento."
 }

@@ -91,6 +91,20 @@ void main() {
 
       expect(find.text('What should we discuss?'), findsOneWidget);
     });
+
+    testWidgets('does not display a host name input field', (tester) async {
+      await pumpCreateChatScreen(tester);
+
+      // No display-name-field key should exist on the create chat screen.
+      expect(find.byKey(const Key('display-name-field')), findsNothing);
+      // No "Your Name" or "Display Name" label should be shown.
+      expect(find.text('Your Name'), findsNothing);
+      expect(find.text('Display Name'), findsNothing);
+      // Only "Chat Name *" and "Initial Message *" TextFormFields should exist,
+      // not a host name field.
+      expect(find.widgetWithText(TextFormField, 'Chat Name *'), findsOneWidget);
+      expect(find.widgetWithText(TextFormField, 'Initial Message *'), findsOneWidget);
+    });
   });
 
   // Visibility tests commented out - requires pumpApp localization fixes

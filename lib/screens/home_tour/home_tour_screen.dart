@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../providers/providers.dart';
-import '../../widgets/language_selector.dart';
 import 'models/home_tour_state.dart';
 import 'widgets/mock_home_content.dart';
 import 'widgets/spotlight_overlay.dart';
@@ -24,6 +23,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
   // Keys for measuring widget positions
   final _bodyStackKey = GlobalKey();
   final _tooltipKey = GlobalKey();
+  final _welcomeHeaderKey = GlobalKey();
   final _searchBarKey = GlobalKey();
   final _exploreKey = GlobalKey();
   final _pendingKey = GlobalKey();
@@ -88,7 +88,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
         actions: [
           // All buttons always rendered (fixed positions, no shifting).
           // Opacity: 0.0 before step, 1.0 on step, 0.25 after.
-          // Order matches real home screen: Explore, How It Works, Legal Docs
+          // Order matches real home screen: Explore, Language, How It Works, Legal Docs
           _appBarButton(
             key: _exploreKey,
             step: step,
@@ -102,7 +102,11 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
           _appBarButton(
             step: step,
             activeOn: HomeTourStep.languageSelector,
-            child: const LanguageSelector(compact: true),
+            child: IconButton(
+              icon: const Icon(Icons.language),
+              tooltip: l10n.language,
+              onPressed: () {},
+            ),
           ),
           _appBarButton(
             step: step,
@@ -125,9 +129,13 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
         ],
       ),
       floatingActionButton: showFab
-          ? FloatingActionButton(
-              onPressed: () {},
-              child: const Icon(Icons.add),
+          ? AnimatedOpacity(
+              opacity: step == HomeTourStep.createFab ? 1.0 : 0.25,
+              duration: const Duration(milliseconds: 250),
+              child: FloatingActionButton(
+                onPressed: () {},
+                child: const Icon(Icons.add),
+              ),
             )
           : null,
       body: SizedBox.expand(
@@ -141,6 +149,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
                 duration: const Duration(milliseconds: 250),
                 child: MockHomeContent(
                   currentStep: step,
+                  welcomeHeaderKey: _welcomeHeaderKey,
                   searchBarKey: _searchBarKey,
                   pendingRequestKey: _pendingKey,
                   yourChatsKey: _chatsKey,
@@ -214,12 +223,23 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
     double newRight = 16;
 
     switch (step) {
+      case HomeTourStep.welcomeName:
+        final targetBox =
+            _welcomeHeaderKey.currentContext?.findRenderObject() as RenderBox?;
+        if (targetBox == null) return;
+        final pos = targetBox.localToGlobal(Offset.zero, ancestor: stackBox);
+        newTop = pos.dy + targetBox.size.height + 12;
+
       case HomeTourStep.searchBar:
         final targetBox =
             _searchBarKey.currentContext?.findRenderObject() as RenderBox?;
         if (targetBox == null) return;
         final pos = targetBox.localToGlobal(Offset.zero, ancestor: stackBox);
         newTop = pos.dy + targetBox.size.height + 12;
+
+      // languageSelector is an app bar step — tooltip at top of body
+      case HomeTourStep.languageSelector:
+        newTop = 8;
 
       // exploreButton is an app bar step — tooltip at top of body
       case HomeTourStep.exploreButton:
@@ -244,18 +264,16 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
         final tooltipBox =
             _tooltipKey.currentContext?.findRenderObject() as RenderBox?;
         final tooltipH = tooltipBox?.size.height ?? 180;
-        newTop = stackBox.size.height - tooltipH - 16;
-        newRight = 16; // Same as other steps — full width
+        // Account for FAB (56px) + FAB bottom padding (16px) + gap (16px)
+        const fabClearance = 56.0 + 16.0 + 16.0;
+        newTop = stackBox.size.height - tooltipH - fabClearance;
+        newRight = 16;
         if (kDebugMode) {
-          debugPrint('[Tour] FAB step: stackSize=${stackBox.size}, '
-              'tooltipH=$tooltipH, newTop=$newTop, newRight=$newRight');
-          if (tooltipBox != null) {
-            debugPrint('[Tour] FAB step: tooltipSize=${tooltipBox.size}');
-          }
+          debugPrint('[Tour] FAB step: stackH=${stackBox.size.height}, '
+              'tooltipH=$tooltipH, fabClearance=$fabClearance, newTop=$newTop');
         }
 
       // All app bar steps: tooltip at top of body
-      case HomeTourStep.languageSelector:
       case HomeTourStep.howItWorks:
       case HomeTourStep.legalDocs:
         newTop = 8;
@@ -292,15 +310,18 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
     String title;
     String description;
     switch (tourState.currentStep) {
+      case HomeTourStep.welcomeName:
+        title = l10n.homeTourWelcomeNameTitle;
+        description = l10n.homeTourWelcomeNameDesc;
+      case HomeTourStep.languageSelector:
+        title = l10n.homeTourLanguageSelectorTitle;
+        description = l10n.homeTourLanguageSelectorDesc;
       case HomeTourStep.searchBar:
         title = l10n.homeTourSearchBarTitle;
         description = l10n.homeTourSearchBarDesc;
       case HomeTourStep.exploreButton:
         title = l10n.homeTourExploreButtonTitle;
         description = l10n.homeTourExploreButtonDesc;
-      case HomeTourStep.languageSelector:
-        title = l10n.homeTourLanguageSelectorTitle;
-        description = l10n.homeTourLanguageSelectorDesc;
       case HomeTourStep.pendingRequest:
         title = l10n.homeTourPendingRequestTitle;
         description = l10n.homeTourPendingRequestDesc;

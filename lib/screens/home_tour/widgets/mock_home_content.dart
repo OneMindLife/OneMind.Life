@@ -8,6 +8,7 @@ import '../models/home_tour_state.dart';
 /// and animate the tooltip overlay.
 class MockHomeContent extends StatelessWidget {
   final HomeTourStep currentStep;
+  final GlobalKey welcomeHeaderKey;
   final GlobalKey searchBarKey;
   final GlobalKey pendingRequestKey;
   final GlobalKey yourChatsKey;
@@ -15,6 +16,7 @@ class MockHomeContent extends StatelessWidget {
   const MockHomeContent({
     super.key,
     required this.currentStep,
+    required this.welcomeHeaderKey,
     required this.searchBarKey,
     required this.pendingRequestKey,
     required this.yourChatsKey,
@@ -28,6 +30,7 @@ class MockHomeContent extends StatelessWidget {
     // For non-body steps, all cards at uniform opacity
     // (parent handles overall dimming via outer AnimatedOpacity)
     if (currentStep == HomeTourStep.exploreButton ||
+        currentStep == HomeTourStep.languageSelector ||
         currentStep == HomeTourStep.createFab ||
         currentStep == HomeTourStep.howItWorks ||
         currentStep == HomeTourStep.legalDocs ||
@@ -48,7 +51,34 @@ class MockHomeContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Search Bar (step 0) ---
+          // --- Welcome Header (step 0) ---
+          if (_isRevealed(HomeTourStep.welcomeName)) ...[
+            AnimatedOpacity(
+              key: welcomeHeaderKey,
+              opacity: _opacity(HomeTourStep.welcomeName),
+              duration: const Duration(milliseconds: 250),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l10n.welcomeName('Brave Fox'),
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.edit,
+                    size: 18,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+
+          // --- Search Bar (step 2) ---
           if (_isRevealed(HomeTourStep.searchBar)) ...[
             AnimatedOpacity(
               key: searchBarKey,
@@ -71,7 +101,7 @@ class MockHomeContent extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // --- Pending Requests (step 2) ---
+          // --- Pending Requests (step 3) ---
           if (_isRevealed(HomeTourStep.pendingRequest)) ...[
             AnimatedOpacity(
               key: pendingRequestKey,
@@ -89,7 +119,7 @@ class MockHomeContent extends StatelessWidget {
             const SizedBox(height: 24),
           ],
 
-          // --- Your Chats (step 3) ---
+          // --- Your Chats (step 4) ---
           if (_isRevealed(HomeTourStep.yourChats)) ...[
             AnimatedOpacity(
               key: yourChatsKey,

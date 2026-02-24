@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
-import '../../utils/language_utils.dart';
+import '../../widgets/chat_dashboard_card.dart';
 import '../chat/chat_screen.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
@@ -21,16 +20,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _searchController = TextEditingController();
   final _scrollController = ScrollController();
   Timer? _searchDebounce;
+  Timer? _tickTimer;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // 1-second tick for countdown timer refresh
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    _tickTimer?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -61,26 +66,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return;
       }
 
-      // Get display name - prompt if needed (except for official OneMind chat)
-      String displayName;
-      final storedName = authService.displayName;
-
-      if (storedName != null && storedName.isNotEmpty) {
-        // Use stored name from auth metadata
-        displayName = storedName;
-      } else if (chat.isOfficial) {
-        // Official OneMind chat allows Anonymous
-        displayName = l10n.anonymous;
-      } else {
-        // Prompt for name before joining non-official public chats
-        if (!mounted) return;
-        final enteredName = await _promptForName();
-        if (enteredName == null || enteredName.isEmpty) {
-          return; // User cancelled
-        }
-        displayName = enteredName;
-        await authService.setDisplayName(displayName);
-      }
+      // Use stored display name (always available via ensureDisplayName at startup)
+      final displayName = authService.displayName!;
 
       // Join the chat (auth.uid() is used automatically)
       await participantService.joinChat(
@@ -105,46 +92,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         );
       }
     }
-  }
-
-  Future<String?> _promptForName() async {
-    final l10n = AppLocalizations.of(context);
-    final controller = TextEditingController();
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: Text(l10n.enterYourNameTitle),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          textCapitalization: TextCapitalization.words,
-          decoration: InputDecoration(
-            hintText: l10n.yourDisplayName,
-          ),
-          onSubmitted: (value) {
-            if (value.trim().isNotEmpty) {
-              Navigator.pop(context, value.trim());
-            }
-          },
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, null),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final name = controller.text.trim();
-              if (name.isNotEmpty) {
-                Navigator.pop(context, name);
-              }
-            },
-            child: Text(l10n.join),
-          ),
-        ],
-      ),
-    );
   }
 
   /// Navigate to a chat the user has already joined.
@@ -261,7 +208,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Icon(
               Icons.public_off,
               size: 48,
-              color: AppColors.textMuted,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
@@ -275,7 +222,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Text(
               l10n.beFirstToCreate,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
             ),
           ],
@@ -305,12 +252,33 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
           final chat = chats[index];
           final isJoined = joinedChatIds.contains(chat.id);
-          return _PublicChatCard(
-            chat: chat,
-            isJoined: isJoined,
-            onTap: isJoined
-                ? () => _openChat(joinedChatsMap[chat.id]!)
-                : () => _joinChat(chat),
+          final onTap = isJoined
+              ? () => _openChat(joinedChatsMap[chat.id]!)
+              : () => _joinChat(chat);
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ChatDashboardCard(
+              key: Key('public-chat-card-${chat.id}'),
+              name: chat.displayName,
+              initialMessage: chat.displayInitialMessage,
+              onTap: onTap,
+              participantCount: chat.participantCount,
+              phase: chat.currentPhase,
+              isPaused: chat.isPaused,
+              timeRemaining: chat.timeRemaining,
+              translationLanguages: chat.translationLanguages,
+              trailing: isJoined
+                  ? Chip(
+                      label: Text(l10n.joined),
+                      avatar: const Icon(Icons.check, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    )
+                  : FilledButton(
+                      onPressed: onTap,
+                      child: Text(l10n.join),
+                    ),
+            ),
           );
         },
       ),
@@ -335,140 +303,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => ref.read(publicChatsProvider.notifier).refresh(),
             child: Text(l10n.retry),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PublicChatCard extends StatelessWidget {
-  final PublicChatSummary chat;
-  final bool isJoined;
-  final VoidCallback onTap;
-
-  const _PublicChatCard({
-    required this.chat,
-    this.isJoined = false,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final l10n = AppLocalizations.of(context);
-    final participantText = chat.participantCount == 1
-        ? l10n.participantCount(chat.participantCount)
-        : l10n.participantsCount(chat.participantCount);
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  // Icon
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: isJoined
-                          ? colorScheme.surfaceContainerHighest
-                          : colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      Icons.public,
-                      color: isJoined
-                          ? colorScheme.onSurfaceVariant
-                          : colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // Title and participants
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          chat.displayName,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: isJoined
-                                    ? colorScheme.onSurfaceVariant
-                                    : null,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.people_outline,
-                              size: 16,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              participantText,
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              Icons.translate,
-                              size: 16,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              LanguageUtils.shortLabel(chat.translationLanguages),
-                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Join button or Joined chip
-                  if (isJoined)
-                    Chip(
-                      label: Text(l10n.joined),
-                      avatar: const Icon(Icons.check, size: 16),
-                      visualDensity: VisualDensity.compact,
-                    )
-                  else
-                    FilledButton(
-                      onPressed: onTap,
-                      child: Text(l10n.join),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                chat.displayInitialMessage,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
-                      fontStyle: FontStyle.italic,
-                    ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

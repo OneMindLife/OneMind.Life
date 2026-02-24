@@ -15,6 +15,7 @@ class LanguageService {
   final SupabaseClient _supabase;
 
   static const String _localeKey = 'locale';
+  static const String _spokenLanguagesKey = 'spoken_languages';
   static const List<String> supportedLanguageCodes = ['en', 'es', 'pt', 'fr', 'de'];
 
   LanguageService(this._prefs, this._supabase);
@@ -114,6 +115,54 @@ class LanguageService {
       return stored;
     }
     return 'en';
+  }
+
+  // =========================================================================
+  // Spoken languages (for smart translation fallback on discover screen)
+  // =========================================================================
+
+  /// Get spoken languages from local storage.
+  /// Defaults to [current primary language] if not set.
+  List<String> getSpokenLanguages() {
+    final stored = _prefs.getStringList(_spokenLanguagesKey);
+    if (stored != null && stored.isNotEmpty) return stored;
+    return [getCurrentLanguage()];
+  }
+
+  /// Update spoken languages locally and sync to database.
+  Future<void> setSpokenLanguages(List<String> codes) async {
+    await _prefs.setStringList(_spokenLanguagesKey, codes);
+    if (_supabase.auth.currentUser != null) {
+      await _updateDatabaseSpokenLanguages(codes);
+    }
+  }
+
+  /// Sync spoken languages to database via RPC.
+  Future<bool> _updateDatabaseSpokenLanguages(List<String> codes) async {
+    try {
+      await _supabase.rpc(
+        'update_user_spoken_languages',
+        params: {'p_languages': codes},
+      );
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // =========================================================================
+  // Per-chat viewing language (separate from app UI language)
+  // =========================================================================
+
+  /// Get the persisted viewing language for a specific chat.
+  /// Returns null if no preference has been set for this chat.
+  String? getChatViewingLanguage(int chatId) {
+    return _prefs.getString('chat_viewing_lang_$chatId');
+  }
+
+  /// Persist the viewing language for a specific chat.
+  Future<void> setChatViewingLanguage(int chatId, String code) async {
+    await _prefs.setString('chat_viewing_lang_$chatId', code);
   }
 
   /// Reset service (useful for logout)

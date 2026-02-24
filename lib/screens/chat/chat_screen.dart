@@ -10,7 +10,8 @@ import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../../services/proposition_service.dart';
 import '../../widgets/error_view.dart';
-import '../../widgets/language_selector.dart';
+import '../../core/l10n/locale_provider.dart';
+import '../../widgets/chat_language_selector.dart';
 import '../../widgets/glossary_term.dart';
 import '../../widgets/proposition_content_card.dart';
 import '../../widgets/qr_code_share.dart';
@@ -645,6 +646,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       });
     }
 
+    // Show language picker dialog if user's language isn't in this chat's languages
+    if (state?.needsLanguageSelection == true) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _showLanguagePickerDialog(state!);
+      });
+    }
+
     // Check if chat was deleted and navigate back (only if we haven't already navigated)
     final isDeleted = stateAsync.valueOrNull?.isDeleted ?? false;
     if (isDeleted && !_hasNavigatedAway) {
@@ -695,150 +703,91 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           overflow: TextOverflow.visible,
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        actions: [
-          const LanguageSelector(compact: true),
-          // Credit balance chip - hidden for now
-          // stateAsync.whenOrNull(
-          //       data: (state) {
-          //         final isHost = state.myParticipant?.isHost == true;
-          //         if (isHost && state.chatCredits != null) {
-          //           return _CreditBalanceChip(
-          //             balance: state.chatCredits!.creditBalance,
-          //             participantCount: state.activeParticipantCount,
-          //             onTap: () => _openBuyCredits(state.chatCredits!.chatId),
-          //           );
-          //         }
-          //         return null;
-          //       },
-          //     ) ??
-          //     const SizedBox.shrink(),
-          // QR Code button - visible to all participants with invite code
-          stateAsync.whenOrNull(
-                data: (state) {
-                  final hasInviteCode = widget.chat.inviteCode != null &&
-                      widget.chat.accessMethod == AccessMethod.code;
-                  if (hasInviteCode) {
-                    return IconButton(
+        actions: stateAsync.whenOrNull(
+              data: (state) {
+                final isHost = state.myParticipant?.isHost == true;
+                final isHostPaused = state.chat?.hostPaused ?? widget.chat.hostPaused;
+                final pendingRequestCount = state.pendingJoinRequests.length;
+                final chat = state.chat ?? widget.chat;
+                final hasInviteCode = widget.chat.inviteCode != null &&
+                    widget.chat.accessMethod == AccessMethod.code;
+                final hasDescription =
+                    (chat.displayDescription)?.trim().isNotEmpty == true;
+
+                return <Widget>[
+                  // Chat language selector — hidden when translations aren't enabled
+                  ChatLanguageSelector(
+                    availableLanguages: chat.translationsEnabled
+                        ? chat.translationLanguages
+                        : const [],
+                    currentLanguageCode: state.viewingLanguageCode ?? ref.read(localeProvider).languageCode,
+                    onLanguageChanged: (code) =>
+                        ref.read(chatDetailProvider(_params).notifier).setViewingLanguage(code),
+                  ),
+                  // Share button — visible when chat has invite code
+                  if (hasInviteCode)
+                    IconButton(
                       key: const Key('share-button'),
                       icon: const Icon(Icons.ios_share),
                       tooltip: 'Share Chat',
                       onPressed: _showQrCode,
-                    );
-                  }
-                  return null;
-                },
-              ) ??
-              const SizedBox.shrink(),
-          // Three-dot menu with all options
-          stateAsync.whenOrNull(
-                data: (state) {
-                  final isHost = state.myParticipant?.isHost == true;
-                  final isHostPaused = state.chat?.hostPaused ?? widget.chat.hostPaused;
-                  final pendingRequestCount = state.pendingJoinRequests.length;
-
-                  return PopupMenuButton<String>(
-                    key: const Key('chat-more-menu'),
+                    ),
+                  // Info button — only if chat has description
+                  if (hasDescription)
+                    IconButton(
+                      icon: const Icon(Icons.info_outline),
+                      tooltip: AppLocalizations.of(context).chatDescription,
+                      onPressed: () => _showDescription(state),
+                    ),
+                  // People button — always visible, badge for host with pending requests
+                  IconButton(
                     icon: Badge(
                       label: Text('$pendingRequestCount'),
                       isLabelVisible: isHost && widget.chat.requireApproval && pendingRequestCount > 0,
-                      child: const Icon(Icons.more_vert),
+                      child: const Icon(Icons.people),
                     ),
-                    onSelected: (value) {
-                      switch (value) {
-                        case 'description':
-                          _showDescription(state);
-                          break;
-                        case 'participants':
-                          _showParticipants(state);
-                          break;
-                        case 'join_requests':
-                          _showJoinRequests(state);
-                          break;
-                        case 'pause':
-                          _showPauseConfirmation();
-                          break;
-                        case 'resume':
-                          ref.read(chatDetailProvider(_params).notifier).resumeChat();
-                          break;
-                        case 'leave':
-                          _confirmLeaveChat();
-                          break;
-                        case 'delete':
-                          _confirmDeleteChat();
-                          break;
-                      }
-                    },
-                    itemBuilder: (menuContext) {
-                      final l10n = AppLocalizations.of(menuContext);
-                      return [
-                        // Description - only if chat has one
-                        if ((state.chat?.displayDescription ?? widget.chat.displayDescription)?.trim().isNotEmpty == true)
-                          PopupMenuItem(
-                            value: 'description',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.info_outline),
-                                const SizedBox(width: 12),
-                                Text(l10n.chatDescription),
-                              ],
-                            ),
-                          ),
-                        // Participants - always visible
-                        PopupMenuItem(
-                          value: 'participants',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.people),
-                              const SizedBox(width: 12),
-                              Text(l10n.participants),
-                            ],
-                          ),
-                        ),
-                        // Join requests - host only with require_approval
-                        if (isHost && widget.chat.requireApproval)
-                          PopupMenuItem(
-                            value: 'join_requests',
-                            child: Row(
-                              children: [
-                                Badge(
-                                  label: Text('$pendingRequestCount'),
-                                  isLabelVisible: pendingRequestCount > 0,
-                                  child: const Icon(Icons.group_add),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(l10n.joinRequests),
-                              ],
-                            ),
-                          ),
-                        // Pause/Resume - hidden for now (feature not fully implemented)
-                        // if (isHost)
-                        //   PopupMenuItem(
-                        //     value: isHostPaused ? 'resume' : 'pause',
-                        //     child: Row(
-                        //       children: [
-                        //         Icon(isHostPaused ? Icons.play_arrow : Icons.pause),
-                        //         const SizedBox(width: 12),
-                        //         Text(isHostPaused ? l10n.resumeChat : l10n.pauseChat),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // Divider only when Leave or Delete will show below
-                        if ((!isHost && !widget.chat.isOfficial) || isHost)
-                          const PopupMenuDivider(),
-                        // Leave - non-host only, not allowed for official chat
-                        if (!isHost && !widget.chat.isOfficial)
-                          PopupMenuItem(
-                            value: 'leave',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.exit_to_app),
-                                const SizedBox(width: 12),
-                                Text(l10n.leaveChat),
-                              ],
-                            ),
-                          ),
-                        // Delete - host only
-                        if (isHost)
+                    tooltip: AppLocalizations.of(context).participants,
+                    onPressed: () => _showParticipantsSheet(state),
+                  ),
+                  // Non-host: Leave button (not for official chats)
+                  if (!isHost && !widget.chat.isOfficial)
+                    IconButton(
+                      icon: const Icon(Icons.exit_to_app),
+                      tooltip: AppLocalizations.of(context).leaveChat,
+                      onPressed: _confirmLeaveChat,
+                    ),
+                  // Host: overflow menu with Delete (Pause/Resume hidden for now)
+                  if (isHost)
+                    PopupMenuButton<String>(
+                      key: const Key('chat-more-menu'),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'pause':
+                            _showPauseConfirmation();
+                            break;
+                          case 'resume':
+                            ref.read(chatDetailProvider(_params).notifier).resumeChat();
+                            break;
+                          case 'delete':
+                            _confirmDeleteChat();
+                            break;
+                        }
+                      },
+                      itemBuilder: (menuContext) {
+                        final l10n = AppLocalizations.of(menuContext);
+                        return [
+                          // Pause/Resume - hidden for now (feature not fully implemented)
+                          // PopupMenuItem(
+                          //   value: isHostPaused ? 'resume' : 'pause',
+                          //   child: Row(
+                          //     children: [
+                          //       Icon(isHostPaused ? Icons.play_arrow : Icons.pause),
+                          //       const SizedBox(width: 12),
+                          //       Text(isHostPaused ? l10n.resumeChat : l10n.pauseChat),
+                          //     ],
+                          //   ),
+                          // ),
+                          // const PopupMenuDivider(),
                           PopupMenuItem(
                             value: 'delete',
                             child: Row(
@@ -850,13 +799,13 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               ],
                             ),
                           ),
-                      ];
-                    },
-                  );
-                },
-              ) ??
-              const SizedBox.shrink(),
-        ],
+                        ];
+                      },
+                    ),
+                ];
+              },
+            ) ??
+            const [],
       ),
       body: stateAsync.when(
         data: (state) => AnimatedOpacity(
@@ -1695,6 +1644,169 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Language picker dialog shown when user enters a chat that doesn't support their app language.
+  void _showLanguagePickerDialog(ChatDetailState state) {
+    final chat = state.chat ?? widget.chat;
+    final languages = chat.translationLanguages;
+    if (languages.isEmpty) return;
+
+    const languageNames = {
+      'en': 'English',
+      'es': 'Español',
+      'pt': 'Português',
+      'fr': 'Français',
+      'de': 'Deutsch',
+    };
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        String? selected;
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final l10n = AppLocalizations.of(context);
+            return AlertDialog(
+              title: Text(l10n.language),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: languages.map((code) {
+                  final isSelected = selected == code;
+                  return ListTile(
+                    leading: Icon(
+                      isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                    ),
+                    title: Text(languageNames[code] ?? code),
+                    onTap: () => setDialogState(() => selected = code),
+                  );
+                }).toList(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: selected == null
+                      ? null
+                      : () {
+                          Navigator.pop(dialogContext);
+                          ref
+                              .read(chatDetailProvider(_params).notifier)
+                              .setViewingLanguage(selected!);
+                        },
+                  child: Text(l10n.save),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// Merged participants + join requests bottom sheet.
+  void _showParticipantsSheet(ChatDetailState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (modalContext) => DraggableScrollableSheet(
+        initialChildSize: 0.5,
+        minChildSize: 0.3,
+        maxChildSize: 0.8,
+        expand: false,
+        builder: (sheetContext, scrollController) => Consumer(
+          builder: (consumerContext, consumerRef, _) {
+            final l10n = AppLocalizations.of(consumerContext);
+            final theme = Theme.of(consumerContext);
+            final stateAsync = consumerRef.watch(chatDetailProvider(_params));
+            final participants = stateAsync.valueOrNull?.participants ?? [];
+            final isHost = stateAsync.valueOrNull?.myParticipant?.isHost == true;
+            final requests = stateAsync.valueOrNull?.pendingJoinRequests ?? [];
+            final showRequests = isHost && widget.chat.requireApproval && requests.isNotEmpty;
+
+            return Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Text(
+                        '${l10n.participants} (${participants.length})',
+                        style: theme.textTheme.titleMedium,
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(sheetContext),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // Join requests section (host only)
+                if (showRequests) ...[
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                    child: Row(
+                      children: [
+                        Icon(Icons.group_add, size: 18, color: theme.colorScheme.primary),
+                        const SizedBox(width: 8),
+                        Text(
+                          '${l10n.joinRequests} (${requests.length})',
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: theme.colorScheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  ...requests.map((req) => _buildRequestCard(req)),
+                  const Divider(height: 1),
+                ],
+                // Participants list
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    itemCount: participants.length,
+                    itemBuilder: (context, index) {
+                      final p = participants[index];
+                      return ListTile(
+                        leading: CircleAvatar(child: Text(p.displayName[0])),
+                        title: Text(p.displayName),
+                        trailing: p.isHost
+                            ? Chip(label: Text(l10n.host))
+                            : isHost
+                                ? IconButton(
+                                    icon: const Icon(Icons.person_remove),
+                                    tooltip: l10n.kickParticipant,
+                                    onPressed: () {
+                                      Navigator.pop(modalContext);
+                                      _confirmKickParticipant(p);
+                                    },
+                                  )
+                                : null,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   void _showQrCode() {
     if (widget.chat.inviteCode == null) return;
     final chatName = ref.read(chatDetailProvider(_params)).valueOrNull?.chat?.displayName ?? widget.chat.displayName;
@@ -1735,51 +1847,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _showParticipants(ChatDetailState? state) {
-    showModalBottomSheet(
-      context: context,
-      builder: (modalContext) => Consumer(
-        // Use Consumer to watch for participant changes in realtime
-        builder: (consumerContext, consumerRef, _) {
-          final l10n = AppLocalizations.of(consumerContext);
-          final stateAsync = consumerRef.watch(chatDetailProvider(_params));
-          final participants = stateAsync.valueOrNull?.participants ?? [];
-          final isHost = stateAsync.valueOrNull?.myParticipant?.isHost == true;
-
-          return Container(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${l10n.participants} (${participants.length})',
-                  style: Theme.of(consumerContext).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 16),
-                ...participants.map((p) => ListTile(
-                      leading: CircleAvatar(child: Text(p.displayName[0])),
-                      title: Text(p.displayName),
-                      trailing: p.isHost
-                          ? Chip(label: Text(l10n.host))
-                          : isHost
-                              ? IconButton(
-                                  icon: const Icon(Icons.person_remove),
-                                  tooltip: l10n.kickParticipant,
-                                  onPressed: () {
-                                    Navigator.pop(modalContext);
-                                    _confirmKickParticipant(p);
-                                  },
-                                )
-                              : null,
-                    )),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
 
   Future<void> _confirmKickParticipant(Participant participant) async {
     final l10n = AppLocalizations.of(context);
@@ -1860,97 +1927,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
-  void _showJoinRequests(ChatDetailState state) {
-    // Track if we had requests when opening (to detect when all are handled)
-    final hadRequestsOnOpen = state.pendingJoinRequests.isNotEmpty;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (modalContext) => DraggableScrollableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.3,
-        maxChildSize: 0.8,
-        expand: false,
-        builder: (sheetContext, scrollController) => Consumer(
-          // Use Consumer to watch for state changes in realtime
-          builder: (consumerContext, consumerRef, _) {
-            final l10n = AppLocalizations.of(consumerContext);
-            final stateAsync = consumerRef.watch(chatDetailProvider(_params));
-            final requests =
-                stateAsync.valueOrNull?.pendingJoinRequests ?? [];
-
-            // Auto-close if we had requests when opening but now they're all handled
-            if (hadRequestsOnOpen && requests.isEmpty) {
-              // Use addPostFrameCallback to avoid calling Navigator during build
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (Navigator.of(modalContext).canPop()) {
-                  Navigator.of(modalContext).pop();
-                }
-              });
-            }
-
-            return Container(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${l10n.joinRequests} (${requests.length})',
-                    style: Theme.of(consumerContext).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.approveOrDenyRequests,
-                    style: Theme.of(consumerContext).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(consumerContext)
-                              .colorScheme
-                              .onSurfaceVariant,
-                        ),
-                  ),
-                  const SizedBox(height: 16),
-                  if (requests.isEmpty)
-                    _buildEmptyRequestsState()
-                  else
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: requests.length,
-                        itemBuilder: (context, index) {
-                          final req = requests[index];
-                          return _buildRequestCard(req);
-                        },
-                      ),
-                    ),
-                ],
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyRequestsState() {
-    final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle_outline,
-              size: 48, color: Theme.of(context).colorScheme.outline),
-          const SizedBox(height: 16),
-          Text(l10n.noPendingRequests,
-              style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Text(l10n.newRequestsWillAppear,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
 
   Widget _buildRequestCard(Map<String, dynamic> req) {
     final l10n = AppLocalizations.of(context);

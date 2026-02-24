@@ -20,34 +20,16 @@ class JoinDialog extends ConsumerStatefulWidget {
 
 class _JoinDialogState extends ConsumerState<JoinDialog> {
   final _codeController = TextEditingController();
-  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   bool _isLoading = false;
   String? _error;
   Chat? _foundChat;
-  bool _needsName = false;
   bool _isInviteOnly = false;
   String? _validatedInviteToken;
 
   @override
-  void initState() {
-    super.initState();
-    _loadDisplayName();
-  }
-
-  void _loadDisplayName() {
-    // Read display name from auth service (stored in user metadata)
-    final authService = ref.read(authServiceProvider);
-    final name = authService.displayName;
-    if (name != null && name.isNotEmpty) {
-      _nameController.text = name;
-    }
-  }
-
-  @override
   void dispose() {
     _codeController.dispose();
-    _nameController.dispose();
     _emailController.dispose();
     super.dispose();
   }
@@ -100,13 +82,10 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
         return;
       }
 
-      final authService = ref.read(authServiceProvider);
-      final hasName = authService.displayName?.isNotEmpty ?? false;
       final inviteOnly = await inviteService.isInviteOnly(chat.id);
 
       setState(() {
         _foundChat = chat;
-        _needsName = !hasName;
         _isInviteOnly = inviteOnly;
         _isLoading = false;
       });
@@ -175,12 +154,6 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
       return;
     }
 
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = l10n.pleaseEnterYourName);
-      return;
-    }
-
     setState(() {
       _isLoading = true;
       _error = null;
@@ -190,9 +163,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
       final authService = ref.read(authServiceProvider);
       final participantService = ref.read(participantServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
-
-      // Save display name to auth metadata
-      await authService.setDisplayName(name);
+      final name = authService.displayName!;
 
       if (_foundChat!.requireApproval) {
         // Request to join (auth.uid() is used automatically)
@@ -374,18 +345,6 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                ],
-                if (_needsName) ...[
-                  Text(l10n.enterDisplayName),
-                  const SizedBox(height: 8),
-                  TextField(
-                    controller: _nameController,
-                    decoration: InputDecoration(
-                      hintText: l10n.yourName,
-                    ),
-                    textCapitalization: TextCapitalization.words,
-                    onSubmitted: (_) => _joinChat(),
-                  ),
                 ],
               ],
               if (_foundChat!.requireApproval)

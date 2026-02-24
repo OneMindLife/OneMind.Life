@@ -1006,6 +1006,12 @@
   },
   "tutorialRound2Prompt": "The winner 'Success' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.",
   "tutorialRatingCarryForwardHint": "This is last round's winner. If it wins again this round, it gets permanently added to the chat.",
+  "tutorialTapTabHint": "Tap \"{tabName}\" above to continue.",
+  "@tutorialTapTabHint": {
+    "placeholders": {
+      "tabName": {"type": "String"}
+    }
+  },
   "tutorialRound2PromptSimplified": "Time for the next round! Can you think of something better?",
   "tutorialRound2PromptSimplifiedTemplate": "Time for the next round! Can you think of something better than '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
@@ -1249,5 +1255,20 @@
   "translationLanguagesLabel": "Languages",
   "autoTranslateLabel": "Auto-translate",
 
-  "chatAutoTranslated": "Auto-translated"
+  "chatAutoTranslated": "Auto-translated",
+
+  "welcomeName": "Welcome, {name}",
+  "@welcomeName": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "editName": "Edit name",
+  "primaryLanguage": "Primary Language",
+  "iAlsoSpeak": "I also speak",
+  "spokenLanguages": "Spoken Languages",
+  "homeTourWelcomeNameTitle": "Your Display Name",
+  "homeTourWelcomeNameDesc": "This is your display name. Tap the pencil icon to change it anytime!"
 }

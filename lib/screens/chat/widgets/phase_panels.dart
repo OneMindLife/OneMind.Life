@@ -456,7 +456,7 @@ class ProposingStatePanel extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: FilledButton(
                     key: const Key('submit-proposition-button'),
                     onPressed: isPaused || isSubmitting ? null : onSubmit,
                     child: Row(
@@ -489,7 +489,7 @@ class ProposingStatePanel extends StatelessWidget {
                 // Show skip button if user can skip and hasn't submitted yet
                 if (canSkip && newSubmissions == 0 && maxSkips > 0 && !isTaskResultMode) ...[
                   const SizedBox(width: 8),
-                  OutlinedButton(
+                  TextButton(
                     key: const Key('skip-proposing-button'),
                     onPressed: isPaused || isSubmitting ? null : onSkip,
                     child: Text(l10n.skip),
@@ -701,7 +701,7 @@ class WaitingForRatingPanel extends StatelessWidget {
           ),
           if (isHost) ...[
             const SizedBox(height: 16),
-            ElevatedButton.icon(
+            FilledButton.icon(
               key: const Key('start-rating-phase-button'),
               onPressed: onStartRating,
               icon: const Icon(Icons.play_arrow),
@@ -883,9 +883,6 @@ class RatingStatePanel extends StatelessWidget {
                   child: FilledButton(
                     key: const Key('start-rating-button'),
                     onPressed: isPaused ? null : onStartRating,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.rating,
-                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -907,7 +904,7 @@ class RatingStatePanel extends StatelessWidget {
                 // Show skip button if user can skip and hasn't started rating
                 if (canSkipRating && !hasStartedRating && maxRatingSkips > 0) ...[
                   const SizedBox(width: 8),
-                  OutlinedButton(
+                  TextButton(
                     key: const Key('skip-rating-button'),
                     onPressed: isPaused || isSkipping ? null : onSkipRating,
                     child: Text(l10n.skip),
@@ -1123,7 +1120,7 @@ class CreditPausedPanel extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (isHost && onBuyCredits != null)
-            ElevatedButton.icon(
+            FilledButton.icon(
               key: const Key('buy-credits-button'),
               onPressed: onBuyCredits,
               icon: const Icon(Icons.shopping_cart),

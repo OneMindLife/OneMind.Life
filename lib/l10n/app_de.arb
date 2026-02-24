@@ -1040,6 +1040,7 @@
   },
   "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
   "tutorialRatingCarryForwardHint": "Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
+  "tutorialTapTabHint": "Tippe oben auf \"{tabName}\" um fortzufahren.",
   "tutorialRound2PromptSimplified": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?",
   "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein als '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {
@@ -1228,5 +1229,13 @@
   "translationLanguagesLabel": "Sprachen",
   "autoTranslateLabel": "Automatische Uebersetzung",
 
-  "chatAutoTranslated": "Automatisch uebersetzt"
+  "chatAutoTranslated": "Automatisch uebersetzt",
+
+  "welcomeName": "Willkommen, {name}",
+  "editName": "Name bearbeiten",
+  "primaryLanguage": "Hauptsprache",
+  "iAlsoSpeak": "Ich spreche auch",
+  "spokenLanguages": "Gesprochene Sprachen",
+  "homeTourWelcomeNameTitle": "Dein Anzeigename",
+  "homeTourWelcomeNameDesc": "Das ist dein Anzeigename. Tippe auf das Stift-Symbol, um ihn jederzeit zu aendern!"
 }

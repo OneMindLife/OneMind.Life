@@ -1,8 +1,10 @@
 import 'package:equatable/equatable.dart';
+import 'round.dart';
 
 /// Summary of a public chat for discovery/browsing.
 /// This is a lightweight version of Chat with participant count.
 /// Supports optional translated fields for internationalization.
+/// Includes dashboard data (phase/timer) for at-a-glance status.
 class PublicChatSummary extends Equatable {
   final int id;
   final String name;
@@ -27,6 +29,24 @@ class PublicChatSummary extends Equatable {
   /// The languages configured for this chat
   final List<String> translationLanguages;
 
+  /// Current round phase: 'proposing', 'rating', 'waiting', or null (idle)
+  final String? currentRoundPhase;
+
+  /// Round number within the current cycle
+  final int? currentRoundNumber;
+
+  /// Timer target for the current phase (null = no timer / manual mode)
+  final DateTime? phaseEndsAt;
+
+  /// When the current phase started
+  final DateTime? phaseStartedAt;
+
+  /// Whether the schedule is paused
+  final bool schedulePaused;
+
+  /// Whether the host has manually paused
+  final bool hostPaused;
+
   const PublicChatSummary({
     required this.id,
     required this.name,
@@ -40,6 +60,12 @@ class PublicChatSummary extends Equatable {
     this.initialMessageTranslated,
     this.translationLanguage,
     this.translationLanguages = const ['en'],
+    this.currentRoundPhase,
+    this.currentRoundNumber,
+    this.phaseEndsAt,
+    this.phaseStartedAt,
+    this.schedulePaused = false,
+    this.hostPaused = false,
   });
 
   factory PublicChatSummary.fromJson(Map<String, dynamic> json) {
@@ -61,6 +87,16 @@ class PublicChatSummary extends Equatable {
               ?.map((e) => e as String)
               .toList() ??
           const ['en'],
+      currentRoundPhase: json['current_round_phase'] as String?,
+      currentRoundNumber: json['current_round_custom_id'] as int?,
+      phaseEndsAt: json['current_round_phase_ends_at'] != null
+          ? DateTime.parse(json['current_round_phase_ends_at'] as String)
+          : null,
+      phaseStartedAt: json['current_round_phase_started_at'] != null
+          ? DateTime.parse(json['current_round_phase_started_at'] as String)
+          : null,
+      schedulePaused: json['schedule_paused'] as bool? ?? false,
+      hostPaused: json['host_paused'] as bool? ?? false,
     );
   }
 
@@ -77,6 +113,38 @@ class PublicChatSummary extends Equatable {
   bool get hasTranslation =>
       translationLanguage != null && translationLanguage != 'original';
 
+  /// Whether there's an active timer running.
+  bool get hasActiveTimer => phaseEndsAt != null && currentRoundPhase != null;
+
+  /// Whether the chat is paused (schedule or host).
+  bool get isPaused => schedulePaused || hostPaused;
+
+  /// Whether there's an active round.
+  bool get hasActiveRound => currentRoundPhase != null;
+
+  /// Remaining time until phase ends, or null if no timer.
+  Duration? get timeRemaining {
+    if (phaseEndsAt == null) return null;
+    final remaining = phaseEndsAt!.difference(DateTime.now());
+    return remaining.isNegative ? Duration.zero : remaining;
+  }
+
+  /// Current phase as a [RoundPhase] enum value.
+  RoundPhase? get currentPhase => _parsePhase(currentRoundPhase);
+
+  static RoundPhase? _parsePhase(String? phase) {
+    switch (phase) {
+      case 'proposing':
+        return RoundPhase.proposing;
+      case 'rating':
+        return RoundPhase.rating;
+      case 'waiting':
+        return RoundPhase.waiting;
+      default:
+        return null;
+    }
+  }
+
   @override
   List<Object?> get props => [
         id,
@@ -91,5 +159,11 @@ class PublicChatSummary extends Equatable {
         initialMessageTranslated,
         translationLanguage,
         translationLanguages,
+        currentRoundPhase,
+        currentRoundNumber,
+        phaseEndsAt,
+        phaseStartedAt,
+        schedulePaused,
+        hostPaused,
       ];
 }

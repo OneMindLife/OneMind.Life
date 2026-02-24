@@ -67,11 +67,11 @@ class _CountdownTimerState extends State<CountdownTimer> {
       final hours = duration.inHours;
       final minutes = duration.inMinutes.remainder(60);
       final seconds = duration.inSeconds.remainder(60);
-      return '${hours}h ${minutes}m ${seconds}s';
+      return '${hours}h ${minutes.toString().padLeft(2, '0')}m ${seconds.toString().padLeft(2, '0')}s';
     } else if (duration.inMinutes > 0) {
       final minutes = duration.inMinutes;
       final seconds = duration.inSeconds.remainder(60);
-      return '${minutes}m ${seconds}s';
+      return '${minutes}m ${seconds.toString().padLeft(2, '0')}s';
     } else {
       return '${duration.inSeconds}s';
     }
@@ -80,15 +80,11 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   Widget build(BuildContext context) {
     final isExpired = _remaining == Duration.zero;
-    final isUrgent = _remaining.inMinutes < 1 && !isExpired;
 
-    final textStyle = widget.style ??
-        Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: isUrgent
-                  ? Theme.of(context).colorScheme.error
-                  : Theme.of(context).colorScheme.onSurfaceVariant,
-              fontWeight: isUrgent ? FontWeight.bold : FontWeight.normal,
-            );
+    // If a custom style is provided, use it. Otherwise inherit from the
+    // enclosing DefaultTextStyle so the timer matches its parent (e.g.
+    // white text inside a FilledButton).
+    final textStyle = widget.style ?? DefaultTextStyle.of(context).style;
 
     if (isExpired) {
       return Row(
@@ -98,7 +94,7 @@ class _CountdownTimerState extends State<CountdownTimer> {
             Icon(
               Icons.timer_off,
               size: 16,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: textStyle.color,
             ),
           if (widget.showIcon) const SizedBox(width: 4),
           Text('Time expired', style: textStyle),
@@ -113,12 +109,15 @@ class _CountdownTimerState extends State<CountdownTimer> {
           Icon(
             Icons.timer,
             size: 16,
-            color: isUrgent
-                ? Theme.of(context).colorScheme.error
-                : Theme.of(context).colorScheme.onSurfaceVariant,
+            color: textStyle.color,
           ),
         if (widget.showIcon) const SizedBox(width: 4),
-        Text(_formatDuration(_remaining), style: textStyle),
+        Text(
+          _formatDuration(_remaining),
+          style: textStyle.copyWith(
+            fontFeatures: const [FontFeature.tabularFigures()],
+          ),
+        ),
       ],
     );
   }

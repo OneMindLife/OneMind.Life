@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,11 +57,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   // Tutorial-specific: track if user has clicked Continue to unlock phase tab
   bool _phaseTabUnlocked = false;
 
+  // Two-step flow: first Continue button, then tap-tab instruction
+  bool _hintContinueClicked = false;
+
   // Track if tutorial completion is in progress (show loading, block back)
   bool _isCompleting = false;
 
-  // Guard to prevent opening results screen more than once
+  // Guards to prevent double-opening screens on auto-transitions
   bool _hasAutoOpenedRound1Results = false;
+  bool _hasAutoOpenedRound2Rating = false;
+  bool _hasAutoOpenedRound3Rating = false;
 
   @override
   void initState() {
@@ -240,11 +247,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     );
   }
 
-  /// Auto-open the results grid after Round 1 rating completes
   void _openResultsScreenForRound1(TutorialChatState state) {
     final l10n = AppLocalizations.of(context);
-
-    // Translate results for grid display
     final translatedResults = state.round1Results.map((p) => Proposition(
       id: p.id,
       roundId: p.roundId,
@@ -254,6 +258,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       createdAt: p.createdAt,
     )).toList();
 
+    // Get translated winner name for the hint
+    final winnerName = state.previousRoundWinners.isNotEmpty
+        ? _translateProposition(
+            state.previousRoundWinners.first.content ?? '', l10n)
+        : '';
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => ReadOnlyResultsScreen(
@@ -262,6 +272,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           roundId: -1,
           myParticipantId: -1,
           showTutorialHint: true,
+          tutorialWinnerName: winnerName,
         ),
       ),
     );
@@ -273,8 +284,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     // Watch locale to rebuild when language changes
     ref.watch(localeProvider);
 
-    // Auto-open results screen when state transitions to round1Result
+    // Auto-open screens on step transitions
     ref.listen<TutorialChatState>(tutorialChatNotifierProvider, (prev, next) {
+      // Auto-open results screen after R1 rating completes
       if (prev?.currentStep != TutorialStep.round1Result &&
           next.currentStep == TutorialStep.round1Result &&
           !_hasAutoOpenedRound1Results) {
@@ -282,6 +294,28 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
             _openResultsScreenForRound1(next);
+          }
+        });
+      }
+      // Auto-open rating screen when transitioning to R2 rating
+      if (prev?.currentStep != TutorialStep.round2Rating &&
+          next.currentStep == TutorialStep.round2Rating &&
+          !_hasAutoOpenedRound2Rating) {
+        _hasAutoOpenedRound2Rating = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _openTutorialRatingScreen(next);
+          }
+        });
+      }
+      // Auto-open rating screen when transitioning to R3 rating
+      if (prev?.currentStep != TutorialStep.round3Rating &&
+          next.currentStep == TutorialStep.round3Rating &&
+          !_hasAutoOpenedRound3Rating) {
+        _hasAutoOpenedRound3Rating = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _openTutorialRatingScreen(next);
           }
         });
       }
@@ -484,9 +518,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     );
   }
 
-  /// Build an educational hint banner for the tutorial
-  Widget _buildEducationalHint(String text, {IconData icon = Icons.lightbulb_outline}) {
+  /// Build an educational hint banner for the tutorial.
+  /// Optionally includes a Continue button inside the hint card.
+  Widget _buildEducationalHint(String text, {
+    IconData icon = Icons.lightbulb_outline,
+    VoidCallback? onContinue,
+  }) {
     final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
     // Use a soft blue/primary tint for tutorial hints (not tertiary which can look red)
     final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
     final borderColor = theme.colorScheme.primary.withAlpha(80);
@@ -500,24 +539,54 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: borderColor),
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: contentColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: theme.textTheme.bodySmall?.copyWith(
+          Row(
+            children: [
+              Icon(
+                icon,
+                size: 20,
                 color: contentColor,
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  text,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: contentColor,
+                  ),
+                ),
+              ),
+            ],
           ),
+          if (onContinue != null) ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: onContinue,
+                icon: const Icon(Icons.arrow_forward, size: 18),
+                label: Text(l10n.continue_),
+              ),
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildEducationalHintWithCountdown(
+    String text,
+    DateTime endsAt, {
+    String Function(String)? timeTemplate,
+  }) {
+    final l10n = AppLocalizations.of(context);
+    return _TutorialProposingHint(
+      text: text,
+      endsAt: endsAt,
+      timeRemainingTemplate: timeTemplate ?? (time) => l10n.tutorialTimeRemaining(time),
     );
   }
 
@@ -535,8 +604,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final showPreviousWinnerTab = hasPreviousWinner &&
         (!isRatingPhase || isResultStep || (isEducationalStep && !_phaseTabUnlocked));
 
-    // During result and educational steps, phase tab is locked until Continue is clicked
-    final isPhaseTabLocked = isResultStep || (isEducationalStep && !_phaseTabUnlocked);
+    // Phase tab is highlighted only after user clicks Continue in the hint
+    final isInActionStep = isResultStep || (isEducationalStep && !_phaseTabUnlocked);
+    final isPhaseTabHighlighted = isInActionStep && _hintContinueClicked;
 
     final theme = Theme.of(context);
 
@@ -551,36 +621,34 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Tab bar
-          _buildToggleTabs(state, showPreviousWinnerTab, isPhaseTabLocked: isPhaseTabLocked),
+          _buildToggleTabs(state, showPreviousWinnerTab,
+            isPhaseTabHighlighted: isPhaseTabHighlighted,
+            onPhaseTabAction: isPhaseTabHighlighted ? () {
+              if (isResultStep) {
+                _handleResultContinue(state);
+              } else if (isEducationalStep) {
+                _handleEducationalContinue();
+              }
+            } : null,
+          ),
 
-          // For result steps, show hint ABOVE the winner card
-          if (isResultStep)
+          // For result steps: two-step hint flow
+          if (isResultStep && !_hintContinueClicked)
             _buildEducationalHint(
               _getResultMessage(state, l10n),
               icon: Icons.emoji_events_outlined,
+              onContinue: () => setState(() => _hintContinueClicked = true),
+            ),
+          if (isResultStep && _hintContinueClicked)
+            _buildEducationalHint(
+              l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
+              icon: Icons.touch_app_outlined,
             ),
 
           // Content based on toggle
           _showPreviousWinner && showPreviousWinnerTab
               ? _buildPreviousWinnerPanel(state, isEducationalStep: isEducationalStep)
               : _buildCurrentPhasePanel(state),
-
-          // For result steps, add Continue button below
-          if (isResultStep) ...[
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleResultContinue(state),
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text(l10n.continue_),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
         ],
       ),
     );
@@ -606,10 +674,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     final notifier = ref.read(tutorialChatNotifierProvider.notifier);
 
     if (state.currentStep == TutorialStep.round1Result) {
-      // Continue: go directly to Round 2
       setState(() {
         _phaseTabUnlocked = true;
         _showPreviousWinner = false;
+        _hintContinueClicked = false;
       });
       notifier.continueToRound2();
     } else if (state.currentStep == TutorialStep.round2Result) {
@@ -617,12 +685,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       setState(() {
         _phaseTabUnlocked = true;
         _showPreviousWinner = false;
+        _hintContinueClicked = false;
       });
       notifier.continueToRound3();
     }
   }
 
-  Widget _buildToggleTabs(TutorialChatState state, bool hasPreviousWinner, {bool isPhaseTabLocked = false}) {
+  Widget _buildToggleTabs(TutorialChatState state, bool hasPreviousWinner, {
+    bool isPhaseTabHighlighted = false,
+    VoidCallback? onPhaseTabAction,
+  }) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isFirstSelected = _showPreviousWinner && hasPreviousWinner;
@@ -667,11 +739,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 ),
               ),
             ),
-          // Current Phase Tab (can be locked during educational steps)
+          // Current Phase Tab (highlighted during result/educational steps)
           Expanded(
             child: GestureDetector(
-              // Disable tap if locked or if no previous winner (nothing to toggle)
-              onTap: isPhaseTabLocked ? null : (hasPreviousWinner
+              onTap: onPhaseTabAction ?? (hasPreviousWinner
                   ? () => setState(() => _showPreviousWinner = false)
                   : null),
               child: Container(
@@ -685,19 +756,26 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                     topRight: const Radius.circular(12),
                   ),
                 ),
-                child: Text(
-                  _getPhaseTabLabel(state),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight:
-                        !isFirstSelected ? FontWeight.bold : FontWeight.normal,
-                    color: isPhaseTabLocked
-                        ? theme.colorScheme.onSurfaceVariant.withAlpha(128)
-                        : (!isFirstSelected
-                            ? theme.colorScheme.onSurface
-                            : theme.colorScheme.onSurfaceVariant),
-                  ),
-                ),
+                child: isPhaseTabHighlighted
+                    ? _PulsingTabLabel(
+                        label: _getPhaseTabLabel(state),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                        highlightColor: theme.colorScheme.primary,
+                      )
+                    : Text(
+                        _getPhaseTabLabel(state),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontWeight:
+                              !isFirstSelected ? FontWeight.bold : FontWeight.normal,
+                          color: !isFirstSelected
+                              ? theme.colorScheme.onSurface
+                              : theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
               ),
             ),
           ),
@@ -734,6 +812,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     // Only show educational content if phase tab is still locked (user hasn't clicked Continue yet)
     final showEducationalContent = isEducationalStep && !_phaseTabUnlocked;
 
+
     // Translate winner content to current locale
     final translatedWinners = state.previousRoundWinners.map((w) => RoundWinner(
       id: w.id,
@@ -769,10 +848,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       createdAt: p.createdAt,
     )).toList();
 
-    // Show "See All Results" button when we have results (not during round1Result
-    // since results auto-open after rating)
-    final showResultsButton = state.currentStep != TutorialStep.round1Result &&
-        translatedResults != null && translatedResults.isNotEmpty;
+    // Show "See All Results" button when we have results
+    final showResultsButton = translatedResults != null && translatedResults.isNotEmpty;
 
     // Determine round number from winner's roundId (-1=Round 1, -2=Round 2, -3=Round 3)
     final previousRoundNumber = winnerRoundId != null ? -winnerRoundId : null;
@@ -780,11 +857,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Educational hint ABOVE the winner card
-        if (showEducationalContent)
+        // Educational hint: two-step flow
+        if (showEducationalContent && !_hintContinueClicked)
           _buildEducationalHint(
             _getEducationalMessage(state, l10n),
             icon: Icons.tips_and_updates_outlined,
+            onContinue: () => setState(() => _hintContinueClicked = true),
+          ),
+        if (showEducationalContent && _hintContinueClicked)
+          _buildEducationalHint(
+            l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
+            icon: Icons.touch_app_outlined,
           ),
         PreviousWinnerPanel(
           previousRoundWinners: translatedWinners,
@@ -801,22 +884,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           previousRoundNumber: previousRoundNumber,
           myParticipantId: -1,
         ),
-        // Continue button (only if not yet clicked)
-        if (showEducationalContent) ...[
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _handleEducationalContinue,
-                icon: const Icon(Icons.arrow_forward),
-                label: Text(l10n.continue_),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-        ],
       ],
     );
   }
@@ -838,6 +905,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     setState(() {
       _phaseTabUnlocked = true;
       _showPreviousWinner = false;
+      _hintContinueClicked = false;
     });
   }
 
@@ -867,7 +935,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showProposingHint)
-              _buildEducationalHint(l10n.tutorialProposingHint),
+              _buildEducationalHintWithCountdown(
+                l10n.tutorialProposingHint,
+                state.currentRound!.phaseEndsAt!,
+              ),
             if (isRound2Prompt)
               _buildEducationalHint(
                 _getEducationalMessage(state, l10n),
@@ -886,14 +957,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         );
       case RoundPhase.rating:
         final l10n = AppLocalizations.of(context);
-        // Show rating hint only in Round 1 (user already learned about hidden submissions)
         final isFirstRound = state.currentRound?.customId == 1;
         final showRatingHint = isFirstRound && !state.hasStartedRating && !state.hasRated;
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             if (showRatingHint)
-              _buildEducationalHint(l10n.tutorialRatingHint),
+              _buildEducationalHintWithCountdown(
+                l10n.tutorialRatingPhaseExplanation,
+                state.currentRound!.phaseEndsAt!,
+                timeTemplate: (time) => l10n.tutorialRatingTimeRemaining(time),
+              ),
             RatingStatePanel(
               roundCustomId: state.currentRound!.customId,
               hasRated: state.hasRated,
@@ -1212,6 +1286,161 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
           color: iconColor,
         ),
       ),
+    );
+  }
+}
+
+/// Educational hint with a live countdown as a second sentence.
+class _TutorialProposingHint extends StatefulWidget {
+  final String text;
+  final DateTime endsAt;
+  final String Function(String time) timeRemainingTemplate;
+
+  const _TutorialProposingHint({
+    required this.text,
+    required this.endsAt,
+    required this.timeRemainingTemplate,
+  });
+
+  @override
+  State<_TutorialProposingHint> createState() => _TutorialProposingHintState();
+}
+
+class _TutorialProposingHintState extends State<_TutorialProposingHint> {
+  late Timer _timer;
+  Duration _remaining = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateRemaining();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+  }
+
+  @override
+  void dispose() {
+    _timer.cancel();
+    super.dispose();
+  }
+
+  void _updateRemaining() {
+    final remaining = widget.endsAt.difference(DateTime.now());
+    if (mounted) {
+      setState(() {
+        _remaining = remaining.isNegative ? Duration.zero : remaining;
+      });
+    }
+  }
+
+  String _formatDuration(Duration duration) {
+    final minutes = duration.inMinutes;
+    final seconds = duration.inSeconds.remainder(60);
+    if (minutes > 0) {
+      return '${minutes}m ${seconds}s';
+    }
+    return '${seconds}s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
+    final borderColor = theme.colorScheme.primary.withAlpha(80);
+    final contentColor = theme.colorScheme.onPrimaryContainer;
+    final timeText = widget.timeRemainingTemplate(_formatDuration(_remaining));
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lightbulb_outline,
+            size: 20,
+            color: contentColor,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '${widget.text} $timeText',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: contentColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Pulsing tab label — text with a pulsing underline bar to draw attention.
+class _PulsingTabLabel extends StatefulWidget {
+  final String label;
+  final TextStyle? style;
+  final Color highlightColor;
+
+  const _PulsingTabLabel({
+    required this.label,
+    required this.highlightColor,
+    this.style,
+  });
+
+  @override
+  State<_PulsingTabLabel> createState() => _PulsingTabLabelState();
+}
+
+class _PulsingTabLabelState extends State<_PulsingTabLabel>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.label,
+              textAlign: TextAlign.center,
+              style: widget.style,
+            ),
+            const SizedBox(height: 2),
+            Container(
+              height: 3,
+              width: 40,
+              decoration: BoxDecoration(
+                color: widget.highlightColor.withAlpha(
+                  (80 + 175 * _controller.value).toInt(),
+                ),
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

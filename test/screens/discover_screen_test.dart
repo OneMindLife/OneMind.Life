@@ -20,6 +20,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../fixtures/public_chat_summary_fixtures.dart';
 import '../fixtures/chat_fixtures.dart';
+import '../fixtures/chat_dashboard_info_fixtures.dart';
 import '../fixtures/participant_fixtures.dart';
 import '../mocks/mock_services.dart';
 import '../mocks/mock_supabase_client.dart';
@@ -39,7 +40,10 @@ class MockGoTrueClientLocal extends Mock implements GoTrueClient {}
 class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     implements MyChatsNotifier {
   MockMyChatsNotifier(List<Chat> chats, {List<JoinRequest> pendingRequests = const []})
-      : super(AsyncData(MyChatsState(chats: chats, pendingRequests: pendingRequests)));
+      : super(AsyncData(MyChatsState(
+          dashboardChats: ChatDashboardInfoFixtures.fromChats(chats),
+          pendingRequests: pendingRequests,
+        )));
 
   @override
   Future<void> refresh() async {}
@@ -270,7 +274,8 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('5 participants'), findsOneWidget);
+        // ParticipantBadge shows count as plain number
+        expect(find.text('5'), findsOneWidget);
       });
 
       testWidgets('displays singular participant text for 1 participant', (tester) async {
@@ -290,7 +295,8 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('1 participant'), findsOneWidget);
+        // ParticipantBadge shows count as plain number
+        expect(find.text('1'), findsOneWidget);
       });
 
       // Note: description display was removed from UI - only initial message is shown
@@ -329,7 +335,7 @@ void main() {
         expect(find.text('Join'), findsNWidgets(2));
       });
 
-      testWidgets('displays public icon for each chat', (tester) async {
+      testWidgets('displays participant badge for each chat', (tester) async {
         final chats = [PublicChatSummaryFixtures.model()];
         when(() => mockChatService.getPublicChats(
               limit: any(named: 'limit'),
@@ -340,7 +346,8 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.public), findsOneWidget);
+        // ChatDashboardCard uses ParticipantBadge with person_outline icon
+        expect(find.byIcon(Icons.person_outline), findsOneWidget);
       });
 
       testWidgets('displays Joined chip for chats user has already joined', (tester) async {
@@ -671,28 +678,27 @@ void main() {
             )).called(1);
       });
 
-      testWidgets('allows Anonymous for official OneMind chat without prompting', (tester) async {
-        // Setup: Official OneMind chat with no stored name
-        // Note: PublicChatSummary doesn't have isOfficial; we get it from the full Chat
-        final officialChat = PublicChatSummaryFixtures.model(
+      testWidgets('joins directly without name prompt (display name always available)', (tester) async {
+        // Setup: Any public chat — user always has a display name via ensureDisplayName()
+        final publicChat = PublicChatSummaryFixtures.model(
           id: 1,
-          name: 'OneMind',
+          name: 'Community Chat',
         );
-        final fullChat = ChatFixtures.official();
+        final fullChat = ChatFixtures.public(id: 1, name: 'Community Chat');
         final participant = ParticipantFixtures.model(
           id: 1,
           chatId: 1,
-          displayName: 'Anonymous',
+          displayName: 'Test User',
         );
 
         when(() => mockChatService.getPublicChats(
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [officialChat]);
+            )).thenAnswer((_) async => [publicChat]);
         when(() => mockChatService.getChatById(1)).thenAnswer((_) async => fullChat);
-        when(() => mockAuthService.displayName).thenReturn(null);
-        when(() => mockAuthService.hasDisplayName).thenReturn(false);
+        when(() => mockAuthService.displayName).thenReturn('Test User');
+        when(() => mockAuthService.hasDisplayName).thenReturn(true);
         when(() => mockParticipantService.joinChat(
               chatId: any(named: 'chatId'),
               displayName: any(named: 'displayName'),
@@ -704,181 +710,17 @@ void main() {
 
         // Tap Join button
         await tester.tap(find.text('Join'));
-        // Use pump() with duration to allow async operations without waiting for navigation
         await tester.pump(const Duration(milliseconds: 500));
 
-        // Verify joinChat was called with 'Anonymous', no prompt dialog shown
+        // Verify joinChat was called with display name, no prompt dialog shown
         verify(() => mockParticipantService.joinChat(
               chatId: 1,
-              displayName: 'Anonymous',
+              displayName: 'Test User',
               isHost: false,
             )).called(1);
 
         // Verify no name prompt dialog appeared
         expect(find.text('Enter Your Name'), findsNothing);
-      });
-
-      testWidgets('prompts for name when joining non-official public chat without stored name', (tester) async {
-        // Setup: Non-official public chat with no stored name
-        final publicChat = PublicChatSummaryFixtures.model(
-          id: 1,
-          name: 'Community Chat',
-        );
-        final fullChat = ChatFixtures.public(id: 1, name: 'Community Chat');
-
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [publicChat]);
-        when(() => mockChatService.getChatById(1)).thenAnswer((_) async => fullChat);
-        when(() => mockAuthService.displayName).thenReturn(null);
-        when(() => mockAuthService.hasDisplayName).thenReturn(false);
-
-        await tester.pumpWidget(createJoinTestWidget());
-        await tester.pumpAndSettle();
-
-        // Tap Join button
-        await tester.tap(find.text('Join'));
-        await tester.pumpAndSettle();
-
-        // Verify name prompt dialog appears
-        expect(find.text('Enter Your Name'), findsOneWidget);
-        expect(find.text('Your display name'), findsOneWidget);
-        expect(find.text('Cancel'), findsOneWidget);
-      });
-
-      testWidgets('canceling name prompt cancels join', (tester) async {
-        // Setup: Non-official public chat with no stored name
-        final publicChat = PublicChatSummaryFixtures.model(
-          id: 1,
-          name: 'Community Chat',
-        );
-        final fullChat = ChatFixtures.public(id: 1, name: 'Community Chat');
-
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [publicChat]);
-        when(() => mockChatService.getChatById(1)).thenAnswer((_) async => fullChat);
-        when(() => mockAuthService.displayName).thenReturn(null);
-        when(() => mockAuthService.hasDisplayName).thenReturn(false);
-
-        await tester.pumpWidget(createJoinTestWidget());
-        await tester.pumpAndSettle();
-
-        // Tap Join button
-        await tester.tap(find.text('Join'));
-        await tester.pumpAndSettle();
-
-        // Verify dialog appears
-        expect(find.text('Enter Your Name'), findsOneWidget);
-
-        // Tap Cancel
-        await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
-
-        // Verify joinChat was never called
-        verifyNever(() => mockParticipantService.joinChat(
-              chatId: any(named: 'chatId'),
-              displayName: any(named: 'displayName'),
-              isHost: any(named: 'isHost'),
-            ));
-      });
-
-      testWidgets('entering name in prompt joins with that name and saves it', (tester) async {
-        // Setup: Non-official public chat with no stored name
-        final publicChat = PublicChatSummaryFixtures.model(
-          id: 1,
-          name: 'Community Chat',
-        );
-        final fullChat = ChatFixtures.public(id: 1, name: 'Community Chat');
-        final participant = ParticipantFixtures.model(
-          id: 1,
-          chatId: 1,
-          displayName: 'New User',
-        );
-
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [publicChat]);
-        when(() => mockChatService.getChatById(1)).thenAnswer((_) async => fullChat);
-        when(() => mockAuthService.displayName).thenReturn(null);
-        when(() => mockAuthService.hasDisplayName).thenReturn(false);
-        when(() => mockAuthService.setDisplayName(any())).thenAnswer((_) async {});
-        when(() => mockParticipantService.joinChat(
-              chatId: any(named: 'chatId'),
-              displayName: any(named: 'displayName'),
-              isHost: any(named: 'isHost'),
-            )).thenAnswer((_) async => participant);
-
-        await tester.pumpWidget(createJoinTestWidget());
-        await tester.pumpAndSettle();
-
-        // Tap Join button
-        await tester.tap(find.text('Join'));
-        await tester.pumpAndSettle();
-
-        // Enter name in dialog
-        await tester.enterText(find.byType(TextField).last, 'New User');
-        await tester.pump();
-
-        // Tap Join button in dialog
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Join'));
-        // Use pump() with duration to allow async operations without waiting for navigation
-        await tester.pump(const Duration(milliseconds: 500));
-
-        // Verify setDisplayName was called to save the name
-        verify(() => mockAuthService.setDisplayName('New User')).called(1);
-
-        // Verify joinChat was called with the entered name
-        verify(() => mockParticipantService.joinChat(
-              chatId: 1,
-              displayName: 'New User',
-              isHost: false,
-            )).called(1);
-      });
-
-      testWidgets('empty name in prompt does not join', (tester) async {
-        // Setup: Non-official public chat with no stored name
-        final publicChat = PublicChatSummaryFixtures.model(
-          id: 1,
-          name: 'Community Chat',
-        );
-        final fullChat = ChatFixtures.public(id: 1, name: 'Community Chat');
-
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => [publicChat]);
-        when(() => mockChatService.getChatById(1)).thenAnswer((_) async => fullChat);
-        when(() => mockAuthService.displayName).thenReturn(null);
-        when(() => mockAuthService.hasDisplayName).thenReturn(false);
-
-        await tester.pumpWidget(createJoinTestWidget());
-        await tester.pumpAndSettle();
-
-        // Tap Join button
-        await tester.tap(find.text('Join'));
-        await tester.pumpAndSettle();
-
-        // Leave name field empty and tap Join
-        await tester.tap(find.widgetWithText(ElevatedButton, 'Join'));
-        await tester.pumpAndSettle();
-
-        // Dialog should still be open (empty name not accepted)
-        expect(find.text('Enter Your Name'), findsOneWidget);
-
-        // Verify joinChat was never called
-        verifyNever(() => mockParticipantService.joinChat(
-              chatId: any(named: 'chatId'),
-              displayName: any(named: 'displayName'),
-              isHost: any(named: 'isHost'),
-            ));
       });
     });
 

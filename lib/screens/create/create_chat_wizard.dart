@@ -10,7 +10,6 @@ import 'dialogs/create_chat_dialogs.dart';
 import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
 import 'widgets/wizard_step_agents.dart';
-import 'widgets/wizard_step_host_name.dart';
 import 'widgets/wizard_step_indicator.dart';
 import 'widgets/wizard_step_question.dart';
 import 'widgets/wizard_step_timing.dart';
@@ -37,8 +36,6 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   // Controllers
   final _nameController = TextEditingController();
   final _messageController = TextEditingController();
-  final _hostNameController = TextEditingController();
-  bool _needsHostName = true;
 
   // Visibility setting (user-selectable in step 2)
   AccessMethod _accessMethod = AccessMethod.public;
@@ -78,7 +75,6 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   void initState() {
     super.initState();
     _detectTimezone();
-    _loadHostDisplayName();
   }
 
   @override
@@ -98,21 +94,11 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     }
   }
 
-  void _loadHostDisplayName() {
-    final authService = ref.read(authServiceProvider);
-    final name = authService.displayName;
-    if (name != null && name.isNotEmpty) {
-      _hostNameController.text = name;
-      setState(() => _needsHostName = false);
-    }
-  }
-
   @override
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
     _messageController.dispose();
-    _hostNameController.dispose();
     super.dispose();
   }
 
@@ -134,7 +120,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
-  int get _totalSteps => _needsHostName ? 6 : 5;
+  int get _totalSteps => 5;
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
@@ -150,15 +136,8 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
 
   Future<void> _createChat() async {
     final l10n = AppLocalizations.of(context)!;
-
-    // Validate host name is provided
-    final hostName = _hostNameController.text.trim();
-    if (_needsHostName && hostName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.pleaseEnterYourName)),
-      );
-      return;
-    }
+    final authService = ref.read(authServiceProvider);
+    final hostName = authService.displayName!;
 
     // Validate invite-only requires at least one email
     if (_accessMethod == AccessMethod.inviteOnly && _inviteEmails.isEmpty) {
@@ -203,12 +182,6 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     try {
       final chatService = ref.read(chatServiceProvider);
       final participantService = ref.read(participantServiceProvider);
-      final authService = ref.read(authServiceProvider);
-
-      // Save host name to auth metadata if not already set
-      if (_needsHostName) {
-        await authService.setDisplayName(hostName);
-      }
 
       final messageText = _messageController.text.trim();
       final chat = await chatService.createChat(
@@ -405,7 +378,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 4: AI Agents
+                  // Step 5: AI Agents (final step — always creates)
                   WizardStepAgents(
                     agentSettings: _agentSettings,
                     onAgentSettingsChanged: (settings) {
@@ -414,19 +387,9 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onBack: _previousStep,
                     onContinue: _nextStep,
                     onCreate: _createChat,
-                    needsHostName: _needsHostName,
+                    needsHostName: false,
                     isLoading: _isLoading,
                   ),
-
-                  // Step 5: Host name (only if not already set)
-                  if (_needsHostName)
-                    WizardStepHostName(
-                      hostNameController: _hostNameController,
-                      formKey: _step2FormKey,
-                      onBack: _previousStep,
-                      onCreate: _createChat,
-                      isLoading: _isLoading,
-                    ),
                 ],
               ),
             ),

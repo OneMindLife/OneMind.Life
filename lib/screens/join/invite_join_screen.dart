@@ -30,11 +30,9 @@ class InviteJoinScreen extends ConsumerStatefulWidget {
 }
 
 class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
-  final _nameController = TextEditingController();
   bool _isLoading = true;
   bool _isJoining = false;
   String? _error;
-  bool _needsName = true;
 
   // Token-based invite data
   InviteTokenResult? _inviteResult;
@@ -45,20 +43,10 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDisplayName();
     // Defer initialization to after the frame is built to allow context access
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeInvite();
     });
-  }
-
-  void _loadDisplayName() {
-    final authService = ref.read(authServiceProvider);
-    final name = authService.displayName;
-    if (name != null && name.isNotEmpty) {
-      _nameController.text = name;
-      _needsName = false;
-    }
   }
 
   Future<void> _initializeInvite() async {
@@ -198,11 +186,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
 
   Future<void> _joinChat() async {
     final l10n = AppLocalizations.of(context)!;
-    final name = _nameController.text.trim();
-    if (name.isEmpty) {
-      setState(() => _error = l10n.pleaseEnterYourName);
-      return;
-    }
 
     setState(() {
       _isJoining = true;
@@ -214,9 +197,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       final participantService = ref.read(participantServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
       final chatService = ref.read(chatServiceProvider);
-
-      // Save display name to auth metadata
-      await authService.setDisplayName(name);
+      final name = authService.displayName!;
 
       // Get chat ID
       final chatId = _inviteResult?.chatId ?? _foundChat?.id;
@@ -305,7 +286,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
     super.dispose();
   }
 
@@ -475,32 +455,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
               ),
             ),
           ),
-          // Name input - only show if name not already set
-          if (_needsName) ...[
-            const SizedBox(height: 24),
-            Text(
-              l10n.enterNameToJoin,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _nameController,
-              decoration: InputDecoration(
-                hintText: l10n.yourDisplayName,
-              ),
-              textCapitalization: TextCapitalization.words,
-              enabled: !_isJoining,
-              onSubmitted: (_) => _joinChat(),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.nameVisibleNotice,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppColors.textSecondary,
-                  ),
-            ),
-          ],
-
           // Approval notice
           if (requireApproval) ...[
             const SizedBox(height: 16),

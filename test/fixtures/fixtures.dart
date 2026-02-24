@@ -2,6 +2,7 @@
 library;
 
 export 'chat_fixtures.dart';
+export 'chat_dashboard_info_fixtures.dart';
 export 'cycle_fixtures.dart';
 export 'round_fixtures.dart';
 export 'round_winner_fixtures.dart';

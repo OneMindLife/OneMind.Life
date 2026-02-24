@@ -1,4 +1,5 @@
 import 'package:mocktail/mocktail.dart';
+import 'package:onemind_app/models/chat_dashboard_info.dart';
 import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/services/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -38,6 +39,12 @@ extension MockChatServiceSetup on MockChatService {
   /// Setup getMyChats to return a list of chats
   void setupGetMyChats(List<Chat> chats) {
     when(() => getMyChats()).thenAnswer((_) async => chats);
+  }
+
+  /// Setup getMyDashboard to return a list of dashboard infos
+  void setupGetMyDashboard(List<ChatDashboardInfo> dashboardChats) {
+    when(() => getMyDashboard(languageCode: any(named: 'languageCode')))
+        .thenAnswer((_) async => dashboardChats);
   }
 
   /// Setup getOfficialChat

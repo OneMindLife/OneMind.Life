@@ -4,14 +4,15 @@ import 'package:onemind_app/screens/home_tour/notifiers/home_tour_notifier.dart'
 
 void main() {
   group('HomeTourStep', () {
-    test('has 8 steps before complete', () {
+    test('has 9 steps before complete', () {
       // All values except 'complete'
       final steps = HomeTourStep.values.where((s) => s != HomeTourStep.complete).toList();
-      expect(steps.length, 8);
+      expect(steps.length, 9);
     });
 
-    test('steps are in correct order', () {
+    test('steps are in correct order: body first, then app bar', () {
       expect(HomeTourStep.values, [
+        HomeTourStep.welcomeName,
         HomeTourStep.searchBar,
         HomeTourStep.pendingRequest,
         HomeTourStep.yourChats,
@@ -24,36 +25,36 @@ void main() {
       ]);
     });
 
-    test('exploreButton is at index 4', () {
-      expect(HomeTourStep.values.indexOf(HomeTourStep.exploreButton), 4);
+    test('exploreButton is at index 5', () {
+      expect(HomeTourStep.values.indexOf(HomeTourStep.exploreButton), 5);
     });
 
-    test('languageSelector is at index 5', () {
-      expect(HomeTourStep.values.indexOf(HomeTourStep.languageSelector), 5);
+    test('languageSelector is at index 6', () {
+      expect(HomeTourStep.values.indexOf(HomeTourStep.languageSelector), 6);
     });
   });
 
   group('HomeTourState', () {
-    test('defaults to searchBar step at index 0', () {
+    test('defaults to welcomeName step at index 0', () {
       const state = HomeTourState();
-      expect(state.currentStep, HomeTourStep.searchBar);
+      expect(state.currentStep, HomeTourStep.welcomeName);
       expect(state.stepIndex, 0);
       expect(state.totalSteps, HomeTourState.total);
     });
 
-    test('total is 8', () {
-      expect(HomeTourState.total, 8);
+    test('total is 9', () {
+      expect(HomeTourState.total, 9);
     });
 
     test('copyWith creates new instance with updated fields', () {
       const state = HomeTourState();
       final updated = state.copyWith(
         currentStep: HomeTourStep.exploreButton,
-        stepIndex: 4,
+        stepIndex: 5,
       );
       expect(updated.currentStep, HomeTourStep.exploreButton);
-      expect(updated.stepIndex, 4);
-      expect(updated.totalSteps, 8);
+      expect(updated.stepIndex, 5);
+      expect(updated.totalSteps, 9);
     });
   });
 
@@ -64,19 +65,20 @@ void main() {
       notifier = HomeTourNotifier();
     });
 
-    test('starts at searchBar step', () {
-      expect(notifier.state.currentStep, HomeTourStep.searchBar);
+    test('starts at welcomeName step', () {
+      expect(notifier.state.currentStep, HomeTourStep.welcomeName);
       expect(notifier.state.stepIndex, 0);
     });
 
     test('nextStep advances to next step', () {
       notifier.nextStep();
-      expect(notifier.state.currentStep, HomeTourStep.pendingRequest);
+      expect(notifier.state.currentStep, HomeTourStep.searchBar);
       expect(notifier.state.stepIndex, 1);
     });
 
     test('nextStep progresses through all steps', () {
       final expectedSteps = [
+        HomeTourStep.searchBar,
         HomeTourStep.pendingRequest,
         HomeTourStep.yourChats,
         HomeTourStep.createFab,
@@ -93,22 +95,22 @@ void main() {
       }
     });
 
-    test('exploreButton step shows at step index 4', () {
-      // Advance 4 times: searchBar -> pendingRequest -> yourChats -> createFab -> exploreButton
-      for (int i = 0; i < 4; i++) {
+    test('exploreButton step shows at step index 5', () {
+      // Advance 5 times: welcomeName -> searchBar -> pendingRequest -> yourChats -> createFab -> exploreButton
+      for (int i = 0; i < 5; i++) {
         notifier.nextStep();
       }
       expect(notifier.state.currentStep, HomeTourStep.exploreButton);
-      expect(notifier.state.stepIndex, 4);
+      expect(notifier.state.stepIndex, 5);
     });
 
     test('last step before complete is legalDocs', () {
-      // Advance 7 times to reach legalDocs
-      for (int i = 0; i < 7; i++) {
+      // Advance 8 times to reach legalDocs
+      for (int i = 0; i < 8; i++) {
         notifier.nextStep();
       }
       expect(notifier.state.currentStep, HomeTourStep.legalDocs);
-      expect(notifier.state.stepIndex, 7);
+      expect(notifier.state.stepIndex, 8);
 
       // One more advances to complete
       notifier.nextStep();
@@ -122,8 +124,8 @@ void main() {
     });
 
     test('skip from middle jumps to complete', () {
+      notifier.nextStep(); // searchBar
       notifier.nextStep(); // pendingRequest
-      notifier.nextStep(); // yourChats
       notifier.skip();
       expect(notifier.state.currentStep, HomeTourStep.complete);
     });

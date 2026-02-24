@@ -12,30 +12,33 @@ import '../providers.dart';
 
 /// State for the user's chat list including pending join requests
 class MyChatsState extends Equatable {
-  final List<Chat> chats;
+  final List<ChatDashboardInfo> dashboardChats;
   final List<JoinRequest> pendingRequests;
   final bool isTranslating;
 
   const MyChatsState({
-    this.chats = const [],
+    this.dashboardChats = const [],
     this.pendingRequests = const [],
     this.isTranslating = false,
   });
 
+  /// Backward-compatible accessor for code that expects `List<Chat>`
+  List<Chat> get chats => dashboardChats.map((d) => d.chat).toList();
+
   MyChatsState copyWith({
-    List<Chat>? chats,
+    List<ChatDashboardInfo>? dashboardChats,
     List<JoinRequest>? pendingRequests,
     bool? isTranslating,
   }) {
     return MyChatsState(
-      chats: chats ?? this.chats,
+      dashboardChats: dashboardChats ?? this.dashboardChats,
       pendingRequests: pendingRequests ?? this.pendingRequests,
       isTranslating: isTranslating ?? this.isTranslating,
     );
   }
 
   @override
-  List<Object?> get props => [chats, pendingRequests, isTranslating];
+  List<Object?> get props => [dashboardChats, pendingRequests, isTranslating];
 }
 
 /// Notifier for managing the user's chat list with Realtime updates.
@@ -44,6 +47,7 @@ class MyChatsState extends Equatable {
 /// events fire before transactions are fully visible to queries.
 /// Supports translations based on user's language preference.
 /// Automatically refreshes when the user changes their language setting.
+/// Subscribes to rounds table for phase change events (dashboard updates).
 class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     with LanguageAwareMixin<AsyncValue<MyChatsState>> {
   final ChatService _chatService;
@@ -52,8 +56,10 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 
   RealtimeChannel? _participantChannel;
   RealtimeChannel? _joinRequestChannel;
+  RealtimeChannel? _roundsChannel;
   StreamSubscription<AuthState>? _authSubscription;
   Timer? _debounceTimer;
+  Timer? _periodicRefreshTimer;
   DateTime? _lastRefreshTime;
 
   /// Stream that emits when a join request is approved (chat becomes accessible)
@@ -62,6 +68,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 
   static const _debounceDuration = Duration(milliseconds: 150);
   static const _minRefreshInterval = Duration(seconds: 1);
+  static const _periodicRefreshInterval = Duration(seconds: 30);
 
   MyChatsNotifier(Ref ref)
       : _chatService = ref.read(chatServiceProvider),
@@ -71,6 +78,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     initializeLanguageSupport(ref);
     _listenToAuthChanges();
     _loadAndSubscribe();
+    _startPeriodicRefresh();
   }
 
   /// Listen for auth state changes to set up subscriptions when user is authenticated
@@ -103,12 +111,12 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 
     try {
       final results = await Future.wait([
-        _chatService.getMyChats(languageCode: languageCode),
+        _chatService.getMyDashboard(languageCode: languageCode),
         _participantService.getMyPendingRequests(),
       ]);
 
       state = AsyncData(MyChatsState(
-        chats: results[0] as List<Chat>,
+        dashboardChats: results[0] as List<ChatDashboardInfo>,
         pendingRequests: results[1] as List<JoinRequest>,
       ));
     } catch (e) {
@@ -120,9 +128,11 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   @override
   void dispose() {
     _debounceTimer?.cancel();
+    _periodicRefreshTimer?.cancel();
     _authSubscription?.cancel();
     _participantChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
+    _roundsChannel?.unsubscribe();
     _approvedChatController.close();
     disposeLanguageSupport();
     super.dispose();
@@ -131,15 +141,15 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   Future<void> _loadAndSubscribe() async {
     try {
       final results = await Future.wait([
-        _chatService.getMyChats(languageCode: languageCode),
+        _chatService.getMyDashboard(languageCode: languageCode),
         _participantService.getMyPendingRequests(),
       ]);
 
-      final chats = results[0] as List<Chat>;
+      final dashboardChats = results[0] as List<ChatDashboardInfo>;
       final pendingRequests = results[1] as List<JoinRequest>;
 
       state = AsyncData(MyChatsState(
-        chats: chats,
+        dashboardChats: dashboardChats,
         pendingRequests: pendingRequests,
       ));
 
@@ -152,6 +162,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   void _setupSubscriptions() {
     _participantChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
+    _roundsChannel?.unsubscribe();
 
     final userId = _supabaseClient.auth.currentUser?.id;
     if (userId == null) return;
@@ -191,6 +202,29 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
           },
         )
         .subscribe();
+
+    // Subscribe to global rounds changes for dashboard phase updates
+    _roundsChannel = _supabaseClient
+        .channel('dashboard_rounds')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'rounds',
+          callback: (payload) {
+            _scheduleRefresh();
+          },
+        )
+        .subscribe();
+  }
+
+  /// Start periodic refresh as safety net for missed realtime events
+  void _startPeriodicRefresh() {
+    _periodicRefreshTimer = Timer.periodic(_periodicRefreshInterval, (_) {
+      // Only refresh if we have data (not in loading/error state)
+      if (state.valueOrNull != null) {
+        _refreshAll();
+      }
+    });
   }
 
   /// Debounced refresh with rate limiting - waits for events to settle
@@ -216,32 +250,32 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 
     try {
       final results = await Future.wait([
-        _chatService.getMyChats(languageCode: languageCode),
+        _chatService.getMyDashboard(languageCode: languageCode),
         _participantService.getMyPendingRequests(),
       ]);
 
-      final newChats = results[0] as List<Chat>;
+      final newDashboardChats = results[0] as List<ChatDashboardInfo>;
       final newPendingRequests = results[1] as List<JoinRequest>;
 
       // Detect approved join requests:
       // A pending request was approved if its chatId now appears in chats
       // but wasn't there before
-      final oldChatIds = currentState.chats.map((c) => c.id).toSet();
+      final oldChatIds = currentState.dashboardChats.map((d) => d.chat.id).toSet();
       final oldPendingChatIds =
           currentState.pendingRequests.map((r) => r.chatId).toSet();
 
-      for (final chat in newChats) {
+      for (final dashInfo in newDashboardChats) {
         // Chat is new (wasn't in old chats) AND was in pending requests
-        if (!oldChatIds.contains(chat.id) &&
-            oldPendingChatIds.contains(chat.id)) {
+        if (!oldChatIds.contains(dashInfo.chat.id) &&
+            oldPendingChatIds.contains(dashInfo.chat.id)) {
           debugPrint(
-              '[MyChatsNotifier] Join request approved for chat ${chat.id}: ${chat.name}');
-          _approvedChatController.add(chat);
+              '[MyChatsNotifier] Join request approved for chat ${dashInfo.chat.id}: ${dashInfo.chat.name}');
+          _approvedChatController.add(dashInfo.chat);
         }
       }
 
       state = AsyncData(MyChatsState(
-        chats: newChats,
+        dashboardChats: newDashboardChats,
         pendingRequests: newPendingRequests,
       ));
     } catch (e) {
@@ -262,31 +296,31 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   Future<void> _loadAndSubscribeWithApprovalCheck(MyChatsState? previousState) async {
     try {
       final results = await Future.wait([
-        _chatService.getMyChats(languageCode: languageCode),
+        _chatService.getMyDashboard(languageCode: languageCode),
         _participantService.getMyPendingRequests(),
       ]);
 
-      final chats = results[0] as List<Chat>;
+      final dashboardChats = results[0] as List<ChatDashboardInfo>;
       final pendingRequests = results[1] as List<JoinRequest>;
 
       // Detect approved join requests if we have previous state
       if (previousState != null) {
-        final oldChatIds = previousState.chats.map((c) => c.id).toSet();
+        final oldChatIds = previousState.dashboardChats.map((d) => d.chat.id).toSet();
         final oldPendingChatIds =
             previousState.pendingRequests.map((r) => r.chatId).toSet();
 
-        for (final chat in chats) {
-          if (!oldChatIds.contains(chat.id) &&
-              oldPendingChatIds.contains(chat.id)) {
+        for (final dashInfo in dashboardChats) {
+          if (!oldChatIds.contains(dashInfo.chat.id) &&
+              oldPendingChatIds.contains(dashInfo.chat.id)) {
             debugPrint(
-                '[MyChatsNotifier] Join request approved for chat ${chat.id}: ${chat.name}');
-            _approvedChatController.add(chat);
+                '[MyChatsNotifier] Join request approved for chat ${dashInfo.chat.id}: ${dashInfo.chat.name}');
+            _approvedChatController.add(dashInfo.chat);
           }
         }
       }
 
       state = AsyncData(MyChatsState(
-        chats: chats,
+        dashboardChats: dashboardChats,
         pendingRequests: pendingRequests,
       ));
 
@@ -322,7 +356,9 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     if (currentState == null) return;
 
     state = AsyncData(currentState.copyWith(
-      chats: currentState.chats.where((c) => c.id != chatId).toList(),
+      dashboardChats: currentState.dashboardChats
+          .where((d) => d.chat.id != chatId)
+          .toList(),
     ));
   }
 }

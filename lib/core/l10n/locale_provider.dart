@@ -61,3 +61,23 @@ final supportedLocalesProvider = Provider<List<Locale>>((ref) {
       .map((code) => Locale(code))
       .toList();
 });
+
+/// State notifier for spoken languages
+class SpokenLanguagesNotifier extends StateNotifier<List<String>> {
+  final LanguageService _languageService;
+
+  SpokenLanguagesNotifier(this._languageService)
+      : super(_languageService.getSpokenLanguages());
+
+  Future<void> setSpokenLanguages(List<String> codes) async {
+    state = codes;
+    await _languageService.setSpokenLanguages(codes);
+  }
+}
+
+/// Provider for spoken languages
+final spokenLanguagesProvider =
+    StateNotifierProvider<SpokenLanguagesNotifier, List<String>>((ref) {
+  final languageService = ref.watch(languageServiceProvider);
+  return SpokenLanguagesNotifier(languageService);
+});

@@ -20,6 +20,7 @@ import 'package:onemind_app/services/participant_service.dart';
 import 'package:onemind_app/services/proposition_service.dart';
 import 'package:onemind_app/services/auth_service.dart';
 import '../fixtures/chat_fixtures.dart';
+import '../fixtures/chat_dashboard_info_fixtures.dart';
 import '../fixtures/cycle_fixtures.dart';
 import '../fixtures/round_fixtures.dart';
 import '../fixtures/participant_fixtures.dart';
@@ -54,7 +55,7 @@ class FakeMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     final currentState = state.valueOrNull;
     if (currentState != null) {
       state = AsyncData(currentState.copyWith(
-        chats: currentState.chats.where((c) => c.id != chatId).toList(),
+        dashboardChats: currentState.dashboardChats.where((d) => d.chat.id != chatId).toList(),
       ));
     }
   }
@@ -196,6 +197,12 @@ class FakeChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   @override
   Future<void> deleteInitialMessage() async {}
+
+  @override
+  String get contentLanguageCode => 'en';
+
+  @override
+  Future<void> setViewingLanguage(String code) async {}
 
   @override
   Future<void> skipProposing() async {}
@@ -729,12 +736,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Tap the participants option
-        await tester.tap(find.text('Participants'));
+        // Tap the participants icon button directly (no longer in popup menu)
+        await tester.tap(find.byIcon(Icons.people));
         await tester.pumpAndSettle();
 
         // Verify modal shows participants
@@ -759,12 +762,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Open participants modal
-        await tester.tap(find.text('Participants'));
+        // Tap the participants icon button directly
+        await tester.tap(find.byIcon(Icons.people));
         await tester.pumpAndSettle();
 
         // Host should see kick button for regular user
@@ -792,12 +791,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Open participants modal
-        await tester.tap(find.text('Participants'));
+        // Tap the participants icon button directly
+        await tester.tap(find.byIcon(Icons.people));
         await tester.pumpAndSettle();
 
         // Non-host should NOT see kick button
@@ -821,12 +816,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Open participants modal
-        await tester.tap(find.text('Participants'));
+        // Tap the participants icon button directly
+        await tester.tap(find.byIcon(Icons.people));
         await tester.pumpAndSettle();
 
         // Verify modal is showing with correct count
@@ -837,8 +828,8 @@ void main() {
       });
     });
 
-    group('Popup Menu Divider', () {
-      testWidgets('non-host in official chat sees no divider or leave option', (tester) async {
+    group('Leave Chat Button', () {
+      testWidgets('non-host in official chat does not see leave button', (tester) async {
         final chat = ChatFixtures.official();
         final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
 
@@ -851,15 +842,11 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Should NOT see Leave option or divider for non-host in official chat
-        expect(find.text('Leave Chat'), findsNothing);
+        // Non-host in official chat should NOT see leave button
+        expect(find.byIcon(Icons.exit_to_app), findsNothing);
       });
 
-      testWidgets('non-host in regular chat sees leave option', (tester) async {
+      testWidgets('non-host in regular chat sees leave button', (tester) async {
         final chat = ChatFixtures.model();
         final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
 
@@ -872,12 +859,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Non-host in regular chat should see Leave option
-        expect(find.text('Leave Chat'), findsOneWidget);
+        // Non-host in regular chat should see leave button in app bar
+        expect(find.byIcon(Icons.exit_to_app), findsOneWidget);
       });
     });
 
@@ -1405,7 +1388,7 @@ void main() {
         expect(find.text('Pause Chat'), findsNothing);
       });
 
-      testWidgets('non-host does not see pause/resume button',
+      testWidgets('non-host does not see popup menu at all',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: false);
         final regularParticipant = ParticipantFixtures.model(isHost: false);
@@ -1419,13 +1402,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Open the popup menu
-        await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
-
-        // Non-host should NOT see pause or resume options
-        expect(find.text('Pause Chat'), findsNothing);
-        expect(find.text('Resume Chat'), findsNothing);
+        // Non-host should NOT see the host overflow menu at all
+        expect(find.byKey(const Key('chat-more-menu')), findsNothing);
       });
 
       testWidgets('shows HostPausedBanner when chat is paused',

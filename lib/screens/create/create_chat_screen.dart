@@ -31,8 +31,6 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _messageController = TextEditingController();
-  final _hostNameController = TextEditingController();
-  bool _needsHostName = true;
 
   // Basic settings (hidden from UI - using defaults)
   final AccessMethod _accessMethod = AccessMethod.code;
@@ -77,23 +75,12 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
   void initState() {
     super.initState();
     _detectTimezone();
-    _loadHostDisplayName();
-  }
-
-  void _loadHostDisplayName() {
-    final authService = ref.read(authServiceProvider);
-    final name = authService.displayName;
-    if (name != null && name.isNotEmpty) {
-      _hostNameController.text = name;
-      setState(() => _needsHostName = false);
-    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _messageController.dispose();
-    _hostNameController.dispose();
     super.dispose();
   }
 
@@ -132,17 +119,8 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final l10n = AppLocalizations.of(context)!;
-
-    // Validate host name is provided
-    final hostName = _hostNameController.text.trim();
-    if (hostName.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.pleaseEnterYourName),
-        ),
-      );
-      return;
-    }
+    final authService = ref.read(authServiceProvider);
+    final hostName = authService.displayName!;
 
     // Validate invite-only requires at least one email
     if (_accessMethod == AccessMethod.inviteOnly && _inviteEmails.isEmpty) {
@@ -192,12 +170,6 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
     try {
       final chatService = ref.read(chatServiceProvider);
       final participantService = ref.read(participantServiceProvider);
-      final authService = ref.read(authServiceProvider);
-
-      // Save host name to auth metadata if not already set
-      if (_needsHostName) {
-        await authService.setDisplayName(hostName);
-      }
 
       final chat = await chatService.createChat(
         name: _nameController.text.trim(),
@@ -339,31 +311,6 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            // Host name section - only show if name not already set
-            if (_needsHostName) ...[
-              Text(
-                l10n.yourName,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              TextFormField(
-                key: const Key('host_name_field'),
-                controller: _hostNameController,
-                decoration: InputDecoration(
-                  labelText: l10n.displayName,
-                  hintText: l10n.enterYourName,
-                  border: const OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return l10n.pleaseEnterYourName;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 32),
-            ],
             BasicInfoSection(
               nameController: _nameController,
               messageController: _messageController,
