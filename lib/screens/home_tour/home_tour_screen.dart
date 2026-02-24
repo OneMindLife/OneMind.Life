@@ -245,7 +245,14 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
             _tooltipKey.currentContext?.findRenderObject() as RenderBox?;
         final tooltipH = tooltipBox?.size.height ?? 180;
         newTop = stackBox.size.height - tooltipH - 16;
-        newRight = 80;
+        newRight = 16; // Same as other steps — full width
+        if (kDebugMode) {
+          debugPrint('[Tour] FAB step: stackSize=${stackBox.size}, '
+              'tooltipH=$tooltipH, newTop=$newTop, newRight=$newRight');
+          if (tooltipBox != null) {
+            debugPrint('[Tour] FAB step: tooltipSize=${tooltipBox.size}');
+          }
+        }
 
       // All app bar steps: tooltip at top of body
       case HomeTourStep.languageSelector:

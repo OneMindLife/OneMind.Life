@@ -433,8 +433,37 @@ void main() {
         expect(find.text('Test Discussion'), findsOneWidget);
       });
 
-      // Share button test skipped - share icon depends on app bar actions which vary
-      // The share functionality is tested via QR code widget tests
+      testWidgets('shows share button for non-host with invite code', (tester) async {
+        final chat = ChatFixtures.codeAccess();
+        final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
+
+        final state = createTestState(
+          chat: chat,
+          participants: [ParticipantFixtures.host(), regularParticipant],
+          myParticipant: regularParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('share-button')), findsOneWidget);
+      });
+
+      testWidgets('hides share button for public chat (no invite code)', (tester) async {
+        final chat = ChatFixtures.public();
+        final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
+
+        final state = createTestState(
+          chat: chat,
+          participants: [ParticipantFixtures.host(), regularParticipant],
+          myParticipant: regularParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('share-button')), findsNothing);
+      });
 
       testWidgets('displays participant count', (tester) async {
         final chat = ChatFixtures.model();
@@ -805,6 +834,50 @@ void main() {
 
         // The Consumer widget in the modal ensures it watches state changes
         // Integration test would verify actual realtime behavior
+      });
+    });
+
+    group('Popup Menu Divider', () {
+      testWidgets('non-host in official chat sees no divider or leave option', (tester) async {
+        final chat = ChatFixtures.official();
+        final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
+
+        final state = createTestState(
+          chat: chat,
+          participants: [ParticipantFixtures.host(), regularParticipant],
+          myParticipant: regularParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Open the popup menu
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+
+        // Should NOT see Leave option or divider for non-host in official chat
+        expect(find.text('Leave Chat'), findsNothing);
+      });
+
+      testWidgets('non-host in regular chat sees leave option', (tester) async {
+        final chat = ChatFixtures.model();
+        final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
+
+        final state = createTestState(
+          chat: chat,
+          participants: [ParticipantFixtures.host(), regularParticipant],
+          myParticipant: regularParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Open the popup menu
+        await tester.tap(find.byIcon(Icons.more_vert));
+        await tester.pumpAndSettle();
+
+        // Non-host in regular chat should see Leave option
+        expect(find.text('Leave Chat'), findsOneWidget);
       });
     });
 

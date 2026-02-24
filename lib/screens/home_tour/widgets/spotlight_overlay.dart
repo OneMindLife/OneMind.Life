@@ -60,10 +60,9 @@ class TourTooltipCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
 
-            // Progress dots + buttons
+            // Progress dots row
             Row(
               children: [
-                // Progress dots
                 ...List.generate(totalSteps, (i) {
                   return AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
@@ -85,7 +84,13 @@ class TourTooltipCard extends StatelessWidget {
                         color: Theme.of(context).colorScheme.outline,
                       ),
                 ),
-                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Buttons row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
                 TextButton(
                   onPressed: onSkip,
                   child: Text(skipLabel),
