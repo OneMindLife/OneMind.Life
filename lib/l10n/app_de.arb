@@ -9,6 +9,7 @@
   "joinAnExistingChatWithInviteCode": "Einem bestehenden Chat mit Einladungscode beitreten",
   "joinChat": "Chat Beitreten",
   "join": "Beitreten",
+  "joined": "Beigetreten",
   "findChat": "Chat Finden",
   "requestToJoin": "Beitritt Anfragen",
   "createChat": "Chat Erstellen",
@@ -28,7 +29,6 @@
   "clear": "Loeschen",
   "done": "Fertig",
   "save": "Speichern",
-  "officialOneMind": "Offizielles OneMind",
   "official": "OFFIZIELL",
   "pending": "AUSSTEHEND",
   "pendingRequests": "Ausstehende Anfragen",
@@ -47,7 +47,7 @@
   "waitingForHostApproval": "Warte auf Genehmigung des Gastgebers",
   "hostApprovalRequired": "Genehmigung des Gastgebers erforderlich",
   "noChatsYet": "Noch keine Chats",
-  "discoverPublicChatsJoinOrCreate": "Entdecke oeffentliche Chats, tritt mit einem Code bei oder erstelle deinen eigenen",
+  "discoverPublicChatsJoinOrCreate": "Suche oben nach oeffentlichen Chats, oder tippe auf + um deinen eigenen zu erstellen.",
   "discoverPublicChatsButton": "Oeffentliche Chats Entdecken",
   "noActiveChatsYet": "Noch keine aktiven Chats. Deine genehmigten Chats erscheinen hier.",
   "loadingChats": "Chats werden geladen",
@@ -1021,7 +1021,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialAddedToChat": "Es wurde jetzt zum Chat oben hinzugefuegt.",
+  "tutorialAddedToChat": "Du wurdest auch automatisch zum Offiziellen OneMind Chat hinzugefuegt, in dem alle gemeinsam Themen diskutieren.",
   "tutorialFinishButton": "Tutorial Beenden",
   "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
   "tutorialProposingHint": "Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.",
@@ -1170,5 +1170,49 @@
 
   "enterTaskResult": "Enter task result...",
   "submitResult": "Submit Result",
-  "taskResultSubmitted": "Task result submitted"
+  "taskResultSubmitted": "Task result submitted",
+
+  "homeTourPendingRequestTitle": "Ausstehende Anfragen",
+  "homeTourPendingRequestDesc": "Wenn du eine Beitrittsanfrage stellst, prueft der Gastgeber deine Anfrage. Du siehst sie hier mit einem 'Ausstehend'-Badge, bis sie genehmigt wird.",
+  "homeTourYourChatsTitle": "Deine Chats",
+  "homeTourYourChatsDesc": "Nach der Genehmigung erscheinen deine Chats hier. Tippe auf einen Chat, um Ideen vorzuschlagen und zu bewerten!",
+  "homeTourCreateFabTitle": "Chat Erstellen",
+  "homeTourCreateFabDesc": "Tippe auf +, um deinen eigenen Chat zu erstellen. Waehle das Thema, lade Freunde ein und findet gemeinsam einen Konsens.",
+  "homeTourDemoTitle": "Demo Ausprobieren",
+  "homeTourDemoDesc": "Möchtest du sehen, wie die Abstimmung funktioniert? Tippe hier, um eine schnelle interaktive Demo zu starten.",
+  "homeTourHowItWorksTitle": "So Funktioniert's",
+  "homeTourHowItWorksDesc": "Brauchst du eine Auffrischung? Tippe hier, um das Tutorial jederzeit zu wiederholen.",
+  "homeTourLegalDocsTitle": "Rechtliche Dokumente",
+  "homeTourLegalDocsDesc": "Sieh dir die Datenschutzrichtlinie und die Nutzungsbedingungen hier an.",
+  "searchOrJoinWithCode": "Chats suchen oder Einladungscode eingeben...",
+  "searchYourChatsOrJoinWithCode": "Deine Chats suchen oder Einladungscode eingeben...",
+  "noMatchingChats": "Keine passenden Chats",
+  "inviteCodeDetected": "Mit Einladungscode beitreten: {code}",
+  "@inviteCodeDetected": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "wizardVisibilityTitle": "Wer kann beitreten?",
+  "wizardVisibilitySubtitle": "Waehle, wer deinen Chat finden und beitreten kann",
+  "wizardVisibilityPublicTitle": "Oeffentlich",
+  "wizardVisibilityPublicDesc": "Jeder kann diesen Chat entdecken und beitreten",
+  "wizardVisibilityPrivateTitle": "Privat",
+  "wizardVisibilityPrivateDesc": "Nur Personen mit dem Einladungscode koennen beitreten",
+  "homeTourSearchBarTitle": "Deine Chats Suchen",
+  "homeTourSearchBarDesc": "Filtere deine Chats nach Name, oder gib einen 6-stelligen Einladungscode ein, um einem privaten Chat beizutreten.",
+  "homeTourExploreButtonTitle": "Oeffentliche Chats Entdecken",
+  "homeTourExploreButtonDesc": "Tippe hier, um oeffentliche Chats anderer Benutzer zu entdecken und ihnen beizutreten.",
+  "homeTourLanguageSelectorTitle": "Sprache Aendern",
+  "homeTourLanguageSelectorDesc": "Tippe hier, um die App-Sprache zu aendern. OneMind ist auf Englisch, Spanisch, Portugiesisch, Franzoesisch und Deutsch verfuegbar.",
+  "homeTourSkip": "Tour ueberspringen",
+  "homeTourNext": "Weiter",
+  "homeTourFinish": "Verstanden!",
+  "homeTourStepOf": "Schritt {current} von {total}",
+  "@homeTourStepOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  }
 }

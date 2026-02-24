@@ -9,6 +9,7 @@
   "joinAnExistingChatWithInviteCode": "Entrar em um chat existente com codigo de convite",
   "joinChat": "Entrar no Chat",
   "join": "Entrar",
+  "joined": "Participando",
   "findChat": "Buscar Chat",
   "requestToJoin": "Solicitar Entrada",
   "createChat": "Criar Chat",
@@ -28,7 +29,6 @@
   "clear": "Limpar",
   "done": "Pronto",
   "save": "Salvar",
-  "officialOneMind": "OneMind Oficial",
   "official": "OFICIAL",
   "pending": "PENDENTE",
   "pendingRequests": "Solicitacoes Pendentes",
@@ -47,7 +47,7 @@
   "waitingForHostApproval": "Aguardando aprovacao do anfitriao",
   "hostApprovalRequired": "O anfitriao deve aprovar cada solicitacao",
   "noChatsYet": "Nenhum chat ainda",
-  "discoverPublicChatsJoinOrCreate": "Descubra chats publicos, entre com um codigo ou crie o seu",
+  "discoverPublicChatsJoinOrCreate": "Pesquise chats publicos acima, ou toque em + para criar o seu.",
   "discoverPublicChatsButton": "Descobrir Chats Publicos",
   "noActiveChatsYet": "Nenhum chat ativo ainda. Seus chats aprovados aparecerão aqui.",
   "loadingChats": "Carregando chats",
@@ -1020,7 +1020,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialAddedToChat": "Agora foi adicionado ao chat acima.",
+  "tutorialAddedToChat": "Voce tambem foi adicionado automaticamente ao chat Oficial do OneMind, onde todos discutem topicos juntos.",
   "tutorialFinishButton": "Finalizar Tutorial",
   "tutorialRound1Result": "'Sucesso' venceu esta rodada! Mas ainda não é definitivo. Precisa vencer a próxima rodada para ser adicionado permanentemente ao chat do grupo.",
   "tutorialProposingHint": "Envie uma ideia que voce quer que seja a resposta do grupo.",
@@ -1169,5 +1169,49 @@
 
   "enterTaskResult": "Enter task result...",
   "submitResult": "Submit Result",
-  "taskResultSubmitted": "Task result submitted"
+  "taskResultSubmitted": "Task result submitted",
+
+  "homeTourPendingRequestTitle": "Solicitacoes Pendentes",
+  "homeTourPendingRequestDesc": "Quando voce solicita entrar em um chat, o anfitriao analisa sua solicitacao. Voce a vera aqui com um selo 'Pendente' ate ser aprovada.",
+  "homeTourYourChatsTitle": "Seus Chats",
+  "homeTourYourChatsDesc": "Apos aprovacao, seus chats aparecem aqui. Toque em qualquer chat para comecar a propor ideias e avaliar!",
+  "homeTourCreateFabTitle": "Criar um Chat",
+  "homeTourCreateFabDesc": "Toque em + para criar seu proprio chat. Escolha o tema, convide amigos e construam consenso juntos.",
+  "homeTourDemoTitle": "Experimentar a Demo",
+  "homeTourDemoDesc": "Quer ver como funciona a votação? Toque aqui para experimentar uma demo interativa rápida.",
+  "homeTourHowItWorksTitle": "Como Funciona",
+  "homeTourHowItWorksDesc": "Precisa de uma revisão? Toque aqui para rever o tutorial a qualquer momento.",
+  "homeTourLegalDocsTitle": "Documentos Legais",
+  "homeTourLegalDocsDesc": "Consulte a Política de Privacidade e os Termos de Serviço aqui.",
+  "searchOrJoinWithCode": "Pesquisar chats ou inserir codigo de convite...",
+  "searchYourChatsOrJoinWithCode": "Pesquisar seus chats ou inserir codigo de convite...",
+  "noMatchingChats": "Nenhum chat correspondente",
+  "inviteCodeDetected": "Entrar com codigo de convite: {code}",
+  "@inviteCodeDetected": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "wizardVisibilityTitle": "Quem pode entrar?",
+  "wizardVisibilitySubtitle": "Escolha quem pode encontrar e entrar no seu chat",
+  "wizardVisibilityPublicTitle": "Publico",
+  "wizardVisibilityPublicDesc": "Qualquer pessoa pode descobrir e entrar neste chat",
+  "wizardVisibilityPrivateTitle": "Privado",
+  "wizardVisibilityPrivateDesc": "Apenas pessoas com o codigo de convite podem entrar",
+  "homeTourSearchBarTitle": "Pesquisar Seus Chats",
+  "homeTourSearchBarDesc": "Filtre seus chats por nome, ou insira um codigo de convite de 6 caracteres para entrar em um chat privado.",
+  "homeTourExploreButtonTitle": "Explorar Chats Publicos",
+  "homeTourExploreButtonDesc": "Toque aqui para descobrir e entrar em chats publicos criados por outros usuarios.",
+  "homeTourLanguageSelectorTitle": "Mudar Idioma",
+  "homeTourLanguageSelectorDesc": "Toque aqui para mudar o idioma do aplicativo. OneMind esta disponivel em ingles, espanhol, portugues, frances e alemao.",
+  "homeTourSkip": "Pular tour",
+  "homeTourNext": "Proximo",
+  "homeTourFinish": "Entendi!",
+  "homeTourStepOf": "Passo {current} de {total}",
+  "@homeTourStepOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  }
 }

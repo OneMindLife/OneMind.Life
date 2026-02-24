@@ -65,8 +65,7 @@ import 'app_localizations_pt.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -74,8 +73,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -87,13 +85,12 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -101,7 +98,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('pt'),
+    Locale('pt')
   ];
 
   /// No description provided for @appTitle.
@@ -157,6 +154,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Join'**
   String get join;
+
+  /// No description provided for @joined.
+  ///
+  /// In en, this message translates to:
+  /// **'Joined'**
+  String get joined;
 
   /// No description provided for @findChat.
   ///
@@ -272,12 +275,6 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get save;
 
-  /// No description provided for @officialOneMind.
-  ///
-  /// In en, this message translates to:
-  /// **'Official OneMind'**
-  String get officialOneMind;
-
   /// No description provided for @official.
   ///
   /// In en, this message translates to:
@@ -347,7 +344,7 @@ abstract class AppLocalizations {
   /// No description provided for @discoverPublicChatsJoinOrCreate.
   ///
   /// In en, this message translates to:
-  /// **'Discover public chats, join with a code, or create your own'**
+  /// **'Search for public chats above, or tap + to create your own.'**
   String get discoverPublicChatsJoinOrCreate;
 
   /// No description provided for @discoverPublicChatsButton.
@@ -2130,11 +2127,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Phase ends early when {threshold} of {participants} participants submit ideas ({percent}%)'**
-  String proposingThresholdPreview(
-    int threshold,
-    int participants,
-    int percent,
-  );
+  String proposingThresholdPreview(int threshold, int participants, int percent);
 
   /// No description provided for @proposingThresholdPreviewSimple.
   ///
@@ -3141,7 +3134,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialAddedToChat.
   ///
   /// In en, this message translates to:
-  /// **'It\'s now added to the chat above.'**
+  /// **'You\'ve also been automatically added to the Official OneMind chat, where everyone discusses topics together.'**
   String get tutorialAddedToChat;
 
   /// No description provided for @tutorialFinishButton.
@@ -3959,10 +3952,201 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Task result submitted'**
   String get taskResultSubmitted;
+
+  /// No description provided for @homeTourPendingRequestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Requests'**
+  String get homeTourPendingRequestTitle;
+
+  /// No description provided for @homeTourPendingRequestDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'When you request to join a chat, the host reviews your request. You\'ll see it here with a \'Pending\' badge until they approve.'**
+  String get homeTourPendingRequestDesc;
+
+  /// No description provided for @homeTourYourChatsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Chats'**
+  String get homeTourYourChatsTitle;
+
+  /// No description provided for @homeTourYourChatsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Once approved, your chats appear here. Tap any chat to start proposing ideas and rating!'**
+  String get homeTourYourChatsDesc;
+
+  /// No description provided for @homeTourCreateFabTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Chat'**
+  String get homeTourCreateFabTitle;
+
+  /// No description provided for @homeTourCreateFabDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap + to create your own chat. You choose the topic, invite friends, and build consensus together.'**
+  String get homeTourCreateFabDesc;
+
+  /// No description provided for @homeTourDemoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the Demo'**
+  String get homeTourDemoTitle;
+
+  /// No description provided for @homeTourDemoDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Want to see how voting works? Tap here to try a quick interactive demo.'**
+  String get homeTourDemoDesc;
+
+  /// No description provided for @homeTourHowItWorksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How It Works'**
+  String get homeTourHowItWorksTitle;
+
+  /// No description provided for @homeTourHowItWorksDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Need a refresher? Tap here to replay the tutorial anytime.'**
+  String get homeTourHowItWorksDesc;
+
+  /// No description provided for @homeTourLegalDocsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Legal Documents'**
+  String get homeTourLegalDocsTitle;
+
+  /// No description provided for @homeTourLegalDocsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'View the Privacy Policy and Terms of Service here.'**
+  String get homeTourLegalDocsDesc;
+
+  /// No description provided for @searchOrJoinWithCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Search chats or enter invite code...'**
+  String get searchOrJoinWithCode;
+
+  /// No description provided for @searchYourChatsOrJoinWithCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your chats or enter invite code...'**
+  String get searchYourChatsOrJoinWithCode;
+
+  /// No description provided for @noMatchingChats.
+  ///
+  /// In en, this message translates to:
+  /// **'No matching chats'**
+  String get noMatchingChats;
+
+  /// No description provided for @inviteCodeDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'Join with invite code: {code}'**
+  String inviteCodeDetected(String code);
+
+  /// No description provided for @wizardVisibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Who can join?'**
+  String get wizardVisibilityTitle;
+
+  /// No description provided for @wizardVisibilitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose who can find and join your chat'**
+  String get wizardVisibilitySubtitle;
+
+  /// No description provided for @wizardVisibilityPublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public'**
+  String get wizardVisibilityPublicTitle;
+
+  /// No description provided for @wizardVisibilityPublicDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Anyone can discover and join this chat'**
+  String get wizardVisibilityPublicDesc;
+
+  /// No description provided for @wizardVisibilityPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get wizardVisibilityPrivateTitle;
+
+  /// No description provided for @wizardVisibilityPrivateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Only people with the invite code can join'**
+  String get wizardVisibilityPrivateDesc;
+
+  /// No description provided for @homeTourSearchBarTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Search Your Chats'**
+  String get homeTourSearchBarTitle;
+
+  /// No description provided for @homeTourSearchBarDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Filter your chats by name, or enter a 6-character invite code to join a private chat.'**
+  String get homeTourSearchBarDesc;
+
+  /// No description provided for @homeTourExploreButtonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Public Chats'**
+  String get homeTourExploreButtonTitle;
+
+  /// No description provided for @homeTourExploreButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here to discover and join public chats created by other users.'**
+  String get homeTourExploreButtonDesc;
+
+  /// No description provided for @homeTourLanguageSelectorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Language'**
+  String get homeTourLanguageSelectorTitle;
+
+  /// No description provided for @homeTourLanguageSelectorDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap here to switch the app language. OneMind is available in English, Spanish, Portuguese, French, and German.'**
+  String get homeTourLanguageSelectorDesc;
+
+  /// No description provided for @homeTourSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip tour'**
+  String get homeTourSkip;
+
+  /// No description provided for @homeTourNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get homeTourNext;
+
+  /// No description provided for @homeTourFinish.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it!'**
+  String get homeTourFinish;
+
+  /// No description provided for @homeTourStepOf.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {current} of {total}'**
+  String homeTourStepOf(int current, int total);
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -3971,32 +4155,28 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de':
-      return AppLocalizationsDe();
-    case 'en':
-      return AppLocalizationsEn();
-    case 'es':
-      return AppLocalizationsEs();
-    case 'fr':
-      return AppLocalizationsFr();
-    case 'pt':
-      return AppLocalizationsPt();
+    case 'de': return AppLocalizationsDe();
+    case 'en': return AppLocalizationsEn();
+    case 'es': return AppLocalizationsEs();
+    case 'fr': return AppLocalizationsFr();
+    case 'pt': return AppLocalizationsPt();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }

@@ -2,18 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../chat/chat_screen.dart';
-// import '../discover/discover_screen.dart'; // Hidden for MVP
 import '../join/join_dialog.dart';
 import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
-// ignore: unused_import
+import '../tutorial/tutorial_data.dart';
 import '../../widgets/language_selector.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -28,15 +26,26 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   StreamSubscription<Chat>? _approvedChatSubscription;
+  final _searchController = TextEditingController();
+  bool _isSearching = false;
+
+  /// Regex to detect a 6 alphanumeric character invite code
+  static final _inviteCodeRegex = RegExp(r'^[A-Za-z0-9]{6}$');
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     // Listen for approved join requests to auto-open the chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupApprovedChatListener();
       _handleReturnToChat();
     });
+  }
+
+  void _onSearchChanged() {
+    final query = _searchController.text.trim();
+    setState(() => _isSearching = query.isNotEmpty);
   }
 
   void _setupApprovedChatListener() {
@@ -69,10 +78,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _approvedChatSubscription?.cancel();
+    _searchController.dispose();
     super.dispose();
   }
 
-  void _openJoinDialog(BuildContext context, WidgetRef ref) {
+  void _openJoinDialog(BuildContext context, WidgetRef ref, {String? prefillCode}) {
     showDialog(
       context: context,
       builder: (ctx) => JoinDialog(
@@ -83,16 +93,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
   }
-
-  // Hidden for MVP
-  // void _openDiscover(BuildContext context, WidgetRef ref) async {
-  //   await Navigator.push(
-  //     context,
-  //     MaterialPageRoute(builder: (context) => const DiscoverScreen()),
-  //   );
-  //   // Refresh chat list when returning (user may have joined a chat)
-  //   ref.read(myChatsProvider.notifier).refresh();
-  // }
 
   void _openCreateChat(BuildContext context, WidgetRef ref) async {
     final result = await Navigator.push<Chat>(
@@ -147,10 +147,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  /// Check if the current search text looks like a 6-char invite code
+  String? get _detectedInviteCode {
+    final text = _searchController.text.trim();
+    if (_inviteCodeRegex.hasMatch(text)) return text.toUpperCase();
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final myChatsStateAsync = ref.watch(myChatsProvider);
-    final officialChatAsync = ref.watch(officialChatProvider);
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -161,9 +167,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.play_circle_outline),
-            tooltip: 'Demo',
-            onPressed: () => context.go('/demo'),
+            key: const Key('explore-button'),
+            icon: const Icon(Icons.explore),
+            tooltip: l10n.discoverChats,
+            onPressed: () => context.push('/discover'),
           ),
           const LanguageSelector(compact: true),
           IconButton(
@@ -180,42 +187,175 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ],
       ),
-      body: myChatsStateAsync.when(
-        data: (myChatsState) => AnimatedOpacity(
-          opacity: myChatsState.isTranslating ? 0.4 : 1.0,
-          duration: const Duration(milliseconds: 200),
-          child: RefreshIndicator(
+      body: Column(
+        children: [
+          // Persistent search bar (outside RefreshIndicator)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: l10n.searchYourChatsOrJoinWithCode,
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                filled: true,
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+
+          // Main content area
+          Expanded(
+            child: _isSearching
+                ? _buildSearchResults(myChatsStateAsync, l10n)
+                : _buildIdleContent(myChatsStateAsync, l10n),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        key: const Key('create-chat-fab'),
+        onPressed: () => _openCreateChat(context, ref),
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  /// Build the search results view (when user is typing in search bar)
+  Widget _buildSearchResults(
+    AsyncValue<MyChatsState> myChatsStateAsync,
+    AppLocalizations l10n,
+  ) {
+    final inviteCode = _detectedInviteCode;
+    final query = _searchController.text.trim().toLowerCase();
+
+    return myChatsStateAsync.when(
+      data: (myChatsState) {
+        final filtered = myChatsState.chats
+            .where((c) => c.displayName.toLowerCase().contains(query))
+            .toList();
+
+        return ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: [
+            // Invite code banner
+            if (inviteCode != null) ...[
+              Card(
+                color: Theme.of(context).colorScheme.primaryContainer,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () {
+                    if (inviteCode == TutorialData.demoInviteCode) {
+                      context.go('/tutorial');
+                      return;
+                    }
+                    _openJoinDialog(context, ref, prefillCode: inviteCode);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.vpn_key,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            l10n.inviteCodeDetected(inviteCode),
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleSmall
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimaryContainer,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+            ],
+
+            // Filtered own chats
+            if (filtered.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(32),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.search_off,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.noMatchingChats,
+                      style: Theme.of(context).textTheme.titleMedium,
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...filtered.map(
+                (chat) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _ChatCard(
+                    chat: chat,
+                    onTap: () => _navigateToChat(context, ref, chat),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => Center(
+        child: Text(l10n.failedToLoadChats),
+      ),
+    );
+  }
+
+  /// Build the idle content (when search bar is empty)
+  Widget _buildIdleContent(
+    AsyncValue<MyChatsState> myChatsStateAsync,
+    AppLocalizations l10n,
+  ) {
+    return myChatsStateAsync.when(
+      data: (myChatsState) => AnimatedOpacity(
+        opacity: myChatsState.isTranslating ? 0.4 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        child: RefreshIndicator(
           onRefresh: () async {
             ref.read(myChatsProvider.notifier).refresh();
-            ref.invalidate(officialChatProvider);
           },
           child: ListView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.all(16),
             children: [
-              // Official OneMind Chat
-              officialChatAsync.when(
-                data: (officialChat) {
-                  if (officialChat != null) {
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildSectionHeader(context, l10n.officialOneMind),
-                        const SizedBox(height: 8),
-                        _ChatCard(
-                          chat: officialChat,
-                          isOfficial: true,
-                          onTap: () => _navigateToChat(context, ref, officialChat),
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-                loading: () => const SizedBox.shrink(),
-                error: (_, __) => const SizedBox.shrink(),
-              ),
-
               // Pending Join Requests Section
               if (myChatsState.pendingRequests.isNotEmpty) ...[
                 _buildSectionHeader(context, l10n.pendingRequests),
@@ -232,91 +372,70 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 const SizedBox(height: 24),
               ],
 
-              // My Chats (exclude official chat - it's shown above)
+              // My Chats
               _buildSectionHeader(context, l10n.yourChats),
               const SizedBox(height: 8),
               Builder(
                 builder: (context) {
-                  final nonOfficialChats = myChatsState.chats
-                      .where((chat) => !chat.isOfficial)
-                      .toList();
-                  if (nonOfficialChats.isEmpty &&
+                  final chats = myChatsState.chats;
+                  if (chats.isEmpty &&
                       myChatsState.pendingRequests.isEmpty) {
                     return _buildEmptyState(context, ref);
                   }
-                  if (nonOfficialChats.isEmpty) {
+                  if (chats.isEmpty) {
                     return _buildNoChatsYet(context);
                   }
                   return Column(
-                    children: nonOfficialChats.map(
-                      (chat) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: _ChatCard(
-                          chat: chat,
-                          onTap: () => _navigateToChat(context, ref, chat),
-                        ),
-                      ),
-                    ).toList(),
+                    children: chats
+                        .map(
+                          (chat) => Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: _ChatCard(
+                              chat: chat,
+                              onTap: () =>
+                                  _navigateToChat(context, ref, chat),
+                            ),
+                          ),
+                        )
+                        .toList(),
                   );
                 },
               ),
             ],
           ),
-        )),
-        loading: () => Semantics(
-          label: l10n.loadingChats,
-          child: const Center(child: CircularProgressIndicator()),
-        ),
-        error: (error, _) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.error_outline,
-                size: 48,
-                color: Theme.of(context).colorScheme.error,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.failedToLoadChats,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                error.toString(),
-                style: Theme.of(context).textTheme.bodySmall,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => ref.read(myChatsProvider.notifier).refresh(),
-                child: Text(l10n.retry),
-              ),
-            ],
-          ),
         ),
       ),
-      floatingActionButton: SpeedDial(
-        key: const Key('chat-speed-dial'),
-        icon: Icons.add,
-        activeIcon: Icons.close,
-        spacing: 12,
-        childPadding: const EdgeInsets.all(5),
-        spaceBetweenChildren: 8,
-        children: [
-          SpeedDialChild(
-            key: const Key('create-chat-fab'),
-            child: const Icon(Icons.create),
-            label: l10n.createChat,
-            onTap: () => _openCreateChat(context, ref),
-          ),
-          SpeedDialChild(
-            key: const Key('join-chat-fab'),
-            child: const Icon(Icons.abc),
-            label: l10n.joinWithCode,
-            onTap: () => _openJoinDialog(context, ref),
-          ),
-        ],
+      loading: () => Semantics(
+        label: l10n.loadingChats,
+        child: const Center(child: CircularProgressIndicator()),
+      ),
+      error: (error, _) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Theme.of(context).colorScheme.error,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.failedToLoadChats,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => ref.read(myChatsProvider.notifier).refresh(),
+              child: Text(l10n.retry),
+            ),
+          ],
+        ),
       ),
     );
   }

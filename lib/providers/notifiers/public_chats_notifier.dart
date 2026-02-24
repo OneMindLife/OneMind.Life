@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:equatable/equatable.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/public_chat_summary.dart';
@@ -7,14 +8,40 @@ import '../../services/chat_service.dart';
 import '../mixins/language_aware_mixin.dart';
 import '../providers.dart';
 
-/// Notifier for managing public chats discovery with Realtime updates.
+/// State for paginated public chats discovery.
+class PublicChatsState extends Equatable {
+  final List<PublicChatSummary> chats;
+  final bool hasMore;
+  final bool isLoadingMore;
+
+  const PublicChatsState({
+    required this.chats,
+    this.hasMore = true,
+    this.isLoadingMore = false,
+  });
+
+  PublicChatsState copyWith({
+    List<PublicChatSummary>? chats,
+    bool? hasMore,
+    bool? isLoadingMore,
+  }) {
+    return PublicChatsState(
+      chats: chats ?? this.chats,
+      hasMore: hasMore ?? this.hasMore,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+    );
+  }
+
+  @override
+  List<Object?> get props => [chats, hasMore, isLoadingMore];
+}
+
+/// Notifier for managing public chats discovery with pagination and Realtime.
 ///
-/// Uses debounced refresh to handle Realtime race conditions where
-/// events fire before transactions are fully visible to queries.
-/// Supports translations based on user's language preference.
-/// Automatically refreshes when the user changes their language setting.
-class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummary>>>
-    with LanguageAwareMixin<AsyncValue<List<PublicChatSummary>>> {
+/// Supports infinite scroll via [loadMore], debounced search, and
+/// automatic refresh on Realtime events.
+class PublicChatsNotifier extends StateNotifier<AsyncValue<PublicChatsState>>
+    with LanguageAwareMixin<AsyncValue<PublicChatsState>> {
   final ChatService _chatService;
   final SupabaseClient _supabaseClient;
 
@@ -23,6 +50,7 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
   DateTime? _lastRefreshTime;
   String? _currentSearchQuery;
 
+  static const _pageSize = 20;
   static const _debounceDuration = Duration(milliseconds: 150);
   static const _minRefreshInterval = Duration(seconds: 1);
 
@@ -31,7 +59,7 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
         _supabaseClient = ref.read(supabaseProvider),
         super(const AsyncLoading()) {
     initializeLanguageSupport(ref);
-    _loadAndSubscribe();
+    _loadInitial();
   }
 
   @override
@@ -39,18 +67,22 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
     _refreshForLanguageChange();
   }
 
-  /// Refresh chats when language changes (silent refresh, no loading state)
   Future<void> _refreshForLanguageChange() async {
     try {
       final chats = _currentSearchQuery != null && _currentSearchQuery!.isNotEmpty
           ? await _chatService.searchPublicChats(
               _currentSearchQuery!,
               languageCode: languageCode,
+              limit: _pageSize,
             )
           : await _chatService.getPublicChats(
               languageCode: languageCode,
+              limit: _pageSize,
             );
-      state = AsyncData(chats);
+      state = AsyncData(PublicChatsState(
+        chats: chats,
+        hasMore: chats.length >= _pageSize,
+      ));
     } catch (e) {
       // Silent failure - keep existing data on language refresh error
     }
@@ -64,12 +96,18 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
     super.dispose();
   }
 
-  Future<void> _loadAndSubscribe() async {
+  /// Initial load — first page + subscribe to realtime.
+  Future<void> _loadInitial() async {
     try {
       final chats = await _chatService.getPublicChats(
         languageCode: languageCode,
+        limit: _pageSize,
+        offset: 0,
       );
-      state = AsyncData(chats);
+      state = AsyncData(PublicChatsState(
+        chats: chats,
+        hasMore: chats.length >= _pageSize,
+      ));
       _setupSubscription();
     } catch (e, st) {
       state = AsyncError(e, st);
@@ -79,10 +117,6 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
   void _setupSubscription() {
     _chatsChannel?.unsubscribe();
 
-    // Subscribe to all chat changes (creates, deletes, updates)
-    // Note: We don't filter by access_method because DELETE events only include
-    // primary key in old_record (not access_method), so filtered deletes are missed.
-    // The refresh query filters to public chats anyway, so extra events are harmless.
     _chatsChannel = _supabaseClient
         .channel('public_chats')
         .onPostgresChanges(
@@ -94,10 +128,7 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
         .subscribe();
   }
 
-  /// Debounced refresh with rate limiting - waits for events to settle
-  /// and prevents refresh storms from rapid-fire events.
   void _scheduleRefresh() {
-    // Rate limiting: skip if we refreshed too recently
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minRefreshInterval) {
@@ -111,30 +142,68 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
     });
   }
 
+  /// Refresh reloads the first page only (realtime or pull-to-refresh).
   Future<void> _refreshChats() async {
     try {
       final chats = _currentSearchQuery != null && _currentSearchQuery!.isNotEmpty
           ? await _chatService.searchPublicChats(
               _currentSearchQuery!,
               languageCode: languageCode,
+              limit: _pageSize,
             )
           : await _chatService.getPublicChats(
               languageCode: languageCode,
+              limit: _pageSize,
+              offset: 0,
             );
-      state = AsyncData(chats);
+      state = AsyncData(PublicChatsState(
+        chats: chats,
+        hasMore: chats.length >= _pageSize,
+      ));
     } catch (e) {
       // Log but don't fail - next event will retry
     }
   }
 
-  /// Search public chats by query
+  /// Load next page of results (infinite scroll).
+  Future<void> loadMore() async {
+    final current = state.valueOrNull;
+    if (current == null || !current.hasMore || current.isLoadingMore) return;
+
+    state = AsyncData(current.copyWith(isLoadingMore: true));
+
+    try {
+      final offset = current.chats.length;
+      final chats = _currentSearchQuery != null && _currentSearchQuery!.isNotEmpty
+          ? await _chatService.searchPublicChats(
+              _currentSearchQuery!,
+              languageCode: languageCode,
+              limit: _pageSize,
+              offset: offset,
+            )
+          : await _chatService.getPublicChats(
+              languageCode: languageCode,
+              limit: _pageSize,
+              offset: offset,
+            );
+
+      state = AsyncData(PublicChatsState(
+        chats: [...current.chats, ...chats],
+        hasMore: chats.length >= _pageSize,
+      ));
+    } catch (e) {
+      // Revert loading state, keep existing data
+      state = AsyncData(current.copyWith(isLoadingMore: false));
+    }
+  }
+
+  /// Search public chats by query (resets to first page).
   Future<void> search(String query) async {
     _currentSearchQuery = query.isEmpty ? null : query;
 
     if (query.isEmpty) {
-      // Clear search, refresh full list
       state = const AsyncLoading();
-      await _loadAndSubscribe();
+      await _loadInitial();
       return;
     }
 
@@ -143,32 +212,38 @@ class PublicChatsNotifier extends StateNotifier<AsyncValue<List<PublicChatSummar
       final chats = await _chatService.searchPublicChats(
         query,
         languageCode: languageCode,
+        limit: _pageSize,
       );
-      state = AsyncData(chats);
+      state = AsyncData(PublicChatsState(
+        chats: chats,
+        hasMore: chats.length >= _pageSize,
+      ));
     } catch (e, st) {
       state = AsyncError(e, st);
     }
   }
 
-  /// Manual refresh (pull-to-refresh)
+  /// Manual refresh — resets to first page.
   Future<void> refresh() async {
     _debounceTimer?.cancel();
     state = const AsyncLoading();
 
     if (_currentSearchQuery != null && _currentSearchQuery!.isNotEmpty) {
-      // Refresh search results
       try {
         final chats = await _chatService.searchPublicChats(
           _currentSearchQuery!,
           languageCode: languageCode,
+          limit: _pageSize,
         );
-        state = AsyncData(chats);
+        state = AsyncData(PublicChatsState(
+          chats: chats,
+          hasMore: chats.length >= _pageSize,
+        ));
       } catch (e, st) {
         state = AsyncError(e, st);
       }
     } else {
-      // Refresh full list
-      await _loadAndSubscribe();
+      await _loadInitial();
     }
   }
 }

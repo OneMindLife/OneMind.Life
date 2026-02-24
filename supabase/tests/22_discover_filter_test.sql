@@ -102,21 +102,21 @@ SELECT is(
 
 -- Test 6: Search without user_id returns matching chats
 SELECT is(
-  (SELECT COUNT(*) FROM search_public_chats('Topic', 20, NULL)),
+  (SELECT COUNT(*) FROM search_public_chats('Topic', 20, 0, NULL)),
   3::bigint,
   'Search without session token returns all 3 matching chats'
 );
 
 -- Test 7: User1 search should filter out their chats
 SELECT is(
-  (SELECT COUNT(*) FROM search_public_chats('Topic', 20, current_setting('test.user1_id')::UUID)),
+  (SELECT COUNT(*) FROM search_public_chats('Topic', 20, 0, current_setting('test.user1_id')::UUID)),
   1::bigint,
   'User1 search returns only 1 matching chat (filtered)'
 );
 
 -- Test 8: User1 search for specific term finds correct chat
 SELECT is(
-  (SELECT name FROM search_public_chats('Topic 3', 20, current_setting('test.user1_id')::UUID)),
+  (SELECT name FROM search_public_chats('Topic 3', 20, 0, current_setting('test.user1_id')::UUID)),
   'Public Chat 3',
   'User1 search for Topic 3 finds Public Chat 3'
 );

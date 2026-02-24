@@ -72,17 +72,46 @@ class ChatService {
     return chats;
   }
 
-  /// Get the official OneMind chat
-  Future<Chat?> getOfficialChat() async {
+  /// Get the official OneMind chat.
+  /// If [languageCode] is provided, returns translated fields.
+  Future<Chat?> getOfficialChat({String? languageCode}) async {
+    // First, find the official chat ID
     final response = await _client
         .from('chats')
-        .select()
+        .select('id')
         .eq('is_official', true)
         .eq('is_active', true)
         .maybeSingle();
 
-    if (response != null) {
-      return Chat.fromJson(response);
+    if (response == null) return null;
+
+    final chatId = response['id'] as int;
+
+    // If language code provided, use translated RPC
+    if (languageCode != null) {
+      final translated = await _client.rpc(
+        'get_chat_translated',
+        params: {
+          'p_chat_id': chatId,
+          'p_language_code': languageCode,
+        },
+      );
+      final rows = translated as List;
+      if (rows.isNotEmpty) {
+        return Chat.fromJson(rows.first);
+      }
+      return null;
+    }
+
+    // Default: fetch without translations
+    final full = await _client
+        .from('chats')
+        .select()
+        .eq('id', chatId)
+        .maybeSingle();
+
+    if (full != null) {
+      return Chat.fromJson(full);
     }
     return null;
   }
@@ -95,7 +124,8 @@ class ChatService {
     int offset = 0,
     String? languageCode,
   }) async {
-    final userId = _client.auth.currentUser?.id;
+    // Don't pass user_id — show all public chats including ones user joined
+    // (client marks joined chats with a "Joined" chip)
 
     // Use translated version if language code is provided
     if (languageCode != null) {
@@ -104,7 +134,6 @@ class ChatService {
         params: {
           'p_limit': limit,
           'p_offset': offset,
-          'p_user_id': userId,
           'p_language_code': languageCode,
         },
       );
@@ -120,7 +149,6 @@ class ChatService {
       params: {
         'p_limit': limit,
         'p_offset': offset,
-        'p_user_id': userId,
       },
     );
 
@@ -129,15 +157,15 @@ class ChatService {
         .toList();
   }
 
-  /// Search public chats by name, description, or initial message
-  /// Uses auth.uid() to exclude chats the user has already joined
+  /// Search public chats by name, description, or initial message.
   /// If [languageCode] is provided, searches both original and translated text.
   Future<List<PublicChatSummary>> searchPublicChats(
     String query, {
     int limit = 20,
+    int offset = 0,
     String? languageCode,
   }) async {
-    final userId = _client.auth.currentUser?.id;
+    // Don't pass user_id — show all public chats including ones user joined
 
     // Use translated version if language code is provided
     if (languageCode != null) {
@@ -146,7 +174,7 @@ class ChatService {
         params: {
           'p_query': query,
           'p_limit': limit,
-          'p_user_id': userId,
+          'p_offset': offset,
           'p_language_code': languageCode,
         },
       );
@@ -162,7 +190,7 @@ class ChatService {
       params: {
         'p_query': query,
         'p_limit': limit,
-        'p_user_id': userId,
+        'p_offset': offset,
       },
     );
 

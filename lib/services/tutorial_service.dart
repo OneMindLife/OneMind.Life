@@ -33,4 +33,35 @@ class TutorialService {
     }
     await _prefs.remove(_tutorialCompletedKey);
   }
+
+  // =========================================================================
+  // HOME TOUR
+  // =========================================================================
+
+  static const String _homeTourCompletedKey = 'home_tour_completed';
+
+  /// Check if the user has completed the home screen tour
+  bool get hasCompletedHomeTour {
+    final completed = _prefs.getBool(_homeTourCompletedKey) ?? false;
+    if (kDebugMode) {
+      debugPrint('[TutorialService] hasCompletedHomeTour: $completed');
+    }
+    return completed;
+  }
+
+  /// Mark the home screen tour as completed
+  Future<void> markHomeTourComplete() async {
+    if (kDebugMode) {
+      debugPrint('[TutorialService] Marking home tour as complete');
+    }
+    await _prefs.setBool(_homeTourCompletedKey, true);
+  }
+
+  /// Reset the home tour state (for testing or allowing replay)
+  Future<void> resetHomeTour() async {
+    if (kDebugMode) {
+      debugPrint('[TutorialService] Resetting home tour state');
+    }
+    await _prefs.remove(_homeTourCompletedKey);
+  }
 }

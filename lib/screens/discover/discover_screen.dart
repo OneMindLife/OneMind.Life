@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -15,11 +17,28 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  Timer? _searchDebounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(publicChatsProvider.notifier).loadMore();
+    }
   }
 
   Future<void> _joinChat(PublicChatSummary chatSummary) async {
@@ -70,7 +89,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
       // Navigate to the chat
       if (mounted) {
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ChatScreen(chat: chat),
@@ -126,9 +145,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
+  /// Navigate to a chat the user has already joined.
+  void _openChat(Chat chat) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(chat: chat),
+      ),
+    );
+    ref.read(myChatsProvider.notifier).refresh();
+  }
+
   @override
   Widget build(BuildContext context) {
     final publicChatsAsync = ref.watch(publicChatsProvider);
+    final myChatsAsync = ref.watch(myChatsProvider);
+    final joinedChatIds = myChatsAsync.whenData(
+      (state) => {for (final c in state.chats) c.id},
+    );
+    // Build a map of chat id → Chat for quick lookup
+    final joinedChatsMap = myChatsAsync.whenData(
+      (state) => {for (final c in state.chats) c.id: c},
+    );
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
@@ -152,7 +190,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           icon: const Icon(Icons.clear),
                           onPressed: () {
                             _searchController.clear();
-                            ref.read(publicChatsProvider.notifier).refresh();
+                            ref.read(publicChatsProvider.notifier).search('');
                           },
                         )
                       : null,
@@ -162,12 +200,27 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   filled: true,
                 ),
                 onChanged: (value) {
-                  if (value.isEmpty) {
-                    ref.read(publicChatsProvider.notifier).refresh();
+                  _searchDebounce?.cancel();
+                  if (value.trim().isEmpty) {
+                    ref.read(publicChatsProvider.notifier).search('');
+                    return;
                   }
+                  _searchDebounce =
+                      Timer(const Duration(milliseconds: 300), () {
+                    ref
+                        .read(publicChatsProvider.notifier)
+                        .search(value.trim());
+                  });
                 },
                 onSubmitted: (query) {
-                  ref.read(publicChatsProvider.notifier).search(query);
+                  _searchDebounce?.cancel();
+                  if (query.trim().isEmpty) {
+                    ref.read(publicChatsProvider.notifier).search('');
+                  } else {
+                    ref
+                        .read(publicChatsProvider.notifier)
+                        .search(query.trim());
+                  }
                 },
               ),
             ),
@@ -176,7 +229,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           // Content
           Expanded(
             child: publicChatsAsync.when(
-              data: (chats) => _buildChatList(chats),
+              data: (publicChatsState) => _buildChatList(
+                publicChatsState,
+                joinedChatIds.valueOrNull ?? {},
+                joinedChatsMap.valueOrNull ?? {},
+              ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => _buildError(error.toString()),
             ),
@@ -186,8 +243,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  Widget _buildChatList(List<PublicChatSummary> chats) {
+  Widget _buildChatList(
+    PublicChatsState publicChatsState,
+    Set<int> joinedChatIds,
+    Map<int, Chat> joinedChatsMap,
+  ) {
     final l10n = AppLocalizations.of(context);
+    final chats = publicChatsState.chats;
+
     if (chats.isEmpty) {
       return Center(
         child: Column(
@@ -218,18 +281,34 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       );
     }
 
+    // Item count: chats + optional loading indicator at bottom
+    final itemCount = chats.length + (publicChatsState.hasMore ? 1 : 0);
+
     return RefreshIndicator(
       onRefresh: () async {
-        ref.invalidate(publicChatsProvider);
+        await ref.read(publicChatsProvider.notifier).refresh();
       },
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.symmetric(horizontal: 16),
-        itemCount: chats.length,
+        itemCount: itemCount,
         itemBuilder: (context, index) {
+          // Loading indicator at the bottom
+          if (index >= chats.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator()),
+            );
+          }
+
           final chat = chats[index];
+          final isJoined = joinedChatIds.contains(chat.id);
           return _PublicChatCard(
             chat: chat,
-            onJoin: () => _joinChat(chat),
+            isJoined: isJoined,
+            onTap: isJoined
+                ? () => _openChat(joinedChatsMap[chat.id]!)
+                : () => _joinChat(chat),
           );
         },
       ),
@@ -255,7 +334,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ),
           const SizedBox(height: 16),
           ElevatedButton(
-            onPressed: () => ref.invalidate(publicChatsProvider),
+            onPressed: () => ref.read(publicChatsProvider.notifier).refresh(),
             child: Text(l10n.retry),
           ),
         ],
@@ -266,11 +345,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
 class _PublicChatCard extends StatelessWidget {
   final PublicChatSummary chat;
-  final VoidCallback onJoin;
+  final bool isJoined;
+  final VoidCallback onTap;
 
   const _PublicChatCard({
     required this.chat,
-    required this.onJoin,
+    this.isJoined = false,
+    required this.onTap,
   });
 
   @override
@@ -285,7 +366,7 @@ class _PublicChatCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onJoin,
+        onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -298,12 +379,16 @@ class _PublicChatCard extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
+                      color: isJoined
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       Icons.public,
-                      color: colorScheme.onPrimaryContainer,
+                      color: isJoined
+                          ? colorScheme.onSurfaceVariant
+                          : colorScheme.onPrimaryContainer,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -316,6 +401,9 @@ class _PublicChatCard extends StatelessWidget {
                           chat.displayName,
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
+                                color: isJoined
+                                    ? colorScheme.onSurfaceVariant
+                                    : null,
                               ),
                         ),
                         const SizedBox(height: 4),
@@ -338,11 +426,18 @@ class _PublicChatCard extends StatelessWidget {
                       ],
                     ),
                   ),
-                  // Join button
-                  FilledButton(
-                    onPressed: onJoin,
-                    child: Text(l10n.join),
-                  ),
+                  // Join button or Joined chip
+                  if (isJoined)
+                    Chip(
+                      label: Text(l10n.joined),
+                      avatar: const Icon(Icons.check, size: 16),
+                      visualDensity: VisualDensity.compact,
+                    )
+                  else
+                    FilledButton(
+                      onPressed: onTap,
+                      child: Text(l10n.join),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),

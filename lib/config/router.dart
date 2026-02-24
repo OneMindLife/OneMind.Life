@@ -1,13 +1,14 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../models/models.dart';
 import '../providers/providers.dart';
-import '../screens/chat/chat_screen.dart';
+import '../screens/discover/discover_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/join/invite_join_screen.dart';
 import '../screens/legal/legal_document_screen.dart';
 import '../screens/demo/demo_screen.dart';
+import '../screens/home_tour/home_tour_screen.dart';
 import '../screens/tutorial/tutorial_screen.dart';
 import '../utils/seo/seo_meta.dart';
 
@@ -22,19 +23,27 @@ final routerProvider = Provider<GoRouter>((ref) {
   final analyticsService = ref.watch(analyticsServiceProvider);
   final observer = analyticsService.observer;
   final hasCompletedTutorial = ref.watch(hasCompletedTutorialProvider);
+  final hasCompletedHomeTour = ref.watch(hasCompletedHomeTourProvider);
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
     observers: observer != null ? [observer] : [],
-    // Redirect first-time users to tutorial
+    // Redirect first-time users to tutorial, then home tour
     redirect: (context, state) {
       updateMetaTags(state.matchedLocation);
       final isGoingToTutorial = state.matchedLocation == '/tutorial';
+      final isHomeTourRoute = state.matchedLocation == '/home-tour';
       final isJoinRoute = state.matchedLocation.startsWith('/join');
       final isLegalRoute = state.matchedLocation == '/privacy' ||
           state.matchedLocation == '/terms';
       final isDemoRoute = state.matchedLocation == '/demo';
+      final isDiscoverRoute = state.matchedLocation == '/discover';
+
+      if (kDebugMode) {
+        debugPrint('[Router] redirect: path=${state.matchedLocation} '
+            'tutorial=$hasCompletedTutorial homeTour=$hasCompletedHomeTour');
+      }
 
       // Don't redirect if already going to tutorial
       if (isGoingToTutorial) return null;
@@ -48,9 +57,30 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Don't redirect demo route (accessible without tutorial)
       if (isDemoRoute) return null;
 
+      // Don't redirect discover route (accessible from home app bar)
+      if (isDiscoverRoute) return null;
+
+      // Home tour route: redirect to home if already completed
+      if (isHomeTourRoute && hasCompletedHomeTour) {
+        if (kDebugMode) {
+          debugPrint('[Router] home tour already completed, redirecting to /');
+        }
+        return '/';
+      }
+      if (isHomeTourRoute) return null;
+
       // Redirect to tutorial if not completed
       if (!hasCompletedTutorial) {
         return '/tutorial';
+      }
+
+      // First-time user completed tutorial but not home tour → show tour
+      if (!hasCompletedHomeTour) {
+        if (kDebugMode) {
+          debugPrint('[Router] tutorial done but home tour not done, '
+              'redirecting to /home-tour');
+        }
+        return '/home-tour';
       }
 
       return null;
@@ -73,98 +103,72 @@ final routerProvider = Provider<GoRouter>((ref) {
               // opened it from "How It Works" button)
               final isFirstTime = !ref.read(hasCompletedTutorialProvider);
 
+              if (kDebugMode) {
+                debugPrint('[Router] tutorial onComplete: '
+                    'isFirstTime=$isFirstTime');
+              }
+
               // Mark tutorial as complete FIRST so user is never stuck
               // on a broken tutorial screen if network calls fail
               ref.read(tutorialServiceProvider).markTutorialComplete();
 
-              // Invalidate the provider to trigger rebuild
-              // This will cause the router to rebuild and navigate to '/' automatically
-              ref.invalidate(hasCompletedTutorialProvider);
-
               if (!isFirstTime) {
-                // Returning user - just navigate back to Home
-                await Future.delayed(const Duration(milliseconds: 100));
-                rootNavigatorKey.currentState?.pop();
+                // Returning user ("How It Works") — reset home tour
+                // so they get the full onboarding experience again
+                await ref.read(tutorialServiceProvider).resetHomeTour();
+                ref.invalidate(hasCompletedTutorialProvider);
+                ref.invalidate(hasCompletedHomeTourProvider);
+                // Router redirect will see hasCompletedHomeTour=false
+                // and send to /home-tour
                 return;
               }
 
-              // First-time user: auto-join official chat and navigate
-
-              // Check if user came via join link
-              final pendingJoinChatId = ref.read(pendingJoinChatIdProvider);
-
-              // Clear the pending join chat ID immediately
-              ref.read(pendingJoinChatIdProvider.notifier).state = null;
-
-              final chatService = ref.read(chatServiceProvider);
-              final participantService = ref.read(participantServiceProvider);
-
-              // 1. AUTO-JOIN to official public chat (no display name for public)
-              Chat? officialChat;
+              // First-time user: auto-join official chat silently
               try {
-                officialChat = await chatService.getOfficialChat();
+                final chatService = ref.read(chatServiceProvider);
+                final participantService = ref.read(participantServiceProvider);
+                final officialChat = await chatService.getOfficialChat();
                 if (officialChat != null) {
                   await participantService.joinPublicChat(
                       chatId: officialChat.id);
-                  // Refetch to get the updated chat with participant
-                  officialChat = await chatService.getOfficialChat();
+                  if (kDebugMode) {
+                    debugPrint('[Router] auto-joined official chat');
+                  }
                 }
               } catch (e) {
-                // Ignore errors (already joined, network issue, etc.)
-                // User can still use the app without the official chat
-              }
-
-              // 2. Fetch user's chats and pending requests
-              Chat? approvedChat;
-              bool hasPendingInvite = false;
-              try {
-                final chats = await chatService.getMyChats();
-                final pendingRequests =
-                    await participantService.getMyPendingRequests();
-
-                // 3. Check invite status
-                if (pendingJoinChatId != null) {
-                  approvedChat = chats
-                      .where((c) => c.id == pendingJoinChatId)
-                      .firstOrNull;
-                  hasPendingInvite =
-                      pendingRequests.any((r) => r.chatId == pendingJoinChatId);
+                if (kDebugMode) {
+                  debugPrint('[Router] failed to join official chat: $e');
                 }
-              } catch (e) {
-                // Network error fetching chats - user goes to Home anyway
               }
 
-              // Wait for router to rebuild and home screen to mount
-              await Future.delayed(const Duration(milliseconds: 300));
-              final navigatorState = rootNavigatorKey.currentState;
-              if (navigatorState == null) {
-                return;
+              // Invalidate AFTER join attempt so redirect fires with
+              // hasCompletedTutorial=true + hasCompletedHomeTour=false
+              // → router redirects to /home-tour automatically
+              if (kDebugMode) {
+                debugPrint('[Router] invalidating tutorial provider, '
+                    'expecting redirect to /home-tour');
               }
-
-              // 4. Navigate based on conditions
-              if (approvedChat != null) {
-                // User came via invite and was approved - go to invited chat
-                await navigatorState.push(
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(chat: approvedChat!),
-                  ),
-                );
-              } else if (hasPendingInvite) {
-                // User came via invite but pending - stay on Home
-                // (shows public chat + pending request)
-              } else if (officialChat != null) {
-                // No invite context - go to official public chat
-                await navigatorState.push(
-                  MaterialPageRoute(
-                    builder: (context) => ChatScreen(chat: officialChat!),
-                  ),
-                );
-              }
-              // Fallback: stay on Home (e.g., if official chat doesn't exist)
+              ref.invalidate(hasCompletedTutorialProvider);
             } finally {
-              // Reset guard after completion
               _tutorialCompletionInProgress = false;
             }
+          },
+        ),
+      ),
+      // Home tour route (shown after tutorial for first-time users)
+      GoRoute(
+        path: '/home-tour',
+        name: 'home-tour',
+        builder: (context, state) => HomeTourScreen(
+          onComplete: () {
+            if (kDebugMode) {
+              debugPrint('[Router] home tour onComplete — marking done, '
+                  'expecting redirect to /');
+            }
+            ref.read(tutorialServiceProvider).markHomeTourComplete();
+            // Invalidating triggers router rebuild; redirect sees
+            // hasCompletedHomeTour=true and sends /home-tour → /
+            ref.invalidate(hasCompletedHomeTourProvider);
           },
         ),
       ),
@@ -178,6 +182,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           final returnToChatId = chatIdParam != null ? int.tryParse(chatIdParam) : null;
           return HomeScreen(returnToChatId: returnToChatId);
         },
+      ),
+      // Discover route
+      GoRoute(
+        path: '/discover',
+        name: 'discover',
+        builder: (context, state) => const DiscoverScreen(),
       ),
       // Demo route
       GoRoute(

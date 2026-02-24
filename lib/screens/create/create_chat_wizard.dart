@@ -14,6 +14,7 @@ import 'widgets/wizard_step_host_name.dart';
 import 'widgets/wizard_step_indicator.dart';
 import 'widgets/wizard_step_question.dart';
 import 'widgets/wizard_step_timing.dart';
+import 'widgets/wizard_step_visibility.dart';
 
 /// Multi-step wizard for creating a new chat.
 /// Transforms the form into 2 focused steps for better UX.
@@ -38,8 +39,8 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   final _hostNameController = TextEditingController();
   bool _needsHostName = true;
 
-  // Basic settings (hidden from UI - using defaults)
-  final AccessMethod _accessMethod = AccessMethod.code;
+  // Visibility setting (user-selectable in step 2)
+  AccessMethod _accessMethod = AccessMethod.public;
   final List<String> _inviteEmails = [];
   final bool _requireAuth = false;
   final bool _requireApproval = true;
@@ -113,7 +114,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
-  int get _totalSteps => _needsHostName ? 4 : 3;
+  int get _totalSteps => _needsHostName ? 5 : 4;
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
@@ -349,7 +350,17 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 2: Set the Pace (timers)
+                  // Step 2: Who Can Join? (public/private toggle)
+                  WizardStepVisibility(
+                    accessMethod: _accessMethod,
+                    onAccessMethodChanged: (method) {
+                      setState(() => _accessMethod = method);
+                    },
+                    onBack: _previousStep,
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 3: Set the Pace (timers)
                   WizardStepTiming(
                     timerSettings: _timerSettings,
                     onTimerSettingsChanged: (settings) {
@@ -359,7 +370,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 3: AI Agents
+                  // Step 4: AI Agents
                   WizardStepAgents(
                     agentSettings: _agentSettings,
                     onAgentSettingsChanged: (settings) {
@@ -372,7 +383,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     isLoading: _isLoading,
                   ),
 
-                  // Step 4: Host name (only if not already set)
+                  // Step 5: Host name (only if not already set)
                   if (_needsHostName)
                     WizardStepHostName(
                       hostNameController: _hostNameController,

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/l10n/locale_provider.dart';
 import '../models/models.dart';
 import 'providers.dart';
 import 'notifiers/my_chats_notifier.dart';
@@ -17,16 +18,18 @@ final myChatsProvider =
   (ref) => MyChatsNotifier(ref),
 );
 
-/// Provider for the official OneMind chat
+/// Provider for the official OneMind chat.
+/// Watches localeProvider to refetch with translations on language change.
 final officialChatProvider = FutureProvider<Chat?>((ref) async {
   final chatService = ref.watch(chatServiceProvider);
-  return chatService.getOfficialChat();
+  final locale = ref.watch(localeProvider);
+  return chatService.getOfficialChat(languageCode: locale.languageCode);
 });
 
 /// Provider for public chats discovery (DiscoverScreen)
-/// Now with Realtime updates for automatic refresh when public chats change
+/// Supports pagination, Realtime updates, and alphabetical ordering
 final publicChatsProvider =
-    StateNotifierProvider<PublicChatsNotifier, AsyncValue<List<PublicChatSummary>>>(
+    StateNotifierProvider<PublicChatsNotifier, AsyncValue<PublicChatsState>>(
   (ref) => PublicChatsNotifier(ref),
 );
 

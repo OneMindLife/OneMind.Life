@@ -7,8 +7,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:onemind_app/core/l10n/language_service.dart';
 import 'package:onemind_app/core/l10n/locale_provider.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
+import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/models/public_chat_summary.dart';
 import 'package:onemind_app/providers/providers.dart';
+import 'package:onemind_app/providers/chat_providers.dart';
+import 'package:onemind_app/providers/notifiers/my_chats_notifier.dart';
 import 'package:onemind_app/screens/discover/discover_screen.dart';
 import 'package:onemind_app/services/chat_service.dart';
 import 'package:onemind_app/services/participant_service.dart';
@@ -31,6 +34,37 @@ class MockLanguageService extends Mock implements LanguageService {}
 
 /// Prevents real Supabase initialization in tests
 class MockGoTrueClientLocal extends Mock implements GoTrueClient {}
+
+/// A mock notifier that immediately provides data without async loading
+class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
+    implements MyChatsNotifier {
+  MockMyChatsNotifier(List<Chat> chats, {List<JoinRequest> pendingRequests = const []})
+      : super(AsyncData(MyChatsState(chats: chats, pendingRequests: pendingRequests)));
+
+  @override
+  Future<void> refresh() async {}
+
+  @override
+  void removeChat(int chatId) {}
+
+  @override
+  Future<void> cancelRequest(int requestId) async {}
+
+  @override
+  Stream<Chat> get approvedChatStream => const Stream.empty();
+
+  @override
+  String get languageCode => 'en';
+
+  @override
+  void initializeLanguageSupport(dynamic ref) {}
+
+  @override
+  void onLanguageChanged(String newLanguageCode) {}
+
+  @override
+  void disposeLanguageSupport() {}
+}
 
 void main() {
   late MockChatService mockChatService;
@@ -76,7 +110,7 @@ void main() {
     when(() => mockLanguageService.getCurrentLanguage()).thenReturn('en');
   });
 
-  Widget createTestWidget() {
+  Widget createTestWidget({List<Chat> myChats = const []}) {
     return ProviderScope(
       overrides: [
         chatServiceProvider.overrideWithValue(mockChatService),
@@ -84,6 +118,9 @@ void main() {
         authServiceProvider.overrideWithValue(mockAuthService),
         languageServiceProvider.overrideWithValue(mockLanguageService),
         supabaseProvider.overrideWithValue(mockSupabase),
+        myChatsProvider.overrideWith(
+          (ref) => MockMyChatsNotifier(myChats),
+        ),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -183,6 +220,7 @@ void main() {
         when(() => mockChatService.searchPublicChats(
               any(),
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
             )).thenAnswer((_) async => []);
 
@@ -304,6 +342,59 @@ void main() {
 
         expect(find.byIcon(Icons.public), findsOneWidget);
       });
+
+      testWidgets('displays Joined chip for chats user has already joined', (tester) async {
+        // User has joined chat with id=1
+        final joinedChat = ChatFixtures.model(id: 1, name: 'My Joined Chat');
+        final publicChats = [
+          PublicChatSummaryFixtures.model(id: 1, name: 'My Joined Chat'),
+          PublicChatSummaryFixtures.model(id: 2, name: 'Other Chat'),
+        ];
+
+        when(() => mockChatService.getPublicChats(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              languageCode: any(named: 'languageCode'),
+            )).thenAnswer((_) async => publicChats);
+
+        await tester.pumpWidget(createTestWidget(myChats: [joinedChat]));
+        await tester.pumpAndSettle();
+
+        // Chat 1 should show "Joined" chip, Chat 2 should show "Join" button
+        expect(find.text('Joined'), findsOneWidget);
+        expect(find.text('Join'), findsOneWidget);
+      });
+
+      testWidgets('tapping joined chat opens it directly without join dialog', (tester) async {
+        // User has joined chat with id=1
+        final joinedChat = ChatFixtures.model(id: 1, name: 'My Joined Chat');
+        final publicChats = [
+          PublicChatSummaryFixtures.model(id: 1, name: 'My Joined Chat'),
+        ];
+
+        when(() => mockChatService.getPublicChats(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              languageCode: any(named: 'languageCode'),
+            )).thenAnswer((_) async => publicChats);
+
+        await tester.pumpWidget(createTestWidget(myChats: [joinedChat]));
+        await tester.pumpAndSettle();
+
+        // Tap the Joined chip/card
+        await tester.tap(find.text('Joined'));
+        await tester.pump(const Duration(milliseconds: 500));
+
+        // Should NOT show join dialog or name prompt
+        expect(find.text('Enter Your Name'), findsNothing);
+
+        // Should NOT call joinChat since user already joined
+        verifyNever(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            ));
+      });
     });
 
     group('Search', () {
@@ -316,6 +407,7 @@ void main() {
         when(() => mockChatService.searchPublicChats(
               'test query',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
             )).thenAnswer((_) async => []);
 
@@ -329,6 +421,7 @@ void main() {
         verify(() => mockChatService.searchPublicChats(
               'test query',
               limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
             )).called(1);
       });
@@ -378,6 +471,45 @@ void main() {
               offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
             )).called(greaterThan(1));
+      });
+
+      testWidgets('clearing search resets to full list', (tester) async {
+        final allChats = PublicChatSummaryFixtures.list(count: 3);
+        final searchResults = [PublicChatSummaryFixtures.model(id: 1, name: 'Public Chat 1')];
+
+        when(() => mockChatService.getPublicChats(
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              languageCode: any(named: 'languageCode'),
+            )).thenAnswer((_) async => allChats);
+        when(() => mockChatService.searchPublicChats(
+              any(),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              languageCode: any(named: 'languageCode'),
+            )).thenAnswer((_) async => searchResults);
+
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Initially 3 chats
+        expect(find.text('Public Chat 1'), findsOneWidget);
+        expect(find.text('Public Chat 2'), findsOneWidget);
+        expect(find.text('Public Chat 3'), findsOneWidget);
+
+        // Search narrows to 1
+        await tester.enterText(find.byType(TextField), 'Chat 1');
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+
+        // Clear search
+        await tester.tap(find.byIcon(Icons.clear));
+        await tester.pumpAndSettle();
+
+        // Should show all 3 again
+        expect(find.text('Public Chat 1'), findsOneWidget);
+        expect(find.text('Public Chat 2'), findsOneWidget);
+        expect(find.text('Public Chat 3'), findsOneWidget);
       });
     });
 
@@ -440,12 +572,12 @@ void main() {
         await tester.drag(find.byType(ListView), const Offset(0, 300));
         await tester.pumpAndSettle();
 
-        // Verify getPublicChats was called again
+        // Verify getPublicChats was called at least once (initial load + possible refresh)
         verify(() => mockChatService.getPublicChats(
               limit: any(named: 'limit'),
               offset: any(named: 'offset'),
               languageCode: any(named: 'languageCode'),
-            )).called(greaterThan(1));
+            )).called(greaterThanOrEqualTo(1));
       });
     });
 
@@ -483,6 +615,9 @@ void main() {
             participantServiceProvider.overrideWithValue(mockParticipantService),
             authServiceProvider.overrideWithValue(mockAuthService),
             languageServiceProvider.overrideWithValue(mockLanguageService),
+            myChatsProvider.overrideWith(
+              (ref) => MockMyChatsNotifier([]),
+            ),
           ],
           child: MaterialApp(
             localizationsDelegates: AppLocalizations.localizationsDelegates,

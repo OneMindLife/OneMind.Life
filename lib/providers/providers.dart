@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/l10n/locale_provider.dart';
+import '../screens/home_tour/models/home_tour_state.dart';
+import '../screens/home_tour/notifiers/home_tour_notifier.dart';
 import '../services/services.dart';
 import '../services/analytics_service.dart';
 import '../services/tutorial_service.dart';
@@ -92,6 +94,21 @@ final tutorialServiceProvider = Provider<TutorialService>((ref) {
 final hasCompletedTutorialProvider = Provider<bool>((ref) {
   return ref.watch(tutorialServiceProvider).hasCompletedTutorial;
 });
+
+// =============================================================================
+// HOME TOUR
+// =============================================================================
+
+/// Check if user has completed the home screen tour
+final hasCompletedHomeTourProvider = Provider<bool>((ref) {
+  return ref.watch(tutorialServiceProvider).hasCompletedHomeTour;
+});
+
+/// Home tour step notifier — auto-disposed after tour completes
+final homeTourNotifierProvider =
+    StateNotifierProvider.autoDispose<HomeTourNotifier, HomeTourState>(
+  (ref) => HomeTourNotifier(),
+);
 
 // =============================================================================
 // JOIN FLOW TRACKING

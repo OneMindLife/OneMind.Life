@@ -179,23 +179,23 @@ void main() {
         expect(find.text('OneMind'), findsOneWidget);
       });
 
-      // Hidden for MVP
-      // testWidgets('displays Discover button', (tester) async {
-      //   await tester.pumpWidget(createTestWidget());
-      //   await tester.pumpAndSettle();
-
-      //   // Explore icon appears in both app bar and empty state
-      //   expect(find.byIcon(Icons.explore), findsAtLeastNWidgets(1));
-      //   expect(find.byTooltip('Discover'), findsOneWidget);
-      // });
-
-      testWidgets('displays SpeedDial FAB', (tester) async {
+      testWidgets('displays Explore button', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        // SpeedDial FAB should be visible
-        expect(find.byKey(const Key('chat-speed-dial')), findsOneWidget);
+        expect(find.byKey(const Key('explore-button')), findsOneWidget);
+        expect(find.byIcon(Icons.explore), findsOneWidget);
       });
+
+      testWidgets('displays Create Chat FAB', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Simple FAB should be visible
+        expect(find.byKey(const Key('create-chat-fab')), findsOneWidget);
+        expect(find.byType(FloatingActionButton), findsOneWidget);
+      });
+
     });
 
     group('Empty State', () {
@@ -207,68 +207,14 @@ void main() {
         expect(find.byIcon(Icons.chat_bubble_outline), findsAtLeastNWidgets(1));
       });
 
-      // Hidden for MVP
-      // testWidgets('empty state shows Discover Public Chats button', (tester) async {
-      //   await tester.pumpWidget(createTestWidget(chats: []));
-      //   await tester.pumpAndSettle();
-
-      //   expect(find.text('Discover Public Chats'), findsOneWidget);
-      //   expect(find.byIcon(Icons.explore), findsAtLeastNWidgets(1));
-      // });
-
-      // Join with Code button removed from empty state - now in SpeedDial FAB
-
       testWidgets('empty state shows correct description', (tester) async {
         await tester.pumpWidget(createTestWidget(chats: []));
         await tester.pumpAndSettle();
 
         expect(
-          find.text('Discover public chats, join with a code, or create your own'),
+          find.text('Search for public chats above, or tap + to create your own.'),
           findsOneWidget,
         );
-      });
-    });
-
-    group('Navigation', () {
-      // Hidden for MVP
-      // testWidgets('Discover button navigates to Discover screen', (tester) async {
-      //   await tester.pumpWidget(createTestWidget());
-      //   await tester.pumpAndSettle();
-
-      //   // Tap Discover button in app bar
-      //   await tester.tap(find.byIcon(Icons.explore).first);
-      //   await tester.pumpAndSettle();
-
-      //   // Verify we navigated to Discover screen
-      //   expect(find.text('Discover Chats'), findsOneWidget);
-      // });
-
-      // testWidgets('Discover Public Chats button in empty state navigates', (tester) async {
-      //   await tester.pumpWidget(createTestWidget(chats: []));
-      //   await tester.pumpAndSettle();
-
-      //   // Tap Discover button in empty state
-      //   await tester.tap(find.text('Discover Public Chats'));
-      //   await tester.pumpAndSettle();
-
-      //   // Verify we navigated to Discover screen
-      //   expect(find.text('Discover Chats'), findsOneWidget);
-      // });
-
-      testWidgets('Join with Code opens via SpeedDial FAB', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        // Tap SpeedDial FAB to open it
-        await tester.tap(find.byKey(const Key('chat-speed-dial')));
-        await tester.pumpAndSettle();
-
-        // Tap Join option
-        await tester.tap(find.byKey(const Key('join-chat-fab')));
-        await tester.pumpAndSettle();
-
-        // Verify join dialog is shown
-        expect(find.text('Join Chat'), findsOneWidget);
       });
     });
 
@@ -305,7 +251,7 @@ void main() {
         expect(find.text('My Regular Chat'), findsOneWidget);
       });
 
-      testWidgets('shows empty state when only official chat exists', (tester) async {
+      testWidgets('displays official chat when it is the only chat', (tester) async {
         final officialChat = Chat.fromJson(ChatFixtures.json(
           id: 1,
           name: 'Official OneMind Chat',
@@ -318,27 +264,69 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Official chat should appear in its section
+        // Official chat should appear
         expect(find.text('Official OneMind Chat'), findsOneWidget);
+      });
+    });
 
-        // Should show empty state message in Your Chats since official is filtered
-        // When no pending requests, shows "No chats yet" empty state
-        expect(find.text('No chats yet'), findsOneWidget);
+    group('Search', () {
+      testWidgets('search bar filters chats by name', (tester) async {
+        final chat1 = ChatFixtures.model(id: 1, name: 'Alpha Chat');
+        final chat2 = ChatFixtures.model(id: 2, name: 'Beta Chat');
+        final chat3 = ChatFixtures.model(id: 3, name: 'Alpha Group');
+
+        await tester.pumpWidget(createTestWidget(chats: [chat1, chat2, chat3]));
+        await tester.pumpAndSettle();
+
+        // All chats visible initially
+        expect(find.text('Alpha Chat'), findsOneWidget);
+        expect(find.text('Beta Chat'), findsOneWidget);
+        expect(find.text('Alpha Group'), findsOneWidget);
+
+        // Type search query
+        await tester.enterText(find.byType(TextField), 'Alpha');
+        await tester.pumpAndSettle();
+
+        // Only matching chats visible
+        expect(find.text('Alpha Chat'), findsOneWidget);
+        expect(find.text('Alpha Group'), findsOneWidget);
+        expect(find.text('Beta Chat'), findsNothing);
+      });
+
+      testWidgets('search shows no results message when no match', (tester) async {
+        final chat1 = ChatFixtures.model(id: 1, name: 'Alpha Chat');
+
+        await tester.pumpWidget(createTestWidget(chats: [chat1]));
+        await tester.pumpAndSettle();
+
+        // Search for something that doesn't match
+        await tester.enterText(find.byType(TextField), 'Nonexistent');
+        await tester.pumpAndSettle();
+
+        expect(find.text('No matching chats'), findsOneWidget);
+      });
+
+      testWidgets('typing 6-char code shows invite code banner', (tester) async {
+        await tester.pumpWidget(createTestWidget(chats: []));
+        await tester.pumpAndSettle();
+
+        // Type a 6-character alphanumeric code
+        await tester.enterText(find.byType(TextField), 'ABC123');
+        await tester.pumpAndSettle();
+
+        // Should show invite code banner
+        expect(find.textContaining('Join with invite code'), findsOneWidget);
+        expect(find.byIcon(Icons.vpn_key), findsOneWidget);
       });
     });
 
     group('Accessibility', () {
-      // Hidden for MVP
-      // testWidgets('Discover button has semantic label', (tester) async {
-      //   await tester.pumpWidget(createTestWidget());
-      //   await tester.pumpAndSettle();
+      testWidgets('Explore button has tooltip', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
 
-      //   // Find the Semantics widget wrapping the Discover button
-      //   final semantics = find.bySemanticsLabel('Discover public chats');
-      //   expect(semantics, findsOneWidget);
-      // });
-
-      // Join button semantic label test removed - now part of SpeedDial FAB
+        expect(find.byTooltip('Discover Chats'), findsOneWidget);
+      });
     });
   });
 }

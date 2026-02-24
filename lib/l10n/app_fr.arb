@@ -9,6 +9,7 @@
   "joinAnExistingChatWithInviteCode": "Rejoindre un chat existant avec un code d'invitation",
   "joinChat": "Rejoindre le Chat",
   "join": "Rejoindre",
+  "joined": "Rejoint",
   "findChat": "Trouver un Chat",
   "requestToJoin": "Demander a Rejoindre",
   "createChat": "Creer un Chat",
@@ -28,7 +29,6 @@
   "clear": "Effacer",
   "done": "Termine",
   "save": "Enregistrer",
-  "officialOneMind": "OneMind Officiel",
   "official": "OFFICIEL",
   "pending": "EN ATTENTE",
   "pendingRequests": "Demandes en Attente",
@@ -47,7 +47,7 @@
   "waitingForHostApproval": "En attente de l'approbation de l'hote",
   "hostApprovalRequired": "L'hote doit approuver chaque demande",
   "noChatsYet": "Aucun chat pour l'instant",
-  "discoverPublicChatsJoinOrCreate": "Decouvrez des chats publics, rejoignez avec un code ou creez le votre",
+  "discoverPublicChatsJoinOrCreate": "Recherchez des chats publics ci-dessus, ou appuyez sur + pour creer le votre.",
   "discoverPublicChatsButton": "Decouvrir les Chats Publics",
   "noActiveChatsYet": "Aucun chat actif pour l'instant. Vos chats approuves apparaitront ici.",
   "loadingChats": "Chargement des chats",
@@ -1020,7 +1020,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialAddedToChat": "C'est maintenant ajoute au chat ci-dessus.",
+  "tutorialAddedToChat": "Vous avez egalement ete automatiquement ajoute au chat Officiel OneMind, ou tout le monde discute de sujets ensemble.",
   "tutorialFinishButton": "Terminer le Tutoriel",
   "tutorialRound1Result": "'Succès' a gagné ce tour ! Mais ce n'est pas encore définitif. Il doit gagner le prochain tour pour être ajouté définitivement au chat de groupe.",
   "tutorialProposingHint": "Soumettez une idee que vous voulez voir devenir la reponse du groupe.",
@@ -1169,5 +1169,49 @@
 
   "enterTaskResult": "Enter task result...",
   "submitResult": "Submit Result",
-  "taskResultSubmitted": "Task result submitted"
+  "taskResultSubmitted": "Task result submitted",
+
+  "homeTourPendingRequestTitle": "Demandes en Attente",
+  "homeTourPendingRequestDesc": "Quand vous demandez a rejoindre un chat, l'hote examine votre demande. Vous la verrez ici avec un badge 'En attente' jusqu'a approbation.",
+  "homeTourYourChatsTitle": "Vos Chats",
+  "homeTourYourChatsDesc": "Une fois approuve, vos chats apparaissent ici. Appuyez sur un chat pour commencer a proposer des idees et evaluer!",
+  "homeTourCreateFabTitle": "Creer un Chat",
+  "homeTourCreateFabDesc": "Appuyez sur + pour creer votre propre chat. Choisissez le sujet, invitez des amis et construisez un consensus ensemble.",
+  "homeTourDemoTitle": "Essayer la Démo",
+  "homeTourDemoDesc": "Vous voulez voir comment fonctionne le vote ? Appuyez ici pour essayer une démo interactive rapide.",
+  "homeTourHowItWorksTitle": "Comment ça Marche",
+  "homeTourHowItWorksDesc": "Besoin d'un rappel ? Appuyez ici pour revoir le tutoriel à tout moment.",
+  "homeTourLegalDocsTitle": "Documents Légaux",
+  "homeTourLegalDocsDesc": "Consultez la Politique de Confidentialité et les Conditions d'Utilisation ici.",
+  "searchOrJoinWithCode": "Rechercher des chats ou entrer un code d'invitation...",
+  "searchYourChatsOrJoinWithCode": "Rechercher vos chats ou entrer un code d'invitation...",
+  "noMatchingChats": "Aucun chat correspondant",
+  "inviteCodeDetected": "Rejoindre avec le code d'invitation : {code}",
+  "@inviteCodeDetected": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "wizardVisibilityTitle": "Qui peut rejoindre ?",
+  "wizardVisibilitySubtitle": "Choisissez qui peut trouver et rejoindre votre chat",
+  "wizardVisibilityPublicTitle": "Public",
+  "wizardVisibilityPublicDesc": "Tout le monde peut decouvrir et rejoindre ce chat",
+  "wizardVisibilityPrivateTitle": "Prive",
+  "wizardVisibilityPrivateDesc": "Seules les personnes avec le code d'invitation peuvent rejoindre",
+  "homeTourSearchBarTitle": "Rechercher Vos Chats",
+  "homeTourSearchBarDesc": "Filtrez vos chats par nom, ou entrez un code d'invitation de 6 caracteres pour rejoindre un chat prive.",
+  "homeTourExploreButtonTitle": "Explorer les Chats Publics",
+  "homeTourExploreButtonDesc": "Appuyez ici pour decouvrir et rejoindre des chats publics crees par d'autres utilisateurs.",
+  "homeTourLanguageSelectorTitle": "Changer la Langue",
+  "homeTourLanguageSelectorDesc": "Appuyez ici pour changer la langue de l'application. OneMind est disponible en anglais, espagnol, portugais, francais et allemand.",
+  "homeTourSkip": "Passer la visite",
+  "homeTourNext": "Suivant",
+  "homeTourFinish": "Compris!",
+  "homeTourStepOf": "Etape {current} sur {total}",
+  "@homeTourStepOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  }
 }

@@ -12,6 +12,7 @@
   "joinAnExistingChatWithInviteCode": "Join an existing chat with invite code",
   "joinChat": "Join Chat",
   "join": "Join",
+  "joined": "Joined",
   "findChat": "Find Chat",
   "requestToJoin": "Request to Join",
 
@@ -34,7 +35,6 @@
   "done": "Done",
   "save": "Save",
 
-  "officialOneMind": "Official OneMind",
   "official": "OFFICIAL",
   "pending": "PENDING",
   "pendingRequests": "Pending Requests",
@@ -53,7 +53,7 @@
   "hostApprovalRequired": "Host approval required to join",
 
   "noChatsYet": "No chats yet",
-  "discoverPublicChatsJoinOrCreate": "Discover public chats, join with a code, or create your own",
+  "discoverPublicChatsJoinOrCreate": "Search for public chats above, or tap + to create your own.",
   "discoverPublicChatsButton": "Discover Public Chats",
   "noActiveChatsYet": "No active chats yet. Your approved chats will appear here.",
 
@@ -977,7 +977,7 @@
       "proposition": {"type": "String"}
     }
   },
-  "tutorialAddedToChat": "It's now added to the chat above.",
+  "tutorialAddedToChat": "You've also been automatically added to the Official OneMind chat, where everyone discusses topics together.",
   "tutorialFinishButton": "Finish Tutorial",
   "tutorialRound1Result": "'Success' won this round! But it's still not final. It must win the next round to be permanently added to the groupchat.",
   "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
@@ -1191,5 +1191,49 @@
 
   "enterTaskResult": "Enter task result...",
   "submitResult": "Submit Result",
-  "taskResultSubmitted": "Task result submitted"
+  "taskResultSubmitted": "Task result submitted",
+
+  "homeTourPendingRequestTitle": "Pending Requests",
+  "homeTourPendingRequestDesc": "When you request to join a chat, the host reviews your request. You'll see it here with a 'Pending' badge until they approve.",
+  "homeTourYourChatsTitle": "Your Chats",
+  "homeTourYourChatsDesc": "Once approved, your chats appear here. Tap any chat to start proposing ideas and rating!",
+  "homeTourCreateFabTitle": "Create a Chat",
+  "homeTourCreateFabDesc": "Tap + to create your own chat. You choose the topic, invite friends, and build consensus together.",
+  "homeTourDemoTitle": "Try the Demo",
+  "homeTourDemoDesc": "Want to see how voting works? Tap here to try a quick interactive demo.",
+  "homeTourHowItWorksTitle": "How It Works",
+  "homeTourHowItWorksDesc": "Need a refresher? Tap here to replay the tutorial anytime.",
+  "homeTourLegalDocsTitle": "Legal Documents",
+  "homeTourLegalDocsDesc": "View the Privacy Policy and Terms of Service here.",
+  "searchOrJoinWithCode": "Search chats or enter invite code...",
+  "searchYourChatsOrJoinWithCode": "Search your chats or enter invite code...",
+  "noMatchingChats": "No matching chats",
+  "inviteCodeDetected": "Join with invite code: {code}",
+  "@inviteCodeDetected": {
+    "placeholders": {
+      "code": {"type": "String"}
+    }
+  },
+  "wizardVisibilityTitle": "Who can join?",
+  "wizardVisibilitySubtitle": "Choose who can find and join your chat",
+  "wizardVisibilityPublicTitle": "Public",
+  "wizardVisibilityPublicDesc": "Anyone can discover and join this chat",
+  "wizardVisibilityPrivateTitle": "Private",
+  "wizardVisibilityPrivateDesc": "Only people with the invite code can join",
+  "homeTourSearchBarTitle": "Search Your Chats",
+  "homeTourSearchBarDesc": "Filter your chats by name, or enter a 6-character invite code to join a private chat.",
+  "homeTourExploreButtonTitle": "Explore Public Chats",
+  "homeTourExploreButtonDesc": "Tap here to discover and join public chats created by other users.",
+  "homeTourLanguageSelectorTitle": "Change Language",
+  "homeTourLanguageSelectorDesc": "Tap here to switch the app language. OneMind is available in English, Spanish, Portuguese, French, and German.",
+  "homeTourSkip": "Skip tour",
+  "homeTourNext": "Next",
+  "homeTourFinish": "Got it!",
+  "homeTourStepOf": "Step {current} of {total}",
+  "@homeTourStepOf": {
+    "placeholders": {
+      "current": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  }
 }

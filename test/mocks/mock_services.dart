@@ -87,13 +87,17 @@ extension MockChatServiceSetup on MockChatService {
     when(() => getPublicChats(
           limit: any(named: 'limit'),
           offset: any(named: 'offset'),
+          languageCode: any(named: 'languageCode'),
         )).thenAnswer((_) async => chats);
   }
 
   /// Setup searchPublicChats
   void setupSearchPublicChats(String query, List<PublicChatSummary> chats) {
-    when(() => searchPublicChats(query, limit: any(named: 'limit')))
-        .thenAnswer((_) async => chats);
+    when(() => searchPublicChats(query,
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          languageCode: any(named: 'languageCode'),
+        )).thenAnswer((_) async => chats);
   }
 
   /// Setup getCurrentCycle

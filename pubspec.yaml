@@ -74,7 +74,6 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_analytics: ^11.4.1
   sentry_flutter: ^9.9.2
-  flutter_speed_dial: ^7.0.0
 
   # YouTube embed
   youtube_player_iframe: ^5.1.7
