@@ -80,6 +80,7 @@ dependencies:
 
   # Web SEO (tree-shaken on mobile via conditional import)
   web: ^1.1.0
+  google_fonts: ^8.0.2
 
 dev_dependencies:
   flutter_test:
