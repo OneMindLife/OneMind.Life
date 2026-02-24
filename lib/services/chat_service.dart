@@ -49,11 +49,7 @@ class ChatService {
         },
       );
 
-      final chats = (response as List).map((json) => Chat.fromJson(json)).toList();
-      for (final c in chats) {
-        print('[DEBUG getMyChats] id=${c.id} name="${c.name}" (translated)');
-      }
-      return chats;
+      return (response as List).map((json) => Chat.fromJson(json)).toList();
     }
 
     // Default: no translations
@@ -65,11 +61,7 @@ class ChatService {
         .eq('is_active', true)
         .order('last_activity_at', ascending: false);
 
-    final chats = (response as List).map((json) => Chat.fromJson(json)).toList();
-    for (final c in chats) {
-      print('[DEBUG getMyChats] id=${c.id} name="${c.name}" (no translation)');
-    }
-    return chats;
+    return (response as List).map((json) => Chat.fromJson(json)).toList();
   }
 
   /// Get the official OneMind chat.
@@ -279,9 +271,7 @@ class ChatService {
 
       final list = response as List;
       if (list.isEmpty) return null;
-      final chat = Chat.fromJson(list.first);
-      print('[DEBUG getChatById] id=$id lang=$languageCode name="${chat.name}" initialMessage="${chat.initialMessage?.substring(0, chat.initialMessage!.length.clamp(0, 60))}"');
-      return chat;
+      return Chat.fromJson(list.first);
     }
 
     // Default: no translations
@@ -289,11 +279,8 @@ class ChatService {
         await _client.from('chats').select().eq('id', id).maybeSingle();
 
     if (response != null) {
-      final chat = Chat.fromJson(response);
-      print('[DEBUG getChatById] id=$id (no lang) name="${chat.name}" initialMessage="${chat.initialMessage?.substring(0, chat.initialMessage!.length.clamp(0, 60))}"');
-      return chat;
+      return Chat.fromJson(response);
     }
-    print('[DEBUG getChatById] id=$id returned null');
     return null;
   }
 
@@ -343,6 +330,9 @@ class ChatService {
     DateTime? scheduledStartAt,
     List<ScheduleWindow>? scheduleWindows,
     bool visibleOutsideSchedule = true,
+    // Translation settings (set at creation, not editable after)
+    bool translationsEnabled = false,
+    List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
@@ -405,6 +395,8 @@ class ChatService {
       'adaptive_adjustment_percent': adaptiveAdjustmentPercent,
       'min_phase_duration_seconds': minPhaseDurationSeconds,
       'max_phase_duration_seconds': maxPhaseDurationSeconds,
+      'translations_enabled': translationsEnabled,
+      'translation_languages': translationLanguages,
     };
 
     // Add optional initial message if provided
@@ -426,7 +418,6 @@ class ChatService {
     }
 
     final response = await _client.from('chats').insert(insertData).select().single();
-
     final chat = Chat.fromJson(response);
 
     // NOTE: Translation is now triggered automatically by database trigger

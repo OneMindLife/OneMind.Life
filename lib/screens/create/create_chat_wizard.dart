@@ -14,6 +14,7 @@ import 'widgets/wizard_step_host_name.dart';
 import 'widgets/wizard_step_indicator.dart';
 import 'widgets/wizard_step_question.dart';
 import 'widgets/wizard_step_timing.dart';
+import 'widgets/wizard_step_translations.dart';
 import 'widgets/wizard_step_visibility.dart';
 
 /// Multi-step wizard for creating a new chat.
@@ -66,16 +67,35 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
       state.AdaptiveDurationSettings.defaults();
   state.ScheduleSettings _scheduleSettings = state.ScheduleSettings.defaults();
   state.AgentSettings _agentSettings = state.AgentSettings.defaults();
+  state.TranslationSettings _translationSettings = state.TranslationSettings.defaults();
   final state.ConsensusSettings _consensusSettings =
       state.ConsensusSettings.defaults();
 
   bool _isLoading = false;
+  bool _translationLanguageInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _detectTimezone();
     _loadHostDisplayName();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_translationLanguageInitialized) {
+      _translationLanguageInitialized = true;
+      final locale = Localizations.localeOf(context);
+      final langCode = locale.languageCode;
+      // Use user's locale if it's one of our supported languages
+      const supported = {'en', 'es', 'pt', 'fr', 'de'};
+      final defaultLang = supported.contains(langCode) ? langCode : 'en';
+      _translationSettings = state.TranslationSettings(
+        enabled: false,
+        languages: {defaultLang},
+      );
+    }
   }
 
   void _loadHostDisplayName() {
@@ -114,7 +134,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
-  int get _totalSteps => _needsHostName ? 5 : 4;
+  int get _totalSteps => _needsHostName ? 6 : 5;
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
@@ -259,6 +279,8 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                 .toList()
             : null,
         visibleOutsideSchedule: _scheduleSettings.visibleOutsideSchedule,
+        translationsEnabled: _translationSettings.enabled,
+        translationLanguages: _translationSettings.languages.toList(),
       );
 
       // Join as host
@@ -303,11 +325,14 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
           },
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('[CreateChatWizard] Error creating chat: $e');
-      debugPrint('[CreateChatWizard] Stack trace: $stackTrace');
+    } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     } finally {
       if (mounted) {
@@ -360,7 +385,17 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onContinue: _nextStep,
                   ),
 
-                  // Step 3: Set the Pace (timers)
+                  // Step 3: Translations
+                  WizardStepTranslations(
+                    translationSettings: _translationSettings,
+                    onTranslationSettingsChanged: (settings) {
+                      setState(() => _translationSettings = settings);
+                    },
+                    onBack: _previousStep,
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 4: Set the Pace (timers)
                   WizardStepTiming(
                     timerSettings: _timerSettings,
                     onTimerSettingsChanged: (settings) {

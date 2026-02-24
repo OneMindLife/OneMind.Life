@@ -330,6 +330,39 @@ class AgentSettings extends Equatable {
       ];
 }
 
+/// Translation settings for a chat (set at creation, not editable after).
+/// enabled=false means single-language (no translations).
+/// enabled=true means multi-language (auto-translations between selected languages).
+class TranslationSettings extends Equatable {
+  final bool enabled;
+  final Set<String> languages;
+
+  const TranslationSettings({
+    required this.enabled,
+    required this.languages,
+  });
+
+  /// Defaults to single-language mode with English.
+  /// The wizard overrides the language to the user's locale.
+  factory TranslationSettings.defaults() => const TranslationSettings(
+        enabled: false,
+        languages: {'en'},
+      );
+
+  TranslationSettings copyWith({
+    bool? enabled,
+    Set<String>? languages,
+  }) {
+    return TranslationSettings(
+      enabled: enabled ?? this.enabled,
+      languages: languages ?? this.languages,
+    );
+  }
+
+  @override
+  List<Object?> get props => [enabled, languages];
+}
+
 /// Consensus and results settings
 class ConsensusSettings extends Equatable {
   final int confirmationRoundsRequired;

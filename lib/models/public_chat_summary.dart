@@ -24,6 +24,9 @@ class PublicChatSummary extends Equatable {
   /// The language code of the translation, or 'original' if no translation
   final String? translationLanguage;
 
+  /// The languages configured for this chat
+  final List<String> translationLanguages;
+
   const PublicChatSummary({
     required this.id,
     required this.name,
@@ -36,6 +39,7 @@ class PublicChatSummary extends Equatable {
     this.descriptionTranslated,
     this.initialMessageTranslated,
     this.translationLanguage,
+    this.translationLanguages = const ['en'],
   });
 
   factory PublicChatSummary.fromJson(Map<String, dynamic> json) {
@@ -53,6 +57,10 @@ class PublicChatSummary extends Equatable {
       descriptionTranslated: json['description_translated'] as String?,
       initialMessageTranslated: json['initial_message_translated'] as String?,
       translationLanguage: json['translation_language'] as String?,
+      translationLanguages: (json['translation_languages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const ['en'],
     );
   }
 
@@ -82,5 +90,6 @@ class PublicChatSummary extends Equatable {
         descriptionTranslated,
         initialMessageTranslated,
         translationLanguage,
+        translationLanguages,
       ];
 }

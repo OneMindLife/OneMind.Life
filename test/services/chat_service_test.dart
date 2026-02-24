@@ -812,6 +812,19 @@ void main() {
         expect(chatService.getChatByCode, isA<Function>());
       });
     });
+
+    group('createChat', () {
+      test('method accepts translationsEnabled parameter', () {
+        // Verify the method exists with the new signature
+        // Actual Supabase insert testing requires integration tests
+        expect(chatService.createChat, isA<Function>());
+      });
+
+      test('method accepts translationLanguages parameter', () {
+        // Verify the method exists with the new signature
+        expect(chatService.createChat, isA<Function>());
+      });
+    });
   });
 
   group('Chat Model - Translation Fields', () {

@@ -1213,5 +1213,19 @@
       "current": {"type": "int"},
       "total": {"type": "int"}
     }
-  }
+  },
+
+  "wizardTranslationsTitle": "Langues",
+  "wizardTranslationsSubtitle": "Choisissez les langues prises en charge par ce chat",
+  "singleLanguageToggle": "Langue unique",
+  "singleLanguageDesc": "Tout le monde participe dans une seule langue",
+  "multiLanguageDesc": "Les propositions sont automatiquement traduites entre les langues",
+  "chatLanguageLabel": "Langue du chat",
+  "selectLanguages": "Langues prises en charge :",
+  "autoTranslateHint": "Les propositions seront automatiquement traduites entre toutes les langues selectionnees",
+  "translationsSection": "Langues",
+  "translationLanguagesLabel": "Langues",
+  "autoTranslateLabel": "Traduction automatique",
+
+  "chatAutoTranslated": "Traduit automatiquement"
 }

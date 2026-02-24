@@ -1235,5 +1235,19 @@
       "current": {"type": "int"},
       "total": {"type": "int"}
     }
-  }
+  },
+
+  "wizardTranslationsTitle": "Languages",
+  "wizardTranslationsSubtitle": "Choose what languages this chat supports",
+  "singleLanguageToggle": "Single language",
+  "singleLanguageDesc": "Everyone participates in one language",
+  "multiLanguageDesc": "Propositions are automatically translated between languages",
+  "chatLanguageLabel": "Chat language",
+  "selectLanguages": "Supported languages:",
+  "autoTranslateHint": "Propositions will be automatically translated between all selected languages",
+  "translationsSection": "Languages",
+  "translationLanguagesLabel": "Languages",
+  "autoTranslateLabel": "Auto-translate",
+
+  "chatAutoTranslated": "Auto-translated"
 }

@@ -27,7 +27,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get joinWithCode => 'Mit Code Beitreten';
 
   @override
-  String get joinAnExistingChatWithInviteCode => 'Einem bestehenden Chat mit Einladungscode beitreten';
+  String get joinAnExistingChatWithInviteCode =>
+      'Einem bestehenden Chat mit Einladungscode beitreten';
 
   @override
   String get joinChat => 'Chat Beitreten';
@@ -131,13 +132,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noChatsYet => 'Noch keine Chats';
 
   @override
-  String get discoverPublicChatsJoinOrCreate => 'Suche oben nach oeffentlichen Chats, oder tippe auf + um deinen eigenen zu erstellen.';
+  String get discoverPublicChatsJoinOrCreate =>
+      'Suche oben nach oeffentlichen Chats, oder tippe auf + um deinen eigenen zu erstellen.';
 
   @override
   String get discoverPublicChatsButton => 'Oeffentliche Chats Entdecken';
 
   @override
-  String get noActiveChatsYet => 'Noch keine aktiven Chats. Deine genehmigten Chats erscheinen hier.';
+  String get noActiveChatsYet =>
+      'Noch keine aktiven Chats. Deine genehmigten Chats erscheinen hier.';
 
   @override
   String get loadingChats => 'Chats werden geladen';
@@ -174,7 +177,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get thisChatsRequiresInvite => 'Dieser Chat erfordert eine Einladung';
 
   @override
-  String get enterEmailForInvite => 'Gib die E-Mail ein, an die deine Einladung gesendet wurde:';
+  String get enterEmailForInvite =>
+      'Gib die E-Mail ein, an die deine Einladung gesendet wurde:';
 
   @override
   String get yourEmailHint => 'deine@email.de';
@@ -186,10 +190,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get pleaseEnterValidEmail => 'Bitte gib eine gueltige E-Mail ein';
 
   @override
-  String get noInviteFoundForEmail => 'Keine Einladung fuer diese E-Mail gefunden';
+  String get noInviteFoundForEmail =>
+      'Keine Einladung fuer diese E-Mail gefunden';
 
   @override
-  String get failedToValidateInvite => 'Fehler bei der Validierung der Einladung';
+  String get failedToValidateInvite =>
+      'Fehler bei der Validierung der Einladung';
 
   @override
   String get pleaseVerifyEmailFirst => 'Bitte verifiziere zuerst deine E-Mail';
@@ -224,13 +230,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get yourDisplayName => 'Dein Anzeigename';
 
   @override
-  String get yourNameVisibleToAll => 'Dein Name wird allen Teilnehmern angezeigt';
+  String get yourNameVisibleToAll =>
+      'Dein Name wird allen Teilnehmern angezeigt';
 
   @override
   String get usingSavedName => 'Verwende deinen gespeicherten Namen';
 
   @override
-  String get joinRequestSent => 'Anfrage gesendet. Warte auf Genehmigung des Gastgebers.';
+  String get joinRequestSent =>
+      'Anfrage gesendet. Warte auf Genehmigung des Gastgebers.';
 
   @override
   String get searchPublicChats => 'Oeffentliche Chats suchen...';
@@ -303,10 +311,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noInvitesSent => 'Keine Einladungen gesendet';
 
   @override
-  String get onlyInvitedUsersCanJoin => 'Nur eingeladene Benutzer koennen diesem Chat beitreten.';
+  String get onlyInvitedUsersCanJoin =>
+      'Nur eingeladene Benutzer koennen diesem Chat beitreten.';
 
   @override
-  String get shareCodeWithParticipants => 'Teile diesen Code mit den Teilnehmern:';
+  String get shareCodeWithParticipants =>
+      'Teile diesen Code mit den Teilnehmern:';
 
   @override
   String get inviteCodeCopied => 'Einladungscode kopiert';
@@ -318,7 +328,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get showQrCode => 'QR-Code Anzeigen';
 
   @override
-  String get addEmailForInviteOnly => 'Fuege mindestens eine E-Mail fuer den Nur-Einladungs-Modus hinzu';
+  String get addEmailForInviteOnly =>
+      'Fuege mindestens eine E-Mail fuer den Nur-Einladungs-Modus hinzu';
 
   @override
   String get emailAlreadyAdded => 'E-Mail bereits hinzugefuegt';
@@ -413,7 +424,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tiedWinNoConsensus => 'Unentschieden (zaehlt nicht fuer Konvergenz)';
+  String get tiedWinNoConsensus =>
+      'Unentschieden (zaehlt nicht fuer Konvergenz)';
 
   @override
   String nWayTie(int count) {
@@ -464,16 +476,19 @@ class AppLocalizationsDe extends AppLocalizations {
   String get waitingForRatingPhase => 'Warte auf Bewertungsphase...';
 
   @override
-  String get endProposingStartRating => 'Vorschlaege Beenden und Bewertung Starten';
+  String get endProposingStartRating =>
+      'Vorschlaege Beenden und Bewertung Starten';
 
   @override
   String get proposingComplete => 'Vorschlaege Abgeschlossen';
 
   @override
-  String get reviewPropositionsStartRating => 'Ueberpruefe die Vorschlaege und starte die Bewertung, wenn du bereit bist.';
+  String get reviewPropositionsStartRating =>
+      'Ueberpruefe die Vorschlaege und starte die Bewertung, wenn du bereit bist.';
 
   @override
-  String get waitingForHostToStartRating => 'Warte auf den Gastgeber zum Starten der Bewertungsphase.';
+  String get waitingForHostToStartRating =>
+      'Warte auf den Gastgeber zum Starten der Bewertungsphase.';
 
   @override
   String get startRatingPhase => 'Bewertungsphase Starten';
@@ -496,7 +511,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get startRating => 'Bewertung Starten';
 
   @override
-  String get endRatingStartNextRound => 'Bewertung Beenden und Naechste Runde Starten';
+  String get endRatingStartNextRound =>
+      'Bewertung Beenden und Naechste Runde Starten';
 
   @override
   String get chatPaused => 'Chat Pausiert';
@@ -505,10 +521,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get chatPausedByHostTitle => 'Chat vom Gastgeber Pausiert';
 
   @override
-  String get timerStoppedTapResume => 'Der Timer ist gestoppt. Tippe auf Fortsetzen in der Leiste, um fortzufahren.';
+  String get timerStoppedTapResume =>
+      'Der Timer ist gestoppt. Tippe auf Fortsetzen in der Leiste, um fortzufahren.';
 
   @override
-  String get hostPausedPleaseWait => 'Der Gastgeber hat diesen Chat pausiert. Bitte warte, bis er fortgesetzt wird.';
+  String get hostPausedPleaseWait =>
+      'Der Gastgeber hat diesen Chat pausiert. Bitte warte, bis er fortgesetzt wird.';
 
   @override
   String get previousWinner => 'Vorheriger Gewinner';
@@ -553,7 +571,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deletePropositionQuestion => 'Vorschlag Loeschen?';
 
   @override
-  String get areYouSureDeleteProposition => 'Bist du sicher, dass du diesen Vorschlag loeschen moechtest?';
+  String get areYouSureDeleteProposition =>
+      'Bist du sicher, dass du diesen Vorschlag loeschen moechtest?';
 
   @override
   String get deleteChatQuestion => 'Chat Loeschen?';
@@ -605,7 +624,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get duplicateProposition => 'Dieser Vorschlag existiert bereits in dieser Runde';
+  String get duplicateProposition =>
+      'Dieser Vorschlag existiert bereits in dieser Runde';
 
   @override
   String failedToStartPhase(String error) {
@@ -669,13 +689,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get noMembersYetShareHint => 'Noch keine anderen Mitglieder. Tippe oben auf den Teilen-Button, um Personen einzuladen.';
+  String get noMembersYetShareHint =>
+      'Noch keine anderen Mitglieder. Tippe oben auf den Teilen-Button, um Personen einzuladen.';
 
   @override
   String get scheduled => 'Geplant';
 
   @override
-  String get chatOutsideSchedule => 'Chat ausserhalb des geplanten Zeitfensters';
+  String get chatOutsideSchedule =>
+      'Chat ausserhalb des geplanten Zeitfensters';
 
   @override
   String nextWindowStarts(String dateTime) {
@@ -689,7 +711,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get scheduledToStart => 'Geplanter Start';
 
   @override
-  String get chatWillAutoStart => 'Der Chat startet automatisch zur geplanten Zeit.';
+  String get chatWillAutoStart =>
+      'Der Chat startet automatisch zur geplanten Zeit.';
 
   @override
   String submittedCount(int submitted, int total) {
@@ -722,7 +745,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get requireAuthentication => 'Authentifizierung erforderlich';
 
   @override
-  String get showPreviousResults => 'Vollstaendige Ergebnisse frueherer Runden anzeigen';
+  String get showPreviousResults =>
+      'Vollstaendige Ergebnisse frueherer Runden anzeigen';
 
   @override
   String get enableAdaptiveDuration => 'Adaptive Dauer aktivieren';
@@ -740,10 +764,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hideWhenOutsideSchedule => 'Ausserhalb des Zeitplans verbergen';
 
   @override
-  String get chatVisibleButPaused => 'Chat sichtbar aber pausiert ausserhalb des Zeitplans';
+  String get chatVisibleButPaused =>
+      'Chat sichtbar aber pausiert ausserhalb des Zeitplans';
 
   @override
-  String get chatHiddenUntilNext => 'Chat verborgen bis zum naechsten geplanten Fenster';
+  String get chatHiddenUntilNext =>
+      'Chat verborgen bis zum naechsten geplanten Fenster';
 
   @override
   String get timezone => 'Zeitzone';
@@ -779,10 +805,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get credits => 'Guthaben';
 
   @override
-  String get refillAmountMustBeGreater => 'Aufladebetrag muss groesser als der Schwellenwert sein';
+  String get refillAmountMustBeGreater =>
+      'Aufladebetrag muss groesser als der Schwellenwert sein';
 
   @override
-  String get autoRefillSettingsUpdated => 'Auto-Aufladeeinstellungen aktualisiert';
+  String get autoRefillSettingsUpdated =>
+      'Auto-Aufladeeinstellungen aktualisiert';
 
   @override
   String get autoRefillEnabled => 'Auto-Aufladung aktiviert';
@@ -814,7 +842,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get hostCanModerateContent => 'Als Gastgeber kannst du Inhalte moderieren. Die Identitaet des Einreichers ist verborgen.';
+  String get hostCanModerateContent =>
+      'Als Gastgeber kannst du Inhalte moderieren. Die Identitaet des Einreichers ist verborgen.';
 
   @override
   String get yourPropositionLabel => '(Dein Vorschlag)';
@@ -823,7 +852,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get previousWinnerLabel => '(Vorheriger Gewinner)';
 
   @override
-  String get cannotBeUndone => 'Diese Aktion kann nicht rueckgaengig gemacht werden.';
+  String get cannotBeUndone =>
+      'Diese Aktion kann nicht rueckgaengig gemacht werden.';
 
   @override
   String deleteChatConfirmation(String chatName) {
@@ -841,10 +871,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get pauseChatConfirmation => 'Dies pausiert den Timer der aktuellen Phase. Teilnehmer sehen, dass der Chat vom Gastgeber pausiert wurde.';
+  String get pauseChatConfirmation =>
+      'Dies pausiert den Timer der aktuellen Phase. Teilnehmer sehen, dass der Chat vom Gastgeber pausiert wurde.';
 
   @override
-  String get approveOrDenyRequests => 'Anfragen zum Beitreten dieses Chats genehmigen oder ablehnen.';
+  String get approveOrDenyRequests =>
+      'Anfragen zum Beitreten dieses Chats genehmigen oder ablehnen.';
 
   @override
   String get signedIn => 'Angemeldet';
@@ -920,7 +952,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get initialMessageHint => 'Das Eroeffnungsthema oder die Frage';
 
   @override
-  String get initialMessageHelperText => 'Teilnehmer wissen, dass du dies geschrieben hast, da du den Chat erstellt hast';
+  String get initialMessageHelperText =>
+      'Teilnehmer wissen, dass du dies geschrieben hast, da du den Chat erstellt hast';
 
   @override
   String get descriptionOptional => 'Beschreibung (Optional)';
@@ -950,7 +983,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get accessEmail => 'Nur per E-Mail';
 
   @override
-  String get accessEmailDesc => 'Nur eingeladene E-Mail-Adressen koennen beitreten';
+  String get accessEmailDesc =>
+      'Nur eingeladene E-Mail-Adressen koennen beitreten';
 
   @override
   String get instantJoin => 'Benutzer treten sofort bei';
@@ -959,7 +993,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inviteByEmail => 'Per E-Mail Einladen';
 
   @override
-  String get inviteEmailOnly => 'Nur eingeladene E-Mail-Adressen koennen diesem Chat beitreten';
+  String get inviteEmailOnly =>
+      'Nur eingeladene E-Mail-Adressen koennen diesem Chat beitreten';
 
   @override
   String get emailAddress => 'E-Mail-Adresse';
@@ -971,13 +1006,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get invalidEmail => 'Bitte gib eine gueltige E-Mail ein';
 
   @override
-  String get addEmailToSend => 'Fuege mindestens eine E-Mail hinzu, um Einladungen zu senden';
+  String get addEmailToSend =>
+      'Fuege mindestens eine E-Mail hinzu, um Einladungen zu senden';
 
   @override
   String get facilitationMode => 'Wie Phasen Ablaufen';
 
   @override
-  String get facilitationDesc => 'Waehle zwischen manueller Steuerung oder automatischen Timern fuer Phasenuebergaenge.';
+  String get facilitationDesc =>
+      'Waehle zwischen manueller Steuerung oder automatischen Timern fuer Phasenuebergaenge.';
 
   @override
   String get modeManual => 'Manuell';
@@ -986,10 +1023,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get modeAuto => 'Auto';
 
   @override
-  String get modeManualDesc => 'Du kontrollierst, wann jede Phase beginnt und endet. Keine Timer.';
+  String get modeManualDesc =>
+      'Du kontrollierst, wann jede Phase beginnt und endet. Keine Timer.';
 
   @override
-  String get modeAutoDesc => 'Timer laufen automatisch. Du kannst Phasen trotzdem frueh beenden.';
+  String get modeAutoDesc =>
+      'Timer laufen automatisch. Du kannst Phasen trotzdem frueh beenden.';
 
   @override
   String get autoStartParticipants => 'Starten wenn diese Anzahl beitritt';
@@ -998,13 +1037,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get ratingStartMode => 'Bewertungs-Startmodus';
 
   @override
-  String get ratingStartModeDesc => 'Steuert, wie die Bewertungsphase nach den Vorschlaegen beginnt.';
+  String get ratingStartModeDesc =>
+      'Steuert, wie die Bewertungsphase nach den Vorschlaegen beginnt.';
 
   @override
-  String get ratingAutoDesc => 'Die Bewertung beginnt sofort nach den Vorschlaegen oder wenn der Schwellenwert erreicht ist.';
+  String get ratingAutoDesc =>
+      'Die Bewertung beginnt sofort nach den Vorschlaegen oder wenn der Schwellenwert erreicht ist.';
 
   @override
-  String get ratingManualDesc => 'Nach den Vorschlaegen waehlen Sie, wann die Bewertung beginnt (z.B. am naechsten Tag).';
+  String get ratingManualDesc =>
+      'Nach den Vorschlaegen waehlen Sie, wann die Bewertung beginnt (z.B. am naechsten Tag).';
 
   @override
   String phaseFlowExplanation(String duration, int threshold, int minimum) {
@@ -1015,7 +1057,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get enableSchedule => 'Zeitplan Aktivieren';
 
   @override
-  String get restrictChatRoom => 'Einschraenken, wann der Chatraum geoeffnet ist';
+  String get restrictChatRoom =>
+      'Einschraenken, wann der Chatraum geoeffnet ist';
 
   @override
   String get timers => 'Timer';
@@ -1024,7 +1067,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get useSameDuration => 'Gleiche Dauer fur beide Phasen';
 
   @override
-  String get useSameDurationDesc => 'Gleiches Zeitlimit fur Vorschlage und Bewertung verwenden';
+  String get useSameDurationDesc =>
+      'Gleiches Zeitlimit fur Vorschlage und Bewertung verwenden';
 
   @override
   String get phaseDuration => 'Phasendauer';
@@ -1084,7 +1128,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get minimumToAdvance => 'Erforderliche Teilnahme';
 
   @override
-  String get timeExtendsAutomatically => 'Die Phase endet nicht, bis die Anforderungen erfuellt sind';
+  String get timeExtendsAutomatically =>
+      'Die Phase endet nicht, bis die Anforderungen erfuellt sind';
 
   @override
   String get proposingMinimum => 'Benoetigte Ideen';
@@ -1106,7 +1151,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get autoAdvanceAt => 'Phase Frueh Beenden';
 
   @override
-  String get skipTimerEarly => 'Die Phase kann frueh enden, wenn die Schwellenwerte erreicht sind';
+  String get skipTimerEarly =>
+      'Die Phase kann frueh enden, wenn die Schwellenwerte erreicht sind';
 
   @override
   String whenPercentSubmit(int percent) {
@@ -1120,7 +1166,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get minAvgRaters => 'Benoetigte Bewertungen';
 
   @override
-  String proposingThresholdPreview(int threshold, int participants, int percent) {
+  String proposingThresholdPreview(
+    int threshold,
+    int participants,
+    int percent,
+  ) {
     return 'Phase endet frueh wenn $threshold von $participants Teilnehmern Ideen einreichen ($percent%)';
   }
 
@@ -1141,7 +1191,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get confirmationRounds => 'Bestaetigungsrunden';
 
   @override
-  String get firstWinnerConsensus => 'Der erste Gewinner erreicht sofort Konvergenz';
+  String get firstWinnerConsensus =>
+      'Der erste Gewinner erreicht sofort Konvergenz';
 
   @override
   String mustWinConsecutive(int count) {
@@ -1149,10 +1200,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get showFullResults => 'Vollstaendige Ergebnisse aus frueheren Runden anzeigen';
+  String get showFullResults =>
+      'Vollstaendige Ergebnisse aus frueheren Runden anzeigen';
 
   @override
-  String get seeAllPropositions => 'Benutzer sehen alle Vorschlaege und Bewertungen';
+  String get seeAllPropositions =>
+      'Benutzer sehen alle Vorschlaege und Bewertungen';
 
   @override
   String get seeWinningOnly => 'Benutzer sehen nur den Gewinnervorschlag';
@@ -1164,7 +1217,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get propositionsPerUser => 'Vorschlaege pro Benutzer';
 
   @override
-  String get onePropositionPerRound => 'Jeder Benutzer kann 1 Vorschlag pro Runde einreichen';
+  String get onePropositionPerRound =>
+      'Jeder Benutzer kann 1 Vorschlag pro Runde einreichen';
 
   @override
   String nPropositionsPerRound(int count) {
@@ -1175,7 +1229,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get adaptiveDuration => 'Adaptive Dauer';
 
   @override
-  String get adjustDurationDesc => 'Phasendauer automatisch basierend auf Teilnahme anpassen';
+  String get adjustDurationDesc =>
+      'Phasendauer automatisch basierend auf Teilnahme anpassen';
 
   @override
   String get durationAdjusts => 'Dauer passt sich basierend auf Teilnahme an';
@@ -1184,7 +1239,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get fixedDurations => 'Feste Phasendauern';
 
   @override
-  String get usesThresholds => 'Verwendet Frueh-Vorlauf-Schwellenwerte zur Bestimmung der Teilnahme';
+  String get usesThresholds =>
+      'Verwendet Frueh-Vorlauf-Schwellenwerte zur Bestimmung der Teilnahme';
 
   @override
   String adjustmentPercent(int percent) {
@@ -1219,10 +1275,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get hideOutsideSchedule => 'Ausserhalb des Zeitplans verbergen';
 
   @override
-  String get visiblePaused => 'Chat sichtbar aber pausiert ausserhalb des Zeitplans';
+  String get visiblePaused =>
+      'Chat sichtbar aber pausiert ausserhalb des Zeitplans';
 
   @override
-  String get hiddenUntilWindow => 'Chat verborgen bis zum naechsten geplanten Fenster';
+  String get hiddenUntilWindow =>
+      'Chat verborgen bis zum naechsten geplanten Fenster';
 
   @override
   String get timezoneLabel => 'Zeitzone';
@@ -1234,7 +1292,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addWindowButton => 'Fenster Hinzufuegen';
 
   @override
-  String get scheduleWindowsDesc => 'Lege fest, wann der Chat aktiv ist. Unterstuetzt Nachtfenster (z.B. 23 Uhr bis 1 Uhr am naechsten Tag).';
+  String get scheduleWindowsDesc =>
+      'Lege fest, wann der Chat aktiv ist. Unterstuetzt Nachtfenster (z.B. 23 Uhr bis 1 Uhr am naechsten Tag).';
 
   @override
   String windowNumber(int n) {
@@ -1305,7 +1364,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noInvitesSentTitle => 'Keine Einladungen gesendet';
 
   @override
-  String get inviteOnlyMessage => 'Nur eingeladene Benutzer koennen diesem Chat beitreten.';
+  String get inviteOnlyMessage =>
+      'Nur eingeladene Benutzer koennen diesem Chat beitreten.';
 
   @override
   String get shareCodeInstruction => 'Teile diesen Code mit den Teilnehmern:';
@@ -1320,10 +1380,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get noTokenOrCode => 'Kein Einladungs-Token oder -Code angegeben';
 
   @override
-  String get invalidExpiredInvite => 'Dieser Einladungslink ist ungueltig oder abgelaufen';
+  String get invalidExpiredInvite =>
+      'Dieser Einladungslink ist ungueltig oder abgelaufen';
 
   @override
-  String get inviteOnlyError => 'Dieser Chat erfordert eine E-Mail-Einladung. Bitte verwende den an deine E-Mail gesendeten Link.';
+  String get inviteOnlyError =>
+      'Dieser Chat erfordert eine E-Mail-Einladung. Bitte verwende den an deine E-Mail gesendeten Link.';
 
   @override
   String get invalidInviteTitle => 'Ungueltige Einladung';
@@ -1338,10 +1400,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get enterNameToJoin => 'Gib deinen Namen ein, um beizutreten:';
 
   @override
-  String get nameVisibleNotice => 'Dieser Name wird anderen Teilnehmern angezeigt.';
+  String get nameVisibleNotice =>
+      'Dieser Name wird anderen Teilnehmern angezeigt.';
 
   @override
-  String get requiresApprovalNotice => 'Dieser Chat erfordert die Genehmigung des Gastgebers zum Beitreten.';
+  String get requiresApprovalNotice =>
+      'Dieser Chat erfordert die Genehmigung des Gastgebers zum Beitreten.';
 
   @override
   String get requestToJoinButton => 'Beitritt Anfragen';
@@ -1385,7 +1449,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get autoRefillTitle => 'Auto-Aufladung';
 
   @override
-  String get autoRefillDesc => 'Guthaben automatisch kaufen, wenn der Kontostand unter den Schwellenwert faellt';
+  String get autoRefillDesc =>
+      'Guthaben automatisch kaufen, wenn der Kontostand unter den Schwellenwert faellt';
 
   @override
   String lastError(String error) {
@@ -1393,7 +1458,8 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get autoRefillComingSoon => 'Auto-Aufladung-Einrichtung bald verfuegbar. Kaufe vorerst Guthaben manuell oben.';
+  String get autoRefillComingSoon =>
+      'Auto-Aufladung-Einrichtung bald verfuegbar. Kaufe vorerst Guthaben manuell oben.';
 
   @override
   String get whenBelow => 'Wenn unter';
@@ -1402,7 +1468,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get refillTo => 'Aufladen auf';
 
   @override
-  String get disableAutoRefillMessage => 'Dies wird die Auto-Aufladung deaktivieren. Du kannst spaeter eine neue Zahlungsmethode hinzufuegen.';
+  String get disableAutoRefillMessage =>
+      'Dies wird die Auto-Aufladung deaktivieren. Du kannst spaeter eine neue Zahlungsmethode hinzufuegen.';
 
   @override
   String get recentTransactions => 'Letzte Transaktionen';
@@ -1524,7 +1591,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get autoMode => 'Automatisch';
 
   @override
-  String get avgRatersPerProposition => 'durchschnittliche Bewerter pro Vorschlag';
+  String get avgRatersPerProposition =>
+      'durchschnittliche Bewerter pro Vorschlag';
 
   @override
   String get consensus => 'Konvergenz';
@@ -1597,37 +1665,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialTemplateCommunity => 'Gemeinschaftsentscheidung';
 
   @override
-  String get tutorialTemplateCommunityDesc => 'Was sollte unsere Nachbarschaft gemeinsam tun?';
+  String get tutorialTemplateCommunityDesc =>
+      'Was sollte unsere Nachbarschaft gemeinsam tun?';
 
   @override
   String get tutorialTemplateWorkplace => 'Arbeitskultur';
 
   @override
-  String get tutorialTemplateWorkplaceDesc => 'Worauf sollte unser Team sich konzentrieren?';
+  String get tutorialTemplateWorkplaceDesc =>
+      'Worauf sollte unser Team sich konzentrieren?';
 
   @override
   String get tutorialTemplateWorld => 'Globale Themen';
 
   @override
-  String get tutorialTemplateWorldDesc => 'Welches globale Thema ist am wichtigsten?';
+  String get tutorialTemplateWorldDesc =>
+      'Welches globale Thema ist am wichtigsten?';
 
   @override
   String get tutorialTemplateFamily => 'Familie';
 
   @override
-  String get tutorialTemplateFamilyDesc => 'Wohin sollen wir in den Urlaub fahren?';
+  String get tutorialTemplateFamilyDesc =>
+      'Wohin sollen wir in den Urlaub fahren?';
 
   @override
   String get tutorialTemplatePersonal => 'Persönliche Entscheidung';
 
   @override
-  String get tutorialTemplatePersonalDesc => 'Was soll ich nach dem Abschluss tun?';
+  String get tutorialTemplatePersonalDesc =>
+      'Was soll ich nach dem Abschluss tun?';
 
   @override
   String get tutorialTemplateGovernment => 'Stadthaushalt';
 
   @override
-  String get tutorialTemplateGovernmentDesc => 'Wie sollen wir den Stadthaushalt ausgeben?';
+  String get tutorialTemplateGovernmentDesc =>
+      'Wie sollen wir den Stadthaushalt ausgeben?';
 
   @override
   String get tutorialTemplateCustom => 'Eigenes Thema';
@@ -1678,16 +1752,19 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tutorialAddedToChat => 'Du wurdest auch automatisch zum Offiziellen OneMind Chat hinzugefuegt, in dem alle gemeinsam Themen diskutieren.';
+  String get tutorialAddedToChat =>
+      'Du wurdest auch automatisch zum Offiziellen OneMind Chat hinzugefuegt, in dem alle gemeinsam Themen diskutieren.';
 
   @override
   String get tutorialFinishButton => 'Tutorial Beenden';
 
   @override
-  String get tutorialRound1Result => '\'Erfolg\' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.';
+  String get tutorialRound1Result =>
+      '\'Erfolg\' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.';
 
   @override
-  String get tutorialProposingHint => 'Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.';
+  String get tutorialProposingHint =>
+      'Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.';
 
   @override
   String tutorialTimeRemaining(String time) {
@@ -1695,13 +1772,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tutorialProposingHintWithWinner => 'Reiche eine neue Idee ein. Sie wird zusammen mit dem vorherigen Gewinner bewertet.';
+  String get tutorialProposingHintWithWinner =>
+      'Reiche eine neue Idee ein. Sie wird zusammen mit dem vorherigen Gewinner bewertet.';
 
   @override
-  String get tutorialRatingHint => 'Jetzt bewertet jeder die Ideen der anderen. Tippe auf die Schaltflaeche, um mit der Bewertung zu beginnen.';
+  String get tutorialRatingHint =>
+      'Jetzt bewertet jeder die Ideen der anderen. Tippe auf die Schaltflaeche, um mit der Bewertung zu beginnen.';
 
   @override
-  String get tutorialRatingPhaseExplanation => 'Die Bewertungsphase beginnt, sobald alle Nutzer ihre Ideen eingereicht haben oder der Timer ablaeuft.';
+  String get tutorialRatingPhaseExplanation =>
+      'Die Bewertungsphase beginnt, sobald alle Nutzer ihre Ideen eingereicht haben oder der Timer ablaeuft.';
 
   @override
   String tutorialRatingTimeRemaining(String time) {
@@ -1709,10 +1789,12 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tutorialRatingBinaryHint => 'Dir werden zuerst 2 zufaellige, von Nutzern eingereichte Vorschlaege praesentiert. Setze den, den du mehr bevorzugst, auf 100. Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Hinweis: Dein eigener Vorschlag wird dir nicht zur Bewertung angezeigt.';
+  String get tutorialRatingBinaryHint =>
+      'Dir werden zuerst 2 zufaellige, von Nutzern eingereichte Vorschlaege praesentiert. Setze den, den du mehr bevorzugst, auf 100. Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Hinweis: Dein eigener Vorschlag wird dir nicht zur Bewertung angezeigt.';
 
   @override
-  String get tutorialRatingPositioningHint => 'Tippe und halte [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Tippe auf [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.';
+  String get tutorialRatingPositioningHint =>
+      'Tippe und halte [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Tippe auf [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.';
 
   @override
   String tutorialRound2Result(String proposition) {
@@ -1720,13 +1802,16 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get tutorialRound2Prompt => 'Der Gewinner \'Erfolg\' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.';
+  String get tutorialRound2Prompt =>
+      'Der Gewinner \'Erfolg\' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.';
 
   @override
-  String get tutorialRatingCarryForwardHint => 'Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.';
+  String get tutorialRatingCarryForwardHint =>
+      'Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.';
 
   @override
-  String get tutorialRound2PromptSimplified => 'Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?';
+  String get tutorialRound2PromptSimplified =>
+      'Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?';
 
   @override
   String tutorialRound2PromptSimplifiedTemplate(String winner) {
@@ -1902,19 +1987,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialPropSpaceCooperation => 'Weltraumkooperation';
 
   @override
-  String get tutorialDuplicateProposition => 'Diese Idee existiert bereits in dieser Runde. Versuche etwas anderes!';
+  String get tutorialDuplicateProposition =>
+      'Diese Idee existiert bereits in dieser Runde. Versuche etwas anderes!';
 
   @override
   String get tutorialShareTitle => 'Teile Deinen Chat';
 
   @override
-  String get tutorialShareExplanation => 'Um andere einzuladen, deinem Chat beizutreten, tippe auf den Teilen-Button oben auf deinem Bildschirm.';
+  String get tutorialShareExplanation =>
+      'Um andere einzuladen, deinem Chat beizutreten, tippe auf den Teilen-Button oben auf deinem Bildschirm.';
 
   @override
   String get tutorialShareTryIt => 'Probiere es jetzt!';
 
   @override
-  String get tutorialShareButtonHint => 'Tippe auf den Teilen-Button oben rechts ↗';
+  String get tutorialShareButtonHint =>
+      'Tippe auf den Teilen-Button oben rechts ↗';
 
   @override
   String get tutorialSkipMenuItem => 'Tutorial Ueberspringen';
@@ -1923,7 +2011,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialSkipConfirmTitle => 'Tutorial Ueberspringen?';
 
   @override
-  String get tutorialSkipConfirmMessage => 'Du kannst das Tutorial spaeter jederzeit vom Startbildschirm aus aufrufen.';
+  String get tutorialSkipConfirmMessage =>
+      'Du kannst das Tutorial spaeter jederzeit vom Startbildschirm aus aufrufen.';
 
   @override
   String get tutorialSkipConfirmYes => 'Ja, Ueberspringen';
@@ -1951,13 +2040,15 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get deleteConsensusMessage => 'This will restart the current cycle with a fresh round.';
+  String get deleteConsensusMessage =>
+      'This will restart the current cycle with a fresh round.';
 
   @override
   String get deleteInitialMessageTitle => 'Delete Initial Message?';
 
   @override
-  String get deleteInitialMessageMessage => 'This will restart the current cycle with a fresh round.';
+  String get deleteInitialMessageMessage =>
+      'This will restart the current cycle with a fresh round.';
 
   @override
   String get editInitialMessage => 'Edit Initial Message';
@@ -1990,7 +2081,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteTaskResultTitle => 'Delete Research Results?';
 
   @override
-  String get deleteTaskResultMessage => 'The agent will re-research on the next heartbeat.';
+  String get deleteTaskResultMessage =>
+      'The agent will re-research on the next heartbeat.';
 
   @override
   String get taskResultDeleted => 'Research results deleted';
@@ -2025,7 +2117,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get back => 'Zurueck';
 
   @override
-  String get spectatingInsufficientCredits => 'Spectating — insufficient credits';
+  String get spectatingInsufficientCredits =>
+      'Spectating — insufficient credits';
 
   @override
   String get creditPausedTitle => 'Paused — Insufficient Credits';
@@ -2050,7 +2143,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get forceAsConsensus => 'Als Konvergenz erzwingen';
 
   @override
-  String get forceAsConsensusDescription => 'Direkt als Konvergenz einreichen, Abstimmung ueberspringen';
+  String get forceAsConsensusDescription =>
+      'Direkt als Konvergenz einreichen, Abstimmung ueberspringen';
 
   @override
   String get forceConsensus => 'Konvergenz Erzwingen';
@@ -2059,7 +2153,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get forceConsensusTitle => 'Konvergenz Erzwingen?';
 
   @override
-  String get forceConsensusMessage => 'Dies wird deinen Vorschlag sofort als Konvergenz festlegen und einen neuen Zyklus starten. Aller aktuelle Rundenfortschritt geht verloren.';
+  String get forceConsensusMessage =>
+      'Dies wird deinen Vorschlag sofort als Konvergenz festlegen und einen neuen Zyklus starten. Aller aktuelle Rundenfortschritt geht verloren.';
 
   @override
   String get forceConsensusSuccess => 'Konvergenz erfolgreich erzwungen';
@@ -2073,37 +2168,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get glossaryUserRoundTitle => 'user-round';
 
   @override
-  String get glossaryUserRoundDef => 'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
+  String get glossaryUserRoundDef =>
+      'One participant completing one round of rating. Each user-round costs 1 credit (\$0.01).';
 
   @override
   String get glossaryConsensusTitle => 'Konvergenz';
 
   @override
-  String get glossaryConsensusDef => 'Wenn derselbe Vorschlag mehrere aufeinanderfolgende Runden gewinnt, hat die Gruppe eine Konvergenz zu dieser Idee erreicht.';
+  String get glossaryConsensusDef =>
+      'Wenn derselbe Vorschlag mehrere aufeinanderfolgende Runden gewinnt, hat die Gruppe eine Konvergenz zu dieser Idee erreicht.';
 
   @override
   String get glossaryProposingTitle => 'proposing';
 
   @override
-  String get glossaryProposingDef => 'The phase where participants submit their ideas anonymously for the group to consider.';
+  String get glossaryProposingDef =>
+      'The phase where participants submit their ideas anonymously for the group to consider.';
 
   @override
   String get glossaryRatingTitle => 'rating';
 
   @override
-  String get glossaryRatingDef => 'The phase where participants rank all propositions on a 0–100 grid to determine the winner.';
+  String get glossaryRatingDef =>
+      'The phase where participants rank all propositions on a 0–100 grid to determine the winner.';
 
   @override
   String get glossaryCycleTitle => 'cycle';
 
   @override
-  String get glossaryCycleDef => 'Eine Abfolge von Runden auf dem Weg zur Konvergenz. Ein neuer Zyklus beginnt, nachdem die Konvergenz erreicht wurde.';
+  String get glossaryCycleDef =>
+      'Eine Abfolge von Runden auf dem Weg zur Konvergenz. Ein neuer Zyklus beginnt, nachdem die Konvergenz erreicht wurde.';
 
   @override
   String get glossaryCreditBalanceTitle => 'credit balance';
 
   @override
-  String get glossaryCreditBalanceDef => 'Credits fund rounds. 1 credit = 1 user-round = \$0.01. Free credits reset monthly.';
+  String get glossaryCreditBalanceDef =>
+      'Credits fund rounds. 1 credit = 1 user-round = \$0.01. Free credits reset monthly.';
 
   @override
   String get enterTaskResult => 'Enter task result...';
@@ -2118,43 +2219,51 @@ class AppLocalizationsDe extends AppLocalizations {
   String get homeTourPendingRequestTitle => 'Ausstehende Anfragen';
 
   @override
-  String get homeTourPendingRequestDesc => 'Wenn du eine Beitrittsanfrage stellst, prueft der Gastgeber deine Anfrage. Du siehst sie hier mit einem \'Ausstehend\'-Badge, bis sie genehmigt wird.';
+  String get homeTourPendingRequestDesc =>
+      'Wenn du eine Beitrittsanfrage stellst, prueft der Gastgeber deine Anfrage. Du siehst sie hier mit einem \'Ausstehend\'-Badge, bis sie genehmigt wird.';
 
   @override
   String get homeTourYourChatsTitle => 'Deine Chats';
 
   @override
-  String get homeTourYourChatsDesc => 'Nach der Genehmigung erscheinen deine Chats hier. Tippe auf einen Chat, um Ideen vorzuschlagen und zu bewerten!';
+  String get homeTourYourChatsDesc =>
+      'Nach der Genehmigung erscheinen deine Chats hier. Tippe auf einen Chat, um Ideen vorzuschlagen und zu bewerten!';
 
   @override
   String get homeTourCreateFabTitle => 'Chat Erstellen';
 
   @override
-  String get homeTourCreateFabDesc => 'Tippe auf +, um deinen eigenen Chat zu erstellen. Waehle das Thema, lade Freunde ein und findet gemeinsam einen Konsens.';
+  String get homeTourCreateFabDesc =>
+      'Tippe auf +, um deinen eigenen Chat zu erstellen. Waehle das Thema, lade Freunde ein und findet gemeinsam einen Konsens.';
 
   @override
   String get homeTourDemoTitle => 'Demo Ausprobieren';
 
   @override
-  String get homeTourDemoDesc => 'Möchtest du sehen, wie die Abstimmung funktioniert? Tippe hier, um eine schnelle interaktive Demo zu starten.';
+  String get homeTourDemoDesc =>
+      'Möchtest du sehen, wie die Abstimmung funktioniert? Tippe hier, um eine schnelle interaktive Demo zu starten.';
 
   @override
   String get homeTourHowItWorksTitle => 'So Funktioniert\'s';
 
   @override
-  String get homeTourHowItWorksDesc => 'Brauchst du eine Auffrischung? Tippe hier, um das Tutorial jederzeit zu wiederholen.';
+  String get homeTourHowItWorksDesc =>
+      'Brauchst du eine Auffrischung? Tippe hier, um das Tutorial jederzeit zu wiederholen.';
 
   @override
   String get homeTourLegalDocsTitle => 'Rechtliche Dokumente';
 
   @override
-  String get homeTourLegalDocsDesc => 'Sieh dir die Datenschutzrichtlinie und die Nutzungsbedingungen hier an.';
+  String get homeTourLegalDocsDesc =>
+      'Sieh dir die Datenschutzrichtlinie und die Nutzungsbedingungen hier an.';
 
   @override
-  String get searchOrJoinWithCode => 'Chats suchen oder Einladungscode eingeben...';
+  String get searchOrJoinWithCode =>
+      'Chats suchen oder Einladungscode eingeben...';
 
   @override
-  String get searchYourChatsOrJoinWithCode => 'Deine Chats suchen oder Einladungscode eingeben...';
+  String get searchYourChatsOrJoinWithCode =>
+      'Deine Chats suchen oder Einladungscode eingeben...';
 
   @override
   String get noMatchingChats => 'Keine passenden Chats';
@@ -2168,37 +2277,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String get wizardVisibilityTitle => 'Wer kann beitreten?';
 
   @override
-  String get wizardVisibilitySubtitle => 'Waehle, wer deinen Chat finden und beitreten kann';
+  String get wizardVisibilitySubtitle =>
+      'Waehle, wer deinen Chat finden und beitreten kann';
 
   @override
   String get wizardVisibilityPublicTitle => 'Oeffentlich';
 
   @override
-  String get wizardVisibilityPublicDesc => 'Jeder kann diesen Chat entdecken und beitreten';
+  String get wizardVisibilityPublicDesc =>
+      'Jeder kann diesen Chat entdecken und beitreten';
 
   @override
   String get wizardVisibilityPrivateTitle => 'Privat';
 
   @override
-  String get wizardVisibilityPrivateDesc => 'Nur Personen mit dem Einladungscode koennen beitreten';
+  String get wizardVisibilityPrivateDesc =>
+      'Nur Personen mit dem Einladungscode koennen beitreten';
 
   @override
   String get homeTourSearchBarTitle => 'Deine Chats Suchen';
 
   @override
-  String get homeTourSearchBarDesc => 'Filtere deine Chats nach Name, oder gib einen 6-stelligen Einladungscode ein, um einem privaten Chat beizutreten.';
+  String get homeTourSearchBarDesc =>
+      'Filtere deine Chats nach Name, oder gib einen 6-stelligen Einladungscode ein, um einem privaten Chat beizutreten.';
 
   @override
   String get homeTourExploreButtonTitle => 'Oeffentliche Chats Entdecken';
 
   @override
-  String get homeTourExploreButtonDesc => 'Tippe hier, um oeffentliche Chats anderer Benutzer zu entdecken und ihnen beizutreten.';
+  String get homeTourExploreButtonDesc =>
+      'Tippe hier, um oeffentliche Chats anderer Benutzer zu entdecken und ihnen beizutreten.';
 
   @override
   String get homeTourLanguageSelectorTitle => 'Sprache Aendern';
 
   @override
-  String get homeTourLanguageSelectorDesc => 'Tippe hier, um die App-Sprache zu aendern. OneMind ist auf Englisch, Spanisch, Portugiesisch, Franzoesisch und Deutsch verfuegbar.';
+  String get homeTourLanguageSelectorDesc =>
+      'Tippe hier, um die App-Sprache zu aendern. OneMind ist auf Englisch, Spanisch, Portugiesisch, Franzoesisch und Deutsch verfuegbar.';
 
   @override
   String get homeTourSkip => 'Tour ueberspringen';
@@ -2213,4 +2328,43 @@ class AppLocalizationsDe extends AppLocalizations {
   String homeTourStepOf(int current, int total) {
     return 'Schritt $current von $total';
   }
+
+  @override
+  String get wizardTranslationsTitle => 'Sprachen';
+
+  @override
+  String get wizardTranslationsSubtitle =>
+      'Waehle welche Sprachen dieser Chat unterstuetzt';
+
+  @override
+  String get singleLanguageToggle => 'Einzelsprache';
+
+  @override
+  String get singleLanguageDesc => 'Alle nehmen in einer Sprache teil';
+
+  @override
+  String get multiLanguageDesc =>
+      'Vorschlaege werden automatisch zwischen den Sprachen uebersetzt';
+
+  @override
+  String get chatLanguageLabel => 'Chat-Sprache';
+
+  @override
+  String get selectLanguages => 'Unterstuetzte Sprachen:';
+
+  @override
+  String get autoTranslateHint =>
+      'Vorschlaege werden automatisch zwischen allen ausgewaehlten Sprachen uebersetzt';
+
+  @override
+  String get translationsSection => 'Sprachen';
+
+  @override
+  String get translationLanguagesLabel => 'Sprachen';
+
+  @override
+  String get autoTranslateLabel => 'Automatische Uebersetzung';
+
+  @override
+  String get chatAutoTranslated => 'Automatisch uebersetzt';
 }

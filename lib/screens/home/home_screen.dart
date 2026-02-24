@@ -1,8 +1,10 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
@@ -12,6 +14,7 @@ import '../join/join_dialog.dart';
 import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
 import '../tutorial/tutorial_data.dart';
+import '../../utils/language_utils.dart';
 import '../../widgets/language_selector.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -24,10 +27,12 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen>
+    with SingleTickerProviderStateMixin {
   StreamSubscription<Chat>? _approvedChatSubscription;
   final _searchController = TextEditingController();
   bool _isSearching = false;
+  bool _hasPlayedEntrance = false;
 
   /// Regex to detect a 6 alphanumeric character invite code
   static final _inviteCodeRegex = RegExp(r'^[A-Za-z0-9]{6}$');
@@ -166,6 +171,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Text(l10n.appTitle),
         ),
         actions: [
+          if (kDebugMode)
+            IconButton(
+              icon: const Icon(Icons.restart_alt),
+              tooltip: 'Restart Home Tour (debug)',
+              onPressed: () => context.go('/home-tour'),
+            ),
           IconButton(
             key: const Key('explore-button'),
             icon: const Icon(Icons.explore),
@@ -308,7 +319,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     Icon(
                       Icons.search_off,
                       size: 48,
-                      color: Colors.grey.shade400,
+                      color: AppColors.textMuted,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -385,17 +396,33 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   if (chats.isEmpty) {
                     return _buildNoChatsYet(context);
                   }
+                  // Mark entrance animation as played
+                  final shouldAnimate = !_hasPlayedEntrance;
+                  if (shouldAnimate) {
+                    _hasPlayedEntrance = true;
+                  }
                   return Column(
                     children: chats
+                        .asMap()
+                        .entries
                         .map(
-                          (chat) => Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: _ChatCard(
-                              chat: chat,
-                              onTap: () =>
-                                  _navigateToChat(context, ref, chat),
-                            ),
-                          ),
+                          (entry) {
+                            final index = entry.key;
+                            final chat = entry.value;
+                            final child = Padding(
+                              padding: const EdgeInsets.only(bottom: 8),
+                              child: _ChatCard(
+                                chat: chat,
+                                onTap: () =>
+                                    _navigateToChat(context, ref, chat),
+                              ),
+                            );
+                            if (!shouldAnimate) return child;
+                            return _StaggeredFadeIn(
+                              index: index,
+                              child: child,
+                            );
+                          },
                         )
                         .toList(),
                   );
@@ -442,9 +469,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildSectionHeader(BuildContext context, String title) {
     return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+      title.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: AppColors.textSecondary,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.8,
           ),
     );
   }
@@ -459,7 +488,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Icon(
               Icons.chat_bubble_outline,
               size: 48,
-              color: Colors.grey.shade400,
+              color: AppColors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
@@ -470,9 +499,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             Text(
               l10n.discoverPublicChatsJoinOrCreate,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => _openCreateChat(context, ref),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.createChat),
             ),
           ],
         ),
@@ -489,14 +524,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           children: [
             Icon(
               Icons.info_outline,
-              color: Colors.grey.shade400,
+              color: AppColors.textMuted,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 l10n.noActiveChatsYet,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.grey.shade600,
+                      color: AppColors.textSecondary,
                     ),
               ),
             ),
@@ -521,7 +556,6 @@ class _ChatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    debugPrint('[_ChatCard] id=${chat.id} name="${chat.name}" displayName="${chat.displayName}" nameTranslated="${chat.nameTranslated}"');
     final semanticLabel = isOfficial
         ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
         : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';
@@ -535,61 +569,54 @@ class _ChatCard extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+          child: IntrinsicHeight(
             child: Row(
               children: [
-                // Icon - decorative, excluded from semantics
+                // Vertical color bar indicating chat type
                 ExcludeSemantics(
                   child: Container(
-                    width: 48,
-                    height: 48,
+                    width: 4,
                     decoration: BoxDecoration(
                       color: isOfficial
-                          ? Theme.of(context).colorScheme.primaryContainer
-                          : Theme.of(context).colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      isOfficial ? Icons.public : Icons.chat_bubble_outline,
-                      color: isOfficial
-                          ? Theme.of(context).colorScheme.onPrimaryContainer
-                          : Theme.of(context).colorScheme.onSecondaryContainer,
+                          ? Theme.of(context).colorScheme.primary
+                          : AppColors.proposing,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
                 // Content
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              chat.displayName,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        chat.displayInitialMessage,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
-                            ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          chat.displayName,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          chat.displayInitialMessage,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          LanguageUtils.shortLabel(chat.translationLanguages),
+                          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                // Chevron - decorative
-                const ExcludeSemantics(
-                  child: Icon(Icons.chevron_right),
                 ),
               ],
             ),
@@ -620,99 +647,157 @@ class _PendingRequestCard extends StatelessWidget {
       label: semanticLabel,
       child: Card(
         clipBehavior: Clip.antiAlias,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
+        child: IntrinsicHeight(
           child: Row(
             children: [
-              // Pending icon
+              // Warm amber left border — needs attention
               ExcludeSemantics(
                 child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.tertiaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.hourglass_empty,
-                    color: Theme.of(context).colorScheme.onTertiaryContainer,
+                  width: 4,
+                  decoration: const BoxDecoration(
+                    color: AppColors.consensus,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 16),
               // Content
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            chatName,
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.tertiary,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            l10n.pending,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color:
-                                      Theme.of(context).colorScheme.onTertiary,
-                                  fontWeight: FontWeight.bold,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    chatName,
+                                    style: Theme.of(context).textTheme.titleMedium,
+                                  ),
                                 ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (request.chatInitialMessage != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        request.chatInitialMessage!,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.grey.shade600,
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.consensusLight,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    l10n.pending,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .labelSmall
+                                        ?.copyWith(
+                                          color: const Color(0xFF92400E), // amber-800
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                ),
+                              ],
                             ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                            if (request.chatInitialMessage != null) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                request.chatInitialMessage!,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.textSecondary,
+                                    ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.waitingForHostApproval,
+                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                                    color: Theme.of(context).colorScheme.outline,
+                                    fontStyle: FontStyle.italic,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Cancel button
+                      Semantics(
+                        button: true,
+                        label: l10n.cancelRequest,
+                        child: IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: l10n.cancelRequest,
+                          onPressed: onCancel,
+                        ),
                       ),
                     ],
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.waitingForHostApproval,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                            fontStyle: FontStyle.italic,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Cancel button
-              Semantics(
-                button: true,
-                label: l10n.cancelRequest,
-                child: IconButton(
-                  icon: const Icon(Icons.close),
-                  tooltip: l10n.cancelRequest,
-                  onPressed: onCancel,
+                  ),
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Staggered fade-in + slide-up animation for list items on initial load.
+class _StaggeredFadeIn extends StatefulWidget {
+  final int index;
+  final Widget child;
+
+  const _StaggeredFadeIn({required this.index, required this.child});
+
+  @override
+  State<_StaggeredFadeIn> createState() => _StaggeredFadeInState();
+}
+
+class _StaggeredFadeInState extends State<_StaggeredFadeIn>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _opacity;
+  late final Animation<Offset> _offset;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _opacity = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
+    _offset = Tween<Offset>(
+      begin: const Offset(0, 0.05),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
+
+    // Stagger: delay based on index
+    Future.delayed(Duration(milliseconds: widget.index * 50), () {
+      if (mounted) _controller.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _opacity,
+      child: SlideTransition(
+        position: _offset,
+        child: widget.child,
       ),
     );
   }

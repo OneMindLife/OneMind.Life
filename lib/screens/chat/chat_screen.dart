@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/models.dart';
@@ -120,11 +121,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final content = _propositionController.text.trim();
 
     setState(() => _isSubmitting = true);
-    final sw = Stopwatch()..start();
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.submitProposition(content);
-      debugPrint('[_submitProposition] notifier returned in ${sw.elapsedMilliseconds}ms');
       _propositionController.clear();
 
       // Log analytics event
@@ -630,9 +629,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
     // Auto-navigate to rating screen only when phase transitions to rating
     // while user is already viewing this chat (once per round)
-    debugPrint('[CHAT_SCREEN] build: roundId=${currentRound?.id}, phase=${currentRound?.phase}, '
-        'hasRated=${state?.hasRated}, hasStartedRating=${state?.hasStartedRating}, '
-        '_lastAutoNavigatedRoundId=$_lastAutoNavigatedRoundId');
     if (currentRound != null &&
         currentRound.phase == RoundPhase.rating &&
         state != null &&
@@ -640,7 +636,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         !state.hasStartedRating &&
         !state.hasSkippedRating &&
         _lastAutoNavigatedRoundId != currentRound.id) {
-      debugPrint('[CHAT_SCREEN] Auto-navigating to rating screen for round ${currentRound.id}');
       _lastAutoNavigatedRoundId = currentRound.id;
       // Use post-frame callback to avoid navigation during build
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -869,6 +864,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           duration: const Duration(milliseconds: 200),
           child: Column(
           children: [
+            // Phase-aware accent strip
+            _PhaseAccentStrip(phase: state.currentRound?.phase),
             // Host paused banner
             if (state.chat?.hostPaused ?? widget.chat.hostPaused)
               HostPausedBanner(
@@ -904,6 +901,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           label,
                           item.displayContent,
                           isPrimary: true,
+                          isConsensus: !item.isHostOverride,
                         );
 
                         final List<Widget> widgets = [];
@@ -997,18 +995,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildMessageCard(String label, String content,
-      {bool isPrimary = false}) {
+      {bool isPrimary = false, bool isConsensus = false}) {
+    final Color borderColor;
+    final Color backgroundColor;
+    if (isConsensus) {
+      borderColor = AppColors.consensus;
+      backgroundColor = AppColors.consensusLight.withValues(alpha: 0.5);
+    } else if (isPrimary) {
+      borderColor = Theme.of(context).colorScheme.primary;
+      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withAlpha(128);
+    } else {
+      borderColor = Colors.transparent;
+      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isPrimary
-            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(128)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: backgroundColor,
         borderRadius: BorderRadius.circular(12),
-        border: isPrimary
+        border: (isPrimary || isConsensus)
             ? Border(
                 left: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
+                  color: borderColor,
                   width: 4,
                 ),
               )
@@ -1020,7 +1029,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           Text(
             label,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: isConsensus
+                      ? const Color(0xFF92400E) // amber-800
+                      : Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontWeight: isConsensus ? FontWeight.w600 : null,
                 ),
           ),
           const SizedBox(height: 4),
@@ -2016,6 +2028,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         SnackBar(content: Text(l10n.requestDenied)),
       );
     }
+  }
+}
+
+/// Subtle colored strip at the top of the chat body showing current phase.
+class _PhaseAccentStrip extends StatelessWidget {
+  final RoundPhase? phase;
+
+  const _PhaseAccentStrip({this.phase});
+
+  @override
+  Widget build(BuildContext context) {
+    if (phase == null) return const SizedBox.shrink();
+
+    final Color color;
+    switch (phase!) {
+      case RoundPhase.proposing:
+        color = AppColors.proposing;
+      case RoundPhase.rating:
+        color = AppColors.rating;
+      case RoundPhase.waiting:
+        color = AppColors.waiting;
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 3,
+      color: color.withValues(alpha: 0.6),
+    );
   }
 }
 

@@ -182,7 +182,7 @@ function normalizeText(text: string): string {
 
 /**
  * Check if a proposition with the same normalized English translation
- * already exists in the round
+ * already exists in the round (translation-based dedup)
  */
 async function findDuplicate(
   roundId: number,
@@ -207,6 +207,66 @@ async function findDuplicate(
       id: data[0].proposition_id,
       content: data[0].content,
     };
+  }
+
+  return null;
+}
+
+/**
+ * Check if a proposition with the same raw normalized content
+ * already exists in the round (no translations, raw text comparison)
+ */
+async function findDuplicateRaw(
+  roundId: number,
+  normalizedContent: string
+): Promise<{ id: number; content: string } | null> {
+  const { data, error } = await supabase.rpc("find_duplicate_proposition_raw", {
+    p_round_id: roundId,
+    p_normalized_content: normalizedContent,
+  });
+
+  if (error) {
+    console.error("[SUBMIT-PROPOSITION] Error checking for raw duplicates:", error);
+    throw new Error(`Database error: ${error.message}`);
+  }
+
+  console.log("[SUBMIT-PROPOSITION] Raw duplicate check result:", JSON.stringify(data));
+
+  if (data && data.length > 0) {
+    return {
+      id: data[0].proposition_id,
+      content: data[0].content,
+    };
+  }
+
+  return null;
+}
+
+// =============================================================================
+// TRANSLATION SETTINGS HELPER
+// =============================================================================
+
+interface TranslationSettings {
+  chat_id: number;
+  translations_enabled: boolean;
+  translation_languages: string[];
+}
+
+/**
+ * Get translation settings for the chat that owns a given round
+ */
+async function getTranslationSettings(roundId: number): Promise<TranslationSettings | null> {
+  const { data, error } = await supabase.rpc("get_chat_translation_settings", {
+    p_round_id: roundId,
+  });
+
+  if (error) {
+    console.error("[SUBMIT-PROPOSITION] Error getting translation settings:", error);
+    throw new Error(`Database error: ${error.message}`);
+  }
+
+  if (data && data.length > 0) {
+    return data[0] as TranslationSettings;
   }
 
   return null;
@@ -289,106 +349,163 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Step 1: Translate content to English (and Spanish)
-    // Agent propositions (service role) are already in English — skip LLM translation
-    // to avoid a second Kimi call that doubles latency and risks 150s gateway timeout
-    let translations: Translations;
-    if (authResult.isServiceRole) {
-      console.log("[SUBMIT-PROPOSITION] Service role call — skipping LLM translation");
-      translations = { en: content, es: "" };
-    } else {
-      console.log("[SUBMIT-PROPOSITION] Translating content...");
-      translations = await getTranslations(content);
-    }
-    console.log("[SUBMIT-PROPOSITION] Translations:", JSON.stringify(translations));
+    // Step 0.5: Get chat translation settings for this round
+    const translationSettings = await getTranslationSettings(round_id);
+    const translationsOn = translationSettings?.translations_enabled ?? false;
+    console.log("[SUBMIT-PROPOSITION] Translations enabled:", translationsOn);
 
-    // Step 2: Normalize the English translation
-    const normalizedEnglish = normalizeText(translations.en);
-    console.log("[SUBMIT-PROPOSITION] Normalized English:", normalizedEnglish);
+    if (translationsOn) {
+      // =====================================================================
+      // TRANSLATIONS ON: translate → normalize English → dedup via translations
+      // =====================================================================
 
-    // Step 3: Check for duplicates
-    console.log("[SUBMIT-PROPOSITION] Checking for duplicates in round:", round_id);
-    const duplicate = await findDuplicate(round_id, normalizedEnglish);
+      // Step 1: Translate content to English (and Spanish)
+      // Agent propositions (service role) are already in English — skip LLM translation
+      let translations: Translations;
+      if (authResult.isServiceRole) {
+        console.log("[SUBMIT-PROPOSITION] Service role call — skipping LLM translation");
+        translations = { en: content, es: "" };
+      } else {
+        console.log("[SUBMIT-PROPOSITION] Translating content...");
+        translations = await getTranslations(content);
+      }
+      console.log("[SUBMIT-PROPOSITION] Translations:", JSON.stringify(translations));
 
-    if (duplicate) {
-      console.log("[SUBMIT-PROPOSITION] Duplicate found:", duplicate.id);
-      return corsJsonResponse(
-        {
-          error: "A proposition with the same content already exists in this round",
-          code: "DUPLICATE_PROPOSITION",
-          duplicate_proposition_id: duplicate.id,
-        },
-        req,
-        409
-      );
-    }
+      // Step 2: Normalize the English translation
+      const normalizedEnglish = normalizeText(translations.en);
+      console.log("[SUBMIT-PROPOSITION] Normalized English:", normalizedEnglish);
 
-    // Step 4: Auto-detect category if not provided
-    let effectiveCategory = category || null;
-    if (!effectiveCategory) {
-      // Look up chat_id from round → cycle → chat
-      const { data: roundData } = await supabase
-        .from("rounds")
-        .select("cycle_id, cycles(chat_id)")
-        .eq("id", round_id)
-        .single();
+      // Step 3: Check for duplicates via English translation
+      console.log("[SUBMIT-PROPOSITION] Checking for duplicates in round:", round_id);
+      const duplicate = await findDuplicate(round_id, normalizedEnglish);
 
-      if (roundData?.cycles?.chat_id) {
+      if (duplicate) {
+        console.log("[SUBMIT-PROPOSITION] Duplicate found:", duplicate.id);
+        return corsJsonResponse(
+          {
+            error: "A proposition with the same content already exists in this round",
+            code: "DUPLICATE_PROPOSITION",
+            duplicate_proposition_id: duplicate.id,
+          },
+          req,
+          409
+        );
+      }
+
+      // Step 4: Auto-detect category if not provided
+      let effectiveCategory = category || null;
+      if (!effectiveCategory && translationSettings) {
         const { data: allowed } = await supabase.rpc("get_chat_allowed_categories", {
-          p_chat_id: roundData.cycles.chat_id,
+          p_chat_id: translationSettings.chat_id,
         });
         if (allowed && allowed.length === 1) {
           effectiveCategory = allowed[0];
           console.log("[SUBMIT-PROPOSITION] Auto-detected category:", effectiveCategory);
         }
       }
+
+      // Step 5: Insert the proposition
+      console.log("[SUBMIT-PROPOSITION] Inserting new proposition...");
+      const { data: proposition, error: insertError } = await supabase
+        .from("propositions")
+        .insert({
+          round_id,
+          participant_id,
+          content,
+          category: effectiveCategory,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("[SUBMIT-PROPOSITION] Insert error:", insertError);
+        return corsErrorResponse(`Failed to create proposition: ${insertError.message}`, req, 500);
+      }
+
+      console.log("[SUBMIT-PROPOSITION] Proposition created:", proposition.id);
+
+      // Step 6: Insert translations
+      const translationInserts = Object.entries(translations).map(([lang, translated_text]) => ({
+        proposition_id: proposition.id,
+        entity_type: "proposition",
+        field_name: "content",
+        language_code: lang,
+        translated_text,
+      }));
+
+      console.log("[SUBMIT-PROPOSITION] Inserting translations...");
+      const { error: translationError } = await supabase
+        .from("translations")
+        .upsert(translationInserts, {
+          onConflict: "proposition_id,field_name,language_code",
+          ignoreDuplicates: false,
+        });
+
+      if (translationError) {
+        console.error("[SUBMIT-PROPOSITION] Translation insert error:", translationError);
+      }
+
+      console.log("[SUBMIT-PROPOSITION] Success - returning proposition");
+      return corsJsonResponse({ proposition }, req, 200);
+    } else {
+      // =====================================================================
+      // TRANSLATIONS OFF: raw dedup via LOWER(TRIM(content)), no LLM calls
+      // =====================================================================
+
+      // Step 1: Normalize raw content
+      const normalizedContent = normalizeText(content);
+      console.log("[SUBMIT-PROPOSITION] Normalized raw content:", normalizedContent);
+
+      // Step 2: Check for duplicates via raw content
+      console.log("[SUBMIT-PROPOSITION] Checking for raw duplicates in round:", round_id);
+      const duplicate = await findDuplicateRaw(round_id, normalizedContent);
+
+      if (duplicate) {
+        console.log("[SUBMIT-PROPOSITION] Raw duplicate found:", duplicate.id);
+        return corsJsonResponse(
+          {
+            error: "A proposition with the same content already exists in this round",
+            code: "DUPLICATE_PROPOSITION",
+            duplicate_proposition_id: duplicate.id,
+          },
+          req,
+          409
+        );
+      }
+
+      // Step 3: Auto-detect category if not provided
+      let effectiveCategory = category || null;
+      if (!effectiveCategory && translationSettings) {
+        const { data: allowed } = await supabase.rpc("get_chat_allowed_categories", {
+          p_chat_id: translationSettings.chat_id,
+        });
+        if (allowed && allowed.length === 1) {
+          effectiveCategory = allowed[0];
+          console.log("[SUBMIT-PROPOSITION] Auto-detected category:", effectiveCategory);
+        }
+      }
+
+      // Step 4: Insert the proposition (no translations)
+      console.log("[SUBMIT-PROPOSITION] Inserting new proposition (no translations)...");
+      const { data: proposition, error: insertError } = await supabase
+        .from("propositions")
+        .insert({
+          round_id,
+          participant_id,
+          content,
+          category: effectiveCategory,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error("[SUBMIT-PROPOSITION] Insert error:", insertError);
+        return corsErrorResponse(`Failed to create proposition: ${insertError.message}`, req, 500);
+      }
+
+      console.log("[SUBMIT-PROPOSITION] Proposition created (no translations):", proposition.id);
+      return corsJsonResponse({ proposition }, req, 200);
     }
-
-    // Step 5: Insert the proposition
-    console.log("[SUBMIT-PROPOSITION] Inserting new proposition...");
-    const { data: proposition, error: insertError } = await supabase
-      .from("propositions")
-      .insert({
-        round_id,
-        participant_id,
-        content,
-        category: effectiveCategory,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      console.error("[SUBMIT-PROPOSITION] Insert error:", insertError);
-      return corsErrorResponse(`Failed to create proposition: ${insertError.message}`, req, 500);
-    }
-
-    console.log("[SUBMIT-PROPOSITION] Proposition created:", proposition.id);
-
-    // Step 5: Insert translations
-    const translationInserts = Object.entries(translations).map(([lang, translated_text]) => ({
-      proposition_id: proposition.id,
-      entity_type: "proposition",
-      field_name: "content",
-      language_code: lang,
-      translated_text,
-    }));
-
-    console.log("[SUBMIT-PROPOSITION] Inserting translations...");
-    const { error: translationError } = await supabase
-      .from("translations")
-      .upsert(translationInserts, {
-        onConflict: "proposition_id,field_name,language_code",
-        ignoreDuplicates: false,
-      });
-
-    if (translationError) {
-      console.error("[SUBMIT-PROPOSITION] Translation insert error:", translationError);
-      // Don't fail the request if translations fail - they can be regenerated
-      // The proposition was already created successfully
-    }
-
-    console.log("[SUBMIT-PROPOSITION] Success - returning proposition");
-    return corsJsonResponse({ proposition }, req, 200);
   } catch (error) {
     console.error("[SUBMIT-PROPOSITION] Error:", error);
     return corsErrorResponse(

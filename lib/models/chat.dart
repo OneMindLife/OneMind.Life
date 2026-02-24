@@ -139,6 +139,10 @@ class Chat extends Equatable {
   final bool schedulePaused;
   final bool hostPaused;
 
+  // Per-chat translation settings (set at creation, not editable after)
+  final bool translationsEnabled;
+  final List<String> translationLanguages;
+
   // Translation fields (populated when fetching with language code)
   final String? nameTranslated;
   final String? descriptionTranslated;
@@ -189,6 +193,8 @@ class Chat extends Equatable {
     this.visibleOutsideSchedule = true,
     this.schedulePaused = false,
     this.hostPaused = false,
+    this.translationsEnabled = false,
+    this.translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
     this.nameTranslated,
     this.descriptionTranslated,
     this.initialMessageTranslated,
@@ -250,6 +256,11 @@ class Chat extends Equatable {
       visibleOutsideSchedule: json['visible_outside_schedule'] as bool? ?? true,
       schedulePaused: json['schedule_paused'] as bool? ?? false,
       hostPaused: json['host_paused'] as bool? ?? false,
+      translationsEnabled: json['translations_enabled'] as bool? ?? false,
+      translationLanguages: (json['translation_languages'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const ['en', 'es', 'pt', 'fr', 'de'],
       nameTranslated: json['name_translated'] as String?,
       descriptionTranslated: json['description_translated'] as String?,
       initialMessageTranslated: json['initial_message_translated'] as String?,
@@ -349,6 +360,8 @@ class Chat extends Equatable {
           ? scheduleWindows.map((w) => w.toJson()).toList()
           : null,
       'visible_outside_schedule': visibleOutsideSchedule,
+      'translations_enabled': translationsEnabled,
+      'translation_languages': translationLanguages,
     };
   }
 
@@ -433,6 +446,8 @@ class Chat extends Equatable {
         visibleOutsideSchedule,
         schedulePaused,
         hostPaused,
+        translationsEnabled,
+        translationLanguages,
         nameTranslated,
         descriptionTranslated,
         initialMessageTranslated,

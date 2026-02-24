@@ -191,6 +191,11 @@ class InviteService {
           accessMethod: data['access_method'] as String,
           requireApproval: data['require_approval'] as bool? ?? false,
           email: data['email'] as String,
+          translationLanguages:
+              (data['translation_languages'] as List<dynamic>?)
+                      ?.map((e) => e as String)
+                      .toList() ??
+                  const ['en'],
         );
       }
       return null;
@@ -209,6 +214,7 @@ class InviteTokenResult {
   final String accessMethod;
   final bool requireApproval;
   final String email;
+  final List<String> translationLanguages;
 
   InviteTokenResult({
     required this.isValid,
@@ -218,5 +224,6 @@ class InviteTokenResult {
     required this.accessMethod,
     required this.requireApproval,
     required this.email,
+    this.translationLanguages = const ['en'],
   });
 }

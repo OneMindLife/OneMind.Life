@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/proposition_content_card.dart';
@@ -131,8 +132,10 @@ class PreviousWinnerPanel extends StatelessWidget {
                 child: PropositionContentCard(
                   content: currentWinner.displayContent ?? l10n.unknownProposition,
                   maxHeight: 100,
-                  borderColor: hasMultipleWinners ? Colors.orange.shade300 : null,
-                  borderWidth: hasMultipleWinners ? 2 : 1,
+                  borderColor: hasMultipleWinners
+                      ? Colors.orange.shade300
+                      : AppColors.consensus,
+                  borderWidth: hasMultipleWinners ? 2 : 2,
                 ),
               ),
 
@@ -190,15 +193,15 @@ class TieBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.orange.shade100,
+        color: AppColors.consensusLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(
         l10n.nWayTie(count),
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.bold,
-          color: Colors.orange.shade800,
+          color: Color(0xFF92400E), // amber-800
         ),
       ),
     );

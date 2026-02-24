@@ -15,6 +15,7 @@ class PublicChatSummaryFixtures {
     String? descriptionTranslated,
     String? initialMessageTranslated,
     String? translationLanguage,
+    List<String>? translationLanguages,
   }) {
     return {
       'id': id,
@@ -28,6 +29,7 @@ class PublicChatSummaryFixtures {
       if (descriptionTranslated != null) 'description_translated': descriptionTranslated,
       if (initialMessageTranslated != null) 'initial_message_translated': initialMessageTranslated,
       if (translationLanguage != null) 'translation_language': translationLanguage,
+      if (translationLanguages != null) 'translation_languages': translationLanguages,
     };
   }
 
@@ -44,6 +46,7 @@ class PublicChatSummaryFixtures {
     String? descriptionTranslated,
     String? initialMessageTranslated,
     String? translationLanguage,
+    List<String> translationLanguages = const ['en'],
   }) {
     return PublicChatSummary(
       id: id,
@@ -57,6 +60,7 @@ class PublicChatSummaryFixtures {
       descriptionTranslated: descriptionTranslated,
       initialMessageTranslated: initialMessageTranslated,
       translationLanguage: translationLanguage,
+      translationLanguages: translationLanguages,
     );
   }
 

@@ -112,6 +112,54 @@ void main() {
         expect(request.resolvedAt, isNull);
       });
 
+      test('parses translation_languages from nested chats', () {
+        final json = {
+          'id': 1,
+          'chat_id': 10,
+          'display_name': 'Test User',
+          'status': 'pending',
+          'created_at': '2026-01-13T10:00:00Z',
+          'chats': {
+            'name': 'Spanish Chat',
+            'initial_message': 'Hola',
+            'translation_languages': ['es'],
+          },
+        };
+
+        final request = JoinRequest.fromJson(json);
+        expect(request.translationLanguages, ['es']);
+      });
+
+      test('defaults translationLanguages to [en] when not in chats', () {
+        final json = {
+          'id': 1,
+          'chat_id': 10,
+          'display_name': 'Test User',
+          'status': 'pending',
+          'created_at': '2026-01-13T10:00:00Z',
+          'chats': {
+            'name': 'Test Chat',
+            'initial_message': 'Hello',
+          },
+        };
+
+        final request = JoinRequest.fromJson(json);
+        expect(request.translationLanguages, ['en']);
+      });
+
+      test('defaults translationLanguages to [en] when no chats data', () {
+        final json = {
+          'id': 1,
+          'chat_id': 10,
+          'display_name': 'Test User',
+          'status': 'pending',
+          'created_at': '2026-01-13T10:00:00Z',
+        };
+
+        final request = JoinRequest.fromJson(json);
+        expect(request.translationLanguages, ['en']);
+      });
+
       test('handles authenticated user with user_id', () {
         final json = {
           'id': 1,

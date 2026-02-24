@@ -108,6 +108,7 @@ interface ChatContext {
   rating_agent_count: number;
   agent_instructions: string | null;
   agent_configs: Array<{ name: string; personality: string }> | null;
+  translation_languages: string[];
 }
 
 // Default archetype templates assigned round-robin when personality is empty.
@@ -119,6 +120,97 @@ const DEFAULT_ARCHETYPES = [
   "The Advocate — You consider human impact, equity, and who benefits or suffers. Rate highest when an idea helps real people and creates genuine value. Rate lowest when an idea ignores human needs or creates negative externalities.",
   "The Analyst — You focus on evidence, data, and measurable outcomes. Rate highest when an idea has clear metrics for success and evidence supporting its approach. Rate lowest when claims are unsubstantiated or outcomes are unmeasurable.",
 ];
+
+/**
+ * Generates topic-specific agent personas using Gemini.
+ * Each persona represents a fundamentally different stakeholder perspective
+ * so that MOVDA consensus finds what balances all interests.
+ * Returns [] on any failure (caller falls back to DEFAULT_ARCHETYPES).
+ */
+async function generateDynamicPersonas(
+  chatContext: ChatContext,
+  agentCount: number,
+  chatId: number,
+  logContext?: { chat_id?: number; cycle_id?: number; round_id?: number },
+): Promise<Array<{ name: string; personality: string }>> {
+  const topicParts: string[] = [];
+  if (chatContext.name) topicParts.push(`Topic: ${chatContext.name}`);
+  if (chatContext.description) topicParts.push(`Description: ${chatContext.description}`);
+  if (chatContext.initial_message) topicParts.push(`Initial message: ${chatContext.initial_message}`);
+  const topicContext = topicParts.join("\n");
+
+  if (!topicContext.trim()) {
+    console.warn(`${LOG_PREFIX} [PERSONA-GEN] No topic context available for chat ${chatId}, skipping generation`);
+    return [];
+  }
+
+  const generationPrompt = `You are generating AI agent personas for a consensus-building platform.
+
+Given the following topic, create exactly ${agentCount} agent personas. Each agent must optimize for a FUNDAMENTALLY DIFFERENT interest or perspective relevant to this specific topic. They should represent OPPOSING or ORTHOGONAL viewpoints so that consensus emerges from balancing all perspectives.
+
+${topicContext}
+
+Requirements:
+- Each persona gets a short name starting with "The " (e.g., "The Customer Advocate", "The Risk Analyst")
+- Each personality must be specific to the topic, not generic
+- Format each personality as: "You evaluate ONE thing: [criterion]. Rate highest when [X]. Rate lowest when [Y]."
+- Personalities should be 1-3 sentences
+
+Respond with ONLY valid JSON in this exact format, no other text:
+{"personas": [{"name": "The ...", "personality": "You evaluate ONE thing: ..."}, ...]}`;
+
+  try {
+    const startMs = Date.now();
+    const response = await openai.chat.completions.create(
+      {
+        model: "gemini-2.5-flash",
+        messages: [{ role: "user", content: generationPrompt }],
+        temperature: 1.0,
+      },
+      { signal: AbortSignal.timeout(LLM_TIMEOUT_MS) },
+    );
+
+    let raw = response.choices?.[0]?.message?.content?.trim();
+    if (!raw) throw new Error("Empty response from Gemini");
+
+    // Strip markdown code fences if present (Gemini often wraps JSON in ```json ... ```)
+    raw = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
+
+    const parsed = JSON.parse(raw);
+    const personas: Array<{ name: string; personality: string }> = parsed.personas;
+
+    if (!Array.isArray(personas) || personas.length !== agentCount) {
+      throw new Error(`Expected ${agentCount} personas, got ${Array.isArray(personas) ? personas.length : 'non-array'}`);
+    }
+    for (const p of personas) {
+      if (!p.name || !p.personality) {
+        throw new Error(`Persona missing name or personality: ${JSON.stringify(p)}`);
+      }
+    }
+
+    const durationMs = Date.now() - startMs;
+    console.log(`${LOG_PREFIX} [PERSONA-GEN] Generated ${personas.length} personas for chat ${chatId} in ${durationMs}ms`);
+    await logAgent({
+      ...logContext,
+      event_type: "generate_personas",
+      message: `Generated ${personas.length} dynamic personas for chat ${chatId}`,
+      duration_ms: durationMs,
+      metadata: { personas: personas.map(p => p.name) },
+    });
+
+    return personas;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`${LOG_PREFIX} [PERSONA-GEN] Failed to generate personas for chat ${chatId}: ${msg}`);
+    await logAgent({
+      ...logContext,
+      event_type: "generate_personas",
+      level: "warn",
+      message: `Dynamic persona generation failed, will use defaults: ${msg}`,
+    });
+    return [];
+  }
+}
 
 interface ConsensusWinner {
   cycle_number: number;
@@ -781,7 +873,7 @@ async function fetchPreviousConsensus(
 async function fetchChatContext(chatId: number): Promise<ChatContext> {
   const { data, error } = await supabase
     .from("chats")
-    .select("name, initial_message, description, confirmation_rounds_required, enable_agents, proposing_agent_count, rating_agent_count, agent_instructions, agent_configs")
+    .select("name, initial_message, description, confirmation_rounds_required, enable_agents, proposing_agent_count, rating_agent_count, agent_instructions, agent_configs, translation_languages")
     .eq("id", chatId)
     .single();
 
@@ -1090,6 +1182,15 @@ TODAY'S DATE: ${today}. Ensure any events, deadlines, or timeframes you referenc
 
 You are ${effectiveName}. ${effectivePersonality}`;
 
+  // Language compliance: inject language requirement based on chat's configured languages
+  const proposeLangs = chatContext.translation_languages || ["en"];
+  const proposePrimaryLang = proposeLangs[0];
+  const proposeLangNames: Record<string, string> = { en: "English", es: "Spanish", pt: "Portuguese", fr: "French", de: "German" };
+  const proposeLangInstruction = proposeLangs.length === 1
+    ? `\n\nLANGUAGE REQUIREMENT: This chat operates in ${proposeLangNames[proposePrimaryLang] || proposePrimaryLang}. You MUST write your proposition in ${proposeLangNames[proposePrimaryLang] || proposePrimaryLang}. Do not use any other language.`
+    : `\n\nLANGUAGE REQUIREMENT: This chat operates in ${proposeLangs.map(l => proposeLangNames[l] || l).join(", ")}. You MUST write your proposition in ${proposeLangNames[proposePrimaryLang] || proposePrimaryLang}. Auto-translation handles other languages.`;
+  const fullProposingSystemPrompt = systemPrompt + proposeLangInstruction;
+
   const confirmRounds = chatContext.confirmation_rounds_required;
 
   let contextBlock = `TOPIC: ${chatContext.name}`;
@@ -1195,7 +1296,7 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
           model: "gemini-2.5-flash",
           max_tokens: 8192,
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: fullProposingSystemPrompt },
             { role: "user", content: userPrompt + retryNote },
           ],
         },
@@ -1265,7 +1366,7 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
               model: "gemini-2.5-flash",
               max_tokens: 8192,
               messages: [
-                { role: "system", content: systemPrompt },
+                { role: "system", content: fullProposingSystemPrompt },
                 { role: "user", content: userPrompt + dedupNote },
               ],
             },
@@ -1401,6 +1502,15 @@ TODAY'S DATE: ${ratingToday}. Rate down any propositions that reference past eve
 
 You are ${effectiveName}. ${effectivePersonality}`;
 
+  // Language compliance: inject language requirement for rating justifications
+  const rateLangs = chatContext.translation_languages || ["en"];
+  const ratePrimaryLang = rateLangs[0];
+  const rateLangNames: Record<string, string> = { en: "English", es: "Spanish", pt: "Portuguese", fr: "French", de: "German" };
+  const rateLangInstruction = rateLangs.length === 1
+    ? `\n\nLANGUAGE REQUIREMENT: This chat operates in ${rateLangNames[ratePrimaryLang] || ratePrimaryLang}. You MUST write your rating justification in ${rateLangNames[ratePrimaryLang] || ratePrimaryLang}. Do not use any other language.`
+    : `\n\nLANGUAGE REQUIREMENT: This chat operates in ${rateLangs.map(l => rateLangNames[l] || l).join(", ")}. You MUST write your rating justification in ${rateLangNames[ratePrimaryLang] || ratePrimaryLang}. Auto-translation handles other languages.`;
+  const fullRatingSystemPrompt = systemPrompt + rateLangInstruction;
+
   const confirmRounds = chatContext.confirmation_rounds_required;
 
   let contextBlock = `TOPIC: ${chatContext.name}`;
@@ -1452,7 +1562,7 @@ Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposit
           max_tokens: 8192,
           response_format: { type: "json_object" },
           messages: [
-            { role: "system", content: systemPrompt },
+            { role: "system", content: fullRatingSystemPrompt },
             { role: "user", content: userPrompt },
           ],
         },
@@ -1626,7 +1736,53 @@ Deno.serve(async (req: Request) => {
       }
 
       // Fetch chat context to get per-phase agent counts
-      const dispatchChatContext = await fetchChatContext(chat_id);
+      let dispatchChatContext = await fetchChatContext(chat_id);
+
+      // --- Dynamic persona generation (first dispatch only) ---
+      if (dispatchChatContext.agent_configs === null) {
+        const agentCount = Math.max(
+          dispatchChatContext.proposing_agent_count,
+          dispatchChatContext.rating_agent_count,
+        );
+        const logCtx = { chat_id, cycle_id, round_id };
+        const generatedPersonas = await generateDynamicPersonas(
+          dispatchChatContext,
+          agentCount,
+          chat_id,
+          logCtx,
+        );
+
+        if (generatedPersonas.length > 0) {
+          // Save to DB — first-writer-wins guard
+          const { data: updated, error: saveError } = await supabase
+            .from("chats")
+            .update({ agent_configs: generatedPersonas })
+            .eq("id", chat_id)
+            .is("agent_configs", null)
+            .select("agent_configs");
+
+          if (saveError) {
+            console.warn(`${LOG_PREFIX} [PERSONA-GEN] Failed to save agent_configs: ${saveError.message}`);
+          } else if (updated && updated.length > 0) {
+            // We won the write — update participant display names
+            dispatchChatContext.agent_configs = generatedPersonas;
+            for (let i = 0; i < Math.min(generatedPersonas.length, allPersonas.length); i++) {
+              const { error: nameErr } = await supabase
+                .from("participants")
+                .update({ display_name: generatedPersonas[i].name })
+                .eq("id", allPersonas[i].participant_id);
+              if (nameErr) {
+                console.warn(`${LOG_PREFIX} [PERSONA-GEN] Failed to update display_name for participant ${allPersonas[i].participant_id}: ${nameErr.message}`);
+              }
+            }
+            console.log(`${LOG_PREFIX} [PERSONA-GEN] Saved ${generatedPersonas.length} personas and updated participant names for chat ${chat_id}`);
+          } else {
+            // Another dispatcher already saved — re-fetch to get their configs
+            console.log(`${LOG_PREFIX} [PERSONA-GEN] agent_configs already set by concurrent run, re-fetching`);
+            dispatchChatContext = await fetchChatContext(chat_id);
+          }
+        }
+      }
 
       // Limit personas to the configured count for this phase
       const phaseCount = phase === "proposing"

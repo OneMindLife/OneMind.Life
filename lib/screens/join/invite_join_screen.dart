@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../config/app_colors.dart';
 import '../../config/router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
 import '../../services/invite_service.dart';
+import '../../utils/language_utils.dart';
 import '../chat/chat_screen.dart';
 
 /// Screen that handles joining via invite token or code from URL
@@ -348,7 +350,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             Text(
               _error ?? l10n.invalidInviteDefault,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -431,6 +433,30 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                                     ),
                               ),
                             ],
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.translate,
+                                  size: 16,
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  LanguageUtils.shortLabel(
+                                    _inviteResult?.translationLanguages ??
+                                        _foundChat?.translationLanguages ??
+                                        const ['en'],
+                                  ),
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                                      ),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -441,7 +467,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                     Text(
                       chatMessage,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.grey.shade600,
+                            color: AppColors.textSecondary,
                           ),
                     ),
                   ],
@@ -470,7 +496,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             Text(
               l10n.nameVisibleNotice,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
             ),
           ],

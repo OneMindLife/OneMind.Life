@@ -768,5 +768,57 @@ void main() {
         expect(chat1, equals(chat2));
       });
     });
+
+    group('translations toggle', () {
+      test('fromJson parses translationsEnabled', () {
+        final json = ChatFixtures.json(translationsEnabled: true);
+        final chat = Chat.fromJson(json);
+        expect(chat.translationsEnabled, true);
+      });
+
+      test('fromJson defaults translationsEnabled to false', () {
+        final json = {
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+        final chat = Chat.fromJson(json);
+        expect(chat.translationsEnabled, false);
+      });
+
+      test('fromJson parses translationLanguages', () {
+        final json = ChatFixtures.json(translationLanguages: ['en', 'es']);
+        final chat = Chat.fromJson(json);
+        expect(chat.translationLanguages, ['en', 'es']);
+      });
+
+      test('fromJson defaults translationLanguages to all 5', () {
+        final json = {
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+        final chat = Chat.fromJson(json);
+        expect(chat.translationLanguages, ['en', 'es', 'pt', 'fr', 'de']);
+      });
+
+      test('toJson includes translationsEnabled', () {
+        final chat = ChatFixtures.withTranslationsEnabled();
+        final json = chat.toJson();
+        expect(json['translations_enabled'], true);
+      });
+
+      test('toJson includes translationLanguages', () {
+        final chat = ChatFixtures.withTranslationsEnabled(languages: ['en', 'es']);
+        final json = chat.toJson();
+        expect(json['translation_languages'], ['en', 'es']);
+      });
+
+      test('equatable includes translationsEnabled', () {
+        final chat1 = ChatFixtures.model();
+        final chat2 = ChatFixtures.withTranslationsEnabled();
+        expect(chat1, isNot(equals(chat2)));
+      });
+    });
   });
 }

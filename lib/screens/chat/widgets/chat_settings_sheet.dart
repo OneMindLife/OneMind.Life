@@ -211,6 +211,24 @@ class ChatSettingsSheet extends StatelessWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+                _buildSection(
+                  context,
+                  AppLocalizations.of(context)!.translationsSection,
+                  [
+                    _buildSettingRow(
+                      context,
+                      AppLocalizations.of(context)!.translationLanguagesLabel,
+                      chat.translationLanguages.join(', '),
+                    ),
+                    if (chat.translationsEnabled)
+                      _buildSettingRow(
+                        context,
+                        AppLocalizations.of(context)!.autoTranslateLabel,
+                        AppLocalizations.of(context)!.yes,
+                      ),
+                  ],
+                ),
                 if (chat.enableAiParticipant) ...[
                   const SizedBox(height: 24),
                   _buildSection(

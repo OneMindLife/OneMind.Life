@@ -16,6 +16,7 @@ class JoinRequest extends Equatable {
   // Optional: joined chat data for display in requester's list
   final String? chatName;
   final String? chatInitialMessage;
+  final List<String> translationLanguages;
 
   const JoinRequest({
     required this.id,
@@ -29,6 +30,7 @@ class JoinRequest extends Equatable {
     this.resolvedAt,
     this.chatName,
     this.chatInitialMessage,
+    this.translationLanguages = const ['en'],
   });
 
   factory JoinRequest.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,11 @@ class JoinRequest extends Equatable {
           : null,
       chatName: chatData?['name'] as String?,
       chatInitialMessage: chatData?['initial_message'] as String?,
+      translationLanguages:
+          (chatData?['translation_languages'] as List<dynamic>?)
+                  ?.map((e) => e as String)
+                  .toList() ??
+              const ['en'],
     );
   }
 
@@ -89,5 +96,6 @@ class JoinRequest extends Equatable {
         resolvedAt,
         chatName,
         chatInitialMessage,
+        translationLanguages,
       ];
 }

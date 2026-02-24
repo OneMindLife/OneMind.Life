@@ -7,6 +7,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../screens/tutorial/tutorial_data.dart';
+import '../../utils/language_utils.dart';
 
 class JoinDialog extends ConsumerStatefulWidget {
   final void Function(Chat chat) onJoined;
@@ -289,6 +290,23 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
                 ),
                 const SizedBox(height: 8),
               ],
+              Row(
+                children: [
+                  Icon(
+                    Icons.translate,
+                    size: 16,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    LanguageUtils.shortLabel(_foundChat!.translationLanguages),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               Text(
                 _foundChat!.displayInitialMessage,
                 style: Theme.of(context).textTheme.bodyMedium,

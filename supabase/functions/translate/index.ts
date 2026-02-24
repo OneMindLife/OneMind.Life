@@ -58,6 +58,9 @@ const TextItemSchema = z.object({
   field_name: z.string().min(1, "Field name is required"),
 });
 
+// Supported language codes
+const SUPPORTED_LANGUAGES = ["en", "es", "pt", "fr", "de"] as const;
+
 // Request body schema - supports both proposition and chat translations
 const RequestSchema = z.object({
   // Single text mode
@@ -70,6 +73,8 @@ const RequestSchema = z.object({
   // Legacy field for propositions
   entity_type: z.string().default("proposition"),
   field_name: z.string().default("content"),
+  // Optional: restrict translations to specific languages (defaults to all 5)
+  languages: z.array(z.enum(SUPPORTED_LANGUAGES)).optional(),
 }).refine(
   (data) => {
     // Exactly one of proposition_id or chat_id must be set
@@ -299,7 +304,9 @@ Deno.serve(async (req: Request) => {
       return corsErrorResponse(`Validation error: ${errors}`, req, 400);
     }
 
-    const { text, texts, proposition_id, chat_id, entity_type, field_name } = validationResult.data;
+    const { text, texts, proposition_id, chat_id, entity_type, field_name, languages } = validationResult.data;
+    const requestedLanguages = languages ?? [...SUPPORTED_LANGUAGES];
+    console.log("[TRANSLATE] Requested languages:", requestedLanguages);
 
     // Build list of items to translate
     interface TranslateItem {
@@ -338,8 +345,10 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Prepare insert records for this item
-      const inserts = Object.entries(translations).map(([lang, translated_text]) => {
+      // Prepare insert records for this item, filtered to requested languages
+      const inserts = Object.entries(translations)
+        .filter(([lang]) => requestedLanguages.includes(lang as typeof SUPPORTED_LANGUAGES[number]))
+        .map(([lang, translated_text]) => {
         const record: {
           proposition_id?: number;
           chat_id?: number;

@@ -41,6 +41,9 @@ class ChatFixtures {
     bool visibleOutsideSchedule = true,
     bool schedulePaused = false,
     bool hostPaused = false,
+    // Translation toggle fields
+    bool translationsEnabled = false,
+    List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
     // Translation fields
     String? nameTranslated,
     String? descriptionTranslated,
@@ -85,6 +88,8 @@ class ChatFixtures {
       'visible_outside_schedule': visibleOutsideSchedule,
       'schedule_paused': schedulePaused,
       'host_paused': hostPaused,
+      'translations_enabled': translationsEnabled,
+      'translation_languages': translationLanguages,
       'name_translated': nameTranslated,
       'description_translated': descriptionTranslated,
       'initial_message_translated': initialMessageTranslated,
@@ -330,6 +335,18 @@ class ChatFixtures {
         inviteCode: 'CODE${i + 1}'.padRight(6, '0').substring(0, 6),
       ),
     );
+  }
+
+  /// Chat with translations enabled
+  static Chat withTranslationsEnabled({
+    int id = 1,
+    List<String> languages = const ['en', 'es', 'pt', 'fr', 'de'],
+  }) {
+    return Chat.fromJson(json(
+      id: id,
+      translationsEnabled: true,
+      translationLanguages: languages,
+    ));
   }
 
   /// Chat with Spanish translations

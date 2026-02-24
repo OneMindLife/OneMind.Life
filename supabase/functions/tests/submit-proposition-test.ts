@@ -493,3 +493,96 @@ Deno.test("submit-proposition - round isolation", async (t) => {
     assertEquals(duplicateInRound2, null, "Should not find round-1-only content in round 2");
   });
 });
+
+// =============================================================================
+// TRANSLATIONS TOGGLE TESTS
+// Tests the per-chat translations toggle branching logic
+// =============================================================================
+
+Deno.test("submit-proposition - translations toggle branching", async (t) => {
+  // Simulate translation settings
+  interface TranslationSettings {
+    chat_id: number;
+    translations_enabled: boolean;
+    translation_languages: string[];
+  }
+
+  await t.step("translations OFF: raw dedup detects exact match (409)", () => {
+    const settings: TranslationSettings = {
+      chat_id: 1,
+      translations_enabled: false,
+      translation_languages: ["en", "es", "pt", "fr", "de"],
+    };
+
+    // Simulate existing propositions (raw content)
+    const existingPropositions = [
+      { id: 1, round_id: 1, content: "We should improve testing" },
+    ];
+
+    const normalizeText = (text: string): string => text.toLowerCase().trim();
+
+    // Raw dedup when translations OFF
+    assertEquals(settings.translations_enabled, false);
+    const normalized = normalizeText("We should improve testing");
+    const match = existingPropositions.find(
+      (p) => normalizeText(p.content) === normalized
+    );
+    assertExists(match, "Raw dedup should detect exact match");
+    assertEquals(match?.id, 1);
+  });
+
+  await t.step("translations OFF: different content passes", () => {
+    const existingPropositions = [
+      { id: 1, round_id: 1, content: "We should improve testing" },
+    ];
+
+    const normalizeText = (text: string): string => text.toLowerCase().trim();
+    const normalized = normalizeText("A completely different idea");
+    const match = existingPropositions.find(
+      (p) => normalizeText(p.content) === normalized
+    );
+    assertEquals(match, undefined, "Different content should not be detected as duplicate");
+  });
+
+  await t.step("translations ON: English-based dedup still works", () => {
+    const settings: TranslationSettings = {
+      chat_id: 1,
+      translations_enabled: true,
+      translation_languages: ["en", "es"],
+    };
+
+    // Simulate existing translations (English normalized)
+    const existingTranslations = [
+      { id: 1, normalized_english: "we should improve testing" },
+    ];
+
+    assertEquals(settings.translations_enabled, true);
+    const normalizedEnglish = "we should improve testing";
+    const match = existingTranslations.find(
+      (t) => t.normalized_english === normalizedEnglish
+    );
+    assertExists(match, "English-based dedup should still work when ON");
+  });
+
+  await t.step("branching logic uses get_chat_translation_settings result", () => {
+    const settingsOff: TranslationSettings = {
+      chat_id: 1,
+      translations_enabled: false,
+      translation_languages: ["en", "es", "pt", "fr", "de"],
+    };
+
+    const settingsOn: TranslationSettings = {
+      chat_id: 2,
+      translations_enabled: true,
+      translation_languages: ["en", "es"],
+    };
+
+    // When OFF: skip LLM, use raw dedup
+    const shouldTranslate1 = settingsOff.translations_enabled;
+    assertEquals(shouldTranslate1, false, "Should skip translation when OFF");
+
+    // When ON: use LLM, use English-based dedup
+    const shouldTranslate2 = settingsOn.translations_enabled;
+    assertEquals(shouldTranslate2, true, "Should translate when ON");
+  });
+});

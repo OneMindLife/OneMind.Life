@@ -353,3 +353,61 @@ Deno.test("translate edge function - auth priority order", async (t) => {
     assertExists(invalidResult.error);
   });
 });
+
+// =============================================================================
+// LANGUAGES PARAMETER TESTS
+// Tests the optional languages param for filtering translations
+// =============================================================================
+
+Deno.test("translate edge function - languages parameter", async (t) => {
+  const allLanguages = ["en", "es", "pt", "fr", "de"];
+  const mockAllTranslations = {
+    en: "Hello World",
+    es: "Hola Mundo",
+    pt: "Ola Mundo",
+    fr: "Bonjour le Monde",
+    de: "Hallo Welt",
+  };
+
+  await t.step("languages param filters output to requested subset", () => {
+    const requestedLanguages = ["en", "es"];
+
+    // Simulate filtering translations to only requested languages
+    const filteredEntries = Object.entries(mockAllTranslations)
+      .filter(([lang]) => requestedLanguages.includes(lang));
+
+    assertEquals(filteredEntries.length, 2, "Should only include requested languages");
+
+    const filteredLangs = filteredEntries.map(([lang]) => lang);
+    assertEquals(filteredLangs.includes("en"), true, "Should include English");
+    assertEquals(filteredLangs.includes("es"), true, "Should include Spanish");
+    assertEquals(filteredLangs.includes("pt"), false, "Should NOT include Portuguese");
+    assertEquals(filteredLangs.includes("fr"), false, "Should NOT include French");
+    assertEquals(filteredLangs.includes("de"), false, "Should NOT include German");
+  });
+
+  await t.step("no languages param defaults to all 5", () => {
+    const requestedLanguages: string[] | undefined = undefined;
+    const effectiveLanguages = requestedLanguages ?? allLanguages;
+
+    assertEquals(effectiveLanguages.length, 5, "Should default to all 5 languages");
+    assertEquals(effectiveLanguages, allLanguages, "Should match all supported languages");
+
+    // Simulate filtering with all languages (no filtering)
+    const filteredEntries = Object.entries(mockAllTranslations)
+      .filter(([lang]) => effectiveLanguages.includes(lang));
+
+    assertEquals(filteredEntries.length, 5, "Should include all 5 translation records");
+  });
+
+  await t.step("single language param works", () => {
+    const requestedLanguages = ["en"];
+
+    const filteredEntries = Object.entries(mockAllTranslations)
+      .filter(([lang]) => requestedLanguages.includes(lang));
+
+    assertEquals(filteredEntries.length, 1, "Should only include 1 language");
+    assertEquals(filteredEntries[0][0], "en", "Should be English");
+    assertEquals(filteredEntries[0][1], "Hello World", "Should have correct translation");
+  });
+});

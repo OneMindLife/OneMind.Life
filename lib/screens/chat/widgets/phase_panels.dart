@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/countdown_timer.dart';
@@ -430,6 +431,10 @@ class ProposingStatePanel extends StatelessWidget {
                                 : l10n.addAnotherIdea,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: const BorderSide(color: AppColors.proposing, width: 2),
                     ),
                     filled: true,
                     suffixIcon: value.text.isNotEmpty
@@ -875,9 +880,12 @@ class RatingStatePanel extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: ElevatedButton(
+                  child: FilledButton(
                     key: const Key('start-rating-button'),
                     onPressed: isPaused ? null : onStartRating,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.rating,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

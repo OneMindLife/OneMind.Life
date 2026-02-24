@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
+import '../../utils/language_utils.dart';
 import '../chat/chat_screen.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
@@ -259,7 +261,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Icon(
               Icons.public_off,
               size: 48,
-              color: Colors.grey.shade400,
+              color: AppColors.textMuted,
             ),
             const SizedBox(height: 16),
             Text(
@@ -273,7 +275,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             Text(
               l10n.beFirstToCreate,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Colors.grey.shade600,
+                    color: AppColors.textSecondary,
                   ),
             ),
           ],
@@ -419,6 +421,20 @@ class _PublicChatCard extends StatelessWidget {
                               participantText,
                               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                     color: colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.translate,
+                              size: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              LanguageUtils.shortLabel(chat.translationLanguages),
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                             ),
                           ],
@@ -444,7 +460,7 @@ class _PublicChatCard extends StatelessWidget {
               Text(
                 chat.displayInitialMessage,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.outline,
+                      color: AppColors.textSecondary,
                       fontStyle: FontStyle.italic,
                     ),
                 maxLines: 2,

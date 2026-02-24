@@ -311,11 +311,14 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
           onContinue: () => Navigator.pop(context, chat),
         );
       }
-    } catch (e, stackTrace) {
-      debugPrint('[CreateChatScreen] Error creating chat: $e');
-      debugPrint('[CreateChatScreen] Stack trace: $stackTrace');
+    } catch (e) {
       if (mounted) {
-        context.showErrorSnackBar(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString()),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
       }
     } finally {
       if (mounted) {

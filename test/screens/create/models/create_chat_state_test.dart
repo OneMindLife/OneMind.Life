@@ -412,4 +412,55 @@ void main() {
       expect(ScheduleType.values.contains(ScheduleType.recurring), isTrue);
     });
   });
+
+  group('TranslationSettings', () {
+    test('defaults() returns correct default values', () {
+      final settings = TranslationSettings.defaults();
+
+      expect(settings.enabled, false);
+      expect(settings.languages, {'en'});
+    });
+
+    test('copyWith updates enabled only', () {
+      final settings = TranslationSettings.defaults();
+      final updated = settings.copyWith(enabled: true);
+
+      expect(updated.enabled, true);
+      expect(updated.languages, settings.languages);
+    });
+
+    test('copyWith updates languages only', () {
+      final settings = TranslationSettings.defaults();
+      final updated = settings.copyWith(languages: {'en', 'es'});
+
+      expect(updated.enabled, settings.enabled);
+      expect(updated.languages, {'en', 'es'});
+    });
+
+    test('copyWith updates both fields', () {
+      final settings = TranslationSettings.defaults();
+      final updated = settings.copyWith(
+        enabled: true,
+        languages: {'fr', 'de'},
+      );
+
+      expect(updated.enabled, true);
+      expect(updated.languages, {'fr', 'de'});
+    });
+
+    test('equality works correctly', () {
+      final a = TranslationSettings.defaults();
+      final b = TranslationSettings.defaults();
+      expect(a, equals(b));
+
+      final c = a.copyWith(enabled: true);
+      expect(a, isNot(equals(c)));
+    });
+
+    test('equality considers languages', () {
+      final a = TranslationSettings.defaults();
+      final b = a.copyWith(languages: {'en', 'es'});
+      expect(a, isNot(equals(b)));
+    });
+  });
 }

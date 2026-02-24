@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/public_chat_summary.dart';
+import '../../../utils/language_utils.dart';
 
 /// A compact card for displaying a public chat in the discover section.
 /// Used in the horizontal scrolling row on the home screen.
@@ -68,7 +70,7 @@ class PublicChatCard extends StatelessWidget {
                   child: Text(
                     chat.displayInitialMessage,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
+                      color: AppColors.textSecondary,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -87,6 +89,22 @@ class PublicChatCard extends StatelessWidget {
                       participantText,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.translate,
+                      size: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 2),
+                    Flexible(
+                      child: Text(
+                        LanguageUtils.shortLabel(chat.translationLanguages),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],

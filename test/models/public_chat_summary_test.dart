@@ -103,6 +103,46 @@ void main() {
       });
     });
 
+    group('translationLanguages', () {
+      test('defaults to [en] when not in JSON', () {
+        final json = {
+          'id': 1,
+          'name': 'Test Chat',
+          'participant_count': 5,
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final summary = PublicChatSummary.fromJson(json);
+        expect(summary.translationLanguages, ['en']);
+      });
+
+      test('parses translation_languages array', () {
+        final json = {
+          'id': 1,
+          'name': 'Test Chat',
+          'participant_count': 5,
+          'created_at': '2024-01-01T00:00:00Z',
+          'translation_languages': ['es', 'pt'],
+        };
+
+        final summary = PublicChatSummary.fromJson(json);
+        expect(summary.translationLanguages, ['es', 'pt']);
+      });
+
+      test('handles null translation_languages', () {
+        final json = {
+          'id': 1,
+          'name': 'Test Chat',
+          'participant_count': 5,
+          'created_at': '2024-01-01T00:00:00Z',
+          'translation_languages': null,
+        };
+
+        final summary = PublicChatSummary.fromJson(json);
+        expect(summary.translationLanguages, ['en']);
+      });
+    });
+
     group('displayInitialMessage', () {
       test('returns initialMessage when present', () {
         final summary = PublicChatSummary(

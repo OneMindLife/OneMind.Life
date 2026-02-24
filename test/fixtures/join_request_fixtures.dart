@@ -14,6 +14,7 @@ class JoinRequestFixtures {
     String status = 'pending',
     String? chatName = 'Test Chat',
     String? chatInitialMessage = 'Welcome!',
+    List<String>? translationLanguages,
   }) {
     return {
       'id': id,
@@ -28,6 +29,7 @@ class JoinRequestFixtures {
         'chats': {
           'name': chatName,
           'initial_message': chatInitialMessage,
+          if (translationLanguages != null) 'translation_languages': translationLanguages,
         },
     };
   }
@@ -42,6 +44,7 @@ class JoinRequestFixtures {
     JoinRequestStatus status = JoinRequestStatus.pending,
     String? chatName = 'Test Chat',
     String? chatInitialMessage = 'Welcome!',
+    List<String> translationLanguages = const ['en'],
   }) {
     return JoinRequest(
       id: id,
@@ -54,6 +57,7 @@ class JoinRequestFixtures {
       createdAt: _fixedDate,
       chatName: chatName,
       chatInitialMessage: chatInitialMessage,
+      translationLanguages: translationLanguages,
     );
   }
 
