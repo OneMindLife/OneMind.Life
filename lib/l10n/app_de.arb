@@ -1041,6 +1041,7 @@
   "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
   "tutorialRatingCarryForwardHint": "Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
   "tutorialTapTabHint": "Tippe oben auf \"{tabName}\" um fortzufahren.",
+  "tutorialResultTapTabHint": "Jetzt wo du weisst welcher Vorschlag gewonnen hat, mal sehen ob du etwas noch Besseres vorschlagen kannst! Tippe oben auf \"{tabName}\" um fortzufahren.",
   "tutorialRound2PromptSimplified": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?",
   "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein als '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

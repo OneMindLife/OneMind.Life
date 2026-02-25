@@ -1012,6 +1012,12 @@
       "tabName": {"type": "String"}
     }
   },
+  "tutorialResultTapTabHint": "Now that you know which proposition won, let's see if you can come up with something even better! Tap \"{tabName}\" above to continue.",
+  "@tutorialResultTapTabHint": {
+    "placeholders": {
+      "tabName": {"type": "String"}
+    }
+  },
   "tutorialRound2PromptSimplified": "Time for the next round! Can you think of something better?",
   "tutorialRound2PromptSimplifiedTemplate": "Time for the next round! Can you think of something better than '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

@@ -322,7 +322,7 @@ void main() {
     });
 
     group('Share demo', () {
-      testWidgets('share button appears only at shareDemo step', (tester) async {
+      testWidgets('share and participants icons visible in AppBar during tutorial', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -333,8 +333,9 @@ void main() {
         // Navigate to proposing
         await _navigateToProposing(tester);
 
-        // Share button should NOT be visible during proposing
-        expect(find.byKey(const Key('tutorial-share-button')), findsNothing);
+        // Share and participants icons should be visible in AppBar
+        expect(find.byKey(const Key('tutorial-share-button')), findsOneWidget);
+        expect(find.byIcon(Icons.people_outline), findsOneWidget);
       });
 
       testWidgets('close button shows skip confirmation', (tester) async {

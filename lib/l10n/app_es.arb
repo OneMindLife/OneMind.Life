@@ -1040,6 +1040,7 @@
   "tutorialRound2Prompt": "El ganador 'Exito' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.",
   "tutorialRatingCarryForwardHint": "Este es el ganador de la ronda anterior. Si gana de nuevo esta ronda, se agrega permanentemente al chat.",
   "tutorialTapTabHint": "Toca \"{tabName}\" arriba para continuar.",
+  "tutorialResultTapTabHint": "Ahora que sabes cual propuesta gano, veamos si puedes proponer algo aun mejor! Toca \"{tabName}\" arriba para continuar.",
   "tutorialRound2PromptSimplified": "Es hora de la siguiente ronda! Puedes pensar en algo mejor?",
   "tutorialRound2PromptSimplifiedTemplate": "Es hora de la siguiente ronda! Puedes pensar en algo mejor que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

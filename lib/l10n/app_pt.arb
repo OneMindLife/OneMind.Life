@@ -1040,6 +1040,7 @@
   "tutorialRound2Prompt": "O vencedor 'Sucesso' e automaticamente levado para competir novamente. Precisa vencer 2 rodadas seguidas para se tornar uma resposta permanente.",
   "tutorialRatingCarryForwardHint": "Este e o vencedor da rodada anterior. Se vencer novamente esta rodada, sera adicionado permanentemente ao chat.",
   "tutorialTapTabHint": "Toque em \"{tabName}\" acima para continuar.",
+  "tutorialResultTapTabHint": "Agora que voce sabe qual proposta venceu, vamos ver se consegue propor algo ainda melhor! Toque em \"{tabName}\" acima para continuar.",
   "tutorialRound2PromptSimplified": "Hora da proxima rodada! Consegue pensar em algo melhor?",
   "tutorialRound2PromptSimplifiedTemplate": "Hora da proxima rodada! Consegue pensar em algo melhor que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

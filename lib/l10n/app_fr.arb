@@ -1040,6 +1040,7 @@
   "tutorialRound2Prompt": "Le gagnant 'Succes' est automatiquement reporte pour concourir a nouveau. Il doit gagner 2 tours consecutifs pour devenir une reponse permanente.",
   "tutorialRatingCarryForwardHint": "C'est le gagnant du tour precedent. S'il gagne a nouveau ce tour, il sera ajoute definitivement au chat.",
   "tutorialTapTabHint": "Appuyez sur \"{tabName}\" ci-dessus pour continuer.",
+  "tutorialResultTapTabHint": "Maintenant que vous savez quelle proposition a gagne, voyons si vous pouvez proposer quelque chose d'encore mieux! Appuyez sur \"{tabName}\" ci-dessus pour continuer.",
   "tutorialRound2PromptSimplified": "C'est l'heure du prochain tour! Pouvez-vous faire mieux?",
   "tutorialRound2PromptSimplifiedTemplate": "C'est l'heure du prochain tour! Pouvez-vous faire mieux que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

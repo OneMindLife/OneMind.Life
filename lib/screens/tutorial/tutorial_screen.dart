@@ -384,8 +384,18 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 // Language selector on intro screen
                 if (state.currentStep == TutorialStep.intro)
                   const LanguageSelector(compact: true),
-                // Share button - only shown at shareDemo step
-                if (showShareButton)
+                // Participants and share icons (after intro, matching chat screen)
+                if (state.currentStep != TutorialStep.intro) ...[
+                  Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return IconButton(
+                        icon: const Icon(Icons.people_outline),
+                        tooltip: l10n.participants,
+                        onPressed: () {},
+                      );
+                    },
+                  ),
                   Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
@@ -393,10 +403,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                         key: const Key('tutorial-share-button'),
                         icon: const Icon(Icons.ios_share),
                         tooltip: l10n.tutorialShareTooltip,
-                        onPressed: _showDemoQrCode,
+                        onPressed: showShareButton ? _showDemoQrCode : () {},
                       );
                     },
                   ),
+                ],
                 // Exit button (not on intro - skip is in panel)
                 if (state.currentStep != TutorialStep.intro)
                   Builder(
@@ -511,12 +522,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         final pos = targetBox.localToGlobal(Offset.zero, ancestor: stackBox);
         newTop = pos.dy + targetBox.size.height + 12;
       case TutorialStep.chatTourProposing:
-        // Above the proposing area at bottom
-        final tooltipBox =
+        // Above the proposing input area
+        final proposingBox =
+            _tourProposingKey.currentContext?.findRenderObject() as RenderBox?;
+        if (proposingBox == null) return;
+        final proposingPos =
+            proposingBox.localToGlobal(Offset.zero, ancestor: stackBox);
+        final tooltipBoxP =
             _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
-        final tooltipH = tooltipBox?.size.height ?? 180;
-        // Place above the bottom input area (input ~80px + padding)
-        newTop = stackBox.size.height - tooltipH - 100;
+        final tooltipH = tooltipBoxP?.size.height ?? 180;
+        newTop = proposingPos.dy - tooltipH - 12;
       case TutorialStep.chatTourParticipants:
         // Just below AppBar
         newTop = 8;
@@ -550,7 +565,30 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
     // Measure tooltip position after layout
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _updateChatTourTooltipPosition();
+      if (mounted) {
+        _updateChatTourTooltipPosition();
+        // Debug: print dimensions of tour elements
+        final stackBox = _tourBodyStackKey.currentContext?.findRenderObject() as RenderBox?;
+        final messageBox = _tourMessageKey.currentContext?.findRenderObject() as RenderBox?;
+        final proposingBox = _tourProposingKey.currentContext?.findRenderObject() as RenderBox?;
+        final tooltipBox = _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+        print('=== CHAT TOUR DEBUG ===');
+        print('Step: ${state.currentStep}');
+        print('Stack size: ${stackBox?.size}');
+        print('Message size: ${messageBox?.size}');
+        print('Proposing size: ${proposingBox?.size}');
+        print('Tooltip size: ${tooltipBox?.size}');
+        if (stackBox != null && proposingBox != null) {
+          final proposingPos = proposingBox.localToGlobal(Offset.zero, ancestor: stackBox);
+          print('Proposing top in stack: ${proposingPos.dy}');
+        }
+        if (stackBox != null && messageBox != null) {
+          final messagePos = messageBox.localToGlobal(Offset.zero, ancestor: stackBox);
+          print('Message top in stack: ${messagePos.dy}');
+        }
+        print('Tooltip top: $_tourTooltipTop');
+        print('========================');
+      }
     });
 
     // Chat name for title
@@ -647,28 +685,25 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 children: [
                   TutorialProgressDots(currentStep: step),
                   // Initial message card
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: KeyedSubtree(
-                          key: _tourMessageKey,
-                          child: AnimatedOpacity(
-                            opacity: _chatTourOpacity(
-                                step, TutorialStep.chatTourMessage),
-                            duration: const Duration(milliseconds: 250),
-                            child: _buildMessageCard(
-                              l10n.initialMessage,
-                              initialMessage,
-                              isPrimary: true,
-                            ),
-                          ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 8),
+                    child: KeyedSubtree(
+                      key: _tourMessageKey,
+                      child: AnimatedOpacity(
+                        opacity: _chatTourOpacity(
+                            step, TutorialStep.chatTourMessage),
+                        duration: const Duration(milliseconds: 250),
+                        child: _buildMessageCard(
+                          l10n.initialMessage,
+                          initialMessage,
+                          isPrimary: true,
                         ),
                       ),
                     ),
                   ),
-                  // Mock proposing input at bottom
+                  const Spacer(),
+                  // Mock bottom area (tab bar + proposing input)
                   KeyedSubtree(
                     key: _tourProposingKey,
                     child: AnimatedOpacity(
@@ -676,33 +711,60 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                           step, TutorialStep.chatTourProposing),
                       duration: const Duration(milliseconds: 250),
                       child: Container(
-                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: theme.colorScheme.surface,
                           border: Border(
                             top: BorderSide(color: theme.dividerColor),
                           ),
                         ),
-                        child: Row(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Expanded(
-                              child: TextField(
-                                enabled: false,
-                                decoration: InputDecoration(
-                                  hintText: l10n.shareYourIdea,
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                  ),
-                                  contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16, vertical: 12),
-                                  isDense: true,
+                            // Tab bar label
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.surfaceContainerHigh,
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(12),
+                                  topRight: Radius.circular(12),
+                                ),
+                              ),
+                              child: Text(
+                                l10n.yourProposition,
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
-                            FilledButton(
-                              onPressed: null,
-                              child: Text(l10n.submit),
+                            // Proposing input
+                            Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: TextField(
+                                      enabled: false,
+                                      decoration: InputDecoration(
+                                        hintText: l10n.shareYourIdea,
+                                        border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        filled: true,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  FilledButton(
+                                    onPressed: null,
+                                    child: Text(l10n.submit),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -906,6 +968,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           // Tab bar
           _buildToggleTabs(state, showPreviousWinnerTab,
             isPhaseTabHighlighted: isPhaseTabHighlighted,
+            isPhaseTabLocked: isInActionStep && !_hintContinueClicked,
             onPhaseTabAction: isPhaseTabHighlighted ? () {
               if (isResultStep) {
                 _handleResultContinue(state);
@@ -924,7 +987,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             ),
           if (isResultStep && _hintContinueClicked)
             _buildEducationalHint(
-              l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
+              l10n.tutorialResultTapTabHint(_getPhaseTabLabel(state)),
               icon: Icons.touch_app_outlined,
             ),
 
@@ -976,6 +1039,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   Widget _buildToggleTabs(TutorialChatState state, bool hasPreviousWinner, {
     bool isPhaseTabHighlighted = false,
+    bool isPhaseTabLocked = false,
     VoidCallback? onPhaseTabAction,
   }) {
     final l10n = AppLocalizations.of(context);
@@ -1025,9 +1089,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           // Current Phase Tab (highlighted during result/educational steps)
           Expanded(
             child: GestureDetector(
-              onTap: onPhaseTabAction ?? (hasPreviousWinner
-                  ? () => setState(() => _showPreviousWinner = false)
-                  : null),
+              onTap: isPhaseTabLocked
+                  ? null
+                  : onPhaseTabAction ?? (hasPreviousWinner
+                      ? () => setState(() => _showPreviousWinner = false)
+                      : null),
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 decoration: BoxDecoration(
