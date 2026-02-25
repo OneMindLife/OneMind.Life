@@ -83,8 +83,8 @@ class WelcomeHeader extends ConsumerWidget {
     );
   }
 
-  void _saveName(WidgetRef ref, String name) {
-    ref.read(authServiceProvider).setDisplayName(name);
+  Future<void> _saveName(WidgetRef ref, String name) async {
+    await ref.read(authServiceProvider).setDisplayName(name);
     // Invalidate the display name provider so the UI rebuilds
     ref.invalidate(authDisplayNameProvider);
   }
