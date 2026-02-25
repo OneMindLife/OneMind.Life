@@ -6,6 +6,13 @@ enum TutorialStep {
   // Intro
   intro,
 
+  // Chat screen tour (after template, before rounds)
+  chatTourTitle,
+  chatTourMessage,
+  chatTourProposing,
+  chatTourParticipants,
+  chatTourShare,
+
   // Round 1
   round1Proposing,
   round1Rating,
@@ -101,6 +108,18 @@ class TutorialChatState extends Equatable {
     this.round2Results = const [],
     this.round3Results = const [],
   });
+
+  /// Whether the current step is a chat tour step
+  bool get isChatTourStep =>
+      currentStep.index >= TutorialStep.chatTourTitle.index &&
+      currentStep.index <= TutorialStep.chatTourShare.index;
+
+  /// Zero-based index within the chat tour (0..4)
+  int get chatTourStepIndex =>
+      currentStep.index - TutorialStep.chatTourTitle.index;
+
+  /// Total number of chat tour steps
+  static const int chatTourTotalSteps = 5;
 
   /// Get the user's current proposition based on round
   String? get currentUserProposition {

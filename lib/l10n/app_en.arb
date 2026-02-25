@@ -1270,5 +1270,16 @@
   "iAlsoSpeak": "I also speak",
   "spokenLanguages": "Spoken Languages",
   "homeTourWelcomeNameTitle": "Your Display Name",
-  "homeTourWelcomeNameDesc": "This is your display name. Tap the pencil icon to change it anytime!"
+  "homeTourWelcomeNameDesc": "This is your display name. Tap the pencil icon to change it anytime!",
+
+  "chatTourTitleTitle": "Chat Name",
+  "chatTourTitleDesc": "This is the chat name. Each chat has a topic everyone discusses together.",
+  "chatTourMessageTitle": "Discussion Question",
+  "chatTourMessageDesc": "This is the question being discussed. Everyone submits ideas in response.",
+  "chatTourProposingTitle": "Submit Ideas",
+  "chatTourProposingDesc": "This is where you type and submit your ideas at the start of each round.",
+  "chatTourParticipantsTitle": "Participants",
+  "chatTourParticipantsDesc": "Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who's in the chat.",
+  "chatTourShareTitle": "Share Chat",
+  "chatTourShareDesc": "Share this chat with friends using an invite link or QR code."
 }

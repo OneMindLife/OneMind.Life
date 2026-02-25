@@ -32,11 +32,30 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     );
   }
 
-  /// Select a template and advance to round 1
+  /// Select a template and advance to chat tour
   void selectTemplate(String templateKey, {String? customQuestion}) {
     state = state.copyWith(
       selectedTemplate: templateKey,
       customQuestion: customQuestion,
+      currentStep: TutorialStep.chatTourTitle,
+    );
+  }
+
+  /// Advance to the next chat tour step.
+  /// On the last tour step, transitions to round 1.
+  void nextChatTourStep() {
+    if (state.currentStep == TutorialStep.chatTourShare) {
+      // Last tour step → begin round 1
+      beginRound1();
+      return;
+    }
+    final nextStep = TutorialStep.values[state.currentStep.index + 1];
+    state = state.copyWith(currentStep: nextStep);
+  }
+
+  /// Skip the chat tour and jump to round 1
+  void skipChatTour() {
+    state = state.copyWith(
       currentStep: TutorialStep.round1Proposing,
       currentRound: TutorialData.round1(phase: RoundPhase.proposing),
       myPropositions: [],
@@ -280,6 +299,13 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   /// Generic next step handler
   void nextStep() {
     switch (state.currentStep) {
+      case TutorialStep.chatTourTitle:
+      case TutorialStep.chatTourMessage:
+      case TutorialStep.chatTourProposing:
+      case TutorialStep.chatTourParticipants:
+      case TutorialStep.chatTourShare:
+        nextChatTourStep();
+        break;
       case TutorialStep.round1Result:
         continueToRound2();
         break;
@@ -408,6 +434,11 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
   void nextStep() {
     switch (state.currentStep) {
       case TutorialStep.intro:
+      case TutorialStep.chatTourTitle:
+      case TutorialStep.chatTourMessage:
+      case TutorialStep.chatTourProposing:
+      case TutorialStep.chatTourParticipants:
+      case TutorialStep.chatTourShare:
         beginRound1();
         break;
       case TutorialStep.round1Result:

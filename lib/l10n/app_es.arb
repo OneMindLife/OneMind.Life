@@ -1236,5 +1236,16 @@
   "iAlsoSpeak": "Tambien hablo",
   "spokenLanguages": "Idiomas hablados",
   "homeTourWelcomeNameTitle": "Tu nombre visible",
-  "homeTourWelcomeNameDesc": "Este es tu nombre visible. Toca el icono del lapiz para cambiarlo en cualquier momento."
+  "homeTourWelcomeNameDesc": "Este es tu nombre visible. Toca el icono del lapiz para cambiarlo en cualquier momento.",
+
+  "chatTourTitleTitle": "Nombre del Chat",
+  "chatTourTitleDesc": "Este es el nombre del chat. Cada chat tiene un tema que todos discuten juntos.",
+  "chatTourMessageTitle": "Pregunta de Discusion",
+  "chatTourMessageDesc": "Esta es la pregunta que se esta discutiendo. Todos envian ideas como respuesta.",
+  "chatTourProposingTitle": "Enviar Ideas",
+  "chatTourProposingDesc": "Aqui es donde escribes y envias tus ideas al comienzo de cada ronda.",
+  "chatTourParticipantsTitle": "Participantes",
+  "chatTourParticipantsDesc": "Conoce a los participantes del tutorial: Alice, Bob y Carol. Toca aqui para ver quien esta en el chat.",
+  "chatTourShareTitle": "Compartir Chat",
+  "chatTourShareDesc": "Comparte este chat con amigos usando un enlace de invitacion o codigo QR."
 }

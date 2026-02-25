@@ -1236,5 +1236,16 @@
   "iAlsoSpeak": "Je parle aussi",
   "spokenLanguages": "Langues parlees",
   "homeTourWelcomeNameTitle": "Votre nom d'affichage",
-  "homeTourWelcomeNameDesc": "C'est votre nom d'affichage. Appuyez sur l'icone du crayon pour le modifier a tout moment !"
+  "homeTourWelcomeNameDesc": "C'est votre nom d'affichage. Appuyez sur l'icone du crayon pour le modifier a tout moment !",
+
+  "chatTourTitleTitle": "Nom du Chat",
+  "chatTourTitleDesc": "C'est le nom du chat. Chaque chat a un sujet que tout le monde discute ensemble.",
+  "chatTourMessageTitle": "Question de Discussion",
+  "chatTourMessageDesc": "C'est la question en cours de discussion. Tout le monde soumet des idees en reponse.",
+  "chatTourProposingTitle": "Soumettre des Idees",
+  "chatTourProposingDesc": "C'est ici que vous tapez et soumettez vos idees au debut de chaque tour.",
+  "chatTourParticipantsTitle": "Participants",
+  "chatTourParticipantsDesc": "Rencontrez les participants du tutoriel : Alice, Bob et Carol. Appuyez ici pour voir qui est dans le chat.",
+  "chatTourShareTitle": "Partager le Chat",
+  "chatTourShareDesc": "Partagez ce chat avec des amis en utilisant un lien d'invitation ou un code QR."
 }

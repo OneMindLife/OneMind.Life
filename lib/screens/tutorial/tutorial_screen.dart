@@ -17,6 +17,7 @@ import '../rating/read_only_results_screen.dart';
 import 'models/tutorial_state.dart';
 import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
+import '../home_tour/widgets/spotlight_overlay.dart';
 import 'widgets/tutorial_intro_panel.dart';
 import 'widgets/tutorial_progress_dots.dart';
 
@@ -48,6 +49,19 @@ class TutorialScreen extends ConsumerStatefulWidget {
 
 class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   final _propositionController = TextEditingController();
+
+  // Chat tour: GlobalKeys for measuring widget positions
+  final _tourBodyStackKey = GlobalKey();
+  final _tourTooltipKey = GlobalKey();
+  final _tourTitleKey = GlobalKey();
+  final _tourMessageKey = GlobalKey();
+  final _tourProposingKey = GlobalKey();
+  final _tourParticipantsKey = GlobalKey();
+  final _tourShareKey = GlobalKey();
+
+  // Chat tour: animated tooltip position
+  double _tourTooltipTop = 0;
+  bool _tourMeasured = false;
 
   // UI toggle state (same as ChatScreen)
   bool _showPreviousWinner = false;
@@ -333,6 +347,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       );
     }
 
+    // Chat tour: dedicated screen with progressive reveal
+    if (state.isChatTourStep) {
+      return _buildChatTourScreen(state);
+    }
+
     // Auto-switch to Previous Winner tab when new winners arrive
     if (state.previousRoundWinners.isNotEmpty) {
       final currentRoundId = state.previousRoundWinners.first.roundId;
@@ -460,6 +479,270 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 ),
               ],
             ),
+    );
+  }
+
+  // === Chat Tour ===
+
+  /// 3-state opacity for progressive reveal:
+  /// before target → 0.0, on target → 1.0, after target → 0.25
+  double _chatTourOpacity(TutorialStep current, TutorialStep target) {
+    if (current.index < target.index) return 0.0;
+    if (current == target) return 1.0;
+    return 0.25;
+  }
+
+  void _updateChatTourTooltipPosition() {
+    final state = ref.read(tutorialChatNotifierProvider);
+    final stackBox =
+        _tourBodyStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) return;
+
+    double newTop;
+
+    switch (state.currentStep) {
+      case TutorialStep.chatTourTitle:
+        // Just below AppBar
+        newTop = 8;
+      case TutorialStep.chatTourMessage:
+        final targetBox =
+            _tourMessageKey.currentContext?.findRenderObject() as RenderBox?;
+        if (targetBox == null) return;
+        final pos = targetBox.localToGlobal(Offset.zero, ancestor: stackBox);
+        newTop = pos.dy + targetBox.size.height + 12;
+      case TutorialStep.chatTourProposing:
+        // Above the proposing area at bottom
+        final tooltipBox =
+            _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+        final tooltipH = tooltipBox?.size.height ?? 180;
+        // Place above the bottom input area (input ~80px + padding)
+        newTop = stackBox.size.height - tooltipH - 100;
+      case TutorialStep.chatTourParticipants:
+        // Just below AppBar
+        newTop = 8;
+      case TutorialStep.chatTourShare:
+        // Just below AppBar
+        newTop = 8;
+      default:
+        return;
+    }
+
+    // Clamp within bounds
+    final tooltipBox =
+        _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
+    final tooltipH = tooltipBox?.size.height ?? 180;
+    final maxTop = stackBox.size.height - tooltipH - 8;
+    newTop = newTop.clamp(0.0, maxTop);
+
+    if ((newTop - _tourTooltipTop).abs() > 0.5 || !_tourMeasured) {
+      setState(() {
+        _tourTooltipTop = newTop;
+        _tourMeasured = true;
+      });
+    }
+  }
+
+  Widget _buildChatTourScreen(TutorialChatState state) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
+    final step = state.currentStep;
+
+    // Measure tooltip position after layout
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _updateChatTourTooltipPosition();
+    });
+
+    // Chat name for title
+    final chatName = state.customQuestion != null
+        ? l10n.tutorialAppBarTitle
+        : TutorialData.chatNameForTemplate(state.selectedTemplate);
+
+    // Initial message (same logic as main build)
+    final templateKey = state.selectedTemplate;
+    final initialMessage = state.customQuestion ??
+        TutorialTemplate.translateQuestion(templateKey, l10n);
+
+    // Tooltip content
+    String tourTitle;
+    String tourDescription;
+    switch (step) {
+      case TutorialStep.chatTourTitle:
+        tourTitle = l10n.chatTourTitleTitle;
+        tourDescription = l10n.chatTourTitleDesc;
+      case TutorialStep.chatTourMessage:
+        tourTitle = l10n.chatTourMessageTitle;
+        tourDescription = l10n.chatTourMessageDesc;
+      case TutorialStep.chatTourProposing:
+        tourTitle = l10n.chatTourProposingTitle;
+        tourDescription = l10n.chatTourProposingDesc;
+      case TutorialStep.chatTourParticipants:
+        tourTitle = l10n.chatTourParticipantsTitle;
+        tourDescription = l10n.chatTourParticipantsDesc;
+      case TutorialStep.chatTourShare:
+        tourTitle = l10n.chatTourShareTitle;
+        tourDescription = l10n.chatTourShareDesc;
+      default:
+        tourTitle = '';
+        tourDescription = '';
+    }
+
+    final isLastStep =
+        state.chatTourStepIndex == TutorialChatState.chatTourTotalSteps - 1;
+
+    return Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        title: KeyedSubtree(
+          key: _tourTitleKey,
+          child: AnimatedOpacity(
+            opacity: _chatTourOpacity(step, TutorialStep.chatTourTitle),
+            duration: const Duration(milliseconds: 250),
+            child: Text(chatName),
+          ),
+        ),
+        actions: [
+          // Participants button
+          KeyedSubtree(
+            key: _tourParticipantsKey,
+            child: AnimatedOpacity(
+              opacity:
+                  _chatTourOpacity(step, TutorialStep.chatTourParticipants),
+              duration: const Duration(milliseconds: 250),
+              child: IconButton(
+                icon: const Icon(Icons.people_outline),
+                tooltip: l10n.participants,
+                onPressed: () {},
+              ),
+            ),
+          ),
+          // Share button
+          KeyedSubtree(
+            key: _tourShareKey,
+            child: AnimatedOpacity(
+              opacity: _chatTourOpacity(step, TutorialStep.chatTourShare),
+              duration: const Duration(milliseconds: 250),
+              child: IconButton(
+                icon: const Icon(Icons.ios_share),
+                tooltip: l10n.shareQrCode,
+                onPressed: () {},
+              ),
+            ),
+          ),
+          // Skip/close button (always visible)
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: l10n.tutorialSkipMenuItem,
+            onPressed: _handleSkip,
+          ),
+        ],
+      ),
+      body: SizedBox.expand(
+        child: Stack(
+          key: _tourBodyStackKey,
+          children: [
+            // Layer 1: Progressively revealed content
+            Positioned.fill(
+              child: Column(
+                children: [
+                  TutorialProgressDots(currentStep: step),
+                  // Initial message card
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: KeyedSubtree(
+                          key: _tourMessageKey,
+                          child: AnimatedOpacity(
+                            opacity: _chatTourOpacity(
+                                step, TutorialStep.chatTourMessage),
+                            duration: const Duration(milliseconds: 250),
+                            child: _buildMessageCard(
+                              l10n.initialMessage,
+                              initialMessage,
+                              isPrimary: true,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // Mock proposing input at bottom
+                  KeyedSubtree(
+                    key: _tourProposingKey,
+                    child: AnimatedOpacity(
+                      opacity: _chatTourOpacity(
+                          step, TutorialStep.chatTourProposing),
+                      duration: const Duration(milliseconds: 250),
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          border: Border(
+                            top: BorderSide(color: theme.dividerColor),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                enabled: false,
+                                decoration: InputDecoration(
+                                  hintText: l10n.shareYourIdea,
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(24),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 12),
+                                  isDense: true,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              onPressed: null,
+                              child: Text(l10n.submit),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Layer 2: Animated tooltip overlay
+            if (_tourMeasured)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 400),
+                curve: Curves.easeInOut,
+                left: 16,
+                right: 16,
+                top: _tourTooltipTop,
+                child: KeyedSubtree(
+                  key: _tourTooltipKey,
+                  child: TourTooltipCard(
+                    title: tourTitle,
+                    description: tourDescription,
+                    onNext: () => notifier.nextChatTourStep(),
+                    onSkip: () => notifier.skipChatTour(),
+                    stepIndex: state.chatTourStepIndex,
+                    totalSteps: TutorialChatState.chatTourTotalSteps,
+                    nextLabel: isLastStep
+                        ? l10n.homeTourFinish
+                        : l10n.homeTourNext,
+                    skipLabel: l10n.homeTourSkip,
+                    stepOfLabel: l10n.homeTourStepOf(
+                      state.chatTourStepIndex + 1,
+                      TutorialChatState.chatTourTotalSteps,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -358,60 +358,11 @@ void main() {
       chatNotifier = TutorialChatNotifier();
     });
 
-    group('streamlined round 1 result flow', () {
-      test('nextStep from round1Result goes directly to round2Prompt', () {
-        chatNotifier.selectTemplate('community');
-        chatNotifier.submitRound1Proposition('My Idea');
-        chatNotifier.completeRound1Rating();
-
-        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
-
-        chatNotifier.nextStep();
-
-        // Should go directly to round2Prompt (no round1SeeResults intermediate)
-        expect(chatNotifier.state.currentStep, TutorialStep.round2Prompt);
-      });
-
-      test('completeRound1Rating stores round1Results for auto-open', () {
-        chatNotifier.selectTemplate('community');
-        chatNotifier.submitRound1Proposition('My Idea');
-        chatNotifier.completeRound1Rating();
-
-        // round1Results should be populated for the results screen
-        expect(chatNotifier.state.round1Results, isNotEmpty);
-        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
-      });
-
-      test('continueToRound2 works directly from round1Result', () {
-        chatNotifier.selectTemplate('community');
-        chatNotifier.submitRound1Proposition('My Idea');
-        chatNotifier.completeRound1Rating();
-
-        expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
-
-        chatNotifier.continueToRound2();
-
-        expect(chatNotifier.state.currentStep, TutorialStep.round2Prompt);
-        expect(chatNotifier.state.hasRated, false);
-        expect(chatNotifier.state.myPropositions, isEmpty);
-      });
-
-      test('round1Result has previousRoundWinners set', () {
-        chatNotifier.selectTemplate('community');
-        chatNotifier.submitRound1Proposition('My Idea');
-        chatNotifier.completeRound1Rating();
-
-        expect(chatNotifier.state.previousRoundWinners, isNotEmpty);
-        expect(chatNotifier.state.previousRoundWinners.first.content,
-            'Community Garden');
-      });
-    });
-
     group('template selection', () {
-      test('selectTemplate sets template and advances to round1Proposing', () {
+      test('selectTemplate sets template and advances to chatTourTitle', () {
         chatNotifier.selectTemplate('community');
 
-        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
         expect(chatNotifier.state.selectedTemplate, 'community');
       });
 
@@ -420,6 +371,33 @@ void main() {
 
         expect(chatNotifier.state.selectedTemplate, 'classic');
         expect(chatNotifier.state.customQuestion, 'My question?');
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
+      });
+
+      test('skipChatTour jumps to round1Proposing', () {
+        chatNotifier.selectTemplate('community');
+        chatNotifier.skipChatTour();
+
+        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+      });
+
+      test('nextChatTourStep progresses through tour then to round1Proposing', () {
+        chatNotifier.selectTemplate('community');
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourMessage);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourProposing);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourShare);
+
+        chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
       });
 
@@ -428,6 +406,7 @@ void main() {
     group('template-aware propositions', () {
       test('community template uses community props in round 1', () {
         chatNotifier.selectTemplate('community');
+        chatNotifier.skipChatTour();
         chatNotifier.submitRound1Proposition('My Idea');
 
         // Should contain community props + user prop
@@ -440,6 +419,7 @@ void main() {
 
       test('community template round 1 winner is Community Garden', () {
         chatNotifier.selectTemplate('community');
+        chatNotifier.skipChatTour();
         chatNotifier.submitRound1Proposition('My Idea');
         chatNotifier.completeRound1Rating();
 
@@ -449,6 +429,7 @@ void main() {
 
       test('workplace template uses workplace props', () {
         chatNotifier.selectTemplate('workplace');
+        chatNotifier.skipChatTour();
         chatNotifier.submitRound1Proposition('My Idea');
 
         final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
@@ -472,8 +453,11 @@ void main() {
     group('full flow with template', () {
       test('completes entire flow with community template', () {
         chatNotifier.selectTemplate('community');
-        expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
         expect(chatNotifier.state.selectedTemplate, 'community');
+
+        // Skip chat tour to get to round 1
+        chatNotifier.skipChatTour();
 
         chatNotifier.submitRound1Proposition('Education');
         expect(chatNotifier.state.currentStep, TutorialStep.round1Rating);
@@ -498,36 +482,6 @@ void main() {
         chatNotifier.completeTutorial();
         expect(chatNotifier.state.currentStep, TutorialStep.complete);
       });
-    });
-  });
-
-  group('TutorialStep enum', () {
-    test('does not contain round1SeeResults', () {
-      // round1SeeResults was removed - verify it no longer exists
-      final stepNames = TutorialStep.values.map((s) => s.name).toList();
-      expect(stepNames, isNot(contains('round1SeeResults')));
-    });
-
-    test('round1Result is followed by round2Prompt in flow', () {
-      // Verify the expected flow order
-      final steps = TutorialStep.values;
-      final round1ResultIndex = steps.indexOf(TutorialStep.round1Result);
-      final round2PromptIndex = steps.indexOf(TutorialStep.round2Prompt);
-      expect(round2PromptIndex, round1ResultIndex + 1);
-    });
-  });
-
-  group('TutorialChatState', () {
-    test('does not have hasViewedRound1Grid field', () {
-      // Verify the state can be constructed without hasViewedRound1Grid
-      final chatNotifier = TutorialChatNotifier();
-      chatNotifier.selectTemplate('community');
-      chatNotifier.submitRound1Proposition('Test');
-      chatNotifier.completeRound1Rating();
-
-      // The state should work correctly without hasViewedRound1Grid
-      expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
-      expect(chatNotifier.state.round1Results, isNotEmpty);
     });
   });
 

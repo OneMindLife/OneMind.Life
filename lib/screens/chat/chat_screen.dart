@@ -776,18 +776,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       itemBuilder: (menuContext) {
                         final l10n = AppLocalizations.of(menuContext);
                         return [
-                          // Pause/Resume - hidden for now (feature not fully implemented)
-                          // PopupMenuItem(
-                          //   value: isHostPaused ? 'resume' : 'pause',
-                          //   child: Row(
-                          //     children: [
-                          //       Icon(isHostPaused ? Icons.play_arrow : Icons.pause),
-                          //       const SizedBox(width: 12),
-                          //       Text(isHostPaused ? l10n.resumeChat : l10n.pauseChat),
-                          //     ],
-                          //   ),
-                          // ),
-                          // const PopupMenuDivider(),
+                          PopupMenuItem(
+                            value: isHostPaused ? 'resume' : 'pause',
+                            child: Row(
+                              children: [
+                                Icon(isHostPaused ? Icons.play_arrow : Icons.pause),
+                                const SizedBox(width: 12),
+                                Text(isHostPaused ? l10n.resumeChat : l10n.pauseChat),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
                           PopupMenuItem(
                             value: 'delete',
                             child: Row(

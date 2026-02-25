@@ -8,12 +8,20 @@ import 'package:onemind_app/screens/tutorial/widgets/tutorial_progress_dots.dart
 import '../../helpers/pump_app.dart';
 
 /// Helper to navigate from intro to proposing by tapping a template card
+/// then skipping the chat tour
 Future<void> _navigateToProposing(WidgetTester tester) async {
   // Select Community Decision template directly from intro
   await tester.ensureVisible(find.text('Community Decision'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('Community Decision'));
   await tester.pumpAndSettle();
+
+  // Skip the chat tour to get to proposing
+  final skipTourFinder = find.text('Skip tour');
+  if (skipTourFinder.evaluate().isNotEmpty) {
+    await tester.tap(skipTourFinder);
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {

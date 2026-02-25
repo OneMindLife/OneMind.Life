@@ -15,26 +15,32 @@ class TutorialProgressDots extends StatelessWidget {
   /// Flow: intro → R1 propose/rate/result → R2 prompt/rate/result → R3 propose/rate/consensus → shareDemo → complete
   static const _stepSegments = {
     TutorialStep.intro: 0,
+    // Chat tour (all map to segment 1)
+    TutorialStep.chatTourTitle: 1,
+    TutorialStep.chatTourMessage: 1,
+    TutorialStep.chatTourProposing: 1,
+    TutorialStep.chatTourParticipants: 1,
+    TutorialStep.chatTourShare: 1,
     // Round 1
-    TutorialStep.round1Proposing: 1,
-    TutorialStep.round1Rating: 2,
-    TutorialStep.round1Result: 3,
+    TutorialStep.round1Proposing: 2,
+    TutorialStep.round1Rating: 3,
+    TutorialStep.round1Result: 4,
     // Round 2 (round2Prompt shows proposing input)
-    TutorialStep.round2Prompt: 4,
-    TutorialStep.round2Proposing: 4, // Same as prompt
-    TutorialStep.round2Rating: 5,
-    TutorialStep.round2Result: 6,
+    TutorialStep.round2Prompt: 5,
+    TutorialStep.round2Proposing: 5, // Same as prompt
+    TutorialStep.round2Rating: 6,
+    TutorialStep.round2Result: 7,
     // Round 3
-    TutorialStep.round3CarryForward: 7, // Legacy, maps to proposing
-    TutorialStep.round3Proposing: 7,
-    TutorialStep.round3Rating: 8,
-    TutorialStep.round3Consensus: 9,
+    TutorialStep.round3CarryForward: 8, // Legacy, maps to proposing
+    TutorialStep.round3Proposing: 8,
+    TutorialStep.round3Rating: 9,
+    TutorialStep.round3Consensus: 10,
     // Share demo and completion
-    TutorialStep.shareDemo: 10,
-    TutorialStep.complete: 11,
+    TutorialStep.shareDemo: 11,
+    TutorialStep.complete: 12,
   };
 
-  static const _totalSegments = 11;
+  static const _totalSegments = 12;
 
   @override
   Widget build(BuildContext context) {
