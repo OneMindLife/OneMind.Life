@@ -3068,14 +3068,8 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1ResultTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
+  /// **'\'{winner}\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
   String tutorialRound1ResultTemplate(String winner);
-
-  /// No description provided for @tutorialRound2PromptTemplate.
-  ///
-  /// In en, this message translates to:
-  /// **'The winner \'{winner}\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
-  String tutorialRound2PromptTemplate(String winner);
 
   /// No description provided for @tutorialAppBarTitle.
   ///
@@ -3146,7 +3140,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
+  /// **'\'Success\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
@@ -3200,14 +3194,8 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound2Result.
   ///
   /// In en, this message translates to:
-  /// **'Your idea \"{proposition}\" won! If it wins next round too, it becomes a permanent answer.'**
-  String tutorialRound2Result(String proposition);
-
-  /// No description provided for @tutorialRound2Prompt.
-  ///
-  /// In en, this message translates to:
-  /// **'The winner \'Success\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
-  String get tutorialRound2Prompt;
+  /// **'Your idea \"{proposition}\" won! The previous winner, \"{previousWinner}\", is out of the competition. If your idea wins next round too, it becomes a permanent answer.'**
+  String tutorialRound2Result(String proposition, String previousWinner);
 
   /// No description provided for @tutorialRatingCarryForwardHint.
   ///
@@ -3224,7 +3212,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialResultTapTabHint.
   ///
   /// In en, this message translates to:
-  /// **'Now that you know which proposition won, let\'s see if you can come up with something even better! Tap \"{tabName}\" above to continue.'**
+  /// **'Now that you know the winner, let\'s see if you can come up with something better next round! Tap \"{tabName}\" above to continue.'**
   String tutorialResultTapTabHint(String tabName);
 
   /// No description provided for @tutorialRound2PromptSimplified.

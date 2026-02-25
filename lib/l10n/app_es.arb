@@ -993,14 +993,8 @@
   "tutorialTemplateCustom": "Tema personalizado",
   "tutorialTemplateCustomDesc": "Escribe tu propia pregunta",
   "tutorialCustomQuestionHint": "Escribe tu pregunta...",
-  "tutorialRound1ResultTemplate": "¡'{winner}' ganó esta ronda! Pero aún no es definitivo. Debe ganar la próxima ronda para ser añadido permanentemente al chat grupal.",
+  "tutorialRound1ResultTemplate": "'{winner}' gano esta ronda! Sera llevado a la siguiente ronda, donde debe ganar de nuevo para convertirse en respuesta permanente.",
   "@tutorialRound1ResultTemplate": {
-    "placeholders": {
-      "winner": {"type": "String"}
-    }
-  },
-  "tutorialRound2PromptTemplate": "El ganador '{winner}' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.",
-  "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
@@ -1022,7 +1016,7 @@
   },
   "tutorialAddedToChat": "Tambien se te ha agregado automaticamente al chat Oficial de OneMind, donde todos discuten temas juntos.",
   "tutorialFinishButton": "Terminar Tutorial",
-  "tutorialRound1Result": "'Éxito' ganó esta ronda! Pero aún no es definitivo. Debe ganar la próxima ronda para ser añadido permanentemente al chat grupal.",
+  "tutorialRound1Result": "'Exito' gano esta ronda! Sera llevado a la siguiente ronda, donde debe ganar de nuevo para convertirse en respuesta permanente.",
   "tutorialProposingHint": "Envia una idea que quieras que sea la respuesta del grupo.",
   "tutorialTimeRemaining": "Te quedan {time}.",
   "tutorialProposingHintWithWinner": "Envia una nueva idea. Sera calificada junto con el ganador anterior.",
@@ -1031,16 +1025,16 @@
   "tutorialRatingTimeRemaining": "Te quedan {time} para completar la fase de calificacion.",
   "tutorialRatingBinaryHint": "Primero se te presentan 2 propuestas aleatorias enviadas por usuarios. Coloca la que prefieras mas en 100. Toca [swap] para invertirlas, luego toca [check] para confirmar. Nota: Tu propia propuesta no se te presentara para calificar.",
   "tutorialRatingPositioningHint": "Toca y manten [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Toca [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.",
-  "tutorialRound2Result": "Tu idea \"{proposition}\" gano! Si gana la proxima ronda tambien, se convierte en respuesta permanente.",
+  "tutorialRound2Result": "Tu idea \"{proposition}\" gano! El ganador anterior, \"{previousWinner}\", queda fuera de la competencia. Si tu idea gana la proxima ronda tambien, se convierte en respuesta permanente.",
   "@tutorialRound2Result": {
     "placeholders": {
-      "proposition": {"type": "String"}
+      "proposition": {"type": "String"},
+      "previousWinner": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "El ganador 'Exito' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.",
   "tutorialRatingCarryForwardHint": "Este es el ganador de la ronda anterior. Si gana de nuevo esta ronda, se agrega permanentemente al chat.",
   "tutorialTapTabHint": "Toca \"{tabName}\" arriba para continuar.",
-  "tutorialResultTapTabHint": "Ahora que sabes cual propuesta gano, veamos si puedes proponer algo aun mejor! Toca \"{tabName}\" arriba para continuar.",
+  "tutorialResultTapTabHint": "Ahora que conoces al ganador, veamos si puedes proponer algo mejor en la proxima ronda! Toca \"{tabName}\" arriba para continuar.",
   "tutorialRound2PromptSimplified": "Es hora de la siguiente ronda! Puedes pensar en algo mejor?",
   "tutorialRound2PromptSimplifiedTemplate": "Es hora de la siguiente ronda! Puedes pensar en algo mejor que '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

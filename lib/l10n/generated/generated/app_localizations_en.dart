@@ -1640,12 +1640,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.';
-  }
-
-  @override
-  String tutorialRound2PromptTemplate(String winner) {
-    return 'The winner \'$winner\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.';
+    return '\'$winner\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.';
   }
 
   @override
@@ -1684,7 +1679,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialFinishButton => 'Finish Tutorial';
 
   @override
-  String get tutorialRound1Result => '\'Success\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.';
+  String get tutorialRound1Result => '\'Success\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.';
 
   @override
   String get tutorialProposingHint => 'Submit an idea you want to become the group\'s answer.';
@@ -1715,12 +1710,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialRatingPositioningHint => 'Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.';
 
   @override
-  String tutorialRound2Result(String proposition) {
-    return 'Your idea \"$proposition\" won! If it wins next round too, it becomes a permanent answer.';
+  String tutorialRound2Result(String proposition, String previousWinner) {
+    return 'Your idea \"$proposition\" won! The previous winner, \"$previousWinner\", is out of the competition. If your idea wins next round too, it becomes a permanent answer.';
   }
-
-  @override
-  String get tutorialRound2Prompt => 'The winner \'Success\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.';
 
   @override
   String get tutorialRatingCarryForwardHint => 'This is last round\'s winner. If it wins again this round, it gets permanently added to the chat.';
@@ -1732,7 +1724,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tutorialResultTapTabHint(String tabName) {
-    return 'Now that you know which proposition won, let\'s see if you can come up with something even better! Tap \"$tabName\" above to continue.';
+    return 'Now that you know the winner, let\'s see if you can come up with something better next round! Tap \"$tabName\" above to continue.';
   }
 
   @override

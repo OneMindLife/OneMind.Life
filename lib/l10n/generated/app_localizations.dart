@@ -65,7 +65,8 @@ import 'app_localizations_pt.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale)
+    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -73,7 +74,8 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate =
+      _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -85,12 +87,13 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
-    delegate,
-    GlobalMaterialLocalizations.delegate,
-    GlobalCupertinoLocalizations.delegate,
-    GlobalWidgetsLocalizations.delegate,
-  ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
+      <LocalizationsDelegate<dynamic>>[
+        delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+      ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -98,7 +101,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('pt')
+    Locale('pt'),
   ];
 
   /// No description provided for @appTitle.
@@ -2127,7 +2130,11 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Phase ends early when {threshold} of {participants} participants submit ideas ({percent}%)'**
-  String proposingThresholdPreview(int threshold, int participants, int percent);
+  String proposingThresholdPreview(
+    int threshold,
+    int participants,
+    int percent,
+  );
 
   /// No description provided for @proposingThresholdPreviewSimple.
   ///
@@ -3068,14 +3075,8 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1ResultTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
+  /// **'\'{winner}\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
   String tutorialRound1ResultTemplate(String winner);
-
-  /// No description provided for @tutorialRound2PromptTemplate.
-  ///
-  /// In en, this message translates to:
-  /// **'The winner \'{winner}\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
-  String tutorialRound2PromptTemplate(String winner);
 
   /// No description provided for @tutorialAppBarTitle.
   ///
@@ -3146,7 +3147,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won this round! But it\'s still not final. It must win the next round to be permanently added to the groupchat.'**
+  /// **'\'Success\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
@@ -3200,14 +3201,8 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound2Result.
   ///
   /// In en, this message translates to:
-  /// **'Your idea \"{proposition}\" won! If it wins next round too, it becomes a permanent answer.'**
-  String tutorialRound2Result(String proposition);
-
-  /// No description provided for @tutorialRound2Prompt.
-  ///
-  /// In en, this message translates to:
-  /// **'The winner \'Success\' is automatically carried forward to compete again. It needs to win 2 rounds in a row to become a permanent answer.'**
-  String get tutorialRound2Prompt;
+  /// **'Your idea \"{proposition}\" won! The previous winner, \"{previousWinner}\", is out of the competition. If your idea wins next round too, it becomes a permanent answer.'**
+  String tutorialRound2Result(String proposition, String previousWinner);
 
   /// No description provided for @tutorialRatingCarryForwardHint.
   ///
@@ -3220,6 +3215,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap \"{tabName}\" above to continue.'**
   String tutorialTapTabHint(String tabName);
+
+  /// No description provided for @tutorialResultTapTabHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Now that you know the winner, let\'s see if you can come up with something better next round! Tap \"{tabName}\" above to continue.'**
+  String tutorialResultTapTabHint(String tabName);
 
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
@@ -4326,7 +4327,8 @@ abstract class AppLocalizations {
   String get chatTourShareDesc;
 }
 
-class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate
+    extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -4335,28 +4337,32 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
   }
 
   @override
-  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
-
-
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de': return AppLocalizationsDe();
-    case 'en': return AppLocalizationsEn();
-    case 'es': return AppLocalizationsEs();
-    case 'fr': return AppLocalizationsFr();
-    case 'pt': return AppLocalizationsPt();
+    case 'de':
+      return AppLocalizationsDe();
+    case 'en':
+      return AppLocalizationsEn();
+    case 'es':
+      return AppLocalizationsEs();
+    case 'fr':
+      return AppLocalizationsFr();
+    case 'pt':
+      return AppLocalizationsPt();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.'
+    'that was used.',
   );
 }

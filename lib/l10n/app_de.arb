@@ -994,14 +994,8 @@
   "tutorialTemplateCustom": "Eigenes Thema",
   "tutorialTemplateCustomDesc": "Eigene Frage eingeben",
   "tutorialCustomQuestionHint": "Frage eingeben...",
-  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
+  "tutorialRound1ResultTemplate": "'{winner}' hat diese Runde gewonnen! Er wird in die naechste Runde uebernommen, wo er erneut gewinnen muss um eine dauerhafte Antwort zu werden.",
   "@tutorialRound1ResultTemplate": {
-    "placeholders": {
-      "winner": {"type": "String"}
-    }
-  },
-  "tutorialRound2PromptTemplate": "Der Gewinner '{winner}' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
-  "@tutorialRound2PromptTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
@@ -1023,7 +1017,7 @@
   },
   "tutorialAddedToChat": "Du wurdest auch automatisch zum Offiziellen OneMind Chat hinzugefuegt, in dem alle gemeinsam Themen diskutieren.",
   "tutorialFinishButton": "Tutorial Beenden",
-  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Aber es ist noch nicht endgültig. Es muss die naechste Runde gewinnen, um dauerhaft zum Gruppenchat hinzugefügt zu werden.",
+  "tutorialRound1Result": "'Erfolg' hat diese Runde gewonnen! Er wird in die naechste Runde uebernommen, wo er erneut gewinnen muss um eine dauerhafte Antwort zu werden.",
   "tutorialProposingHint": "Reiche eine Idee ein, die zur Antwort der Gruppe werden soll.",
   "tutorialTimeRemaining": "Du hast noch {time}.",
   "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein. Sie wird zusammen mit dem vorherigen Gewinner bewertet.",
@@ -1032,16 +1026,16 @@
   "tutorialRatingTimeRemaining": "Du hast noch {time}, um die Bewertungsphase abzuschliessen.",
   "tutorialRatingBinaryHint": "Dir werden zuerst 2 zufaellige, von Nutzern eingereichte Vorschlaege praesentiert. Setze den, den du mehr bevorzugst, auf 100. Tippe auf [swap] um sie zu wechseln, und tippe dann auf [check] um zu bestaetigen. Hinweis: Dein eigener Vorschlag wird dir nicht zur Bewertung angezeigt.",
   "tutorialRatingPositioningHint": "Tippe und halte [up] und [down] um die hervorgehobene Idee zu verschieben. Tippe auf [check] um sie zu platzieren. Tippe auf [undo] um eine Platzierung rueckgaengig zu machen, und [zoomin] [zoomout] zum Vergroessern und Verkleinern.",
-  "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Wenn sie auch die naechste Runde gewinnt, wird sie eine dauerhafte Antwort.",
+  "tutorialRound2Result": "Deine Idee \"{proposition}\" hat gewonnen! Der vorherige Gewinner, \"{previousWinner}\", ist aus dem Wettbewerb ausgeschieden. Wenn deine Idee auch die naechste Runde gewinnt, wird sie eine dauerhafte Antwort.",
   "@tutorialRound2Result": {
     "placeholders": {
-      "proposition": {"type": "String"}
+      "proposition": {"type": "String"},
+      "previousWinner": {"type": "String"}
     }
   },
-  "tutorialRound2Prompt": "Der Gewinner 'Erfolg' wird automatisch uebernommen, um erneut anzutreten. Er muss 2 Runden hintereinander gewinnen, um eine dauerhafte Antwort zu werden.",
   "tutorialRatingCarryForwardHint": "Das ist der Gewinner der letzten Runde. Wenn er diese Runde erneut gewinnt, wird er dauerhaft zum Chat hinzugefuegt.",
   "tutorialTapTabHint": "Tippe oben auf \"{tabName}\" um fortzufahren.",
-  "tutorialResultTapTabHint": "Jetzt wo du weisst welcher Vorschlag gewonnen hat, mal sehen ob du etwas noch Besseres vorschlagen kannst! Tippe oben auf \"{tabName}\" um fortzufahren.",
+  "tutorialResultTapTabHint": "Jetzt wo du den Gewinner kennst, mal sehen ob du in der naechsten Runde etwas Besseres vorschlagen kannst! Tippe oben auf \"{tabName}\" um fortzufahren.",
   "tutorialRound2PromptSimplified": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein?",
   "tutorialRound2PromptSimplifiedTemplate": "Zeit fuer die naechste Runde! Faellt dir etwas Besseres ein als '{winner}'?",
   "@tutorialRound2PromptSimplifiedTemplate": {

@@ -1640,12 +1640,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '¡\'$winner\' ganó esta ronda! Pero aún no es definitivo. Debe ganar la próxima ronda para ser añadido permanentemente al chat grupal.';
-  }
-
-  @override
-  String tutorialRound2PromptTemplate(String winner) {
-    return 'El ganador \'$winner\' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.';
+    return '\'$winner\' gano esta ronda! Sera llevado a la siguiente ronda, donde debe ganar de nuevo para convertirse en respuesta permanente.';
   }
 
   @override
@@ -1684,7 +1679,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialFinishButton => 'Terminar Tutorial';
 
   @override
-  String get tutorialRound1Result => '\'Éxito\' ganó esta ronda! Pero aún no es definitivo. Debe ganar la próxima ronda para ser añadido permanentemente al chat grupal.';
+  String get tutorialRound1Result => '\'Exito\' gano esta ronda! Sera llevado a la siguiente ronda, donde debe ganar de nuevo para convertirse en respuesta permanente.';
 
   @override
   String get tutorialProposingHint => 'Envia una idea que quieras que sea la respuesta del grupo.';
@@ -1715,12 +1710,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get tutorialRatingPositioningHint => 'Toca y manten [up] y [down] para mover la idea resaltada. Toca [check] para colocarla. Toca [undo] para deshacer una colocacion, y [zoomin] [zoomout] para acercar y alejar.';
 
   @override
-  String tutorialRound2Result(String proposition) {
-    return 'Tu idea \"$proposition\" gano! Si gana la proxima ronda tambien, se convierte en respuesta permanente.';
+  String tutorialRound2Result(String proposition, String previousWinner) {
+    return 'Tu idea \"$proposition\" gano! El ganador anterior, \"$previousWinner\", queda fuera de la competencia. Si tu idea gana la proxima ronda tambien, se convierte en respuesta permanente.';
   }
-
-  @override
-  String get tutorialRound2Prompt => 'El ganador \'Exito\' se lleva automaticamente para competir de nuevo. Necesita ganar 2 rondas seguidas para convertirse en respuesta permanente.';
 
   @override
   String get tutorialRatingCarryForwardHint => 'Este es el ganador de la ronda anterior. Si gana de nuevo esta ronda, se agrega permanentemente al chat.';
@@ -1732,7 +1724,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String tutorialResultTapTabHint(String tabName) {
-    return 'Ahora que sabes cual propuesta gano, veamos si puedes proponer algo aun mejor! Toca \"$tabName\" arriba para continuar.';
+    return 'Ahora que conoces al ganador, veamos si puedes proponer algo mejor en la proxima ronda! Toca \"$tabName\" arriba para continuar.';
   }
 
   @override

@@ -134,6 +134,58 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     }
   }
 
+  void _showTutorialParticipantsSheet() {
+    final participants = TutorialData.allParticipants;
+
+    showModalBottomSheet(
+      context: context,
+      builder: (modalContext) {
+        final theme = Theme.of(modalContext);
+        final sheetL10n = AppLocalizations.of(modalContext);
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Text(
+                    '${sheetL10n.participants} (${participants.length})',
+                    style: theme.textTheme.titleMedium,
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(modalContext),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // Participants list
+            ...participants.map((p) => ListTile(
+              leading: CircleAvatar(child: Text(p.displayName[0])),
+              title: Text(p.displayName),
+              trailing: p.isHost ? Chip(label: Text(sheetL10n.host)) : null,
+            )),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
   void _showDemoQrCode() {
     final state = ref.read(tutorialChatNotifierProvider);
     final chatName = state.selectedTemplate != null
@@ -384,18 +436,20 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 // Language selector on intro screen
                 if (state.currentStep == TutorialStep.intro)
                   const LanguageSelector(compact: true),
-                // Participants and share icons (after intro, matching chat screen)
-                if (state.currentStep != TutorialStep.intro) ...[
+                // Participants icon (after intro, matching chat screen)
+                if (state.currentStep != TutorialStep.intro)
                   Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
                       return IconButton(
                         icon: const Icon(Icons.people_outline),
                         tooltip: l10n.participants,
-                        onPressed: () {},
+                        onPressed: _showTutorialParticipantsSheet,
                       );
                     },
                   ),
+                // Share icon (revealed at shareDemo and beyond)
+                if (showShareButton || state.currentStep == TutorialStep.complete)
                   Builder(
                     builder: (context) {
                       final l10n = AppLocalizations.of(context);
@@ -403,11 +457,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                         key: const Key('tutorial-share-button'),
                         icon: const Icon(Icons.ios_share),
                         tooltip: l10n.tutorialShareTooltip,
-                        onPressed: showShareButton ? _showDemoQrCode : () {},
+                        onPressed: _showDemoQrCode,
                       );
                     },
                   ),
-                ],
                 // Exit button (not on intro - skip is in panel)
                 if (state.currentStep != TutorialStep.intro)
                   Builder(
@@ -432,49 +485,59 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 if (state.currentStep != TutorialStep.complete)
                   TutorialProgressDots(currentStep: state.currentStep),
 
-                // Chat History (initial message + educational messages + consensus items)
+                // Chat History — wrapped in Stack for consensus/share overlays
                 Expanded(
-                  child: Builder(
-                    builder: (bodyContext) {
-                      final l10n = AppLocalizations.of(bodyContext);
-                      // Use template-specific question (translated), or localized default
-                      final templateKey = state.selectedTemplate;
-                      final initialMessage = state.customQuestion ??
-                          TutorialTemplate.translateQuestion(templateKey, l10n);
+                  child: Stack(
+                    children: [
+                      Builder(
+                        builder: (bodyContext) {
+                          final l10n = AppLocalizations.of(bodyContext);
+                          // Use template-specific question (translated), or localized default
+                          final templateKey = state.selectedTemplate;
+                          final initialMessage = state.customQuestion ??
+                              TutorialTemplate.translateQuestion(templateKey, l10n);
 
-                      return ListView(
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          // Initial Message (the tutorial question)
-                          Center(
-                            child: _buildMessageCard(
-                              l10n.initialMessage,
-                              initialMessage,
-                              isPrimary: true,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Consensus Items
-                          ...state.consensusItems.asMap().entries.map((entry) {
-                            return Center(
-                              child: Padding(
-                                padding: const EdgeInsets.only(bottom: 16),
+                          return ListView(
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              // Initial Message (the tutorial question)
+                              Center(
                                 child: _buildMessageCard(
-                                  l10n.consensusNumber(entry.key + 1),
-                                  entry.value.displayContent,
+                                  l10n.initialMessage,
+                                  initialMessage,
                                   isPrimary: true,
                                 ),
                               ),
-                            );
-                          }),
-                        ],
-                      );
-                    },
+                              const SizedBox(height: 16),
+
+                              // Consensus Items
+                              ...state.consensusItems.asMap().entries.map((entry) {
+                                return Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(bottom: 16),
+                                    child: _buildMessageCard(
+                                      l10n.consensusNumber(entry.key + 1),
+                                      entry.value.displayContent,
+                                      isPrimary: true,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ],
+                          );
+                        },
+                      ),
+                      // Consensus overlay with dimming (covers chat area only, not tab bar)
+                      if (state.currentStep == TutorialStep.round3Consensus)
+                        _buildConsensusOverlay(state),
+                      // Share demo overlay (covers chat area only, not tab bar)
+                      if (state.currentStep == TutorialStep.shareDemo)
+                        _buildShareDemoOverlay(state),
+                    ],
                   ),
                 ),
 
-                // Bottom Area - tutorial panel or chat-like bottom area
+                // Bottom Area - tab bar always visible, not covered by overlay
                 Flexible(
                   flex: 0,
                   child: ConstrainedBox(
@@ -567,27 +630,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _updateChatTourTooltipPosition();
-        // Debug: print dimensions of tour elements
-        final stackBox = _tourBodyStackKey.currentContext?.findRenderObject() as RenderBox?;
-        final messageBox = _tourMessageKey.currentContext?.findRenderObject() as RenderBox?;
-        final proposingBox = _tourProposingKey.currentContext?.findRenderObject() as RenderBox?;
-        final tooltipBox = _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
-        print('=== CHAT TOUR DEBUG ===');
-        print('Step: ${state.currentStep}');
-        print('Stack size: ${stackBox?.size}');
-        print('Message size: ${messageBox?.size}');
-        print('Proposing size: ${proposingBox?.size}');
-        print('Tooltip size: ${tooltipBox?.size}');
-        if (stackBox != null && proposingBox != null) {
-          final proposingPos = proposingBox.localToGlobal(Offset.zero, ancestor: stackBox);
-          print('Proposing top in stack: ${proposingPos.dy}');
-        }
-        if (stackBox != null && messageBox != null) {
-          final messagePos = messageBox.localToGlobal(Offset.zero, ancestor: stackBox);
-          print('Message top in stack: ${messagePos.dy}');
-        }
-        print('Tooltip top: $_tourTooltipTop');
-        print('========================');
       }
     });
 
@@ -650,7 +692,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
               child: IconButton(
                 icon: const Icon(Icons.people_outline),
                 tooltip: l10n.participants,
-                onPressed: () {},
+                onPressed: _showTutorialParticipantsSheet,
               ),
             ),
           ),
@@ -810,10 +852,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   /// Determine if we should show a tutorial-specific panel (not chat-like)
   bool _shouldShowTutorialPanel(TutorialStep step) {
-    // Intro, consensus, and shareDemo use tutorial panels (no tabbar)
+    // Intro and complete use tutorial panels (no tabbar)
     return step == TutorialStep.intro ||
-        step == TutorialStep.round3Consensus ||
-        step == TutorialStep.shareDemo ||
         step == TutorialStep.complete;
   }
 
@@ -827,6 +867,118 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   /// where the phase tab is locked until Continue is clicked
   bool _isEducationalStep(TutorialStep step) {
     return step == TutorialStep.round2Prompt;
+  }
+
+  Widget _buildConsensusOverlay(TutorialChatState state) {
+    final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
+    final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.check_circle,
+                      size: 48,
+                      color: Colors.green.shade600,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.tutorialConsensusReached,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.tutorialWonTwoRounds(userProp),
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: () => notifier.continueToShareDemo(),
+                        icon: const Icon(Icons.arrow_forward),
+                        label: Text(l10n.continue_),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShareDemoOverlay(TutorialChatState state) {
+    final l10n = AppLocalizations.of(context);
+
+    return Positioned.fill(
+      child: Container(
+        color: Colors.black54,
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Material(
+              elevation: 8,
+              borderRadius: BorderRadius.circular(16),
+              color: Theme.of(context).colorScheme.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.ios_share,
+                      size: 48,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.tutorialShareTitle,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      l10n.tutorialShareExplanation,
+                      style: Theme.of(context).textTheme.bodyLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: _showDemoQrCode,
+                        icon: const Icon(Icons.ios_share),
+                        label: Text(l10n.tutorialShareTitle),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildMessageCard(String label, String content,
@@ -987,7 +1139,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
             ),
           if (isResultStep && _hintContinueClicked)
             _buildEducationalHint(
-              l10n.tutorialResultTapTabHint(_getPhaseTabLabel(state)),
+              state.currentStep == TutorialStep.round1Result
+                  ? l10n.tutorialResultTapTabHint(_getPhaseTabLabel(state))
+                  : l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
               icon: Icons.touch_app_outlined,
             ),
 
@@ -1011,7 +1165,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       return l10n.tutorialRound1Result;
     } else if (state.currentStep == TutorialStep.round2Result) {
       final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
-      return l10n.tutorialRound2Result(userProp);
+      final previousWinner = _translateProposition(
+        TutorialData.round1WinnerForTemplate(state.selectedTemplate), l10n);
+      return l10n.tutorialRound2Result(userProp, previousWinner);
     }
     return '';
   }
