@@ -65,8 +65,7 @@ import 'app_localizations_pt.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  AppLocalizations(String locale)
-    : localeName = intl.Intl.canonicalizedLocale(locale.toString());
+  AppLocalizations(String locale) : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
   final String localeName;
 
@@ -74,8 +73,7 @@ abstract class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static const LocalizationsDelegate<AppLocalizations> delegate =
-      _AppLocalizationsDelegate();
+  static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 
   /// A list of this localizations delegate along with the default localizations
   /// delegates.
@@ -87,13 +85,12 @@ abstract class AppLocalizations {
   /// Additional delegates can be added by appending to this list in
   /// MaterialApp. This list does not have to be used at all if a custom list
   /// of delegates is preferred or required.
-  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates =
-      <LocalizationsDelegate<dynamic>>[
-        delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ];
+  static const List<LocalizationsDelegate<dynamic>> localizationsDelegates = <LocalizationsDelegate<dynamic>>[
+    delegate,
+    GlobalMaterialLocalizations.delegate,
+    GlobalCupertinoLocalizations.delegate,
+    GlobalWidgetsLocalizations.delegate,
+  ];
 
   /// A list of this localizations delegate's supported locales.
   static const List<Locale> supportedLocales = <Locale>[
@@ -101,7 +98,7 @@ abstract class AppLocalizations {
     Locale('en'),
     Locale('es'),
     Locale('fr'),
-    Locale('pt'),
+    Locale('pt')
   ];
 
   /// No description provided for @appTitle.
@@ -2130,11 +2127,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Phase ends early when {threshold} of {participants} participants submit ideas ({percent}%)'**
-  String proposingThresholdPreview(
-    int threshold,
-    int participants,
-    int percent,
-  );
+  String proposingThresholdPreview(int threshold, int participants, int percent);
 
   /// No description provided for @proposingThresholdPreviewSimple.
   ///
@@ -3222,6 +3215,18 @@ abstract class AppLocalizations {
   /// **'This is last round\'s winner. If it wins again this round, it gets permanently added to the chat.'**
   String get tutorialRatingCarryForwardHint;
 
+  /// No description provided for @tutorialTapTabHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap \"{tabName}\" above to continue.'**
+  String tutorialTapTabHint(String tabName);
+
+  /// No description provided for @tutorialResultTapTabHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Now that you know which proposition won, let\'s see if you can come up with something even better! Tap \"{tabName}\" above to continue.'**
+  String tutorialResultTapTabHint(String tabName);
+
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
   /// In en, this message translates to:
@@ -4223,10 +4228,111 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Auto-translated'**
   String get chatAutoTranslated;
+
+  /// No description provided for @welcomeName.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome, {name}'**
+  String welcomeName(String name);
+
+  /// No description provided for @editName.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit name'**
+  String get editName;
+
+  /// No description provided for @primaryLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Primary Language'**
+  String get primaryLanguage;
+
+  /// No description provided for @iAlsoSpeak.
+  ///
+  /// In en, this message translates to:
+  /// **'I also speak'**
+  String get iAlsoSpeak;
+
+  /// No description provided for @spokenLanguages.
+  ///
+  /// In en, this message translates to:
+  /// **'Spoken Languages'**
+  String get spokenLanguages;
+
+  /// No description provided for @homeTourWelcomeNameTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Display Name'**
+  String get homeTourWelcomeNameTitle;
+
+  /// No description provided for @homeTourWelcomeNameDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is your display name. Tap the pencil icon to change it anytime!'**
+  String get homeTourWelcomeNameDesc;
+
+  /// No description provided for @chatTourTitleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Name'**
+  String get chatTourTitleTitle;
+
+  /// No description provided for @chatTourTitleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the chat name. Each chat has a topic everyone discusses together.'**
+  String get chatTourTitleDesc;
+
+  /// No description provided for @chatTourMessageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discussion Question'**
+  String get chatTourMessageTitle;
+
+  /// No description provided for @chatTourMessageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the question being discussed. Everyone submits ideas in response.'**
+  String get chatTourMessageDesc;
+
+  /// No description provided for @chatTourProposingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Ideas'**
+  String get chatTourProposingTitle;
+
+  /// No description provided for @chatTourProposingDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is where you type and submit your ideas at the start of each round.'**
+  String get chatTourProposingDesc;
+
+  /// No description provided for @chatTourParticipantsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get chatTourParticipantsTitle;
+
+  /// No description provided for @chatTourParticipantsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who\'s in the chat.'**
+  String get chatTourParticipantsDesc;
+
+  /// No description provided for @chatTourShareTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Chat'**
+  String get chatTourShareTitle;
+
+  /// No description provided for @chatTourShareDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Share this chat with friends using an invite link or QR code.'**
+  String get chatTourShareDesc;
 }
 
-class _AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const _AppLocalizationsDelegate();
 
   @override
@@ -4235,32 +4341,28 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) =>
-      <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => <String>['de', 'en', 'es', 'fr', 'pt'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
 }
 
 AppLocalizations lookupAppLocalizations(Locale locale) {
+
+
   // Lookup logic when only language code is specified.
   switch (locale.languageCode) {
-    case 'de':
-      return AppLocalizationsDe();
-    case 'en':
-      return AppLocalizationsEn();
-    case 'es':
-      return AppLocalizationsEs();
-    case 'fr':
-      return AppLocalizationsFr();
-    case 'pt':
-      return AppLocalizationsPt();
+    case 'de': return AppLocalizationsDe();
+    case 'en': return AppLocalizationsEn();
+    case 'es': return AppLocalizationsEs();
+    case 'fr': return AppLocalizationsFr();
+    case 'pt': return AppLocalizationsPt();
   }
 
   throw FlutterError(
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
+    'that was used.'
   );
 }
