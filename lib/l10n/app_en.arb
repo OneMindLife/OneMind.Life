@@ -1093,6 +1093,8 @@
   "tutorialSkipConfirmNo": "Continue Tutorial",
   "tutorialShareTooltip": "Share Chat",
   "tutorialYourIdea": "Your idea",
+  "tutorialTransitionTitle": "Chat tutorial complete!",
+  "tutorialTransitionDesc": "Now let's take a quick look at the home screen, where you'll find all your chats.",
   "tutorialRateIdeas": "Rate Ideas",
   "tutorialResultsBackHint": "'{winner}' won! Press the back arrow when done viewing the results.",
   "@tutorialResultsBackHint": {

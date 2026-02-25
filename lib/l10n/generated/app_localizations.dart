@@ -3642,6 +3642,18 @@ abstract class AppLocalizations {
   /// **'Your idea'**
   String get tutorialYourIdea;
 
+  /// No description provided for @tutorialTransitionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat tutorial complete!'**
+  String get tutorialTransitionTitle;
+
+  /// No description provided for @tutorialTransitionDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Now let\'s take a quick look at the home screen, where you\'ll find all your chats.'**
+  String get tutorialTransitionDesc;
+
   /// No description provided for @tutorialRateIdeas.
   ///
   /// In en, this message translates to:

@@ -47,7 +47,8 @@ class TutorialScreen extends ConsumerStatefulWidget {
   ConsumerState<TutorialScreen> createState() => _TutorialScreenState();
 }
 
-class _TutorialScreenState extends ConsumerState<TutorialScreen> {
+class _TutorialScreenState extends ConsumerState<TutorialScreen>
+    with SingleTickerProviderStateMixin {
   final _propositionController = TextEditingController();
 
   // Chat tour: GlobalKeys for measuring widget positions
@@ -88,13 +89,27 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   bool _hasAutoOpenedRound2Rating = false;
   bool _hasAutoOpenedRound3Rating = false;
 
+  // Transition animation: fade out chat → show transition message → continue
+  late final AnimationController _transitionController;
+  bool _showTransitionScreen = false;
+
   @override
   void initState() {
     super.initState();
+    _transitionController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _transitionController.addStatusListener((status) {
+      if (status == AnimationStatus.completed && mounted) {
+        setState(() => _showTransitionScreen = true);
+      }
+    });
   }
 
   @override
   void dispose() {
+    _transitionController.dispose();
     _propositionController.dispose();
     super.dispose();
   }
@@ -391,6 +406,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           }
         });
       }
+      // Start fade-out animation when reaching complete step
+      if (prev?.currentStep != TutorialStep.complete &&
+          next.currentStep == TutorialStep.complete) {
+        _transitionController.forward();
+      }
     });
 
     // Show blank screen while tutorial completion is in progress.
@@ -403,6 +423,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
           body: SizedBox.shrink(),
         ),
       );
+    }
+
+    // Complete step: fade out chat → show transition message → continue to home
+    if (state.currentStep == TutorialStep.complete) {
+      return _buildCompletionTransition();
     }
 
     // Chat tour: dedicated screen with progressive reveal
@@ -908,9 +933,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
 
   /// Determine if we should show a tutorial-specific panel (not chat-like)
   bool _shouldShowTutorialPanel(TutorialStep step) {
-    // Intro and complete use tutorial panels (no tabbar)
-    return step == TutorialStep.intro ||
-        step == TutorialStep.complete;
+    // Intro uses tutorial panel (no tabbar)
+    // Complete is handled separately by _buildCompletionTransition
+    return step == TutorialStep.intro;
   }
 
   /// Check if current step is a result step (shows tabs + message + continue)
@@ -1009,6 +1034,85 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         nextLabel: nextLabel,
         skipLabel: l10n.homeTourSkip,
         stepOfLabel: l10n.homeTourStepOf(stepIndex + 1, 2),
+      ),
+    );
+  }
+
+  /// Build the completion transition: fade out → centered message → Continue
+  Widget _buildCompletionTransition() {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.surface,
+      body: AnimatedBuilder(
+        animation: _transitionController,
+        builder: (context, child) {
+          // Phase 1: fade out (0.0 → 1.0 of animation = 1.0 → 0.0 opacity)
+          if (!_showTransitionScreen) {
+            return Opacity(
+              opacity: 1.0 - _transitionController.value,
+              child: const SizedBox.expand(),
+            );
+          }
+          // Phase 2: fade in transition message
+          return child!;
+        },
+        child: Builder(
+          builder: (context) {
+            final l10n = AppLocalizations.of(context);
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 500),
+                  curve: Curves.easeOut,
+                  builder: (context, opacity, child) {
+                    return Opacity(
+                      opacity: opacity,
+                      child: child,
+                    );
+                  },
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 64,
+                        color: Colors.green.shade600,
+                      ),
+                      const SizedBox(height: 24),
+                      Text(
+                        l10n.tutorialTransitionTitle,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        l10n.tutorialTransitionDesc,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: _handleComplete,
+                          icon: const Icon(Icons.arrow_forward),
+                          label: Text(l10n.continue_),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -1520,112 +1624,20 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     }
   }
 
-  /// Build tutorial-specific panels (intro, consensus, share)
+  /// Build tutorial-specific panel (intro only)
   Widget _buildTutorialPanel(TutorialChatState state) {
     final notifier = ref.read(tutorialChatNotifierProvider.notifier);
-    final theme = Theme.of(context);
 
-    switch (state.currentStep) {
-      case TutorialStep.intro:
-        return TutorialIntroPanel(
-          onSelect: (templateKey) {
-            notifier.selectTemplate(templateKey);
-          },
-          onSkip: _handleSkip,
-        );
-
-      case TutorialStep.round3Consensus:
-        final l10n = AppLocalizations.of(context);
-        final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            border: Border(
-              top: BorderSide(color: theme.dividerColor),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 48,
-                color: Colors.green.shade600,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.tutorialConsensusReached,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                l10n.tutorialWonTwoRounds(userProp),
-                style: theme.textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                l10n.tutorialAddedToChat,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: () {
-                    notifier.continueToShareDemo();
-                  },
-                  icon: const Icon(Icons.arrow_forward),
-                  label: Text(l10n.continue_),
-                ),
-              ),
-            ],
-          ),
-        );
-
-      case TutorialStep.shareDemo:
-        final l10n = AppLocalizations.of(context);
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            border: Border(
-              top: BorderSide(color: theme.dividerColor),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.ios_share,
-                size: 48,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                l10n.tutorialShareTitle,
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                l10n.tutorialShareExplanation,
-                style: theme.textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        );
-
-      default:
-        return const SizedBox.shrink();
+    if (state.currentStep == TutorialStep.intro) {
+      return TutorialIntroPanel(
+        onSelect: (templateKey) {
+          notifier.selectTemplate(templateKey);
+        },
+        onSkip: _handleSkip,
+      );
     }
+
+    return const SizedBox.shrink();
   }
 }
 

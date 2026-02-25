@@ -2004,6 +2004,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get tutorialYourIdea => 'Your idea';
 
   @override
+  String get tutorialTransitionTitle => 'Chat tutorial complete!';
+
+  @override
+  String get tutorialTransitionDesc =>
+      'Now let\'s take a quick look at the home screen, where you\'ll find all your chats.';
+
+  @override
   String get tutorialRateIdeas => 'Rate Ideas';
 
   @override

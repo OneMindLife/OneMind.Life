@@ -2028,6 +2028,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get tutorialYourIdea => 'Deine Idee';
 
   @override
+  String get tutorialTransitionTitle => 'Chat-Tutorial abgeschlossen!';
+
+  @override
+  String get tutorialTransitionDesc =>
+      'Werfen wir nun einen kurzen Blick auf den Startbildschirm, wo du alle deine Chats findest.';
+
+  @override
   String get tutorialRateIdeas => 'Ideen Bewerten';
 
   @override

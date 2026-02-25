@@ -1117,6 +1117,8 @@
   "tutorialSkipConfirmNo": "Continuar Tutorial",
   "tutorialShareTooltip": "Compartir Chat",
   "tutorialYourIdea": "Tu idea",
+  "tutorialTransitionTitle": "¡Tutorial del chat completado!",
+  "tutorialTransitionDesc": "Ahora echemos un vistazo rápido a la pantalla de inicio, donde encontrarás todos tus chats.",
   "tutorialRateIdeas": "Calificar Ideas",
   "tutorialResultsBackHint": "¡'{winner}' ganó! Presiona la flecha de retroceso cuando termines de ver los resultados.",
   "@tutorialResultsBackHint": {

@@ -2030,6 +2030,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tutorialYourIdea => 'Votre idee';
 
   @override
+  String get tutorialTransitionTitle => 'Tutoriel du chat terminé !';
+
+  @override
+  String get tutorialTransitionDesc =>
+      'Jetons maintenant un coup d\'œil à l\'écran d\'accueil, où vous trouverez tous vos chats.';
+
+  @override
   String get tutorialRateIdeas => 'Evaluer les Idees';
 
   @override
