@@ -20,7 +20,7 @@ class WelcomeHeader extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(16, 8, 8, 0),
       child: Row(
         children: [
-          Expanded(
+          Flexible(
             child: Text(
               l10n.welcomeName(displayName),
               style: Theme.of(context).textTheme.titleMedium?.copyWith(

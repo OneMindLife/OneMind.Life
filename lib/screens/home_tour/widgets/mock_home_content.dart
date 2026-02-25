@@ -59,12 +59,13 @@ class MockHomeContent extends StatelessWidget {
               duration: const Duration(milliseconds: 250),
               child: Row(
                 children: [
-                  Expanded(
+                  Flexible(
                     child: Text(
                       l10n.welcomeName('Brave Fox'),
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Icon(
