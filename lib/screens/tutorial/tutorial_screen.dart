@@ -420,17 +420,26 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     // Check if we should show tutorial-specific panels
     final showTutorialPanel = _shouldShowTutorialPanel(state.currentStep);
 
-    // Show share button only at shareDemo step
-    final showShareButton = state.currentStep == TutorialStep.shareDemo;
+    // Show share button at shareDemo step and beyond
+    final showShareButton = state.currentStep == TutorialStep.shareDemo ||
+        state.currentStep == TutorialStep.complete;
+
+    // End-tour steps: consensus + share demo use dimmed spotlight pattern
+    final isEndTour = _isEndTourStep(state.currentStep);
+    final dimOpacity = isEndTour ? 0.25 : 1.0;
 
     return Scaffold(
       appBar: AppBar(
               automaticallyImplyLeading: false,
-              title: Builder(
-                builder: (context) {
-                  final l10n = AppLocalizations.of(context);
-                  return Text(l10n.tutorialAppBarTitle);
-                },
+              title: AnimatedOpacity(
+                opacity: dimOpacity,
+                duration: const Duration(milliseconds: 250),
+                child: Builder(
+                  builder: (context) {
+                    final l10n = AppLocalizations.of(context);
+                    return Text(l10n.tutorialAppBarTitle);
+                  },
+                ),
               ),
               actions: [
                 // Language selector on intro screen
@@ -438,40 +447,53 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                   const LanguageSelector(compact: true),
                 // Participants icon (after intro, matching chat screen)
                 if (state.currentStep != TutorialStep.intro)
-                  Builder(
-                    builder: (context) {
-                      final l10n = AppLocalizations.of(context);
-                      return IconButton(
-                        icon: const Icon(Icons.people_outline),
-                        tooltip: l10n.participants,
-                        onPressed: _showTutorialParticipantsSheet,
-                      );
-                    },
+                  AnimatedOpacity(
+                    opacity: dimOpacity,
+                    duration: const Duration(milliseconds: 250),
+                    child: Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        return IconButton(
+                          icon: const Icon(Icons.people_outline),
+                          tooltip: l10n.participants,
+                          onPressed: isEndTour ? null : _showTutorialParticipantsSheet,
+                        );
+                      },
+                    ),
                   ),
                 // Share icon (revealed at shareDemo and beyond)
-                if (showShareButton || state.currentStep == TutorialStep.complete)
-                  Builder(
-                    builder: (context) {
-                      final l10n = AppLocalizations.of(context);
-                      return IconButton(
-                        key: const Key('tutorial-share-button'),
-                        icon: const Icon(Icons.ios_share),
-                        tooltip: l10n.tutorialShareTooltip,
-                        onPressed: _showDemoQrCode,
-                      );
-                    },
+                // Spotlighted during shareDemo, normal at complete
+                if (showShareButton)
+                  AnimatedOpacity(
+                    opacity: state.currentStep == TutorialStep.shareDemo ? 1.0 : 1.0,
+                    duration: const Duration(milliseconds: 250),
+                    child: Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        return IconButton(
+                          key: const Key('tutorial-share-button'),
+                          icon: const Icon(Icons.ios_share),
+                          tooltip: l10n.tutorialShareTooltip,
+                          onPressed: _showDemoQrCode,
+                        );
+                      },
+                    ),
                   ),
                 // Exit button (not on intro - skip is in panel)
                 if (state.currentStep != TutorialStep.intro)
-                  Builder(
-                    builder: (context) {
-                      final l10n = AppLocalizations.of(context);
-                      return IconButton(
-                        icon: const Icon(Icons.close),
-                        tooltip: l10n.tutorialSkipMenuItem,
-                        onPressed: _handleSkip,
-                      );
-                    },
+                  AnimatedOpacity(
+                    opacity: dimOpacity,
+                    duration: const Duration(milliseconds: 250),
+                    child: Builder(
+                      builder: (context) {
+                        final l10n = AppLocalizations.of(context);
+                        return IconButton(
+                          icon: const Icon(Icons.close),
+                          tooltip: l10n.tutorialSkipMenuItem,
+                          onPressed: _handleSkip,
+                        );
+                      },
+                    ),
                   ),
               ],
             ),
@@ -483,9 +505,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
               children: [
                 // Progress dots (not shown on complete)
                 if (state.currentStep != TutorialStep.complete)
-                  TutorialProgressDots(currentStep: state.currentStep),
+                  AnimatedOpacity(
+                    opacity: dimOpacity,
+                    duration: const Duration(milliseconds: 250),
+                    child: TutorialProgressDots(currentStep: state.currentStep),
+                  ),
 
-                // Chat History — wrapped in Stack for consensus/share overlays
+                // Chat History — wrapped in Stack for end-tour tooltip
                 Expanded(
                   child: Stack(
                     children: [
@@ -502,23 +528,33 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                             children: [
                               // Initial Message (the tutorial question)
                               Center(
-                                child: _buildMessageCard(
-                                  l10n.initialMessage,
-                                  initialMessage,
-                                  isPrimary: true,
+                                child: AnimatedOpacity(
+                                  opacity: dimOpacity,
+                                  duration: const Duration(milliseconds: 250),
+                                  child: _buildMessageCard(
+                                    l10n.initialMessage,
+                                    initialMessage,
+                                    isPrimary: true,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 16),
 
-                              // Consensus Items
+                              // Consensus Items — spotlighted during consensus step
                               ...state.consensusItems.asMap().entries.map((entry) {
+                                final isSpotlighted =
+                                    state.currentStep == TutorialStep.round3Consensus;
                                 return Center(
                                   child: Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
-                                    child: _buildMessageCard(
-                                      l10n.consensusNumber(entry.key + 1),
-                                      entry.value.displayContent,
-                                      isPrimary: true,
+                                    child: AnimatedOpacity(
+                                      opacity: isSpotlighted ? 1.0 : dimOpacity,
+                                      duration: const Duration(milliseconds: 250),
+                                      child: _buildMessageCard(
+                                        l10n.consensusNumber(entry.key + 1),
+                                        entry.value.displayContent,
+                                        isPrimary: true,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -527,27 +563,28 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                           );
                         },
                       ),
-                      // Consensus overlay with dimming (covers chat area only, not tab bar)
-                      if (state.currentStep == TutorialStep.round3Consensus)
-                        _buildConsensusOverlay(state),
-                      // Share demo overlay (covers chat area only, not tab bar)
-                      if (state.currentStep == TutorialStep.shareDemo)
-                        _buildShareDemoOverlay(state),
+                      // End-tour floating TourTooltipCard
+                      if (isEndTour)
+                        _buildEndTourTooltip(state),
                     ],
                   ),
                 ),
 
-                // Bottom Area - tab bar always visible, not covered by overlay
+                // Bottom Area - dimmed during end tour
                 Flexible(
                   flex: 0,
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxHeight: MediaQuery.of(context).size.height * 0.5,
-                    ),
-                    child: SingleChildScrollView(
-                      child: showTutorialPanel
-                          ? _buildTutorialPanel(state)
-                          : _buildChatBottomArea(state),
+                  child: AnimatedOpacity(
+                    opacity: dimOpacity,
+                    duration: const Duration(milliseconds: 250),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(context).size.height * 0.5,
+                      ),
+                      child: SingleChildScrollView(
+                        child: showTutorialPanel
+                            ? _buildTutorialPanel(state)
+                            : _buildChatBottomArea(state),
+                      ),
                     ),
                   ),
                 ),
@@ -869,114 +906,57 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
     return step == TutorialStep.round2Prompt;
   }
 
-  Widget _buildConsensusOverlay(TutorialChatState state) {
-    final l10n = AppLocalizations.of(context);
-    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
-    final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
-
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black54,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(16),
-              color: Theme.of(context).colorScheme.surface,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.check_circle,
-                      size: 48,
-                      color: Colors.green.shade600,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.tutorialConsensusReached,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.tutorialWonTwoRounds(userProp),
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: () => notifier.continueToShareDemo(),
-                        icon: const Icon(Icons.arrow_forward),
-                        label: Text(l10n.continue_),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  /// Whether we're in the end-tour (consensus + share demo spotlight steps)
+  bool _isEndTourStep(TutorialStep step) {
+    return step == TutorialStep.round3Consensus ||
+        step == TutorialStep.shareDemo;
   }
 
-  Widget _buildShareDemoOverlay(TutorialChatState state) {
+  /// Build the TourTooltipCard for consensus / share demo steps
+  Widget _buildEndTourTooltip(TutorialChatState state) {
     final l10n = AppLocalizations.of(context);
+    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
+    final isConsensus = state.currentStep == TutorialStep.round3Consensus;
+    final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
 
-    return Positioned.fill(
-      child: Container(
-        color: Colors.black54,
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Material(
-              elevation: 8,
-              borderRadius: BorderRadius.circular(16),
-              color: Theme.of(context).colorScheme.surface,
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.ios_share,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.tutorialShareTitle,
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.tutorialShareExplanation,
-                      style: Theme.of(context).textTheme.bodyLarge,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: _showDemoQrCode,
-                        icon: const Icon(Icons.ios_share),
-                        label: Text(l10n.tutorialShareTitle),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+    final String title;
+    final String description;
+    final int stepIndex;
+    final VoidCallback onNext;
+    final String nextLabel;
+
+    if (isConsensus) {
+      title = l10n.tutorialConsensusReached;
+      description = l10n.tutorialWonTwoRounds(userProp);
+      stepIndex = 0;
+      onNext = () => notifier.continueToShareDemo();
+      nextLabel = l10n.continue_;
+    } else {
+      // shareDemo
+      title = l10n.tutorialShareTitle;
+      description = l10n.tutorialShareExplanation;
+      stepIndex = 1;
+      onNext = _showDemoQrCode;
+      nextLabel = l10n.tutorialShareTitle;
+    }
+
+    // For consensus: position near the consensus card (upper area)
+    // For share: position near top (below AppBar, pointing at share icon)
+    return Positioned(
+      left: 16,
+      right: 16,
+      top: isConsensus ? null : 8,
+      bottom: isConsensus ? 16 : null,
+      child: TourTooltipCard(
+        title: title,
+        description: description,
+        onNext: onNext,
+        onSkip: _handleSkip,
+        stepIndex: stepIndex,
+        totalSteps: 2,
+        nextLabel: nextLabel,
+        skipLabel: l10n.homeTourSkip,
+        stepOfLabel: l10n.homeTourStepOf(stepIndex + 1, 2),
       ),
     );
   }
