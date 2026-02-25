@@ -58,7 +58,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
   final _tourMessageKey = GlobalKey();
   final _tourProposingKey = GlobalKey();
   final _tourParticipantsKey = GlobalKey();
-  final _tourShareKey = GlobalKey();
 
   // Chat tour: animated tooltip position
   double _tourTooltipTop = 0;
@@ -679,9 +678,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       case TutorialStep.chatTourParticipants:
         // Just below AppBar
         newTop = 8;
-      case TutorialStep.chatTourShare:
-        // Just below AppBar
-        newTop = 8;
       default:
         return;
     }
@@ -740,9 +736,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       case TutorialStep.chatTourParticipants:
         tourTitle = l10n.chatTourParticipantsTitle;
         tourDescription = l10n.chatTourParticipantsDesc;
-      case TutorialStep.chatTourShare:
-        tourTitle = l10n.chatTourShareTitle;
-        tourDescription = l10n.chatTourShareDesc;
       default:
         tourTitle = '';
         tourDescription = '';
@@ -774,19 +767,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                 icon: const Icon(Icons.people_outline),
                 tooltip: l10n.participants,
                 onPressed: _showTutorialParticipantsSheet,
-              ),
-            ),
-          ),
-          // Share button
-          KeyedSubtree(
-            key: _tourShareKey,
-            child: AnimatedOpacity(
-              opacity: _chatTourOpacity(step, TutorialStep.chatTourShare),
-              duration: const Duration(milliseconds: 250),
-              child: IconButton(
-                icon: const Icon(Icons.ios_share),
-                tooltip: l10n.shareQrCode,
-                onPressed: () {},
               ),
             ),
           ),

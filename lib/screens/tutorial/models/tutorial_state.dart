@@ -11,7 +11,6 @@ enum TutorialStep {
   chatTourMessage,
   chatTourProposing,
   chatTourParticipants,
-  chatTourShare,
 
   // Round 1
   round1Proposing,
@@ -112,14 +111,14 @@ class TutorialChatState extends Equatable {
   /// Whether the current step is a chat tour step
   bool get isChatTourStep =>
       currentStep.index >= TutorialStep.chatTourTitle.index &&
-      currentStep.index <= TutorialStep.chatTourShare.index;
+      currentStep.index <= TutorialStep.chatTourParticipants.index;
 
   /// Zero-based index within the chat tour (0..4)
   int get chatTourStepIndex =>
       currentStep.index - TutorialStep.chatTourTitle.index;
 
   /// Total number of chat tour steps
-  static const int chatTourTotalSteps = 5;
+  static const int chatTourTotalSteps = 4;
 
   /// Get the user's current proposition based on round
   String? get currentUserProposition {

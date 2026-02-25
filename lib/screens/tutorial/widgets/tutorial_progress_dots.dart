@@ -20,7 +20,6 @@ class TutorialProgressDots extends StatelessWidget {
     TutorialStep.chatTourMessage: 1,
     TutorialStep.chatTourProposing: 1,
     TutorialStep.chatTourParticipants: 1,
-    TutorialStep.chatTourShare: 1,
     // Round 1
     TutorialStep.round1Proposing: 2,
     TutorialStep.round1Rating: 3,
