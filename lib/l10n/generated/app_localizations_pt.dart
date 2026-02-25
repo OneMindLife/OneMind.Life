@@ -393,15 +393,13 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
-  String roundResults(int roundNumber) {
-    return 'Resultados da Rodada $roundNumber';
-  }
+  String get roundResults => 'Resultados da votação';
 
   @override
   String get noPropositionsToDisplay => 'Nenhuma proposta para exibir';
 
   @override
-  String get noPreviousWinner => 'Nenhum vencedor anterior';
+  String get noPreviousWinner => 'Nenhuma emergência ainda';
 
   @override
   String roundWinner(int roundNumber) {
@@ -532,7 +530,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'O anfitriao pausou este chat. Por favor, aguarde a retomada.';
 
   @override
-  String get previousWinner => 'Vencedor Anterior';
+  String get previousWinner => 'Emergência';
 
   @override
   String get yourProposition => 'Sua Proposta';
@@ -849,7 +847,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get yourPropositionLabel => '(Sua proposta)';
 
   @override
-  String get previousWinnerLabel => '(Vencedor anterior)';
+  String get previousWinnerLabel => '(Emergência)';
 
   @override
   String get cannotBeUndone => 'Esta acao nao pode ser desfeita.';
@@ -1712,17 +1710,21 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String tutorialRound1ResultTemplate(String winner) {
-    return '\'$winner\' venceu esta rodada! Sera levado para a proxima rodada, onde deve vencer novamente para se tornar uma resposta permanente.';
+    return '\'$winner\' venceu a Rodada 1!';
   }
 
   @override
   String get tutorialAppBarTitle => 'Tutorial do OneMind';
 
   @override
-  String get tutorialWelcomeTitle => 'Bem-vindo!';
+  String get tutorialWelcomeTitle => 'Bem-vindo ao OneMind!';
 
   @override
-  String get tutorialWelcomeSubtitle => 'Escolha um cenário de prática';
+  String get tutorialWelcomeDescription =>
+      'Reúna pessoas para compartilhar ideias anonimamente, avaliar de forma independente e alcançar resultados em que todos possam confiar.';
+
+  @override
+  String get tutorialWelcomeSubtitle => 'Escolha um tema para praticar';
 
   @override
   String get tutorialTheQuestion => 'A pergunta:';
@@ -1752,12 +1754,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get tutorialFinishButton => 'Finalizar Tutorial';
 
   @override
-  String get tutorialRound1Result =>
-      '\'Sucesso\' venceu esta rodada! Sera levado para a proxima rodada, onde deve vencer novamente para se tornar uma resposta permanente.';
+  String get tutorialRound1Result => '\'Sucesso\' venceu a Rodada 1!';
 
   @override
   String get tutorialProposingHint =>
-      'Envie uma ideia que voce quer que seja a resposta do grupo.';
+      'Envie sua ideia — ela vai competir contra as de todos os outros.';
 
   @override
   String tutorialTimeRemaining(String time) {
@@ -1766,37 +1767,37 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get tutorialProposingHintWithWinner =>
-      'Envie uma nova ideia. Ela sera avaliada junto com o vencedor anterior.';
+      'Envie uma nova ideia para competir contra o vencedor da rodada anterior.';
 
   @override
   String get tutorialRatingHint =>
-      'Agora todos avaliam as ideias uns dos outros. Toque no botao para comecar a avaliar.';
+      'Agora avalie as ideias de todos. A ideia mais bem avaliada vence a rodada.';
 
   @override
   String get tutorialRatingPhaseExplanation =>
-      'A fase de avaliacao comeca quando todos os usuarios enviam suas ideias ou quando o tempo acaba.';
+      'Todos enviaram. Agora avalie as ideias para escolher um vencedor!';
 
   @override
   String tutorialRatingTimeRemaining(String time) {
-    return 'Voce tem $time restantes para completar a fase de avaliacao.';
+    return 'Você tem $time para avaliar.';
   }
 
   @override
   String get tutorialRatingBinaryHint =>
-      'Primeiro, sao apresentadas 2 propostas aleatorias enviadas por usuarios. Coloque a que voce prefere mais em 100. Toque em [swap] para inverte-las e toque em [check] para confirmar. Nota: Sua propria proposta nao sera apresentada a voce para avaliacao.';
+      'A ideia do topo pontua mais. Toque em [swap] para colocar sua ideia preferida no topo, depois [check] para confirmar.';
 
   @override
   String get tutorialRatingPositioningHint =>
-      'Toque e segure [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Toque em [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.';
+      'Coloque cada ideia na escala. Use [up] [down] para mover, depois [check] para confirmar.';
 
   @override
   String tutorialRound2Result(String proposition, String previousWinner) {
-    return 'Sua ideia \"$proposition\" venceu! O vencedor anterior, \"$previousWinner\", esta fora da competicao. Se sua ideia vencer a proxima rodada tambem, se torna uma resposta permanente.';
+    return 'Sua ideia \"$proposition\" venceu! Ela substitui \"$previousWinner\" como a que deve ser superada. Vença a próxima rodada e está decidido!';
   }
 
   @override
   String get tutorialRatingCarryForwardHint =>
-      'Este e o vencedor da rodada anterior. Se vencer novamente esta rodada, sera adicionado permanentemente ao chat.';
+      'O vencedor da rodada anterior é mantido para competir novamente.';
 
   @override
   String tutorialTapTabHint(String tabName) {
@@ -1805,17 +1806,58 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String tutorialResultTapTabHint(String tabName) {
-    return 'Agora que voce sabe quem venceu, vamos ver se consegue propor algo melhor na proxima rodada! Toque em \"$tabName\" acima para continuar.';
+    return 'Acha que pode fazer melhor? Toque em \"$tabName\" para enviar sua próxima ideia.';
   }
 
   @override
   String get tutorialRound2PromptSimplified =>
-      'Hora da proxima rodada! Consegue pensar em algo melhor?';
+      'O vencedor competirá novamente nesta rodada. Se ganhar novamente, é convergência — a resposta do grupo. Consegue superá-lo?';
 
   @override
   String tutorialRound2PromptSimplifiedTemplate(String winner) {
-    return 'Hora da proxima rodada! Consegue pensar em algo melhor que \'$winner\'?';
+    return '\'$winner\' competirá novamente nesta rodada. Se ganhar novamente, é convergência — a resposta do grupo. Consegue superá-lo?';
   }
+
+  @override
+  String get tutorialRound3Prompt =>
+      'Sua ideia substituiu o último vencedor. Mais uma vitória significa convergência!';
+
+  @override
+  String tutorialRound3PromptTemplate(String winner, String previousWinner) {
+    return '\'$winner\' substituiu \'$previousWinner\'. Mais uma vitória significa convergência!';
+  }
+
+  @override
+  String get tutorialR2ResultsHint =>
+      'Sua ideia ganhou! Pressione a seta de voltar para continuar.';
+
+  @override
+  String get tutorialRound3ConvergenceHint =>
+      'Se vencer de novo, ninguém conseguiu superá-la — isso é convergência.';
+
+  @override
+  String get tutorialHintSubmitIdea => 'Envie sua ideia';
+
+  @override
+  String get tutorialHintRateIdeas => 'Avaliar ideias';
+
+  @override
+  String get tutorialHintRoundResults => 'Resultados da votação';
+
+  @override
+  String get tutorialHintRound2 => 'Rodada 2';
+
+  @override
+  String get tutorialHintYouWon => 'Você ganhou!';
+
+  @override
+  String get tutorialHintCompare => 'Comparar ideias';
+
+  @override
+  String get tutorialHintPosition => 'Posicionar ideias';
+
+  @override
+  String get tutorialHintCarryForward => 'Herança';
 
   @override
   String get tutorialPropSuccess => 'Sucesso';
@@ -2037,7 +2079,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String tutorialResultsBackHint(String winner) {
-    return '\'$winner\' venceu! Pressione a seta de voltar quando terminar de ver os resultados.';
+    return '\'$winner\' venceu! Pressione a seta de voltar para continuar.';
   }
 
   @override
@@ -2182,7 +2224,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get glossaryConsensusDef =>
-      'Quando a mesma proposta vence varias rodadas consecutivas, o grupo alcancou convergencia nessa ideia.';
+      'Quando ninguém consegue superar a mesma proposta em várias rodadas, a convergência é alcançada.';
 
   @override
   String get glossaryProposingTitle => 'proposing';
@@ -2233,7 +2275,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get homeTourYourChatsDesc =>
-      'Apos aprovacao, seus chats aparecem aqui. Toque em qualquer chat para comecar a propor ideias e avaliar!';
+      'Seus chats ativos aparecem aqui. Cada cartao mostra a fase atual, quantidade de participantes e idiomas.';
 
   @override
   String get homeTourCreateFabTitle => 'Criar um Chat';
@@ -2417,7 +2459,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get chatTourProposingDesc =>
-      'Aqui e onde voce digita e envia suas ideias no inicio de cada rodada.';
+      'É aqui que você envia ideias. Em cada rodada, todos propõem e depois avaliam.';
 
   @override
   String get chatTourParticipantsTitle => 'Participantes';
@@ -2432,4 +2474,8 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get chatTourShareDesc =>
       'Compartilhe este chat com amigos usando um link de convite ou codigo QR.';
+
+  @override
+  String get tutorialShareContinueHint =>
+      'Toque no botao Continuar para continuar o tutorial.';
 }

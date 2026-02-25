@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
+import '../../../models/round.dart';
+import '../../../widgets/chat_dashboard_card.dart';
 import '../models/home_tour_state.dart';
 
 /// A static mock of the home screen content with fake data.
@@ -68,6 +71,7 @@ class MockHomeContent extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  const SizedBox(width: 4),
                   Icon(
                     Icons.edit,
                     size: 18,
@@ -113,7 +117,10 @@ class MockHomeContent extends StatelessWidget {
                 children: [
                   _buildSectionHeader(context, l10n.pendingRequests),
                   const SizedBox(height: 8),
-                  const _MockPendingCard(chatName: 'Book Club'),
+                  _MockPendingCard(
+                    chatName: 'Book Club',
+                    subtitle: 'What should we read next?',
+                  ),
                 ],
               ),
             ),
@@ -131,18 +138,22 @@ class MockHomeContent extends StatelessWidget {
                 children: [
                   _buildSectionHeader(context, l10n.yourChats),
                   const SizedBox(height: 8),
-                  _MockChatCard(
+                  ChatDashboardCard(
                     name: l10n.appTitle,
-                    subtitle: '...',
-                    icon: Icons.public,
-                    isOfficial: true,
+                    initialMessage: '...',
+                    onTap: () {},
+                    participantCount: 12,
+                    phase: RoundPhase.proposing,
+                    translationLanguages: const ['en', 'es'],
                   ),
                   const SizedBox(height: 8),
-                  const _MockChatCard(
+                  ChatDashboardCard(
                     name: 'Weekend Plans',
-                    subtitle: 'What should we do this Saturday?',
-                    icon: Icons.chat_bubble_outline,
-                    isOfficial: false,
+                    initialMessage: 'What should we do this Saturday?',
+                    onTap: () {},
+                    participantCount: 4,
+                    phase: RoundPhase.rating,
+                    translationLanguages: const ['en'],
                   ),
                 ],
               ),
@@ -163,80 +174,15 @@ class MockHomeContent extends StatelessWidget {
   }
 }
 
-/// Mock chat card that mirrors the real _ChatCard visual structure
-class _MockChatCard extends StatelessWidget {
-  final String name;
-  final String subtitle;
-  final IconData icon;
-  final bool isOfficial;
-
-  const _MockChatCard({
-    required this.name,
-    required this.subtitle,
-    required this.icon,
-    required this.isOfficial,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: isOfficial
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : Theme.of(context).colorScheme.secondaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: isOfficial
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey.shade600,
-                        ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Mock pending request card that mirrors the real _PendingRequestCard
+/// Mock pending request card matching the real home screen style:
+/// vertical amber bar + chat name + subtitle + "Waiting for host approval"
 class _MockPendingCard extends StatelessWidget {
   final String chatName;
+  final String subtitle;
 
   const _MockPendingCard({
     required this.chatName,
+    required this.subtitle,
   });
 
   @override
@@ -245,68 +191,49 @@ class _MockPendingCard extends StatelessWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: IntrinsicHeight(
         child: Row(
           children: [
+            // Warm amber left border (same as real pending card)
             Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.tertiaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                Icons.hourglass_empty,
-                color: Theme.of(context).colorScheme.onTertiaryContainer,
+              width: 4,
+              decoration: const BoxDecoration(
+                color: AppColors.consensus,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
               ),
             ),
-            const SizedBox(width: 16),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          chatName,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.tertiary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          l10n.pending,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelSmall
-                              ?.copyWith(
-                                color:
-                                    Theme.of(context).colorScheme.onTertiary,
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    l10n.waitingForHostApproval,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: Theme.of(context).colorScheme.outline,
-                          fontStyle: FontStyle.italic,
-                        ),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      chatName,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: AppColors.textSecondary,
+                          ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.waitingForHostApproval,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: Theme.of(context).colorScheme.outline,
+                            fontStyle: FontStyle.italic,
+                          ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],

@@ -25,7 +25,8 @@ class QrCodeShareDialog extends StatelessWidget {
   });
 
   /// Show the QR code share dialog.
-  static Future<void> show(
+  /// Returns `true` if the user tapped Continue, `null` otherwise.
+  static Future<bool?> show(
     BuildContext context, {
     required String chatName,
     required String inviteCode,
@@ -33,7 +34,7 @@ class QrCodeShareDialog extends StatelessWidget {
     bool showContinueButton = false,
     bool barrierDismissible = true,
   }) {
-    return showDialog(
+    return showDialog<bool>(
       context: context,
       barrierDismissible: barrierDismissible,
       builder: (context) => QrCodeShareDialog(
@@ -210,11 +211,42 @@ class QrCodeShareDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        if (showContinueButton)
+        if (showContinueButton) ...[
+          // Tutorial hint above Continue button
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer.withAlpha(100),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: colorScheme.primary.withAlpha(80),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  size: 20,
+                  color: colorScheme.onPrimaryContainer,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    l10n.tutorialShareContinueHint,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onPrimaryContainer,
+                        ),
+                  ),
+                ),
+              ],
+            ),
+          ),
           SizedBox(
             width: double.infinity,
             child: FilledButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, true),
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Text(
@@ -223,8 +255,8 @@ class QrCodeShareDialog extends StatelessWidget {
                 ),
               ),
             ),
-          )
-        else
+          ),
+        ] else
           SizedBox(
             width: double.infinity,
             child: FilledButton(

@@ -543,46 +543,40 @@ class RatingWidgetState extends State<RatingWidget>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: GestureDetector(
-                onTap: _zoomIn,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
+            _AnimatedControlButton(
+              onTap: _zoomIn,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                    width: 1,
                   ),
-                  child: Icon(
-                    Icons.zoom_in,
-                    size: 25,
-                    color: theme.colorScheme.outline,
-                  ),
+                ),
+                child: Icon(
+                  Icons.zoom_in,
+                  size: 25,
+                  color: theme.colorScheme.outline,
                 ),
               ),
             ),
             const SizedBox(height: 20),
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: GestureDetector(
-                onTap: _zoomOut,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.outline.withValues(alpha: 0.5),
-                      width: 1,
-                    ),
+            _AnimatedControlButton(
+              onTap: _zoomOut,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.5),
+                    width: 1,
                   ),
-                  child: Icon(
-                    Icons.zoom_out,
-                    size: 25,
-                    color: theme.colorScheme.outline,
-                  ),
+                ),
+                child: Icon(
+                  Icons.zoom_out,
+                  size: 25,
+                  color: theme.colorScheme.outline,
                 ),
               ),
             ),
@@ -610,43 +604,37 @@ class RatingWidgetState extends State<RatingWidget>
           mainAxisSize: MainAxisSize.min,
           children: [
             // Swap button
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: GestureDetector(
-                onTap: _model.swapBinaryPositions,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface,
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: theme.colorScheme.primary,
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.swap_vert,
-                    size: 25,
+            _AnimatedControlButton(
+              onTap: _model.swapBinaryPositions,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(
                     color: theme.colorScheme.primary,
+                    width: 2,
                   ),
+                ),
+                child: Icon(
+                  Icons.swap_vert,
+                  size: 25,
+                  color: theme.colorScheme.primary,
                 ),
               ),
             ),
             const SizedBox(height: 20),
             // Confirm button
-            AspectRatio(
-              aspectRatio: 1.0,
-              child: GestureDetector(
-                onTap: _model.confirmBinaryChoice,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 25,
-                    color: Colors.white,
-                  ),
+            _AnimatedControlButton(
+              onTap: _model.confirmBinaryChoice,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check,
+                  size: 25,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -680,46 +668,40 @@ class RatingWidgetState extends State<RatingWidget>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 1.0,
-                    child: GestureDetector(
-                      onTap: _zoomIn,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha:0.5),
-                            width: 1,
-                          ),
+                  _AnimatedControlButton(
+                    onTap: _zoomIn,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha:0.5),
+                          width: 1,
                         ),
-                        child: Icon(
-                          Icons.zoom_in,
-                          size: 25,
-                          color: theme.colorScheme.outline,
-                        ),
+                      ),
+                      child: Icon(
+                        Icons.zoom_in,
+                        size: 25,
+                        color: theme.colorScheme.outline,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  AspectRatio(
-                    aspectRatio: 1.0,
-                    child: GestureDetector(
-                      onTap: _zoomOut,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.colorScheme.outline.withValues(alpha:0.5),
-                            width: 1,
-                          ),
+                  _AnimatedControlButton(
+                    onTap: _zoomOut,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.outline.withValues(alpha:0.5),
+                          width: 1,
                         ),
-                        child: Icon(
-                          Icons.zoom_out,
-                          size: 25,
-                          color: theme.colorScheme.outline,
-                        ),
+                      ),
+                      child: Icon(
+                        Icons.zoom_out,
+                        size: 25,
+                        color: theme.colorScheme.outline,
                       ),
                     ),
                   ),
@@ -745,82 +727,76 @@ class RatingWidgetState extends State<RatingWidget>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Arrow up
-                  AspectRatio(
-                    aspectRatio: 1.0,
-                    child: GestureDetector(
-                      onTapDown:
-                          controlsDisabled ? null : (_) => _startContinuousMove(1),
-                      onTapUp: controlsDisabled ? null : (_) => _stopContinuousMove(),
-                      onTapCancel:
-                          controlsDisabled ? () {} : () => _stopContinuousMove(),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.colorScheme.primary,
-                            width: 2,
-                          ),
+                  _AnimatedControlButton(
+                    onTapDown:
+                        controlsDisabled ? null : (_) => _startContinuousMove(1),
+                    onTapUp: controlsDisabled ? null : (_) => _stopContinuousMove(),
+                    onTapCancel:
+                        controlsDisabled ? () {} : () => _stopContinuousMove(),
+                    disabled: controlsDisabled,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 2,
                         ),
-                        child: Icon(
-                          Icons.arrow_upward,
-                          size: 25,
-                          color: controlsDisabled
-                              ? theme.colorScheme.outline
-                              : theme.colorScheme.primary,
-                        ),
+                      ),
+                      child: Icon(
+                        Icons.arrow_upward,
+                        size: 25,
+                        color: controlsDisabled
+                            ? theme.colorScheme.outline
+                            : theme.colorScheme.primary,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
                   // Place button
-                  AspectRatio(
-                    aspectRatio: 1.0,
-                    child: GestureDetector(
-                      onTap: controlsDisabled ? null : _model.confirmPlacement,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: controlsDisabled
-                              ? theme.colorScheme.outline.withValues(alpha:0.3)
-                              : theme.colorScheme.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          size: 25,
-                          color: Colors.white,
-                        ),
+                  _AnimatedControlButton(
+                    onTap: controlsDisabled ? null : _model.confirmPlacement,
+                    disabled: controlsDisabled,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: controlsDisabled
+                            ? theme.colorScheme.outline.withValues(alpha:0.3)
+                            : theme.colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        size: 25,
+                        color: Colors.white,
                       ),
                     ),
                   ),
                   const SizedBox(height: 20),
 
                   // Arrow down
-                  AspectRatio(
-                    aspectRatio: 1.0,
-                    child: GestureDetector(
-                      onTapDown:
-                          controlsDisabled ? null : (_) => _startContinuousMove(-1),
-                      onTapUp: controlsDisabled ? null : (_) => _stopContinuousMove(),
-                      onTapCancel:
-                          controlsDisabled ? () {} : () => _stopContinuousMove(),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: theme.colorScheme.primary,
-                            width: 2,
-                          ),
+                  _AnimatedControlButton(
+                    onTapDown:
+                        controlsDisabled ? null : (_) => _startContinuousMove(-1),
+                    onTapUp: controlsDisabled ? null : (_) => _stopContinuousMove(),
+                    onTapCancel:
+                        controlsDisabled ? () {} : () => _stopContinuousMove(),
+                    disabled: controlsDisabled,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.surface,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: theme.colorScheme.primary,
+                          width: 2,
                         ),
-                        child: Icon(
-                          Icons.arrow_downward,
-                          size: 25,
-                          color: controlsDisabled
-                              ? theme.colorScheme.outline
-                              : theme.colorScheme.primary,
-                        ),
+                      ),
+                      child: Icon(
+                        Icons.arrow_downward,
+                        size: 25,
+                        color: controlsDisabled
+                            ? theme.colorScheme.outline
+                            : theme.colorScheme.primary,
                       ),
                     ),
                   ),
@@ -843,24 +819,22 @@ class RatingWidgetState extends State<RatingWidget>
               ),
               child: SizedBox(
                 width: 40,
-                child: AspectRatio(
-                  aspectRatio: 1.0,
-                  child: GestureDetector(
-                    onTap: controlsDisabled ? null : _model.undoLastPlacement,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF8B0000).withValues(alpha:0.5),
-                          width: 2,
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.undo,
-                        size: 25,
+                child: _AnimatedControlButton(
+                  onTap: controlsDisabled ? null : _model.undoLastPlacement,
+                  disabled: controlsDisabled,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(
                         color: const Color(0xFF8B0000).withValues(alpha:0.5),
+                        width: 2,
                       ),
+                    ),
+                    child: Icon(
+                      Icons.undo,
+                      size: 25,
+                      color: const Color(0xFF8B0000).withValues(alpha:0.5),
                     ),
                   ),
                 ),
@@ -904,5 +878,87 @@ class RatingWidgetState extends State<RatingWidget>
     _moveTimer?.cancel();
     _moveTimer = null;
     _model.normalizeVirtualPositionOnRelease();
+  }
+}
+
+class _AnimatedControlButton extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final ValueChanged<TapDownDetails>? onTapDown;
+  final ValueChanged<TapUpDetails>? onTapUp;
+  final VoidCallback? onTapCancel;
+  final bool disabled;
+
+  const _AnimatedControlButton({
+    required this.child,
+    this.onTap,
+    this.onTapDown,
+    this.onTapUp,
+    this.onTapCancel,
+    this.disabled = false,
+  });
+
+  @override
+  State<_AnimatedControlButton> createState() => _AnimatedControlButtonState();
+}
+
+class _AnimatedControlButtonState extends State<_AnimatedControlButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 100),
+      reverseDuration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scale = Tween<double>(begin: 1.0, end: 0.85).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut, reverseCurve: Curves.easeOutBack),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _onPressDown() {
+    if (widget.disabled) return;
+    _controller.forward();
+  }
+
+  void _onPressUp() {
+    if (widget.disabled) return;
+    _controller.reverse();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AspectRatio(
+      aspectRatio: 1.0,
+      child: GestureDetector(
+        onTap: widget.disabled ? null : widget.onTap,
+        onTapDown: (details) {
+          _onPressDown();
+          widget.onTapDown?.call(details);
+        },
+        onTapUp: (details) {
+          _onPressUp();
+          widget.onTapUp?.call(details);
+        },
+        onTapCancel: () {
+          _onPressUp();
+          widget.onTapCancel?.call();
+        },
+        child: ScaleTransition(
+          scale: _scale,
+          child: widget.child,
+        ),
+      ),
+    );
   }
 }

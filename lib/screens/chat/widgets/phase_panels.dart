@@ -326,7 +326,7 @@ class ProposingStatePanel extends StatelessWidget {
     }
 
     // Don't count carried forward propositions against the submission limit
-    // Carried forward propositions show in Previous Winner tab, not here
+    // Carried forward propositions show in Emerging tab, not here
     final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
     final canSubmitMore = newSubmissions < propositionsPerUser;
 
@@ -414,89 +414,105 @@ class ProposingStatePanel extends StatelessWidget {
           ]
           // Show input if can submit more (for everyone including host)
           else if (canSubmitMore) ...[
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: propositionController,
-              builder: (context, value, child) {
-                return TextField(
-                  key: const Key('proposition-input'),
-                  controller: propositionController,
-                  enabled: !isPaused && !hasSkipped,
-                  decoration: InputDecoration(
-                    hintText: isPaused
-                        ? l10n.chatIsPaused
-                        : isTaskResultMode
-                            ? l10n.enterTaskResult
-                            : newSubmissions == 0
-                                ? l10n.shareYourIdea
-                                : l10n.addAnotherIdea,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: const BorderSide(color: AppColors.proposing, width: 2),
-                    ),
-                    filled: true,
-                    suffixIcon: value.text.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () => propositionController.clear(),
-                            tooltip: l10n.clear,
-                          )
-                        : null,
-                  ),
-                  minLines: 1,
-                  maxLines: 5,
-                  maxLength: 200,
-                );
-              },
-            ),
-            const SizedBox(height: 8),
-            // Show submit and skip buttons in a row
+            // Skip button above input (right-aligned)
+            if (canSkip && newSubmissions == 0 && maxSkips > 0 && !isTaskResultMode)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  key: const Key('skip-proposing-button'),
+                  onPressed: isPaused || isSubmitting ? null : onSkip,
+                  child: Text(l10n.skip),
+                ),
+              ),
+            // Text field with send button
             Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Expanded(
-                  child: FilledButton(
-                    key: const Key('submit-proposition-button'),
-                    onPressed: isPaused || isSubmitting ? null : onSubmit,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (isSubmitting)
-                          const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        else
-                          Text(isTaskResultMode
-                              ? l10n.submitResult
-                              : (newSubmissions == 0 ? l10n.submit : l10n.addProposition)),
-                        if (phaseEndsAt != null && !isSubmitting) ...[
-                          const SizedBox(width: 4),
-                          const Text('('),
-                          CountdownTimer(
-                            endsAt: phaseEndsAt!,
-                            onExpired: onPhaseExpired,
-                            showIcon: false,
+                  child: ValueListenableBuilder<TextEditingValue>(
+                    valueListenable: propositionController,
+                    builder: (context, value, child) {
+                      return TextField(
+                        key: const Key('proposition-input'),
+                        controller: propositionController,
+                        enabled: !isPaused && !hasSkipped,
+                        decoration: InputDecoration(
+                          hintText: isPaused
+                              ? l10n.chatIsPaused
+                              : isTaskResultMode
+                                  ? l10n.enterTaskResult
+                                  : newSubmissions == 0
+                                      ? l10n.shareYourIdea
+                                      : l10n.addAnotherIdea,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          const Text(')'),
-                        ],
-                      ],
-                    ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: const BorderSide(color: AppColors.proposing, width: 2),
+                          ),
+                          filled: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          suffixIcon: value.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () => propositionController.clear(),
+                                  tooltip: l10n.clear,
+                                )
+                              : null,
+                          counterText: '',
+                        ),
+                        minLines: 1,
+                        maxLines: 5,
+                        maxLength: 200,
+                      );
+                    },
                   ),
                 ),
-                // Show skip button if user can skip and hasn't submitted yet
-                if (canSkip && newSubmissions == 0 && maxSkips > 0 && !isTaskResultMode) ...[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    key: const Key('skip-proposing-button'),
-                    onPressed: isPaused || isSubmitting ? null : onSkip,
-                    child: Text(l10n.skip),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: IconButton.filled(
+                    key: const Key('submit-proposition-button'),
+                    onPressed: isPaused || isSubmitting ? null : onSubmit,
+                    icon: isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.send_rounded, size: 22),
+                    tooltip: isTaskResultMode ? l10n.submitResult : l10n.submit,
                   ),
-                ],
+                ),
               ],
             ),
+            // Timer at the bottom with divider
+            if (phaseEndsAt != null) ...[
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.timer_outlined, size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    CountdownTimer(
+                      endsAt: phaseEndsAt!,
+                      onExpired: onPhaseExpired,
+                      showIcon: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ] else if (newSubmissions > 0) ...[
             // Regular user after submitting: show their submissions
             ConstrainedBox(
@@ -877,41 +893,44 @@ class RatingStatePanel extends StatelessWidget {
             ),
           ]
           else ...[
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton(
-                    key: const Key('start-rating-button'),
-                    onPressed: isPaused ? null : onStartRating,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
-                        if (phaseEndsAt != null) ...[
-                          const SizedBox(width: 4),
-                          const Text('('),
-                          CountdownTimer(
-                            endsAt: phaseEndsAt!,
-                            onExpired: onPhaseExpired,
-                            showIcon: false,
-                          ),
-                          const Text(')'),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-                // Show skip button if user can skip and hasn't started rating
-                if (canSkipRating && !hasStartedRating && maxRatingSkips > 0) ...[
-                  const SizedBox(width: 8),
-                  TextButton(
-                    key: const Key('skip-rating-button'),
-                    onPressed: isPaused || isSkipping ? null : onSkipRating,
-                    child: Text(l10n.skip),
-                  ),
-                ],
-              ],
+            Center(
+              child: FilledButton.icon(
+                key: const Key('start-rating-button'),
+                onPressed: isPaused ? null : onStartRating,
+                icon: const Icon(Icons.how_to_vote_outlined, size: 20),
+                label: Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
+              ),
             ),
+            // Show skip button if user can skip and hasn't started rating
+            if (canSkipRating && !hasStartedRating && maxRatingSkips > 0)
+              Center(
+                child: TextButton(
+                  key: const Key('skip-rating-button'),
+                  onPressed: isPaused || isSkipping ? null : onSkipRating,
+                  child: Text(l10n.skip),
+                ),
+              ),
+            // Timer at the bottom with divider
+            if (phaseEndsAt != null) ...[
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.timer_outlined, size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    const SizedBox(width: 4),
+                    CountdownTimer(
+                      endsAt: phaseEndsAt!,
+                      onExpired: onPhaseExpired,
+                      showIcon: false,
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
 
           // Host advance button - hidden for MVP

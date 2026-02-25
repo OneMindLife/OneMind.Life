@@ -212,16 +212,10 @@
       }
     }
   },
-  "roundResults": "Resultados da Rodada {roundNumber}",
-  "@roundResults": {
-    "placeholders": {
-      "roundNumber": {
-        "type": "int"
-      }
-    }
-  },
+  "roundResults": "Resultados da votação",
+  "@roundResults": {},
   "noPropositionsToDisplay": "Nenhuma proposta para exibir",
-  "noPreviousWinner": "Nenhum vencedor anterior",
+  "noPreviousWinner": "Nenhuma emergência ainda",
   "roundWinner": "Vencedor da Rodada {roundNumber}",
   "@roundWinner": {
     "placeholders": {
@@ -300,7 +294,7 @@
   "chatPausedByHostTitle": "Chat Pausado pelo Anfitriao",
   "timerStoppedTapResume": "O temporizador esta parado. Toque em Retomar na barra para continuar.",
   "hostPausedPleaseWait": "O anfitriao pausou este chat. Por favor, aguarde a retomada.",
-  "previousWinner": "Vencedor Anterior",
+  "previousWinner": "Emergência",
   "yourProposition": "Sua Proposta",
   "yourPropositions": "Suas Propostas",
   "rate": "Avaliar",
@@ -520,7 +514,7 @@
   },
   "hostCanModerateContent": "Como anfitriao, voce pode moderar o conteudo. A identidade do remetente esta oculta.",
   "yourPropositionLabel": "(Sua proposta)",
-  "previousWinnerLabel": "(Vencedor anterior)",
+  "previousWinnerLabel": "(Emergência)",
   "cannotBeUndone": "Esta acao nao pode ser desfeita.",
   "deleteChatConfirmation": "Tem certeza de que deseja excluir \"{chatName}\"?\n\nIsso excluira permanentemente todas as propostas, avaliacoes e historico. Esta acao nao pode ser desfeita.",
   "@deleteChatConfirmation": {
@@ -993,7 +987,7 @@
   "tutorialTemplateCustom": "Tema personalizado",
   "tutorialTemplateCustomDesc": "Digite sua própria pergunta",
   "tutorialCustomQuestionHint": "Digite sua pergunta...",
-  "tutorialRound1ResultTemplate": "'{winner}' venceu esta rodada! Sera levado para a proxima rodada, onde deve vencer novamente para se tornar uma resposta permanente.",
+  "tutorialRound1ResultTemplate": "'{winner}' venceu a Rodada 1!",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1001,8 +995,9 @@
   },
 
   "tutorialAppBarTitle": "Tutorial do OneMind",
-  "tutorialWelcomeTitle": "Bem-vindo!",
-  "tutorialWelcomeSubtitle": "Escolha um cenário de prática",
+  "tutorialWelcomeTitle": "Bem-vindo ao OneMind!",
+  "tutorialWelcomeDescription": "Reúna pessoas para compartilhar ideias anonimamente, avaliar de forma independente e alcançar resultados em que todos possam confiar.",
+  "tutorialWelcomeSubtitle": "Escolha um tema para praticar",
   "tutorialTheQuestion": "A pergunta:",
   "tutorialQuestion": "O que valorizamos?",
   "tutorialStartButton": "Iniciar Tutorial",
@@ -1016,32 +1011,50 @@
   },
   "tutorialAddedToChat": "Voce tambem foi adicionado automaticamente ao chat Oficial do OneMind, onde todos discutem topicos juntos.",
   "tutorialFinishButton": "Finalizar Tutorial",
-  "tutorialRound1Result": "'Sucesso' venceu esta rodada! Sera levado para a proxima rodada, onde deve vencer novamente para se tornar uma resposta permanente.",
-  "tutorialProposingHint": "Envie uma ideia que voce quer que seja a resposta do grupo.",
+  "tutorialRound1Result": "'Sucesso' venceu a Rodada 1!",
+  "tutorialProposingHint": "Envie sua ideia — ela vai competir contra as de todos os outros.",
   "tutorialTimeRemaining": "Voce tem {time} restantes.",
-  "tutorialProposingHintWithWinner": "Envie uma nova ideia. Ela sera avaliada junto com o vencedor anterior.",
-  "tutorialRatingHint": "Agora todos avaliam as ideias uns dos outros. Toque no botao para comecar a avaliar.",
-  "tutorialRatingPhaseExplanation": "A fase de avaliacao comeca quando todos os usuarios enviam suas ideias ou quando o tempo acaba.",
-  "tutorialRatingTimeRemaining": "Voce tem {time} restantes para completar a fase de avaliacao.",
-  "tutorialRatingBinaryHint": "Primeiro, sao apresentadas 2 propostas aleatorias enviadas por usuarios. Coloque a que voce prefere mais em 100. Toque em [swap] para inverte-las e toque em [check] para confirmar. Nota: Sua propria proposta nao sera apresentada a voce para avaliacao.",
-  "tutorialRatingPositioningHint": "Toque e segure [up] e [down] para mover a ideia destacada. Toque em [check] para posiciona-la. Toque em [undo] para desfazer um posicionamento, e [zoomin] [zoomout] para aproximar e afastar.",
-  "tutorialRound2Result": "Sua ideia \"{proposition}\" venceu! O vencedor anterior, \"{previousWinner}\", esta fora da competicao. Se sua ideia vencer a proxima rodada tambem, se torna uma resposta permanente.",
+  "tutorialProposingHintWithWinner": "Envie uma nova ideia para competir contra o vencedor da rodada anterior.",
+  "tutorialRatingHint": "Agora avalie as ideias de todos. A ideia mais bem avaliada vence a rodada.",
+  "tutorialRatingPhaseExplanation": "Todos enviaram. Agora avalie as ideias para escolher um vencedor!",
+  "tutorialRatingTimeRemaining": "Você tem {time} para avaliar.",
+  "tutorialRatingBinaryHint": "A ideia do topo pontua mais. Toque em [swap] para colocar sua ideia preferida no topo, depois [check] para confirmar.",
+  "tutorialRatingPositioningHint": "Coloque cada ideia na escala. Use [up] [down] para mover, depois [check] para confirmar.",
+  "tutorialRound2Result": "Sua ideia \"{proposition}\" venceu! Ela substitui \"{previousWinner}\" como a que deve ser superada. Vença a próxima rodada e está decidido!",
   "@tutorialRound2Result": {
     "placeholders": {
       "proposition": {"type": "String"},
       "previousWinner": {"type": "String"}
     }
   },
-  "tutorialRatingCarryForwardHint": "Este e o vencedor da rodada anterior. Se vencer novamente esta rodada, sera adicionado permanentemente ao chat.",
+  "tutorialRatingCarryForwardHint": "O vencedor da rodada anterior é mantido para competir novamente.",
   "tutorialTapTabHint": "Toque em \"{tabName}\" acima para continuar.",
-  "tutorialResultTapTabHint": "Agora que voce sabe quem venceu, vamos ver se consegue propor algo melhor na proxima rodada! Toque em \"{tabName}\" acima para continuar.",
-  "tutorialRound2PromptSimplified": "Hora da proxima rodada! Consegue pensar em algo melhor?",
-  "tutorialRound2PromptSimplifiedTemplate": "Hora da proxima rodada! Consegue pensar em algo melhor que '{winner}'?",
+  "tutorialResultTapTabHint": "Acha que pode fazer melhor? Toque em \"{tabName}\" para enviar sua próxima ideia.",
+  "tutorialRound2PromptSimplified": "O vencedor competirá novamente nesta rodada. Se ganhar novamente, é convergência — a resposta do grupo. Consegue superá-lo?",
+  "tutorialRound2PromptSimplifiedTemplate": "'{winner}' competirá novamente nesta rodada. Se ganhar novamente, é convergência — a resposta do grupo. Consegue superá-lo?",
   "@tutorialRound2PromptSimplifiedTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
+  "tutorialRound3Prompt": "Sua ideia substituiu o último vencedor. Mais uma vitória significa convergência!",
+  "tutorialRound3PromptTemplate": "'{winner}' substituiu '{previousWinner}'. Mais uma vitória significa convergência!",
+  "@tutorialRound3PromptTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"},
+      "previousWinner": {"type": "String"}
+    }
+  },
+  "tutorialR2ResultsHint": "Sua ideia ganhou! Pressione a seta de voltar para continuar.",
+  "tutorialRound3ConvergenceHint": "Se vencer de novo, ninguém conseguiu superá-la — isso é convergência.",
+  "tutorialHintSubmitIdea": "Envie sua ideia",
+  "tutorialHintRateIdeas": "Avaliar ideias",
+  "tutorialHintRoundResults": "Resultados da votação",
+  "tutorialHintRound2": "Rodada 2",
+  "tutorialHintYouWon": "Você ganhou!",
+  "tutorialHintCompare": "Comparar ideias",
+  "tutorialHintPosition": "Posicionar ideias",
+  "tutorialHintCarryForward": "Herança",
   "tutorialPropSuccess": "Sucesso",
   "tutorialPropAdventure": "Aventura",
   "tutorialPropGrowth": "Crescimento",
@@ -1120,7 +1133,7 @@
   "tutorialTransitionTitle": "Tutorial do chat concluído!",
   "tutorialTransitionDesc": "Agora vamos dar uma olhada na tela inicial, onde você encontrará todos os seus chats.",
   "tutorialRateIdeas": "Avaliar Ideias",
-  "tutorialResultsBackHint": "'{winner}' venceu! Pressione a seta de voltar quando terminar de ver os resultados.",
+  "tutorialResultsBackHint": "'{winner}' venceu! Pressione a seta de voltar para continuar.",
   "@tutorialResultsBackHint": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1162,7 +1175,7 @@
     }
   },
   "glossaryConsensusTitle": "convergencia",
-  "glossaryConsensusDef": "Quando a mesma proposta vence varias rodadas consecutivas, o grupo alcancou convergencia nessa ideia.",
+  "glossaryConsensusDef": "Quando ninguém consegue superar a mesma proposta em várias rodadas, a convergência é alcançada.",
   "glossaryCycleDef": "Uma sequencia de rodadas trabalhando em direcao a convergencia. Um novo ciclo comeca apos a convergencia ser alcancada.",
 
   "enterTaskResult": "Enter task result...",
@@ -1172,7 +1185,7 @@
   "homeTourPendingRequestTitle": "Solicitacoes Pendentes",
   "homeTourPendingRequestDesc": "Quando voce solicita entrar em um chat, o anfitriao analisa sua solicitacao. Voce a vera aqui com um selo 'Pendente' ate ser aprovada.",
   "homeTourYourChatsTitle": "Seus Chats",
-  "homeTourYourChatsDesc": "Apos aprovacao, seus chats aparecem aqui. Toque em qualquer chat para comecar a propor ideias e avaliar!",
+  "homeTourYourChatsDesc": "Seus chats ativos aparecem aqui. Cada cartao mostra a fase atual, quantidade de participantes e idiomas.",
   "homeTourCreateFabTitle": "Criar um Chat",
   "homeTourCreateFabDesc": "Toque em + para criar seu proprio chat. Escolha o tema, convide amigos e construam consenso juntos.",
   "homeTourDemoTitle": "Experimentar a Demo",
@@ -1240,9 +1253,10 @@
   "chatTourMessageTitle": "Pergunta de Discussao",
   "chatTourMessageDesc": "Esta e a pergunta sendo discutida. Todos enviam ideias em resposta.",
   "chatTourProposingTitle": "Enviar Ideias",
-  "chatTourProposingDesc": "Aqui e onde voce digita e envia suas ideias no inicio de cada rodada.",
+  "chatTourProposingDesc": "É aqui que você envia ideias. Em cada rodada, todos propõem e depois avaliam.",
   "chatTourParticipantsTitle": "Participantes",
   "chatTourParticipantsDesc": "Conheca os participantes do tutorial: Alice, Bob e Carol. Toque aqui para ver quem esta no chat.",
   "chatTourShareTitle": "Compartilhar Chat",
-  "chatTourShareDesc": "Compartilhe este chat com amigos usando um link de convite ou codigo QR."
+  "chatTourShareDesc": "Compartilhe este chat com amigos usando um link de convite ou codigo QR.",
+  "tutorialShareContinueHint": "Toque no botao Continuar para continuar o tutorial."
 }

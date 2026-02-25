@@ -44,7 +44,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   /// Advance to the next chat tour step.
   /// On the last tour step, transitions to round 1.
   void nextChatTourStep() {
-    if (state.currentStep == TutorialStep.chatTourParticipants) {
+    if (state.currentStep == TutorialStep.chatTourProposing) {
       // Last tour step → begin round 1
       beginRound1();
       return;
@@ -437,7 +437,6 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
       case TutorialStep.chatTourMessage:
       case TutorialStep.chatTourProposing:
       case TutorialStep.chatTourParticipants:
-      case TutorialStep.chatTourShare:
         beginRound1();
         break;
       case TutorialStep.round1Result:

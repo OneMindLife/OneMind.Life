@@ -3,6 +3,7 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/proposition.dart';
 import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
+import '../home_tour/widgets/spotlight_overlay.dart';
 
 /// Read-only screen for viewing previous round results on a grid.
 ///
@@ -24,6 +25,15 @@ class ReadOnlyResultsScreen extends StatefulWidget {
   /// Winner name to display in tutorial hint (e.g. "Community Garden won!")
   final String? tutorialWinnerName;
 
+  /// Optional custom title for the tutorial hint (overrides default)
+  final String? tutorialHintTitle;
+
+  /// Optional custom description for the tutorial hint (overrides default)
+  final String? tutorialHintDescription;
+
+  /// Callback to exit the tutorial (shows close button in AppBar when set)
+  final VoidCallback? onExitTutorial;
+
   const ReadOnlyResultsScreen({
     super.key,
     required this.propositions,
@@ -32,6 +42,9 @@ class ReadOnlyResultsScreen extends StatefulWidget {
     this.myParticipantId,
     this.showTutorialHint = false,
     this.tutorialWinnerName,
+    this.tutorialHintTitle,
+    this.tutorialHintDescription,
+    this.onExitTutorial,
   });
 
   @override
@@ -41,6 +54,7 @@ class ReadOnlyResultsScreen extends StatefulWidget {
 
 class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen> {
   late RatingModel _model;
+  bool _dismissedHint = false;
 
   @override
   void initState() {
@@ -91,47 +105,10 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen> {
     );
   }
 
-  Widget _buildTutorialHint(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    // Match the tutorial hint styling from tutorial_screen.dart
-    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
-    final borderColor = theme.colorScheme.primary.withAlpha(80);
-    final contentColor = theme.colorScheme.onPrimaryContainer;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 20,
-            color: contentColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              l10n.tutorialResultsBackHint(widget.tutorialWinnerName ?? ''),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: contentColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final showHint = widget.showTutorialHint && !_dismissedHint;
 
     return Scaffold(
       appBar: AppBar(
@@ -140,16 +117,47 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          l10n.roundResults(widget.roundNumber),
+          l10n.roundResults,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          if (widget.onExitTutorial != null)
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.skip,
+              onPressed: widget.onExitTutorial,
+            ),
+        ],
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            if (widget.showTutorialHint) _buildTutorialHint(context),
-            Expanded(child: _buildPropositionsGrid()),
+            // Full-size results grid (no layout shift)
+            Positioned.fill(child: _buildPropositionsGrid()),
+            // Floating hint overlay
+            if (showHint)
+              Positioned(
+                left: 16,
+                right: 16,
+                top: 8,
+                child: GestureDetector(
+                  onTap: () => setState(() => _dismissedHint = true),
+                  child: TourTooltipCard(
+                    title: widget.tutorialHintTitle ?? l10n.tutorialHintRateIdeas,
+                    description: widget.tutorialHintDescription ??
+                        l10n.tutorialResultsBackHint(
+                            widget.tutorialWinnerName ?? ''),
+                    onNext: () => setState(() => _dismissedHint = true),
+                    onSkip: widget.onExitTutorial ?? () => Navigator.of(context).pop(),
+                    stepIndex: 0,
+                    totalSteps: 1,
+                    nextLabel: l10n.homeTourFinish,
+                    skipLabel: l10n.tutorialSkipMenuItem,
+                    stepOfLabel: '',
+                  ),
+                ),
+              ),
           ],
         ),
       ),

@@ -594,7 +594,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final stateAsync = ref.watch(chatDetailProvider(_params));
 
-    // Auto-switch to Previous Winner tab when new winners arrive
+    // Auto-switch to Emerging tab when new winners arrive
     final currentWinners = stateAsync.valueOrNull?.previousRoundWinners ?? [];
     if (currentWinners.isNotEmpty) {
       final currentRoundId = currentWinners.first.roundId;
@@ -609,7 +609,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     }
 
-    // Previously pre-filled text field with previous winner — removed per user request.
+    // Previously pre-filled text field with emerging idea — removed per user request.
     // Users should always start with an empty text field in proposing phase.
 
     // Record the phase when user first opens this screen, so we only
@@ -1278,7 +1278,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final hasPreviousWinner = state.previousRoundWinners.isNotEmpty;
     final isRatingPhase = state.currentRound?.phase == RoundPhase.rating;
 
-    // Hide the Previous Winner tab when in rating phase
+    // Hide the Emerging tab when in rating phase
     final showPreviousWinnerTab = hasPreviousWinner && !isRatingPhase;
 
     return Container(
@@ -1291,7 +1291,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Tab bar - shows both tabs when previous winner exists and not in rating phase
+          // Tab bar - shows both tabs when emerging idea exists and not in rating phase
           _buildToggleTabs(state, showPreviousWinnerTab),
           // Content based on toggle
           _showPreviousWinner && showPreviousWinnerTab
@@ -1317,7 +1317,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       ),
       child: Row(
         children: [
-          // Previous Winner Tab - only show when there's a previous winner
+          // Emerging Tab - only show when there's an emerging idea
           if (hasPreviousWinner)
             Expanded(
               child: GestureDetector(

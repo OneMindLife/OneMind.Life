@@ -395,9 +395,6 @@ void main() {
         expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
 
         chatNotifier.nextChatTourStep();
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourShare);
-
-        chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
       });
 

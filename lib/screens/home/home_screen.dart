@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -179,16 +178,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: Text(l10n.appTitle),
         ),
         actions: [
-          if (kDebugMode)
-            IconButton(
-              icon: const Icon(Icons.restart_alt),
-              tooltip: 'Restart Home Tour (debug)',
-              onPressed: () async {
-                await ref.read(tutorialServiceProvider).resetHomeTour();
-                ref.invalidate(hasCompletedHomeTourProvider);
-                if (context.mounted) context.go('/home-tour');
-              },
-            ),
           IconButton(
             key: const Key('explore-button'),
             icon: const Icon(Icons.explore),

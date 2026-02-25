@@ -36,7 +36,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateFamilyDesc',
       icon: Icons.family_restroom,
       question: 'Where should we go on vacation?',
-      chatName: 'Tutorial: Family',
+      chatName: 'Family',
       round1Props: ['Beach Resort', 'Mountain Cabin', 'City Trip'],
       round1Winner: 'Beach Resort',
       round2Props: ['Road Trip', 'Camping Adventure', 'Beach Resort'],
@@ -48,7 +48,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateCommunityDesc',
       icon: Icons.location_city,
       question: 'What should our neighborhood do together?',
-      chatName: 'Tutorial: Community',
+      chatName: 'Community',
       round1Props: ['Block Party', 'Community Garden', 'Neighborhood Watch'],
       round1Winner: 'Community Garden',
       round2Props: ['Tool Library', 'Mutual Aid Fund', 'Community Garden'],
@@ -60,7 +60,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateWorkplaceDesc',
       icon: Icons.business,
       question: 'What should our team focus on?',
-      chatName: 'Tutorial: Workplace',
+      chatName: 'Workplace',
       round1Props: ['Flexible Hours', 'Mental Health Support', 'Team Building'],
       round1Winner: 'Mental Health Support',
       round2Props: ['Skills Training', 'Open Communication', 'Mental Health Support'],
@@ -72,7 +72,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateGovernmentDesc',
       icon: Icons.account_balance,
       question: 'How should we spend the city budget?',
-      chatName: 'Tutorial: City Budget',
+      chatName: 'City Budget',
       round1Props: ['Public Transportation', 'School Funding', 'Emergency Services'],
       round1Winner: 'Emergency Services',
       round2Props: ['Road Repairs', 'Public Health', 'Emergency Services'],
@@ -84,7 +84,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateWorldDesc',
       icon: Icons.public,
       question: 'What global issue matters most?',
-      chatName: 'Tutorial: Global Issues',
+      chatName: 'Global Issues',
       round1Props: ['Climate Change', 'Global Poverty', 'AI Governance'],
       round1Winner: 'Climate Change',
       round2Props: ['Pandemic Preparedness', 'Nuclear Disarmament', 'Climate Change'],
@@ -96,7 +96,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplatePersonalDesc',
       icon: Icons.person,
       question: 'What should I do after graduation?',
-      chatName: 'Tutorial: Personal Decision',
+      chatName: 'Personal Decision',
       round1Props: ['Travel Abroad', 'Start a Business', 'Graduate School'],
       round1Winner: 'Graduate School',
       round2Props: ['Get a Job First', 'Take a Gap Year', 'Graduate School'],
@@ -108,7 +108,7 @@ class TutorialTemplate {
       descriptionKey: 'tutorialTemplateCustomDesc',
       icon: Icons.edit_note,
       question: 'What do we value?',
-      chatName: 'Tutorial: Values',
+      chatName: 'Values',
       round1Props: ['Success', 'Adventure', 'Growth'],
       round1Winner: 'Success',
       round2Props: ['Harmony', 'Innovation', 'Success'],
@@ -225,7 +225,7 @@ class TutorialData {
 
   // Default tutorial question (classic template / fallback)
   static const String question = 'What do we value?';
-  static const String chatName = 'Tutorial: Values';
+  static const String chatName = 'Values';
   static const String initialMessage = question;
 
   /// Get question for a given template key (falls back to classic)
@@ -321,9 +321,7 @@ class TutorialData {
         customId: 1,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: phase == RoundPhase.waiting
-            ? null
-            : DateTime.now().add(const Duration(minutes: 5)),
+        phaseEndsAt: null, // No timer in tutorial
         createdAt: DateTime.now(),
       );
 
@@ -333,9 +331,7 @@ class TutorialData {
         customId: 2,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: phase == RoundPhase.waiting
-            ? null
-            : DateTime.now().add(const Duration(minutes: 5)),
+        phaseEndsAt: null, // No timer in tutorial
         createdAt: DateTime.now(),
       );
 
@@ -345,9 +341,7 @@ class TutorialData {
         customId: 3,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: phase == RoundPhase.waiting
-            ? null
-            : DateTime.now().add(const Duration(minutes: 5)),
+        phaseEndsAt: null, // No timer in tutorial
         createdAt: DateTime.now(),
       );
 
@@ -522,31 +516,34 @@ class TutorialData {
   static List<Proposition> round1ResultsWithRatings(String userProposition, {String? templateKey}) {
     final template = TutorialTemplate.getTemplate(templateKey);
     final props = template.round1Props;
+    final winner = template.round1Winner;
+
+    // Assign ratings so the declared winner gets 100, others get descending scores
+    final ratings = <String, double>{};
+    // Non-winner props get descending scores below 100
+    final nonWinnerScores = [58.0, 33.0];
+    var scoreIndex = 0;
+    for (final prop in props) {
+      if (prop == winner) {
+        ratings[prop] = 100.0;
+      } else {
+        ratings[prop] = scoreIndex < nonWinnerScores.length
+            ? nonWinnerScores[scoreIndex]
+            : 10.0;
+        scoreIndex++;
+      }
+    }
+
+    final participantIds = [-2, -3, -4]; // Alice, Bob, Carol
     return [
-      Proposition(
-        id: -100,
+      ...props.asMap().entries.map((entry) => Proposition(
+        id: -100 - entry.key,
         roundId: -1,
-        participantId: -2, // Alice
-        content: props[0],
-        finalRating: 100.0, // Winner - normalized to top
+        participantId: participantIds[entry.key],
+        content: entry.value,
+        finalRating: ratings[entry.value] ?? 0.0,
         createdAt: DateTime.now(),
-      ),
-      Proposition(
-        id: -101,
-        roundId: -1,
-        participantId: -3, // Bob
-        content: props[1],
-        finalRating: 58.0,
-        createdAt: DateTime.now(),
-      ),
-      Proposition(
-        id: -102,
-        roundId: -1,
-        participantId: -4, // Carol
-        content: props[2],
-        finalRating: 33.0,
-        createdAt: DateTime.now(),
-      ),
+      )),
       Proposition(
         id: -103,
         roundId: -1,

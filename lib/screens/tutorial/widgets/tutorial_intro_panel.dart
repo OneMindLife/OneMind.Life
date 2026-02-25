@@ -83,6 +83,14 @@ class TutorialIntroPanel extends ConsumerWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 12),
+          Text(
+            l10n.tutorialWelcomeDescription,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 16),
           Text(
             l10n.tutorialWelcomeSubtitle,

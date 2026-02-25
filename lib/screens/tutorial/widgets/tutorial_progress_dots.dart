@@ -17,9 +17,9 @@ class TutorialProgressDots extends StatelessWidget {
     TutorialStep.intro: 0,
     // Chat tour (all map to segment 1)
     TutorialStep.chatTourTitle: 1,
+    TutorialStep.chatTourParticipants: 1,
     TutorialStep.chatTourMessage: 1,
     TutorialStep.chatTourProposing: 1,
-    TutorialStep.chatTourParticipants: 1,
     // Round 1
     TutorialStep.round1Proposing: 2,
     TutorialStep.round1Rating: 3,
@@ -40,6 +40,12 @@ class TutorialProgressDots extends StatelessWidget {
   };
 
   static const _totalSegments = 12;
+
+  /// Public accessor for total number of segments.
+  static int get totalSegments => _totalSegments;
+
+  /// Get the segment index for a given step.
+  static int segmentForStep(TutorialStep step) => _stepSegments[step] ?? 0;
 
   @override
   Widget build(BuildContext context) {

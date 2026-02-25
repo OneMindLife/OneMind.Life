@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,12 +5,11 @@ import '../../config/env_config.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
-import '../../widgets/language_selector.dart';
+import '../../config/app_colors.dart';
 import '../../widgets/qr_code_share.dart';
 import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
 import '../chat/widgets/phase_panels.dart';
-import '../chat/widgets/previous_round_display.dart';
 import '../rating/read_only_results_screen.dart';
 import 'models/tutorial_state.dart';
 import 'notifiers/tutorial_notifier.dart';
@@ -69,23 +66,18 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
   double _endTourTooltipTop = 0;
   bool _endTourMeasured = false;
 
-  // UI toggle state (same as ChatScreen)
-  bool _showPreviousWinner = false;
-  int _currentWinnerIndex = 0;
-  int? _lastWinnerRoundId;
-
-  // Tutorial-specific: track if user has clicked Continue to unlock phase tab
-  bool _phaseTabUnlocked = false;
-
-  // Two-step flow: first Continue button, then tap-tab instruction
-  bool _hintContinueClicked = false;
-
   // Track if tutorial completion is in progress (show loading, block back)
   bool _isCompleting = false;
+
+  // Floating hint overlay: track dismissed hints and bottom area height
+  final Set<String> _dismissedHints = {};
+  final GlobalKey _bottomAreaKey = GlobalKey();
+  double _bottomAreaHeight = 200; // reasonable default
 
   // Guards to prevent double-opening screens on auto-transitions
   bool _hasAutoOpenedRound1Results = false;
   bool _hasAutoOpenedRound2Rating = false;
+  bool _hasAutoOpenedRound2Results = false;
   bool _hasAutoOpenedRound3Rating = false;
 
   // Transition animation: fade out chat → show transition message → continue
@@ -217,12 +209,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       inviteCode: TutorialData.demoInviteCode,
       // Tutorial code URL redirects to tutorial via router
       deepLinkUrl: '${EnvConfig.webAppUrl}/join/${TutorialData.demoInviteCode}',
-      // Show prominent Continue button to make it clear users need to tap to proceed
-      showContinueButton: true,
-    ).then((_) {
-      // After dialog is closed, complete the tutorial
-      if (mounted) _handleComplete();
-    });
+    );
+    // Dialog is informational only — closing it does not advance the tutorial.
+    // The tooltip "Continue" button handles advancement.
   }
 
   void _submitProposition() {
@@ -315,7 +304,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         builder: (context) => _TutorialRatingScreen(
           propositions: translatedPropositions,
           showHints: state.currentStep == TutorialStep.round1Rating,
-          isRound2: state.currentStep == TutorialStep.round2Rating,
+          onExitTutorial: () {
+            Navigator.pop(context);
+            _handleSkip();
+          },
           onComplete: () {
             // Complete the rating based on current step
             final currentState = ref.read(tutorialChatNotifierProvider);
@@ -358,10 +350,55 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
           roundId: -1,
           myParticipantId: -1,
           showTutorialHint: true,
+          tutorialHintTitle: l10n.tutorialHintRoundResults,
           tutorialWinnerName: winnerName,
+          onExitTutorial: () {
+            Navigator.pop(context);
+            _handleSkip();
+          },
         ),
       ),
-    );
+    ).then((_) {
+      // Auto-advance to Round 2 when results screen is dismissed
+      if (mounted) {
+        ref.read(tutorialChatNotifierProvider.notifier).continueToRound2();
+      }
+    });
+  }
+
+  void _openResultsScreenForRound2(TutorialChatState state) {
+    final l10n = AppLocalizations.of(context);
+    final translatedResults = state.round2Results.map((p) => Proposition(
+      id: p.id,
+      roundId: p.roundId,
+      participantId: p.participantId,
+      content: _translateProposition(p.content, l10n),
+      finalRating: p.finalRating,
+      createdAt: p.createdAt,
+    )).toList();
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReadOnlyResultsScreen(
+          propositions: translatedResults,
+          roundNumber: 2,
+          roundId: -2,
+          myParticipantId: -1,
+          showTutorialHint: true,
+          tutorialHintTitle: l10n.tutorialHintYouWon,
+          tutorialHintDescription: l10n.tutorialR2ResultsHint,
+          onExitTutorial: () {
+            Navigator.pop(context);
+            _handleSkip();
+          },
+        ),
+      ),
+    ).then((_) {
+      // Advance to Round 3 when results screen is dismissed
+      if (mounted) {
+        ref.read(tutorialChatNotifierProvider.notifier).continueToRound3();
+      }
+    });
   }
 
   @override
@@ -405,6 +442,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
           }
         });
       }
+      // Auto-open results screen after R2 rating completes
+      if (prev?.currentStep != TutorialStep.round2Result &&
+          next.currentStep == TutorialStep.round2Result &&
+          !_hasAutoOpenedRound2Results) {
+        _hasAutoOpenedRound2Results = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _openResultsScreenForRound2(next);
+          }
+        });
+      }
       // Start fade-out animation when reaching complete step
       if (prev?.currentStep != TutorialStep.complete &&
           next.currentStep == TutorialStep.complete) {
@@ -434,19 +482,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       return _buildChatTourScreen(state);
     }
 
-    // Auto-switch to Previous Winner tab when new winners arrive
-    if (state.previousRoundWinners.isNotEmpty) {
-      final currentRoundId = state.previousRoundWinners.first.roundId;
-      if (_lastWinnerRoundId != currentRoundId) {
-        _lastWinnerRoundId = currentRoundId;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_showPreviousWinner) {
-            setState(() => _showPreviousWinner = true);
-          }
-        });
-      }
-    }
-
     // Check if we should show tutorial-specific panels
     final showTutorialPanel = _shouldShowTutorialPanel(state.currentStep);
 
@@ -472,9 +507,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                 ),
               ),
               actions: [
-                // Language selector on intro screen
-                if (state.currentStep == TutorialStep.intro)
-                  const LanguageSelector(compact: true),
                 // Participants icon (after intro, matching chat screen)
                 if (state.currentStep != TutorialStep.intro)
                   AnimatedOpacity(
@@ -509,130 +541,152 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                       },
                     ),
                   ),
-                // Exit button (not on intro - skip is in panel)
-                if (state.currentStep != TutorialStep.intro)
-                  AnimatedOpacity(
-                    opacity: dimOpacity,
-                    duration: const Duration(milliseconds: 250),
-                    child: Builder(
-                      builder: (context) {
-                        final l10n = AppLocalizations.of(context);
-                        return IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: l10n.tutorialSkipMenuItem,
-                          onPressed: _handleSkip,
-                        );
-                      },
-                    ),
+                // Exit button (always available)
+                AnimatedOpacity(
+                  opacity: dimOpacity,
+                  duration: const Duration(milliseconds: 250),
+                  child: Builder(
+                    builder: (context) {
+                      final l10n = AppLocalizations.of(context);
+                      return IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: l10n.tutorialSkipMenuItem,
+                        onPressed: _handleSkip,
+                      );
+                    },
                   ),
+                ),
               ],
             ),
       body: state.currentStep == TutorialStep.intro
           // Intro: full screen panel (AppBar provides safe area)
           ? _buildTutorialPanel(state)
-          // After template selection: Column with progress dots, chat history, bottom area
-          : Column(
-              children: [
-                // Progress dots (not shown on complete)
-                if (state.currentStep != TutorialStep.complete)
-                  AnimatedOpacity(
-                    opacity: dimOpacity,
-                    duration: const Duration(milliseconds: 250),
-                    child: TutorialProgressDots(currentStep: state.currentStep),
-                  ),
+          // After template selection: Stack with Column + floating hint overlay
+          : _buildMainStack(state, dimOpacity, isEndTour, showTutorialPanel),
+    );
+  }
 
-                // Chat History — wrapped in Stack for end-tour tooltip
-                Expanded(
-                  child: Stack(
-                    key: _endTourStackKey,
-                    children: [
-                      Builder(
-                        builder: (bodyContext) {
-                          final l10n = AppLocalizations.of(bodyContext);
-                          // Use template-specific question (translated), or localized default
-                          final templateKey = state.selectedTemplate;
-                          final initialMessage = state.customQuestion ??
-                              TutorialTemplate.translateQuestion(templateKey, l10n);
+  /// Build the main content as a Stack: Column layout + floating hint overlay.
+  Widget _buildMainStack(
+    TutorialChatState state,
+    double dimOpacity,
+    bool isEndTour,
+    bool showTutorialPanel,
+  ) {
+    // Measure bottom area height after layout for hint positioning
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _measureBottomArea();
+    });
 
-                          // Measure tooltip position after layout for end-tour steps
-                          if (isEndTour) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted) _updateEndTourTooltipPosition(state);
-                            });
-                          }
+    return Stack(
+      children: [
+        // Layer 0: existing Column layout (unchanged)
+        Column(
+          children: [
+            // Progress dots (not shown on complete)
+            if (state.currentStep != TutorialStep.complete)
+              AnimatedOpacity(
+                opacity: dimOpacity,
+                duration: const Duration(milliseconds: 250),
+                child: TutorialProgressDots(currentStep: state.currentStep),
+              ),
 
-                          return ListView(
-                            padding: const EdgeInsets.all(16),
-                            children: [
-                              // Initial Message (the tutorial question)
-                              Center(
+            // Chat History — wrapped in Stack for end-tour tooltip
+            Expanded(
+              child: Stack(
+                key: _endTourStackKey,
+                children: [
+                  Builder(
+                    builder: (bodyContext) {
+                      final l10n = AppLocalizations.of(bodyContext);
+                      final templateKey = state.selectedTemplate;
+                      final initialMessage = state.customQuestion ??
+                          TutorialTemplate.translateQuestion(templateKey, l10n);
+
+                      if (isEndTour) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (mounted) _updateEndTourTooltipPosition(state);
+                        });
+                      }
+
+                      return ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          Center(
+                            child: AnimatedOpacity(
+                              opacity: state.currentStep == TutorialStep.round3Consensus
+                                  ? 1.0
+                                  : dimOpacity,
+                              duration: const Duration(milliseconds: 250),
+                              child: _buildMessageCard(
+                                l10n.initialMessage,
+                                initialMessage,
+                                isPrimary: true,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ...state.consensusItems.asMap().entries.map((entry) {
+                            final isSpotlighted =
+                                state.currentStep == TutorialStep.round3Consensus;
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.only(bottom: 16),
                                 child: AnimatedOpacity(
-                                  opacity: dimOpacity,
+                                  opacity: isSpotlighted ? 1.0 : dimOpacity,
                                   duration: const Duration(milliseconds: 250),
-                                  child: _buildMessageCard(
-                                    l10n.initialMessage,
-                                    initialMessage,
-                                    isPrimary: true,
+                                  child: KeyedSubtree(
+                                    key: entry.key == state.consensusItems.length - 1
+                                        ? _consensusCardKey
+                                        : null,
+                                    child: _buildMessageCard(
+                                      l10n.consensusNumber(entry.key + 1),
+                                      entry.value.displayContent,
+                                      isPrimary: true,
+                                    ),
                                   ),
                                 ),
                               ),
-                              const SizedBox(height: 16),
-
-                              // Consensus Items — spotlighted during consensus step
-                              ...state.consensusItems.asMap().entries.map((entry) {
-                                final isSpotlighted =
-                                    state.currentStep == TutorialStep.round3Consensus;
-                                return Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(bottom: 16),
-                                    child: AnimatedOpacity(
-                                      opacity: isSpotlighted ? 1.0 : dimOpacity,
-                                      duration: const Duration(milliseconds: 250),
-                                      child: KeyedSubtree(
-                                        key: entry.key == state.consensusItems.length - 1
-                                            ? _consensusCardKey
-                                            : null,
-                                        child: _buildMessageCard(
-                                          l10n.consensusNumber(entry.key + 1),
-                                          entry.value.displayContent,
-                                          isPrimary: true,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              }),
-                            ],
-                          );
-                        },
-                      ),
-                      // End-tour floating TourTooltipCard
-                      if (isEndTour && _endTourMeasured)
-                        _buildEndTourTooltip(state),
-                    ],
+                            );
+                          }),
+                        ],
+                      );
+                    },
                   ),
-                ),
+                  if (isEndTour && _endTourMeasured)
+                    _buildEndTourTooltip(state),
+                ],
+              ),
+            ),
 
-                // Bottom Area - dimmed during end tour
-                Flexible(
-                  flex: 0,
-                  child: AnimatedOpacity(
-                    opacity: dimOpacity,
-                    duration: const Duration(milliseconds: 250),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.5,
-                      ),
-                      child: SingleChildScrollView(
-                        child: showTutorialPanel
-                            ? _buildTutorialPanel(state)
-                            : _buildChatBottomArea(state),
-                      ),
+            // Bottom Area - dimmed during end tour, keyed for measurement
+            Flexible(
+              flex: 0,
+              child: KeyedSubtree(
+                key: _bottomAreaKey,
+                child: AnimatedOpacity(
+                  opacity: dimOpacity,
+                  duration: const Duration(milliseconds: 250),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.5,
+                    ),
+                    child: SingleChildScrollView(
+                      child: showTutorialPanel
+                          ? _buildTutorialPanel(state)
+                          : _buildChatBottomArea(state),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
+          ],
+        ),
+
+        // Layer 1: floating hint overlay
+        if (_activeHintId(state) != null)
+          _buildFloatingHint(state),
+      ],
     );
   }
 
@@ -658,6 +712,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       case TutorialStep.chatTourTitle:
         // Just below AppBar
         newTop = 8;
+      case TutorialStep.chatTourParticipants:
+        // Just below AppBar (participants button is in the app bar)
+        newTop = 8;
       case TutorialStep.chatTourMessage:
         final targetBox =
             _tourMessageKey.currentContext?.findRenderObject() as RenderBox?;
@@ -675,9 +732,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
             _tourTooltipKey.currentContext?.findRenderObject() as RenderBox?;
         final tooltipH = tooltipBoxP?.size.height ?? 180;
         newTop = proposingPos.dy - tooltipH - 12;
-      case TutorialStep.chatTourParticipants:
-        // Just below AppBar
-        newTop = 8;
       default:
         return;
     }
@@ -727,15 +781,15 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       case TutorialStep.chatTourTitle:
         tourTitle = l10n.chatTourTitleTitle;
         tourDescription = l10n.chatTourTitleDesc;
+      case TutorialStep.chatTourParticipants:
+        tourTitle = l10n.chatTourParticipantsTitle;
+        tourDescription = l10n.chatTourParticipantsDesc;
       case TutorialStep.chatTourMessage:
         tourTitle = l10n.chatTourMessageTitle;
         tourDescription = l10n.chatTourMessageDesc;
       case TutorialStep.chatTourProposing:
         tourTitle = l10n.chatTourProposingTitle;
         tourDescription = l10n.chatTourProposingDesc;
-      case TutorialStep.chatTourParticipants:
-        tourTitle = l10n.chatTourParticipantsTitle;
-        tourDescription = l10n.chatTourParticipantsDesc;
       default:
         tourTitle = '';
         tourDescription = '';
@@ -806,7 +860,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                     ),
                   ),
                   const Spacer(),
-                  // Mock bottom area (tab bar + proposing input)
+                  // Mock bottom area (proposing input)
                   KeyedSubtree(
                     key: _tourProposingKey,
                     child: AnimatedOpacity(
@@ -823,30 +877,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            // Tab bar label
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              decoration: BoxDecoration(
-                                color: theme.colorScheme.surfaceContainerHigh,
-                                borderRadius: const BorderRadius.only(
-                                  topLeft: Radius.circular(12),
-                                  topRight: Radius.circular(12),
-                                ),
-                              ),
-                              child: Text(
-                                l10n.yourProposition,
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: theme.colorScheme.onSurface,
-                                ),
-                              ),
-                            ),
                             // Proposing input
                             Padding(
                               padding: const EdgeInsets.all(16),
                               child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
                                   Expanded(
                                     child: TextField(
@@ -855,16 +890,25 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                                         hintText: l10n.shareYourIdea,
                                         border: OutlineInputBorder(
                                           borderRadius:
-                                              BorderRadius.circular(8),
+                                              BorderRadius.circular(24),
                                         ),
                                         filled: true,
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
+                                                horizontal: 16, vertical: 12),
+                                        counterText: '',
                                       ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  FilledButton(
-                                    onPressed: null,
-                                    child: Text(l10n.submit),
+                                  SizedBox(
+                                    width: 48,
+                                    height: 48,
+                                    child: IconButton.filled(
+                                      onPressed: null,
+                                      icon: const Icon(Icons.send_rounded,
+                                          size: 22),
+                                    ),
                                   ),
                                 ],
                               ),
@@ -911,23 +955,107 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     );
   }
 
+  // === Floating Hint Overlay ===
+
+  /// Determine which hint (if any) should be shown for the current state.
+  /// Returns null if no hint is active or it has been dismissed.
+  String? _activeHintId(TutorialChatState state) {
+    final step = state.currentStep;
+    final round = state.currentRound;
+
+    // R2 intro hint: shown when round2Prompt or round2Proposing and user hasn't typed yet
+    if ((step == TutorialStep.round2Prompt || step == TutorialStep.round2Proposing) &&
+        state.previousRoundWinners.isNotEmpty &&
+        state.myPropositions.isEmpty) {
+      const id = 'r2_intro';
+      if (!_dismissedHints.contains(id)) return id;
+    }
+
+    // R3 intro hint: shown when round 3, proposing, user hasn't typed yet
+    if (step == TutorialStep.round3Proposing &&
+        round?.customId == 3 &&
+        state.myPropositions.isEmpty &&
+        state.previousRoundWinners.isNotEmpty) {
+      const id = 'r3_intro';
+      if (!_dismissedHints.contains(id)) return id;
+    }
+
+    // R1 rating hint: shown for round 1, rating, not started
+    if (round?.phase == RoundPhase.rating &&
+        round?.customId == 1 &&
+        !state.hasStartedRating &&
+        !state.hasRated) {
+      const id = 'r1_rating';
+      if (!_dismissedHints.contains(id)) return id;
+    }
+
+    return null;
+  }
+
+  /// Build the floating hint overlay as a Positioned TourTooltipCard.
+  Widget _buildFloatingHint(TutorialChatState state) {
+    final hintId = _activeHintId(state);
+    if (hintId == null) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context);
+
+    final String title;
+    final String description;
+
+    switch (hintId) {
+      case 'r2_intro':
+        title = l10n.tutorialHintRound2;
+        description = _getWinnerIntroMessage(state, l10n);
+      case 'r3_intro':
+        title = l10n.tutorialHintYouWon;
+        final userWinner = state.userProposition2 ?? '';
+        final r1Winner = _translateProposition(
+          TutorialData.round1WinnerForTemplate(state.selectedTemplate), l10n);
+        description = l10n.tutorialRound3PromptTemplate(userWinner, r1Winner);
+      case 'r1_rating':
+        title = l10n.tutorialHintRateIdeas;
+        description = l10n.tutorialRatingPhaseExplanation;
+      default:
+        return const SizedBox.shrink();
+    }
+
+    return Positioned(
+      left: 16,
+      right: 16,
+      bottom: _bottomAreaHeight + 8,
+      child: GestureDetector(
+        onTap: () => setState(() => _dismissedHints.add(hintId)),
+        child: TourTooltipCard(
+          title: title,
+          description: description,
+          onNext: () => setState(() => _dismissedHints.add(hintId)),
+          onSkip: _handleSkip,
+          stepIndex: 0,
+          totalSteps: 0,
+          nextLabel: l10n.homeTourFinish,
+          skipLabel: l10n.tutorialSkipMenuItem,
+          stepOfLabel: '',
+        ),
+      ),
+    );
+  }
+
+  /// Measure the bottom area height after layout for floating hint positioning.
+  void _measureBottomArea() {
+    final box = _bottomAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      final h = box.size.height;
+      if ((h - _bottomAreaHeight).abs() > 1) {
+        setState(() => _bottomAreaHeight = h);
+      }
+    }
+  }
+
   /// Determine if we should show a tutorial-specific panel (not chat-like)
   bool _shouldShowTutorialPanel(TutorialStep step) {
     // Intro uses tutorial panel (no tabbar)
     // Complete is handled separately by _buildCompletionTransition
     return step == TutorialStep.intro;
-  }
-
-  /// Check if current step is a result step (shows tabs + message + continue)
-  bool _isResultStep(TutorialStep step) {
-    return step == TutorialStep.round1Result ||
-        step == TutorialStep.round2Result;
-  }
-
-  /// Check if current step is an educational step (prompt)
-  /// where the phase tab is locked until Continue is clicked
-  bool _isEducationalStep(TutorialStep step) {
-    return step == TutorialStep.round2Prompt;
   }
 
   /// Whether we're in the end-tour (consensus + share demo spotlight steps)
@@ -992,12 +1120,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       onNext = () => notifier.continueToShareDemo();
       nextLabel = l10n.continue_;
     } else {
-      // shareDemo
+      // shareDemo — "Continue" advances; share icon opens QR dialog
       title = l10n.tutorialShareTitle;
       description = l10n.tutorialShareExplanation;
       stepIndex = 1;
-      onNext = _showDemoQrCode;
-      nextLabel = l10n.tutorialShareTitle;
+      onNext = () =>
+          ref.read(tutorialChatNotifierProvider.notifier).completeTutorial();
+      nextLabel = l10n.continue_;
     }
 
     return Positioned(
@@ -1022,8 +1151,21 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
   Widget _buildCompletionTransition() {
     final theme = Theme.of(context);
 
+    final l10nOuter = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: theme.colorScheme.surface,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: l10nOuter.tutorialSkipMenuItem,
+            onPressed: _handleSkip,
+          ),
+        ],
+      ),
       body: AnimatedBuilder(
         animation: _transitionController,
         builder: (context, child) {
@@ -1131,96 +1273,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     );
   }
 
-  /// Build an educational hint banner for the tutorial.
-  /// Optionally includes a Continue button inside the hint card.
-  Widget _buildEducationalHint(String text, {
-    IconData icon = Icons.lightbulb_outline,
-    VoidCallback? onContinue,
-  }) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    // Use a soft blue/primary tint for tutorial hints (not tertiary which can look red)
-    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
-    final borderColor = theme.colorScheme.primary.withAlpha(80);
-    final contentColor = theme.colorScheme.onPrimaryContainer;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                icon,
-                size: 20,
-                color: contentColor,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: contentColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (onContinue != null) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                onPressed: onContinue,
-                icon: const Icon(Icons.arrow_forward, size: 18),
-                label: Text(l10n.continue_),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEducationalHintWithCountdown(
-    String text,
-    DateTime endsAt, {
-    String Function(String)? timeTemplate,
-  }) {
-    final l10n = AppLocalizations.of(context);
-    return _TutorialProposingHint(
-      text: text,
-      endsAt: endsAt,
-      timeRemainingTemplate: timeTemplate ?? (time) => l10n.tutorialTimeRemaining(time),
-    );
-  }
-
-  /// Build the chat-like bottom area (tabs + phase panels)
+  /// Build the bottom area — no tabs, inline emerging idea + phase panel.
+  /// Hints have been moved to the floating overlay (_buildFloatingHint).
   Widget _buildChatBottomArea(TutorialChatState state) {
-    final l10n = AppLocalizations.of(context);
     final hasPreviousWinner = state.previousRoundWinners.isNotEmpty;
-    final isRatingPhase = state.currentRound?.phase == RoundPhase.rating;
-    final isResultStep = _isResultStep(state.currentStep);
-    final isEducationalStep = _isEducationalStep(state.currentStep);
-
-    // Hide Previous Winner tab during rating (same as real ChatScreen)
-    // But show it during result steps and educational steps (only if tab still locked)
-    // Once user clicks Continue on educational step, hide Previous Winner tab during rating
-    final showPreviousWinnerTab = hasPreviousWinner &&
-        (!isRatingPhase || isResultStep || (isEducationalStep && !_phaseTabUnlocked));
-
-    // Phase tab is highlighted only after user clicks Continue in the hint
-    final isInActionStep = isResultStep || (isEducationalStep && !_phaseTabUnlocked);
-    final isPhaseTabHighlighted = isInActionStep && _hintContinueClicked;
-
+    final isProposing = state.currentRound?.phase == RoundPhase.proposing;
     final theme = Theme.of(context);
 
     return Container(
@@ -1233,234 +1290,113 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Tab bar
-          _buildToggleTabs(state, showPreviousWinnerTab,
-            isPhaseTabHighlighted: isPhaseTabHighlighted,
-            isPhaseTabLocked: isInActionStep && !_hintContinueClicked,
-            onPhaseTabAction: isPhaseTabHighlighted ? () {
-              if (isResultStep) {
-                _handleResultContinue(state);
-              } else if (isEducationalStep) {
-                _handleEducationalContinue();
-              }
-            } : null,
-          ),
+          // Inline emerging idea card (during proposing when a winner exists)
+          if (hasPreviousWinner && isProposing)
+            _buildInlinePreviousWinner(state),
 
-          // For result steps: two-step hint flow
-          if (isResultStep && !_hintContinueClicked)
-            _buildEducationalHint(
-              _getResultMessage(state, l10n),
-              icon: Icons.emoji_events_outlined,
-              onContinue: () => setState(() => _hintContinueClicked = true),
-            ),
-          if (isResultStep && _hintContinueClicked)
-            _buildEducationalHint(
-              state.currentStep == TutorialStep.round1Result
-                  ? l10n.tutorialResultTapTabHint(_getPhaseTabLabel(state))
-                  : l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
-              icon: Icons.touch_app_outlined,
-            ),
-
-          // Content based on toggle
-          _showPreviousWinner && showPreviousWinnerTab
-              ? _buildPreviousWinnerPanel(state, isEducationalStep: isEducationalStep)
-              : _buildCurrentPhasePanel(state),
+          // Current phase panel (always visible — textfield or rate button)
+          _buildCurrentPhasePanel(state),
         ],
       ),
     );
   }
 
-  String _getResultMessage(TutorialChatState state, AppLocalizations l10n) {
-    if (state.currentStep == TutorialStep.round1Result) {
-      final templateKey = state.selectedTemplate;
-      if (templateKey != null && templateKey != 'classic') {
-        final winner = _translateProposition(
-          TutorialData.round1WinnerForTemplate(templateKey), l10n);
-        return l10n.tutorialRound1ResultTemplate(winner);
-      }
-      return l10n.tutorialRound1Result;
-    } else if (state.currentStep == TutorialStep.round2Result) {
-      final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
-      final previousWinner = _translateProposition(
-        TutorialData.round1WinnerForTemplate(state.selectedTemplate), l10n);
-      return l10n.tutorialRound2Result(userProp, previousWinner);
+  /// Get the R2 intro hint — tells the user what to do next.
+  String _getWinnerIntroMessage(TutorialChatState state, AppLocalizations l10n) {
+    final templateKey = state.selectedTemplate;
+    if (templateKey != null && templateKey != 'classic') {
+      final winner = _translateProposition(
+        TutorialData.round1WinnerForTemplate(templateKey), l10n);
+      return l10n.tutorialRound2PromptSimplifiedTemplate(winner);
     }
-    return '';
+    return l10n.tutorialRound2PromptSimplified;
   }
 
-  void _handleResultContinue(TutorialChatState state) {
-    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
-
-    if (state.currentStep == TutorialStep.round1Result) {
-      setState(() {
-        _phaseTabUnlocked = true;
-        _showPreviousWinner = false;
-        _hintContinueClicked = false;
-      });
-      notifier.continueToRound2();
-    } else if (state.currentStep == TutorialStep.round2Result) {
-      // Round 3 - go directly to proposing (single click, no carry forward step)
-      setState(() {
-        _phaseTabUnlocked = true;
-        _showPreviousWinner = false;
-        _hintContinueClicked = false;
-      });
-      notifier.continueToRound3();
-    }
-  }
-
-  Widget _buildToggleTabs(TutorialChatState state, bool hasPreviousWinner, {
-    bool isPhaseTabHighlighted = false,
-    bool isPhaseTabLocked = false,
-    VoidCallback? onPhaseTabAction,
-  }) {
+  /// Compact inline card showing the previous round's winner with "See Results" button.
+  Widget _buildInlinePreviousWinner(TutorialChatState state) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final isFirstSelected = _showPreviousWinner && hasPreviousWinner;
+    if (state.previousRoundWinners.isEmpty) return const SizedBox.shrink();
+
+    final winner = state.previousRoundWinners.first;
+    final winnerContent = _translateProposition(winner.content ?? '', l10n);
+
+    // Determine which round's results to show
+    // Winner roundId: -1 = Round 1, -2 = Round 2
+    final winnerRoundId = winner.roundId;
+    List<Proposition>? resultsToShow;
+    int roundNumber = 1;
+    if (winnerRoundId == -1 && state.round1Results.isNotEmpty) {
+      resultsToShow = state.round1Results;
+      roundNumber = 1;
+    } else if (winnerRoundId == -2 && state.round2Results.isNotEmpty) {
+      resultsToShow = state.round2Results;
+      roundNumber = 2;
+    }
 
     return Container(
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
+        color: AppColors.consensus.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.consensus.withValues(alpha: 0.3),
         ),
       ),
       child: Row(
         children: [
-          // Previous Winner Tab
-          if (hasPreviousWinner)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _showPreviousWinner = true),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isFirstSelected
-                        ? theme.colorScheme.surface
-                        : Colors.transparent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.previousWinner,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight:
-                          isFirstSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isFirstSelected
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // Current Phase Tab (highlighted during result/educational steps)
+          Icon(
+            Icons.emoji_events_outlined,
+            size: 20,
+            color: AppColors.consensus,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: GestureDetector(
-              onTap: isPhaseTabLocked
-                  ? null
-                  : onPhaseTabAction ?? (hasPreviousWinner
-                      ? () => setState(() => _showPreviousWinner = false)
-                      : null),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: !isFirstSelected
-                      ? theme.colorScheme.surface
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(hasPreviousWinner ? 0 : 12),
-                    topRight: const Radius.circular(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.previousWinner,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
-                child: isPhaseTabHighlighted
-                    ? _PulsingTabLabel(
-                        label: _getPhaseTabLabel(state),
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.primary,
-                        ),
-                        highlightColor: theme.colorScheme.primary,
-                      )
-                    : Text(
-                        _getPhaseTabLabel(state),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight:
-                              !isFirstSelected ? FontWeight.bold : FontWeight.normal,
-                          color: !isFirstSelected
-                              ? theme.colorScheme.onSurface
-                              : theme.colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-              ),
+                const SizedBox(height: 2),
+                Text(
+                  winnerContent,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ),
           ),
+          if (resultsToShow != null)
+            TextButton(
+              onPressed: () => _openResultsScreen(resultsToShow!, roundNumber),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                l10n.seeAllResults,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  String _getPhaseTabLabel(TutorialChatState state) {
+  /// Open the read-only results screen for the given round.
+  void _openResultsScreen(List<Proposition> results, int roundNumber) {
     final l10n = AppLocalizations.of(context);
-
-    // During result steps, show "Your Proposition" tab (what user submitted)
-    if (_isResultStep(state.currentStep)) {
-      return state.myPropositions.length > 1
-          ? l10n.yourPropositions
-          : l10n.yourProposition;
-    }
-
-    if (state.currentRound == null) return l10n.waiting;
-    switch (state.currentRound!.phase) {
-      case RoundPhase.waiting:
-        return l10n.waiting;
-      case RoundPhase.proposing:
-        if (state.myPropositions.isEmpty) return l10n.yourProposition;
-        return l10n.yourPropositions;
-      case RoundPhase.rating:
-        return state.hasRated ? l10n.done : l10n.rate;
-    }
-  }
-
-  Widget _buildPreviousWinnerPanel(TutorialChatState state, {bool isEducationalStep = false}) {
-    final l10n = AppLocalizations.of(context);
-
-    // Only show educational content if phase tab is still locked (user hasn't clicked Continue yet)
-    final showEducationalContent = isEducationalStep && !_phaseTabUnlocked;
-
-
-    // Translate winner content to current locale
-    final translatedWinners = state.previousRoundWinners.map((w) => RoundWinner(
-      id: w.id,
-      roundId: w.roundId,
-      propositionId: w.propositionId,
-      rank: w.rank,
-      createdAt: w.createdAt,
-      content: _translateProposition(w.content ?? '', l10n),
-    )).toList();
-
-    // Determine which round's results to show based on the winner's round
-    // Winner roundId: -1 = Round 1, -2 = Round 2, -3 = Round 3
-    final winnerRoundId = state.previousRoundWinners.isNotEmpty
-        ? state.previousRoundWinners.first.roundId
-        : null;
-
-    List<Proposition>? resultsToShow;
-    if (winnerRoundId == -1 && state.round1Results.isNotEmpty) {
-      resultsToShow = state.round1Results;
-    } else if (winnerRoundId == -2 && state.round2Results.isNotEmpty) {
-      resultsToShow = state.round2Results;
-    } else if (winnerRoundId == -3 && state.round3Results.isNotEmpty) {
-      resultsToShow = state.round3Results;
-    }
-
-    // Translate results for grid display
-    final translatedResults = resultsToShow?.map((p) => Proposition(
+    final translatedResults = results.map((p) => Proposition(
       id: p.id,
       roundId: p.roundId,
       participantId: p.participantId,
@@ -1469,65 +1405,20 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       createdAt: p.createdAt,
     )).toList();
 
-    // Show "See All Results" button when we have results
-    final showResultsButton = translatedResults != null && translatedResults.isNotEmpty;
-
-    // Determine round number from winner's roundId (-1=Round 1, -2=Round 2, -3=Round 3)
-    final previousRoundNumber = winnerRoundId != null ? -winnerRoundId : null;
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Educational hint: two-step flow
-        if (showEducationalContent && !_hintContinueClicked)
-          _buildEducationalHint(
-            _getEducationalMessage(state, l10n),
-            icon: Icons.tips_and_updates_outlined,
-            onContinue: () => setState(() => _hintContinueClicked = true),
-          ),
-        if (showEducationalContent && _hintContinueClicked)
-          _buildEducationalHint(
-            l10n.tutorialTapTabHint(_getPhaseTabLabel(state)),
-            icon: Icons.touch_app_outlined,
-          ),
-        PreviousWinnerPanel(
-          previousRoundWinners: translatedWinners,
-          currentWinnerIndex: _currentWinnerIndex,
-          isSoleWinner: state.isSoleWinner,
-          consecutiveSoleWins: state.consecutiveSoleWins,
-          confirmationRoundsRequired: state.chat.confirmationRoundsRequired,
-          currentRoundCustomId: state.currentRound?.customId,
-          onWinnerIndexChanged: (index) =>
-              setState(() => _currentWinnerIndex = index),
-          showResultsButton: showResultsButton,
-          previousRoundResults: translatedResults,
-          previousRoundId: winnerRoundId,
-          previousRoundNumber: previousRoundNumber,
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => ReadOnlyResultsScreen(
+          propositions: translatedResults,
+          roundNumber: roundNumber,
+          roundId: -roundNumber,
           myParticipantId: -1,
+          onExitTutorial: () {
+            Navigator.pop(context);
+            _handleSkip();
+          },
         ),
-      ],
+      ),
     );
-  }
-
-  String _getEducationalMessage(TutorialChatState state, AppLocalizations l10n) {
-    if (state.currentStep == TutorialStep.round2Prompt) {
-      final templateKey = state.selectedTemplate;
-      if (templateKey != null && templateKey != 'classic') {
-        final winner = _translateProposition(
-          TutorialData.round1WinnerForTemplate(templateKey), l10n);
-        return l10n.tutorialRound2PromptSimplifiedTemplate(winner);
-      }
-      return l10n.tutorialRound2PromptSimplified;
-    }
-    return '';
-  }
-
-  void _handleEducationalContinue() {
-    setState(() {
-      _phaseTabUnlocked = true;
-      _showPreviousWinner = false;
-      _hintContinueClicked = false;
-    });
   }
 
   Widget _buildCurrentPhasePanel(TutorialChatState state) {
@@ -1547,59 +1438,27 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
           autoStartParticipantCount: state.participants.length,
         );
       case RoundPhase.proposing:
-        final l10n = AppLocalizations.of(context);
-        // Show proposing hint only for Round 1 when user hasn't submitted yet
-        final isFirstRound = state.currentRound?.customId == 1;
-        final showProposingHint = state.myPropositions.isEmpty && isFirstRound;
-        final isRound2Prompt = state.currentStep == TutorialStep.round2Prompt;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (showProposingHint)
-              _buildEducationalHintWithCountdown(
-                l10n.tutorialProposingHint,
-                state.currentRound!.phaseEndsAt!,
-              ),
-            if (isRound2Prompt)
-              _buildEducationalHint(
-                _getEducationalMessage(state, l10n),
-                icon: Icons.tips_and_updates_outlined,
-              ),
-            ProposingStatePanel(
-              roundCustomId: state.currentRound!.customId,
-              propositionsPerUser: state.chat.propositionsPerUser,
-              myPropositions: state.myPropositions,
-              propositionController: _propositionController,
-              onSubmit: _submitProposition,
-              phaseEndsAt: state.currentRound!.phaseEndsAt,
-              onPhaseExpired: () {}, // No-op for tutorial
-            ),
-          ],
+        // Hints moved to floating overlay (_buildFloatingHint)
+        return ProposingStatePanel(
+          roundCustomId: state.currentRound!.customId,
+          propositionsPerUser: state.chat.propositionsPerUser,
+          myPropositions: state.myPropositions,
+          propositionController: _propositionController,
+          onSubmit: _submitProposition,
+          phaseEndsAt: state.currentRound!.phaseEndsAt,
+          onPhaseExpired: () {}, // No-op for tutorial
         );
       case RoundPhase.rating:
-        final l10n = AppLocalizations.of(context);
-        final isFirstRound = state.currentRound?.customId == 1;
-        final showRatingHint = isFirstRound && !state.hasStartedRating && !state.hasRated;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (showRatingHint)
-              _buildEducationalHintWithCountdown(
-                l10n.tutorialRatingPhaseExplanation,
-                state.currentRound!.phaseEndsAt!,
-                timeTemplate: (time) => l10n.tutorialRatingTimeRemaining(time),
-              ),
-            RatingStatePanel(
-              roundCustomId: state.currentRound!.customId,
-              hasRated: state.hasRated,
-              hasStartedRating: state.hasStartedRating,
-              propositionCount: state.propositions.length,
-              onStartRating: () => _openTutorialRatingScreen(state),
-              phaseEndsAt: state.currentRound!.phaseEndsAt,
-              onPhaseExpired: () {}, // No-op for tutorial
-              isHost: true,
-            ),
-          ],
+        // Hints moved to floating overlay (_buildFloatingHint)
+        return RatingStatePanel(
+          roundCustomId: state.currentRound!.customId,
+          hasRated: state.hasRated,
+          hasStartedRating: state.hasStartedRating,
+          propositionCount: state.propositions.length,
+          onStartRating: () => _openTutorialRatingScreen(state),
+          phaseEndsAt: state.currentRound!.phaseEndsAt,
+          onPhaseExpired: () {}, // No-op for tutorial
+          isHost: true,
         );
     }
   }
@@ -1625,14 +1484,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
 class _TutorialRatingScreen extends StatefulWidget {
   final List<Proposition> propositions;
   final VoidCallback onComplete;
+  final VoidCallback? onExitTutorial;
   final bool showHints;
-  final bool isRound2;
 
   const _TutorialRatingScreen({
     required this.propositions,
     required this.onComplete,
+    this.onExitTutorial,
     this.showHints = false,
-    this.isRound2 = false,
   });
 
   @override
@@ -1641,6 +1500,7 @@ class _TutorialRatingScreen extends StatefulWidget {
 
 class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
   RatingPhase _currentPhase = RatingPhase.binary;
+  bool _dismissedRatingHint = false;
 
   @override
   Widget build(BuildContext context) {
@@ -1652,66 +1512,92 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
             })
         .toList();
 
+    // Determine active hint
+    final String? hintTitle;
+    final String? hintDescription;
+    final bool hasInlineIcons;
+
+    if (_dismissedRatingHint) {
+      hintTitle = null;
+      hintDescription = null;
+      hasInlineIcons = false;
+    } else if (widget.showHints && _currentPhase == RatingPhase.binary) {
+      hintTitle = l10n.tutorialHintCompare;
+      hintDescription = l10n.tutorialRatingBinaryHint;
+      hasInlineIcons = true;
+    } else if (widget.showHints && _currentPhase == RatingPhase.positioning) {
+      hintTitle = l10n.tutorialHintPosition;
+      hintDescription = l10n.tutorialRatingPositioningHint;
+      hasInlineIcons = true;
+    } else {
+      hintTitle = null;
+      hintDescription = null;
+      hasInlineIcons = false;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.tutorialRateIdeas),
+        actions: [
+          if (widget.onExitTutorial != null)
+            IconButton(
+              icon: const Icon(Icons.close),
+              tooltip: l10n.tutorialSkipMenuItem,
+              onPressed: widget.onExitTutorial,
+            ),
+        ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // Educational hint based on current phase
-          if (widget.showHints && _currentPhase == RatingPhase.binary)
-            _buildHint(context, l10n.tutorialRatingBinaryHint),
-          if (widget.showHints && _currentPhase == RatingPhase.positioning)
-            _buildHint(context, l10n.tutorialRatingPositioningHint),
-          // Round 2: only show carry-forward hint when positioning starts
-          if (!widget.showHints && widget.isRound2 && _currentPhase == RatingPhase.positioning)
-            _buildHint(context, l10n.tutorialRatingCarryForwardHint),
-          Expanded(
+          // Layer 0: full-size rating widget (no layout shift)
+          Positioned.fill(
             child: RatingWidget(
               propositions: propsForRating,
               onRankingComplete: (_) => widget.onComplete(),
               lazyLoadingMode: false,
               isResuming: false,
-              onPhaseChanged: (widget.showHints || widget.isRound2)
+              onPhaseChanged: widget.showHints
                   ? (phase) {
-                      if (mounted) setState(() => _currentPhase = phase);
+                      if (mounted) {
+                        setState(() {
+                          _currentPhase = phase;
+                          _dismissedRatingHint = false; // Reset on phase change
+                        });
+                      }
                     }
                   : null,
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  /// Build a hint with inline button icon previews.
-  /// Parses [swap], [check], [up], [down] markers in the text and replaces
-  /// them with inline WidgetSpan icons matching the actual rating buttons.
-  Widget _buildHint(BuildContext context, String text) {
-    final theme = Theme.of(context);
-    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
-    final borderColor = theme.colorScheme.primary.withAlpha(80);
-    final contentColor = theme.colorScheme.onPrimaryContainer;
-    final textStyle = theme.textTheme.bodySmall?.copyWith(color: contentColor);
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.lightbulb_outline, size: 20, color: contentColor),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text.rich(
-              _buildInlineHintSpans(text, theme, textStyle),
+          // Layer 1: floating hint overlay
+          if (hintTitle != null && hintDescription != null)
+            Positioned(
+              left: 16,
+              right: 16,
+              top: 8,
+              child: GestureDetector(
+                onTap: () => setState(() => _dismissedRatingHint = true),
+                child: TourTooltipCard(
+                  title: hintTitle,
+                  description: hintDescription,
+                  descriptionWidget: hasInlineIcons
+                      ? Text.rich(
+                          _buildInlineHintSpans(
+                            hintDescription,
+                            Theme.of(context),
+                            Theme.of(context).textTheme.bodyMedium,
+                          ),
+                        )
+                      : null,
+                  onNext: () => setState(() => _dismissedRatingHint = true),
+                  onSkip: widget.onExitTutorial ?? () {},
+                  stepIndex: 0,
+                  totalSteps: 1,
+                  nextLabel: l10n.homeTourFinish,
+                  skipLabel: l10n.tutorialSkipMenuItem,
+                  stepOfLabel: '',
+                ),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -1819,157 +1705,3 @@ class _TutorialRatingScreenState extends State<_TutorialRatingScreen> {
   }
 }
 
-/// Educational hint with a live countdown as a second sentence.
-class _TutorialProposingHint extends StatefulWidget {
-  final String text;
-  final DateTime endsAt;
-  final String Function(String time) timeRemainingTemplate;
-
-  const _TutorialProposingHint({
-    required this.text,
-    required this.endsAt,
-    required this.timeRemainingTemplate,
-  });
-
-  @override
-  State<_TutorialProposingHint> createState() => _TutorialProposingHintState();
-}
-
-class _TutorialProposingHintState extends State<_TutorialProposingHint> {
-  late Timer _timer;
-  Duration _remaining = Duration.zero;
-
-  @override
-  void initState() {
-    super.initState();
-    _updateRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
-  }
-
-  @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
-  }
-
-  void _updateRemaining() {
-    final remaining = widget.endsAt.difference(DateTime.now());
-    if (mounted) {
-      setState(() {
-        _remaining = remaining.isNegative ? Duration.zero : remaining;
-      });
-    }
-  }
-
-  String _formatDuration(Duration duration) {
-    final minutes = duration.inMinutes;
-    final seconds = duration.inSeconds.remainder(60);
-    if (minutes > 0) {
-      return '${minutes}m ${seconds}s';
-    }
-    return '${seconds}s';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final backgroundColor = theme.colorScheme.primaryContainer.withAlpha(100);
-    final borderColor = theme.colorScheme.primary.withAlpha(80);
-    final contentColor = theme.colorScheme.onPrimaryContainer;
-    final timeText = widget.timeRemainingTemplate(_formatDuration(_remaining));
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lightbulb_outline,
-            size: 20,
-            color: contentColor,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              '${widget.text} $timeText',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: contentColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Pulsing tab label — text with a pulsing underline bar to draw attention.
-class _PulsingTabLabel extends StatefulWidget {
-  final String label;
-  final TextStyle? style;
-  final Color highlightColor;
-
-  const _PulsingTabLabel({
-    required this.label,
-    required this.highlightColor,
-    this.style,
-  });
-
-  @override
-  State<_PulsingTabLabel> createState() => _PulsingTabLabelState();
-}
-
-class _PulsingTabLabelState extends State<_PulsingTabLabel>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, _) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.label,
-              textAlign: TextAlign.center,
-              style: widget.style,
-            ),
-            const SizedBox(height: 2),
-            Container(
-              height: 3,
-              width: 40,
-              decoration: BoxDecoration(
-                color: widget.highlightColor.withAlpha(
-                  (80 + 175 * _controller.value).toInt(),
-                ),
-                borderRadius: BorderRadius.circular(1.5),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-}

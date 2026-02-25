@@ -208,14 +208,10 @@
     }
   },
 
-  "roundResults": "Round {roundNumber} Results",
-  "@roundResults": {
-    "placeholders": {
-      "roundNumber": {"type": "int"}
-    }
-  },
+  "roundResults": "Rating Results",
+  "@roundResults": {},
   "noPropositionsToDisplay": "No propositions to display",
-  "noPreviousWinner": "No previous winner",
+  "noPreviousWinner": "No emergence yet",
   "roundWinner": "Round {roundNumber} Winner",
   "@roundWinner": {
     "placeholders": {
@@ -294,7 +290,7 @@
   "timerStoppedTapResume": "The timer is stopped. Tap Resume in the app bar to continue.",
   "hostPausedPleaseWait": "The host has paused this chat. Please wait for them to resume.",
 
-  "previousWinner": "Previous Winner",
+  "previousWinner": "Emergence",
   "yourProposition": "Your Proposition",
   "yourPropositions": "Your Propositions",
   "rate": "Rate",
@@ -489,7 +485,7 @@
   },
   "hostCanModerateContent": "As host, you can moderate content. Submitter identity is hidden.",
   "yourPropositionLabel": "(Your proposition)",
-  "previousWinnerLabel": "(Previous winner)",
+  "previousWinnerLabel": "(Emergence)",
   "cannotBeUndone": "This action cannot be undone.",
   "deleteChatConfirmation": "Are you sure you want to delete \"{chatName}\"?\n\nThis will permanently delete all propositions, ratings, and history. This action cannot be undone.",
   "@deleteChatConfirmation": {
@@ -950,15 +946,16 @@
   "tutorialTemplateCustom": "Custom Topic",
   "tutorialTemplateCustomDesc": "Enter your own question",
   "tutorialCustomQuestionHint": "Type your question...",
-  "tutorialRound1ResultTemplate": "'{winner}' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.",
+  "tutorialRound1ResultTemplate": "'{winner}' won Round 1!",
   "@tutorialRound1ResultTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
   "tutorialAppBarTitle": "OneMind Tutorial",
-  "tutorialWelcomeTitle": "Welcome!",
-  "tutorialWelcomeSubtitle": "Pick a practice scenario",
+  "tutorialWelcomeTitle": "Welcome to OneMind!",
+  "tutorialWelcomeDescription": "Bring people together to share ideas anonymously, rate independently, and reach results everyone can trust.",
+  "tutorialWelcomeSubtitle": "Choose a topic to practice with",
   "tutorialTheQuestion": "The question:",
   "tutorialQuestion": "What do we value?",
   "tutorialStartButton": "Start Tutorial",
@@ -972,52 +969,70 @@
   },
   "tutorialAddedToChat": "You've also been automatically added to the Official OneMind chat, where everyone discusses topics together.",
   "tutorialFinishButton": "Finish Tutorial",
-  "tutorialRound1Result": "'Success' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.",
-  "tutorialProposingHint": "Submit an idea you want to become the group's answer.",
+  "tutorialRound1Result": "'Success' won Round 1!",
+  "tutorialProposingHint": "Submit your idea — it'll compete against everyone else's.",
   "tutorialTimeRemaining": "You have {time} left.",
   "@tutorialTimeRemaining": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "tutorialProposingHintWithWinner": "Submit a new idea. It will be rated alongside the previous winner.",
-  "tutorialRatingHint": "Now everyone rates each other's ideas. Tap the button to start rating.",
-  "tutorialRatingPhaseExplanation": "The rating phase begins once all users submit their ideas or the timer runs out.",
-  "tutorialRatingTimeRemaining": "You have {time} left to complete the rating phase.",
+  "tutorialProposingHintWithWinner": "Submit a new idea to compete against last round's winner.",
+  "tutorialRatingHint": "Now rate everyone's ideas. The highest-rated idea wins the round.",
+  "tutorialRatingPhaseExplanation": "Everyone has submitted. Now rate their ideas to pick a winner!",
+  "tutorialRatingTimeRemaining": "You have {time} left to rate.",
   "@tutorialRatingTimeRemaining": {
     "placeholders": {
       "time": {"type": "String"}
     }
   },
-  "tutorialRatingBinaryHint": "You are first presented 2 random user-submitted propositions. Place the one you prefer more at 100. Tap [swap] to switch them, then tap [check] to confirm. Note: Your own proposition will not be presented to you for rating.",
-  "tutorialRatingPositioningHint": "Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.",
-  "tutorialRound2Result": "Your idea \"{proposition}\" won! The previous winner, \"{previousWinner}\", is out of the competition. If your idea wins next round too, it becomes a permanent answer.",
+  "tutorialRatingBinaryHint": "The top idea scores higher. Tap [swap] to put your preferred idea on top, then [check] to confirm.",
+  "tutorialRatingPositioningHint": "Place each idea on the scale. Use [up] [down] to move, then [check] to confirm.",
+  "tutorialRound2Result": "Your idea \"{proposition}\" won! It replaces \"{previousWinner}\" as the one to beat. Win next round and it's decided!",
   "@tutorialRound2Result": {
     "placeholders": {
       "proposition": {"type": "String"},
       "previousWinner": {"type": "String"}
     }
   },
-  "tutorialRatingCarryForwardHint": "This is last round's winner. If it wins again this round, it gets permanently added to the chat.",
+  "tutorialRatingCarryForwardHint": "Last round's winner carries forward to compete again.",
   "tutorialTapTabHint": "Tap \"{tabName}\" above to continue.",
   "@tutorialTapTabHint": {
     "placeholders": {
       "tabName": {"type": "String"}
     }
   },
-  "tutorialResultTapTabHint": "Now that you know the winner, let's see if you can come up with something better next round! Tap \"{tabName}\" above to continue.",
+  "tutorialResultTapTabHint": "Think you can do better? Tap \"{tabName}\" to submit your next idea.",
   "@tutorialResultTapTabHint": {
     "placeholders": {
       "tabName": {"type": "String"}
     }
   },
-  "tutorialRound2PromptSimplified": "Time for the next round! Can you think of something better?",
-  "tutorialRound2PromptSimplifiedTemplate": "Time for the next round! Can you think of something better than '{winner}'?",
+  "tutorialRound2PromptSimplified": "The winner will compete again this round. If it wins again, that's convergence — the group's answer. Can you beat it?",
+  "tutorialRound2PromptSimplifiedTemplate": "'{winner}' will compete again this round. If it wins again, that's convergence — the group's answer. Can you beat it?",
   "@tutorialRound2PromptSimplifiedTemplate": {
     "placeholders": {
       "winner": {"type": "String"}
     }
   },
+  "tutorialRound3Prompt": "Your idea replaced the last winner. One more win means convergence!",
+  "tutorialRound3PromptTemplate": "'{winner}' replaced '{previousWinner}'. One more win means convergence!",
+  "@tutorialRound3PromptTemplate": {
+    "placeholders": {
+      "winner": {"type": "String"},
+      "previousWinner": {"type": "String"}
+    }
+  },
+  "tutorialR2ResultsHint": "Your idea won! Press the back arrow to continue.",
+  "tutorialRound3ConvergenceHint": "If it wins again, no one could beat it — that's convergence.",
+  "tutorialHintSubmitIdea": "Submit Your Idea",
+  "tutorialHintRateIdeas": "Rate Ideas",
+  "tutorialHintRoundResults": "Rating Results",
+  "tutorialHintRound2": "Round 2",
+  "tutorialHintYouWon": "You Won!",
+  "tutorialHintCompare": "Compare Ideas",
+  "tutorialHintPosition": "Position Ideas",
+  "tutorialHintCarryForward": "Carry Forward",
   "tutorialPropSuccess": "Success",
   "tutorialPropAdventure": "Adventure",
   "tutorialPropGrowth": "Growth",
@@ -1096,7 +1111,7 @@
   "tutorialTransitionTitle": "Chat tutorial complete!",
   "tutorialTransitionDesc": "Now let's take a quick look at the home screen, where you'll find all your chats.",
   "tutorialRateIdeas": "Rate Ideas",
-  "tutorialResultsBackHint": "'{winner}' won! Press the back arrow when done viewing the results.",
+  "tutorialResultsBackHint": "'{winner}' won! Press the back arrow to continue.",
   "@tutorialResultsBackHint": {
     "placeholders": {
       "winner": {"type": "String"}
@@ -1186,7 +1201,7 @@
   "glossaryUserRoundTitle": "user-round",
   "glossaryUserRoundDef": "One participant completing one round of rating. Each user-round costs 1 credit ($0.01).",
   "glossaryConsensusTitle": "convergence",
-  "glossaryConsensusDef": "When the same proposition wins multiple consecutive rounds, the group has reached convergence on that idea.",
+  "glossaryConsensusDef": "When no one can beat the same proposition across multiple rounds, convergence is reached.",
   "glossaryProposingTitle": "proposing",
   "glossaryProposingDef": "The phase where participants submit their ideas anonymously for the group to consider.",
   "glossaryRatingTitle": "rating",
@@ -1203,7 +1218,7 @@
   "homeTourPendingRequestTitle": "Pending Requests",
   "homeTourPendingRequestDesc": "When you request to join a chat, the host reviews your request. You'll see it here with a 'Pending' badge until they approve.",
   "homeTourYourChatsTitle": "Your Chats",
-  "homeTourYourChatsDesc": "Once approved, your chats appear here. Tap any chat to start proposing ideas and rating!",
+  "homeTourYourChatsDesc": "Your active chats appear here. Each card shows the current phase, participant count, and languages.",
   "homeTourCreateFabTitle": "Create a Chat",
   "homeTourCreateFabDesc": "Tap + to create your own chat. You choose the topic, invite friends, and build consensus together.",
   "homeTourDemoTitle": "Try the Demo",
@@ -1278,9 +1293,10 @@
   "chatTourMessageTitle": "Discussion Question",
   "chatTourMessageDesc": "This is the question being discussed. Everyone submits ideas in response.",
   "chatTourProposingTitle": "Submit Ideas",
-  "chatTourProposingDesc": "This is where you type and submit your ideas at the start of each round.",
+  "chatTourProposingDesc": "This is where you submit ideas. Each round, everyone proposes and then rates.",
   "chatTourParticipantsTitle": "Participants",
   "chatTourParticipantsDesc": "Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who's in the chat.",
   "chatTourShareTitle": "Share Chat",
-  "chatTourShareDesc": "Share this chat with friends using an invite link or QR code."
+  "chatTourShareDesc": "Share this chat with friends using an invite link or QR code.",
+  "tutorialShareContinueHint": "Tap the Continue button to continue the tutorial."
 }

@@ -80,6 +80,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: AnimatedOpacity(
           opacity: 0.25,
           duration: const Duration(milliseconds: 250),
@@ -125,6 +126,12 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
               tooltip: l10n.legalDocuments,
               onPressed: () {},
             ),
+          ),
+          // Exit tutorial button (always visible)
+          IconButton(
+            icon: const Icon(Icons.close),
+            tooltip: l10n.homeTourSkip,
+            onPressed: () => ref.read(homeTourNotifierProvider.notifier).skip(),
           ),
         ],
       ),

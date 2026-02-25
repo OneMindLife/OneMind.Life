@@ -29,6 +29,7 @@ class WelcomeHeader extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.edit, size: 18),
             tooltip: l10n.editName,

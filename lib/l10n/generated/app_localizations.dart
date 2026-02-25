@@ -791,8 +791,8 @@ abstract class AppLocalizations {
   /// No description provided for @roundResults.
   ///
   /// In en, this message translates to:
-  /// **'Round {roundNumber} Results'**
-  String roundResults(int roundNumber);
+  /// **'Rating Results'**
+  String get roundResults;
 
   /// No description provided for @noPropositionsToDisplay.
   ///
@@ -803,7 +803,7 @@ abstract class AppLocalizations {
   /// No description provided for @noPreviousWinner.
   ///
   /// In en, this message translates to:
-  /// **'No previous winner'**
+  /// **'No emergence yet'**
   String get noPreviousWinner;
 
   /// No description provided for @roundWinner.
@@ -1019,7 +1019,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousWinner.
   ///
   /// In en, this message translates to:
-  /// **'Previous Winner'**
+  /// **'Emergence'**
   String get previousWinner;
 
   /// No description provided for @yourProposition.
@@ -1565,7 +1565,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousWinnerLabel.
   ///
   /// In en, this message translates to:
-  /// **'(Previous winner)'**
+  /// **'(Emergence)'**
   String get previousWinnerLabel;
 
   /// No description provided for @cannotBeUndone.
@@ -3075,7 +3075,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1ResultTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
+  /// **'\'{winner}\' won Round 1!'**
   String tutorialRound1ResultTemplate(String winner);
 
   /// No description provided for @tutorialAppBarTitle.
@@ -3087,13 +3087,19 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialWelcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Welcome!'**
+  /// **'Welcome to OneMind!'**
   String get tutorialWelcomeTitle;
+
+  /// No description provided for @tutorialWelcomeDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Bring people together to share ideas anonymously, rate independently, and reach results everyone can trust.'**
+  String get tutorialWelcomeDescription;
 
   /// No description provided for @tutorialWelcomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Pick a practice scenario'**
+  /// **'Choose a topic to practice with'**
   String get tutorialWelcomeSubtitle;
 
   /// No description provided for @tutorialTheQuestion.
@@ -3147,13 +3153,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won this round! It will be carried forward to the next round, where it must win again to become a permanent answer.'**
+  /// **'\'Success\' won Round 1!'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
   ///
   /// In en, this message translates to:
-  /// **'Submit an idea you want to become the group\'s answer.'**
+  /// **'Submit your idea — it\'ll compete against everyone else\'s.'**
   String get tutorialProposingHint;
 
   /// No description provided for @tutorialTimeRemaining.
@@ -3165,49 +3171,49 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialProposingHintWithWinner.
   ///
   /// In en, this message translates to:
-  /// **'Submit a new idea. It will be rated alongside the previous winner.'**
+  /// **'Submit a new idea to compete against last round\'s winner.'**
   String get tutorialProposingHintWithWinner;
 
   /// No description provided for @tutorialRatingHint.
   ///
   /// In en, this message translates to:
-  /// **'Now everyone rates each other\'s ideas. Tap the button to start rating.'**
+  /// **'Now rate everyone\'s ideas. The highest-rated idea wins the round.'**
   String get tutorialRatingHint;
 
   /// No description provided for @tutorialRatingPhaseExplanation.
   ///
   /// In en, this message translates to:
-  /// **'The rating phase begins once all users submit their ideas or the timer runs out.'**
+  /// **'Everyone has submitted. Now rate their ideas to pick a winner!'**
   String get tutorialRatingPhaseExplanation;
 
   /// No description provided for @tutorialRatingTimeRemaining.
   ///
   /// In en, this message translates to:
-  /// **'You have {time} left to complete the rating phase.'**
+  /// **'You have {time} left to rate.'**
   String tutorialRatingTimeRemaining(String time);
 
   /// No description provided for @tutorialRatingBinaryHint.
   ///
   /// In en, this message translates to:
-  /// **'You are first presented 2 random user-submitted propositions. Place the one you prefer more at 100. Tap [swap] to switch them, then tap [check] to confirm. Note: Your own proposition will not be presented to you for rating.'**
+  /// **'The top idea scores higher. Tap [swap] to put your preferred idea on top, then [check] to confirm.'**
   String get tutorialRatingBinaryHint;
 
   /// No description provided for @tutorialRatingPositioningHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap and hold [up] and [down] to move the highlighted idea. Tap [check] to place it. Tap [undo] to undo a placement, and [zoomin] [zoomout] to zoom in and out.'**
+  /// **'Place each idea on the scale. Use [up] [down] to move, then [check] to confirm.'**
   String get tutorialRatingPositioningHint;
 
   /// No description provided for @tutorialRound2Result.
   ///
   /// In en, this message translates to:
-  /// **'Your idea \"{proposition}\" won! The previous winner, \"{previousWinner}\", is out of the competition. If your idea wins next round too, it becomes a permanent answer.'**
+  /// **'Your idea \"{proposition}\" won! It replaces \"{previousWinner}\" as the one to beat. Win next round and it\'s decided!'**
   String tutorialRound2Result(String proposition, String previousWinner);
 
   /// No description provided for @tutorialRatingCarryForwardHint.
   ///
   /// In en, this message translates to:
-  /// **'This is last round\'s winner. If it wins again this round, it gets permanently added to the chat.'**
+  /// **'Last round\'s winner carries forward to compete again.'**
   String get tutorialRatingCarryForwardHint;
 
   /// No description provided for @tutorialTapTabHint.
@@ -3219,20 +3225,92 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialResultTapTabHint.
   ///
   /// In en, this message translates to:
-  /// **'Now that you know the winner, let\'s see if you can come up with something better next round! Tap \"{tabName}\" above to continue.'**
+  /// **'Think you can do better? Tap \"{tabName}\" to submit your next idea.'**
   String tutorialResultTapTabHint(String tabName);
 
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
   /// In en, this message translates to:
-  /// **'Time for the next round! Can you think of something better?'**
+  /// **'The winner will compete again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
   String get tutorialRound2PromptSimplified;
 
   /// No description provided for @tutorialRound2PromptSimplifiedTemplate.
   ///
   /// In en, this message translates to:
-  /// **'Time for the next round! Can you think of something better than \'{winner}\'?'**
+  /// **'\'{winner}\' will compete again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
   String tutorialRound2PromptSimplifiedTemplate(String winner);
+
+  /// No description provided for @tutorialRound3Prompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Your idea replaced the last winner. One more win means convergence!'**
+  String get tutorialRound3Prompt;
+
+  /// No description provided for @tutorialRound3PromptTemplate.
+  ///
+  /// In en, this message translates to:
+  /// **'\'{winner}\' replaced \'{previousWinner}\'. One more win means convergence!'**
+  String tutorialRound3PromptTemplate(String winner, String previousWinner);
+
+  /// No description provided for @tutorialR2ResultsHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your idea won! Press the back arrow to continue.'**
+  String get tutorialR2ResultsHint;
+
+  /// No description provided for @tutorialRound3ConvergenceHint.
+  ///
+  /// In en, this message translates to:
+  /// **'If it wins again, no one could beat it — that\'s convergence.'**
+  String get tutorialRound3ConvergenceHint;
+
+  /// No description provided for @tutorialHintSubmitIdea.
+  ///
+  /// In en, this message translates to:
+  /// **'Submit Your Idea'**
+  String get tutorialHintSubmitIdea;
+
+  /// No description provided for @tutorialHintRateIdeas.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate Ideas'**
+  String get tutorialHintRateIdeas;
+
+  /// No description provided for @tutorialHintRoundResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Results'**
+  String get tutorialHintRoundResults;
+
+  /// No description provided for @tutorialHintRound2.
+  ///
+  /// In en, this message translates to:
+  /// **'Round 2'**
+  String get tutorialHintRound2;
+
+  /// No description provided for @tutorialHintYouWon.
+  ///
+  /// In en, this message translates to:
+  /// **'You Won!'**
+  String get tutorialHintYouWon;
+
+  /// No description provided for @tutorialHintCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare Ideas'**
+  String get tutorialHintCompare;
+
+  /// No description provided for @tutorialHintPosition.
+  ///
+  /// In en, this message translates to:
+  /// **'Position Ideas'**
+  String get tutorialHintPosition;
+
+  /// No description provided for @tutorialHintCarryForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Carry Forward'**
+  String get tutorialHintCarryForward;
 
   /// No description provided for @tutorialPropSuccess.
   ///
@@ -3663,7 +3741,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialResultsBackHint.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won! Press the back arrow when done viewing the results.'**
+  /// **'\'{winner}\' won! Press the back arrow to continue.'**
   String tutorialResultsBackHint(String winner);
 
   /// No description provided for @deleteConsensusTitle.
@@ -3903,7 +3981,7 @@ abstract class AppLocalizations {
   /// No description provided for @glossaryConsensusDef.
   ///
   /// In en, this message translates to:
-  /// **'When the same proposition wins multiple consecutive rounds, the group has reached convergence on that idea.'**
+  /// **'When no one can beat the same proposition across multiple rounds, convergence is reached.'**
   String get glossaryConsensusDef;
 
   /// No description provided for @glossaryProposingTitle.
@@ -3993,7 +4071,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourYourChatsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Once approved, your chats appear here. Tap any chat to start proposing ideas and rating!'**
+  /// **'Your active chats appear here. Each card shows the current phase, participant count, and languages.'**
   String get homeTourYourChatsDesc;
 
   /// No description provided for @homeTourCreateFabTitle.
@@ -4311,7 +4389,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatTourProposingDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is where you type and submit your ideas at the start of each round.'**
+  /// **'This is where you submit ideas. Each round, everyone proposes and then rates.'**
   String get chatTourProposingDesc;
 
   /// No description provided for @chatTourParticipantsTitle.
@@ -4337,6 +4415,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Share this chat with friends using an invite link or QR code.'**
   String get chatTourShareDesc;
+
+  /// No description provided for @tutorialShareContinueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the Continue button to continue the tutorial.'**
+  String get tutorialShareContinueHint;
 }
 
 class _AppLocalizationsDelegate

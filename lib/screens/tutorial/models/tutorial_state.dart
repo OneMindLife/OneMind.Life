@@ -8,9 +8,9 @@ enum TutorialStep {
 
   // Chat screen tour (after template, before rounds)
   chatTourTitle,
+  chatTourParticipants,
   chatTourMessage,
   chatTourProposing,
-  chatTourParticipants,
 
   // Round 1
   round1Proposing,
@@ -111,7 +111,7 @@ class TutorialChatState extends Equatable {
   /// Whether the current step is a chat tour step
   bool get isChatTourStep =>
       currentStep.index >= TutorialStep.chatTourTitle.index &&
-      currentStep.index <= TutorialStep.chatTourParticipants.index;
+      currentStep.index <= TutorialStep.chatTourProposing.index;
 
   /// Zero-based index within the chat tour (0..4)
   int get chatTourStepIndex =>
