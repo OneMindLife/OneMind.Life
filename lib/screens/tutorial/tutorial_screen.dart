@@ -63,6 +63,12 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
   double _tourTooltipTop = 0;
   bool _tourMeasured = false;
 
+  // End-tour (consensus/share): GlobalKeys for positioning
+  final _endTourStackKey = GlobalKey();
+  final _consensusCardKey = GlobalKey();
+  double _endTourTooltipTop = 0;
+  bool _endTourMeasured = false;
+
   // UI toggle state (same as ChatScreen)
   bool _showPreviousWinner = false;
   int _currentWinnerIndex = 0;
@@ -514,6 +520,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                 // Chat History — wrapped in Stack for end-tour tooltip
                 Expanded(
                   child: Stack(
+                    key: _endTourStackKey,
                     children: [
                       Builder(
                         builder: (bodyContext) {
@@ -522,6 +529,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                           final templateKey = state.selectedTemplate;
                           final initialMessage = state.customQuestion ??
                               TutorialTemplate.translateQuestion(templateKey, l10n);
+
+                          // Measure tooltip position after layout for end-tour steps
+                          if (isEndTour) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted) _updateEndTourTooltipPosition(state);
+                            });
+                          }
 
                           return ListView(
                             padding: const EdgeInsets.all(16),
@@ -550,10 +564,15 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                                     child: AnimatedOpacity(
                                       opacity: isSpotlighted ? 1.0 : dimOpacity,
                                       duration: const Duration(milliseconds: 250),
-                                      child: _buildMessageCard(
-                                        l10n.consensusNumber(entry.key + 1),
-                                        entry.value.displayContent,
-                                        isPrimary: true,
+                                      child: KeyedSubtree(
+                                        key: entry.key == state.consensusItems.length - 1
+                                            ? _consensusCardKey
+                                            : null,
+                                        child: _buildMessageCard(
+                                          l10n.consensusNumber(entry.key + 1),
+                                          entry.value.displayContent,
+                                          isPrimary: true,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -564,7 +583,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
                         },
                       ),
                       // End-tour floating TourTooltipCard
-                      if (isEndTour)
+                      if (isEndTour && _endTourMeasured)
                         _buildEndTourTooltip(state),
                     ],
                   ),
@@ -912,6 +931,42 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
         step == TutorialStep.shareDemo;
   }
 
+  /// Measure position of consensus card to place tooltip right below it
+  void _updateEndTourTooltipPosition(TutorialChatState state) {
+    final stackBox =
+        _endTourStackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (stackBox == null) return;
+
+    double newTop;
+
+    if (state.currentStep == TutorialStep.round3Consensus) {
+      // Position right below the consensus card
+      final consensusBox =
+          _consensusCardKey.currentContext?.findRenderObject() as RenderBox?;
+      if (consensusBox != null) {
+        final consensusPos =
+            consensusBox.localToGlobal(Offset.zero, ancestor: stackBox);
+        newTop = consensusPos.dy + consensusBox.size.height + 8;
+      } else {
+        newTop = 8;
+      }
+    } else {
+      // shareDemo: position near top (below where AppBar ends)
+      newTop = 8;
+    }
+
+    // Clamp to stay within the stack
+    final maxTop = stackBox.size.height - 200;
+    newTop = newTop.clamp(0.0, maxTop);
+
+    if ((newTop - _endTourTooltipTop).abs() > 0.5 || !_endTourMeasured) {
+      setState(() {
+        _endTourTooltipTop = newTop;
+        _endTourMeasured = true;
+      });
+    }
+  }
+
   /// Build the TourTooltipCard for consensus / share demo steps
   Widget _buildEndTourTooltip(TutorialChatState state) {
     final l10n = AppLocalizations.of(context);
@@ -940,13 +995,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen> {
       nextLabel = l10n.tutorialShareTitle;
     }
 
-    // For consensus: position near the consensus card (upper area)
-    // For share: position near top (below AppBar, pointing at share icon)
     return Positioned(
       left: 16,
       right: 16,
-      top: isConsensus ? null : 8,
-      bottom: isConsensus ? 16 : null,
+      top: _endTourTooltipTop,
       child: TourTooltipCard(
         title: title,
         description: description,
