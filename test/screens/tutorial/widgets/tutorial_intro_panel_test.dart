@@ -14,7 +14,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Welcome!'), findsOneWidget);
+      expect(find.text('Welcome to OneMind!'), findsOneWidget);
     });
 
     testWidgets('displays all 6 template cards with correct names',

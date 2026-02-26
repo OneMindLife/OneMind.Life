@@ -386,13 +386,13 @@ void main() {
         expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
 
         chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
+
+        chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.chatTourMessage);
 
         chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.chatTourProposing);
-
-        chatNotifier.nextChatTourStep();
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
 
         chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);

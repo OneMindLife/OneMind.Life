@@ -35,7 +35,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Round 3 Results'), findsOneWidget);
+      expect(find.text('Rating Results'), findsOneWidget);
     });
 
     testWidgets('shows back button in app bar', (tester) async {

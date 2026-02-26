@@ -524,7 +524,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show proposing panel elements - submit button
-        expect(find.text('Submit'), findsOneWidget);
+        expect(find.byKey(const Key('submit-proposition-button')), findsOneWidget);
       });
 
       testWidgets('shows text field for proposition input', (tester) async {
@@ -1079,8 +1079,8 @@ void main() {
 
         // Should show Previous Winner content (simplified UI)
         expect(find.text('Winning proposition'), findsOneWidget);
-        // Winner tab should be visible
-        expect(find.text('Previous Winner'), findsOneWidget);
+        // Winner tab and card label should be visible
+        expect(find.text('Emergence'), findsWidgets);
       });
 
       testWidgets('shows winner content in panel',
@@ -1112,7 +1112,7 @@ void main() {
         expect(find.text('Strong proposition'), findsOneWidget);
       });
 
-      testWidgets('hides Winner tab during rating phase', (tester) async {
+      testWidgets('hides emergence card during rating phase', (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.rating(customId: 2); // Rating phase
         final participant = ParticipantFixtures.model();
@@ -1138,15 +1138,12 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Winner tab should be HIDDEN during rating phase
-        expect(find.text('Winner'), findsNothing,
-            reason: 'Winner tab should be hidden during rating phase');
-
-        // Rate tab should still be visible (the phase-specific tab label)
-        expect(find.text('Rate'), findsOneWidget);
+        // Emergence card should be HIDDEN during rating phase
+        expect(find.text('Winning proposition'), findsNothing,
+            reason: 'Emergence card should be hidden during rating phase');
       });
 
-      testWidgets('shows Winner tab during proposing phase with previous winners',
+      testWidgets('shows emergence card during proposing phase with previous winners',
           (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.proposing(customId: 2); // Proposing phase
@@ -1171,8 +1168,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Winner tab should be VISIBLE during proposing phase
-        expect(find.text('Previous Winner'), findsOneWidget,
+        // Winner tab and card label should be VISIBLE during proposing phase
+        expect(find.text('Emergence'), findsWidgets,
             reason: 'Winner tab should be visible during proposing phase');
       });
     });
@@ -1344,7 +1341,7 @@ void main() {
     group('Host Pause', () {
       // Note: Pause/Resume button is currently hidden in the UI
       // These tests verify the button is NOT shown (matching current behavior)
-      testWidgets('host does not see pause button (feature hidden)',
+      testWidgets('host sees pause button when chat is not paused',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: false);
         final hostParticipant = ParticipantFixtures.host();
@@ -1361,12 +1358,12 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pumpAndSettle();
 
-        // Pause/Resume buttons are hidden
-        expect(find.text('Pause Chat'), findsNothing);
+        // Pause button is visible, Resume is not
+        expect(find.text('Pause Chat'), findsOneWidget);
         expect(find.text('Resume Chat'), findsNothing);
       });
 
-      testWidgets('host does not see resume button when paused (feature hidden)',
+      testWidgets('host sees resume button when chat is paused',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: true);
         final hostParticipant = ParticipantFixtures.host();
@@ -1383,8 +1380,8 @@ void main() {
         await tester.tap(find.byIcon(Icons.more_vert));
         await tester.pumpAndSettle();
 
-        // Pause/Resume buttons are hidden
-        expect(find.text('Resume Chat'), findsNothing);
+        // Resume button is visible, Pause is not (chat is paused)
+        expect(find.text('Resume Chat'), findsOneWidget);
         expect(find.text('Pause Chat'), findsNothing);
       });
 

@@ -127,7 +127,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('See All Results'), findsOneWidget);
-      expect(find.byIcon(Icons.grid_view), findsOneWidget);
     });
 
     testWidgets('hides See Results button when previousRoundResults is empty', (tester) async {
@@ -218,7 +217,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('No previous winner'), findsOneWidget);
+      expect(find.text('No emergence yet'), findsOneWidget);
     });
   });
 

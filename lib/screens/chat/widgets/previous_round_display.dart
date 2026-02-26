@@ -88,30 +88,30 @@ class PreviousWinnerPanel extends StatelessWidget {
     final hasMultipleWinners = previousRoundWinners.length > 1;
     final currentWinner = previousRoundWinners[currentWinnerIndex];
 
+    final theme = Theme.of(context);
+    final hasResults = showResultsButton && previousRoundResults != null && previousRoundResults!.isNotEmpty;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.consensus.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: AppColors.consensus.withValues(alpha: 0.3),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Tie indicator (only shown for multiple winners)
           if (hasMultipleWinners) ...[
             TieBadge(count: previousRoundWinners.length),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
           ],
 
-          // Winner index (for multiple winners)
-          if (hasMultipleWinners)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Text(
-                l10n.winnerIndexOfTotal(currentWinnerIndex + 1, previousRoundWinners.length),
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ),
-
-          // Winner card with navigation arrows
+          // Main content row: arrows + label/content + See Results
           Row(
             children: [
               // Left arrow (for multiple winners)
@@ -123,29 +123,34 @@ class PreviousWinnerPanel extends StatelessWidget {
                       : null,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  iconSize: 24,
+                  iconSize: 20,
                 ),
 
-              // Winner content styled like convergence items (no header)
+              // Winner content
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.consensusLight.withValues(alpha: 0.5),
-                    borderRadius: BorderRadius.circular(12),
-                    border: const Border(
-                      left: BorderSide(
-                        color: AppColors.consensus,
-                        width: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      l10n.previousWinner,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                    const SizedBox(height: 2),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 80),
+                      child: SingleChildScrollView(
+                        child: Text(
+                          currentWinner.displayContent ?? l10n.unknownProposition,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w500,
+                              ),
+                        ),
                       ),
                     ),
-                  ),
-                  constraints: const BoxConstraints(maxHeight: 100),
-                  child: SingleChildScrollView(
-                    child: Text(
-                      currentWinner.displayContent ?? l10n.unknownProposition,
-                    ),
-                  ),
+                  ],
                 ),
               ),
 
@@ -158,23 +163,27 @@ class PreviousWinnerPanel extends StatelessWidget {
                       : null,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
-                  iconSize: 24,
+                  iconSize: 20,
+                ),
+
+              // See Results inline (like tutorial)
+              if (hasResults)
+                TextButton(
+                  onPressed: () => _navigateToResultsGrid(context),
+                  style: TextButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    l10n.seeAllResults,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
                 ),
             ],
           ),
-
-          // See Results button (when showPreviousResults is enabled)
-          if (showResultsButton && previousRoundResults != null && previousRoundResults!.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: () => _navigateToResultsGrid(context),
-                icon: const Icon(Icons.grid_view, size: 18),
-                label: Text(l10n.seeAllResults),
-              ),
-            ),
-          ],
 
           // Page indicator dots for multiple winners
           if (hasMultipleWinners) ...[

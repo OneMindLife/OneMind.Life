@@ -2,20 +2,20 @@ import 'package:flutter/material.dart';
 
 /// Semantic color palette for OneMind.
 ///
-/// Warm civic direction: deep indigo for trust + amber/gold for consensus.
+/// Civic Teal direction: deep teal for trust + darker amber for consensus.
 class AppColors {
   AppColors._();
 
-  // Primary: deep indigo (trust, wisdom)
-  static const seed = Color(0xFF6366F1);
+  // Primary: deep teal (civic trust, balanced authority)
+  static const seed = Color(0xFF0D7377);
 
-  // Warm accent: amber/gold (consensus, achievement, warmth)
-  static const consensus = Color(0xFFF59E0B);
+  // Warm accent: darker amber (consensus, achievement, stately warmth)
+  static const consensus = Color(0xFFD97706);
   static const consensusLight = Color(0xFFFEF3C7);
 
   // Phase colors
-  static const proposing = Color(0xFF8B5CF6); // violet - open, creative
-  static const rating = Color(0xFF3B82F6); // blue - focused, deliberate
+  static const proposing = Color(0xFF0891B2); // cyan-600 - creative, professional
+  static const rating = Color(0xFF4F46E5); // indigo-600 - focused, deliberate
   static const waiting = Color(0xFF6B7280); // warm gray - calm, patient
 
   // Warm neutrals (replace cold grays)

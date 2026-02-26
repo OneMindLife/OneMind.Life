@@ -3,12 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/screens/tutorial/models/tutorial_state.dart';
 import 'package:onemind_app/screens/tutorial/tutorial_screen.dart';
-import 'package:onemind_app/screens/tutorial/widgets/tutorial_progress_dots.dart';
+
 
 import '../../helpers/pump_app.dart';
 
 /// Helper to navigate from intro to proposing by tapping a template card
-/// then skipping the chat tour
+/// then skipping the chat tour via the notifier (the tooltip requires
+/// post-frame measurement to render, which can be flaky in widget tests).
 Future<void> _navigateToProposing(WidgetTester tester) async {
   // Select Community Decision template directly from intro
   await tester.ensureVisible(find.text('Community Decision'));
@@ -16,12 +17,12 @@ Future<void> _navigateToProposing(WidgetTester tester) async {
   await tester.tap(find.text('Community Decision'));
   await tester.pumpAndSettle();
 
-  // Skip the chat tour to get to proposing
-  final skipTourFinder = find.text('Skip tour');
-  if (skipTourFinder.evaluate().isNotEmpty) {
-    await tester.tap(skipTourFinder);
-    await tester.pumpAndSettle();
-  }
+  // Skip the chat tour using the notifier directly
+  final container = ProviderScope.containerOf(
+    tester.element(find.byType(TutorialScreen)),
+  );
+  container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -38,7 +39,7 @@ void main() {
       // Wait for post-frame callback to start tutorial
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome!'), findsOneWidget);
+      expect(find.text('Welcome to OneMind!'), findsOneWidget);
       expect(find.text('Personal Decision'), findsOneWidget);
       expect(find.text('Community Decision'), findsOneWidget);
     });
@@ -76,8 +77,7 @@ void main() {
 
       await _navigateToProposing(tester);
 
-      // New UI shows progress dots and uses ProposingStatePanel
-      expect(find.byType(TutorialProgressDots), findsOneWidget);
+      // Should be in proposing state with text field
       expect(find.byType(TextField), findsOneWidget);
     });
 
@@ -98,7 +98,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find and tap submit button
-      final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+      final submitFinder = find.byIcon(Icons.send_rounded);
       await tester.ensureVisible(submitFinder);
       await tester.pumpAndSettle();
       await tester.tap(submitFinder);
@@ -173,11 +173,11 @@ void main() {
 
       // Should still be on intro, not completed
       expect(completed, isFalse);
-      expect(find.text('Welcome!'), findsOneWidget);
+      expect(find.text('Welcome to OneMind!'), findsOneWidget);
     });
 
 
-    testWidgets('displays progress dots after selecting template', (tester) async {
+    testWidgets('navigates to proposing state after selecting template', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -185,14 +185,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // No progress dots on intro
-      expect(find.byType(TutorialProgressDots), findsNothing);
-
       // Navigate to proposing
       await _navigateToProposing(tester);
 
-      // Should see progress dots now
-      expect(find.byType(TutorialProgressDots), findsOneWidget);
+      // Should be in proposing state with text field
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('displays template-specific initial message in chat history', (tester) async {
@@ -256,7 +253,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Test');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+        final submitFinder = find.byIcon(Icons.send_rounded);
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -277,8 +274,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // These strings come from l10n, not hardcoded
-        expect(find.text('Welcome!'), findsOneWidget);
-        expect(find.text('Pick a practice scenario'), findsOneWidget);
+        expect(find.text('Welcome to OneMind!'), findsOneWidget);
+        expect(find.text('Choose a topic to practice with'), findsOneWidget);
       });
 
       testWidgets('displays template cards', (tester) async {
@@ -334,7 +331,7 @@ void main() {
         await _navigateToProposing(tester);
 
         // Participants icon visible, share icon not yet revealed
-        expect(find.byIcon(Icons.people_outline), findsOneWidget);
+        expect(find.byIcon(Icons.people), findsOneWidget);
         expect(find.byKey(const Key('tutorial-share-button')), findsNothing);
       });
 
@@ -372,7 +369,7 @@ void main() {
         // Submit proposition
         await tester.enterText(find.byType(TextField), 'My Idea');
         await tester.pumpAndSettle();
-        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+        final submitFinder = find.byIcon(Icons.send_rounded);
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -440,8 +437,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // The ReadOnlyResultsScreen should have auto-opened via ref.listen
-        // It shows "Round 1 Results" in the app bar
-        expect(find.text('Round 1 Results'), findsOneWidget);
+        // It shows "Rating Results" in the app bar (may appear in both AppBar title and elsewhere)
+        expect(find.text('Rating Results'), findsWidgets);
       });
     });
 
@@ -462,7 +459,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Block Party');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+        final submitFinder = find.byIcon(Icons.send_rounded);
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -493,7 +490,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'block party');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+        final submitFinder = find.byIcon(Icons.send_rounded);
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);
@@ -521,7 +518,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'Education');
         await tester.pumpAndSettle();
 
-        final submitFinder = find.widgetWithText(FilledButton, 'Submit');
+        final submitFinder = find.byIcon(Icons.send_rounded);
         await tester.ensureVisible(submitFinder);
         await tester.pumpAndSettle();
         await tester.tap(submitFinder);

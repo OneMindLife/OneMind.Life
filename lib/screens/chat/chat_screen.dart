@@ -14,6 +14,7 @@ import '../../core/l10n/locale_provider.dart';
 import '../../widgets/chat_language_selector.dart';
 import '../../widgets/glossary_term.dart';
 import '../../widgets/proposition_content_card.dart';
+import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../rating/rating_screen.dart';
 import 'widgets/previous_round_display.dart';
@@ -32,9 +33,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _propositionController = TextEditingController();
 
   // UI toggle states (not data - stay in widget)
-  bool _showPreviousWinner = false;
   int _currentWinnerIndex = 0;
-  int? _lastPreviousWinnerRoundId; // Track to auto-switch when new winners arrive
   int? _lastAutoNavigatedRoundId; // Track to auto-navigate to rating screen once per round
   bool _initialPhaseRecorded = false; // Whether we've recorded the phase on first load
   RoundPhase? _phaseOnOpen; // The phase when user first opened this screen
@@ -594,21 +593,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final stateAsync = ref.watch(chatDetailProvider(_params));
 
-    // Auto-switch to Emerging tab when new winners arrive
-    final currentWinners = stateAsync.valueOrNull?.previousRoundWinners ?? [];
-    if (currentWinners.isNotEmpty) {
-      final currentRoundId = currentWinners.first.roundId;
-      if (_lastPreviousWinnerRoundId != currentRoundId) {
-        _lastPreviousWinnerRoundId = currentRoundId;
-        // Use post-frame callback to avoid setState during build
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !_showPreviousWinner) {
-            setState(() => _showPreviousWinner = true);
-          }
-        });
-      }
-    }
-
     // Previously pre-filled text field with emerging idea — removed per user request.
     // Users should always start with an empty text field in proposing phase.
 
@@ -845,9 +829,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         final label = item.isHostOverride
                             ? (state.chat?.hostDisplayName ?? 'Host')
                             : l10n.consensusNumber(entry.key + 1);
-                        final card = _buildMessageCard(
-                          label,
-                          item.displayContent,
+                        final card = MessageCard(
+                          label: label,
+                          content: item.displayContent,
                           isPrimary: true,
                           isConsensus: !item.isHostOverride,
                         );
@@ -942,54 +926,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  Widget _buildMessageCard(String label, String content,
-      {bool isPrimary = false, bool isConsensus = false}) {
-    final Color borderColor;
-    final Color backgroundColor;
-    if (isConsensus) {
-      borderColor = AppColors.consensus;
-      backgroundColor = AppColors.consensusLight.withValues(alpha: 0.5);
-    } else if (isPrimary) {
-      borderColor = Theme.of(context).colorScheme.primary;
-      backgroundColor = Theme.of(context).colorScheme.primaryContainer.withAlpha(128);
-    } else {
-      borderColor = Colors.transparent;
-      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
-        border: (isPrimary || isConsensus)
-            ? Border(
-                left: BorderSide(
-                  color: borderColor,
-                  width: 4,
-                ),
-              )
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: isConsensus
-                      ? const Color(0xFF92400E) // amber-800
-                      : Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: isConsensus ? FontWeight.w600 : null,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(content),
-        ],
-      ),
-    );
-  }
-
   Widget _buildTaskResultCard(String taskResult) {
     return ExpansionTile(
       leading: Icon(
@@ -1029,9 +965,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInitialMessageCard(AppLocalizations l10n, String initialMessage, bool isHost) {
-    final card = _buildMessageCard(
-      l10n.initialMessage,
-      initialMessage,
+    final card = MessageCard(
+      label: l10n.initialMessage,
+      content: initialMessage,
       isPrimary: true,
     );
 
@@ -1278,8 +1214,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final hasPreviousWinner = state.previousRoundWinners.isNotEmpty;
     final isRatingPhase = state.currentRound?.phase == RoundPhase.rating;
 
-    // Hide the Emerging tab when in rating phase
-    final showPreviousWinnerTab = hasPreviousWinner && !isRatingPhase;
+    // Show emergence card inline above the phase panel (not during rating)
+    final showEmergence = hasPreviousWinner && !isRatingPhase;
 
     return Container(
       decoration: BoxDecoration(
@@ -1291,110 +1227,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Tab bar - shows both tabs when emerging idea exists and not in rating phase
-          _buildToggleTabs(state, showPreviousWinnerTab),
-          // Content based on toggle
-          _showPreviousWinner && showPreviousWinnerTab
-              ? _buildPreviousWinnerPanel(state)
-              : _buildCurrentPhasePanel(state),
+          if (showEmergence) _buildPreviousWinnerPanel(state),
+          _buildCurrentPhasePanel(state),
         ],
       ),
     );
-  }
-
-  Widget _buildToggleTabs(ChatDetailState state, bool hasPreviousWinner) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final isFirstSelected = _showPreviousWinner && hasPreviousWinner;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-      ),
-      child: Row(
-        children: [
-          // Emerging Tab - only show when there's an emerging idea
-          if (hasPreviousWinner)
-            Expanded(
-              child: GestureDetector(
-                onTap: () => setState(() => _showPreviousWinner = true),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: isFirstSelected
-                        ? theme.colorScheme.surface
-                        : Colors.transparent,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    l10n.previousWinner,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: isFirstSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isFirstSelected
-                          ? theme.colorScheme.onSurface
-                          : theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          // Current Phase Tab
-          Expanded(
-            child: GestureDetector(
-              onTap: hasPreviousWinner ? () => setState(() => _showPreviousWinner = false) : null,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: !isFirstSelected
-                      ? theme.colorScheme.surface
-                      : Colors.transparent,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(hasPreviousWinner ? 0 : 12),
-                    topRight: Radius.circular(12),
-                  ),
-                ),
-                child: Text(
-                  _getPhaseTabLabel(state),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: !isFirstSelected ? FontWeight.bold : FontWeight.normal,
-                    color: !isFirstSelected
-                        ? theme.colorScheme.onSurface
-                        : theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _getPhaseTabLabel(ChatDetailState state) {
-    final l10n = AppLocalizations.of(context);
-    if (state.currentRound == null) return l10n.waiting;
-    switch (state.currentRound!.phase) {
-      case RoundPhase.waiting:
-        return l10n.waiting;
-      case RoundPhase.proposing:
-        if (state.myPropositions.isEmpty) return l10n.yourProposition;
-        final remaining =
-            widget.chat.propositionsPerUser - state.myPropositions.length;
-        return remaining > 0
-            ? '${l10n.yourPropositions} (${state.myPropositions.length}/${widget.chat.propositionsPerUser})'
-            : l10n.yourPropositions;
-      case RoundPhase.rating:
-        return state.hasRated ? l10n.done : l10n.rate;
-    }
   }
 
   Widget _buildPreviousWinnerPanel(ChatDetailState state) {

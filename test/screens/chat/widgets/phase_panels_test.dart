@@ -121,7 +121,7 @@ void main() {
       expect(find.text('0/3 submitted'), findsOneWidget);
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Share your idea...'), findsOneWidget);
-      expect(find.text('Submit'), findsOneWidget);
+      expect(find.byKey(const Key('submit-proposition-button')), findsOneWidget);
     });
 
     testWidgets('shows submitted propositions when all submitted',
@@ -195,7 +195,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Submit'));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);
     });
 
@@ -372,11 +372,11 @@ void main() {
       expect(textField.enabled, isFalse);
 
       // Button should be disabled (onPressed is null)
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNull);
 
       // Tapping button should not call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isFalse);
     });
 
@@ -407,11 +407,11 @@ void main() {
       expect(textField.enabled, isTrue);
 
       // Button should be enabled
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNotNull);
 
       // Tapping button should call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);
     });
   });
@@ -472,7 +472,7 @@ void main() {
 
       // Simplified UI: just shows the button with timer
       expect(find.text('Start Rating'), findsOneWidget);
-      expect(find.byType(FilledButton), findsOneWidget);
+      expect(find.byKey(const Key('start-rating-button')), findsOneWidget);
 
       await tester.tap(find.text('Start Rating'));
       expect(startRatingCalled, isTrue);
@@ -530,11 +530,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be disabled when paused
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<FilledButton>(find.byKey(const Key('start-rating-button')));
       expect(button.onPressed, isNull);
 
       // Tapping button should not call onStartRating
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('start-rating-button')));
       expect(startRatingCalled, isFalse);
     });
 
@@ -555,11 +555,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be enabled
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<FilledButton>(find.byKey(const Key('start-rating-button')));
       expect(button.onPressed, isNotNull);
 
       // Tapping button should call onStartRating
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('start-rating-button')));
       expect(startRatingCalled, isTrue);
     });
   });
@@ -587,12 +587,12 @@ void main() {
       await tester.pump();
 
       // Button should be disabled when submitting
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNull,
           reason: 'Submit button should be disabled when isSubmitting is true');
 
       // Tapping disabled button should not call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCallCount, 0,
           reason: 'onSubmit should not be called when button is disabled');
     });
@@ -621,9 +621,9 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget,
           reason: 'Should show loading spinner when isSubmitting is true');
 
-      // Should NOT show "Submit" text when submitting
-      expect(find.text('Submit'), findsNothing,
-          reason: 'Submit text should be hidden while loading spinner shows');
+      // Should NOT show send icon when submitting (shows spinner instead)
+      expect(find.byIcon(Icons.send_rounded), findsNothing,
+          reason: 'Send icon should be hidden while loading spinner shows');
     });
 
     testWidgets('shows submit text when isSubmitting is false',
@@ -644,9 +644,9 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Should show "Submit" text
-      expect(find.text('Submit'), findsOneWidget,
-          reason: 'Should show Submit text when not submitting');
+      // Should show send icon
+      expect(find.byIcon(Icons.send_rounded), findsOneWidget,
+          reason: 'Should show send icon when not submitting');
 
       // Should NOT show loading indicator
       expect(find.byType(CircularProgressIndicator), findsNothing,
@@ -673,12 +673,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be enabled
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNotNull,
           reason: 'Submit button should be enabled when isSubmitting is false');
 
       // Tapping button should call onSubmit
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue,
           reason: 'onSubmit should be called when button is tapped');
     });
@@ -709,8 +709,8 @@ void main() {
       await tester.pump();
 
       // Submit button should be disabled
-      final submitButton = tester.widget<FilledButton>(
-        find.byType(FilledButton),
+      final submitButton = tester.widget<IconButton>(
+        find.byKey(const Key('submit-proposition-button')),
       );
       expect(submitButton.onPressed, isNull,
           reason: 'Submit button should be disabled when isSubmitting');
@@ -723,7 +723,7 @@ void main() {
           reason: 'Skip button should be disabled when isSubmitting');
 
       // Tapping either should not call the callbacks
-      await tester.tap(find.byType(FilledButton));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       await tester.tap(find.byType(TextButton));
       expect(submitCalled, isFalse);
       expect(skipCalled, isFalse);
@@ -751,7 +751,7 @@ void main() {
       await tester.pump();
 
       // Button should be disabled due to isSubmitting
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNull,
           reason: 'isSubmitting should disable button even when not paused');
 
@@ -777,12 +777,12 @@ void main() {
       await tester.pumpAndSettle();
 
       // Button should be enabled by default
-      final button = tester.widget<FilledButton>(find.byType(FilledButton));
+      final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNotNull,
           reason: 'Button should be enabled when isSubmitting defaults to false');
 
-      // Should show "Submit" text, not loading spinner
-      expect(find.text('Submit'), findsOneWidget);
+      // Should show send icon, not loading spinner
+      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
   });
@@ -1108,8 +1108,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Submit Result'), findsOneWidget);
-      expect(find.text('Submit'), findsNothing);
+      expect(find.byTooltip('Submit Result'), findsOneWidget);
+      expect(find.byTooltip('Submit'), findsNothing);
     });
 
     testWidgets('shows task result hint text in task result mode',
@@ -1152,7 +1152,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Submit Result'));
+      await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);
     });
   });

@@ -414,17 +414,7 @@ class ProposingStatePanel extends StatelessWidget {
           ]
           // Show input if can submit more (for everyone including host)
           else if (canSubmitMore) ...[
-            // Skip button above input (right-aligned)
-            if (canSkip && newSubmissions == 0 && maxSkips > 0 && !isTaskResultMode)
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  key: const Key('skip-proposing-button'),
-                  onPressed: isPaused || isSubmitting ? null : onSkip,
-                  child: Text(l10n.skip),
-                ),
-              ),
-            // Text field with send button
+            // Text field with send/skip button
             Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -474,21 +464,50 @@ class ProposingStatePanel extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 8),
-                SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: IconButton.filled(
-                    key: const Key('submit-proposition-button'),
-                    onPressed: isPaused || isSubmitting ? null : onSubmit,
-                    icon: isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.send_rounded, size: 22),
-                    tooltip: isTaskResultMode ? l10n.submitResult : l10n.submit,
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: propositionController,
+                  builder: (context, value, child) {
+                    final textEmpty = value.text.trim().isEmpty;
+                    final showSkip = textEmpty &&
+                        canSkip &&
+                        newSubmissions == 0 &&
+                        maxSkips > 0 &&
+                        !isTaskResultMode;
+                    return SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: IconButton.filled(
+                        key: Key(showSkip
+                            ? 'skip-proposing-button'
+                            : 'submit-proposition-button'),
+                        onPressed: isPaused || isSubmitting
+                            ? null
+                            : showSkip
+                                ? onSkip
+                                : textEmpty
+                                    ? null
+                                    : onSubmit,
+                        icon: isSubmitting
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2),
+                              )
+                            : Icon(
+                                showSkip
+                                    ? Icons.skip_next
+                                    : Icons.send_rounded,
+                                size: 22,
+                              ),
+                        tooltip: showSkip
+                            ? l10n.skip
+                            : isTaskResultMode
+                                ? l10n.submitResult
+                                : l10n.submit,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),

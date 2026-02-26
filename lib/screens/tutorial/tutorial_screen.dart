@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../config/env_config.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../config/app_colors.dart';
+import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
@@ -16,7 +18,6 @@ import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
 import '../home_tour/widgets/spotlight_overlay.dart';
 import 'widgets/tutorial_intro_panel.dart';
-import 'widgets/tutorial_progress_dots.dart';
 
 /// Provider for tutorial chat state (new version using real ChatScreen layout)
 /// Uses autoDispose so state resets when tutorial screen is closed
@@ -34,10 +35,12 @@ final tutorialNotifierProvider =
 /// Tutorial screen that mirrors the real ChatScreen layout
 class TutorialScreen extends ConsumerStatefulWidget {
   final VoidCallback? onComplete;
+  final VoidCallback? onSkip;
 
   const TutorialScreen({
     super.key,
     this.onComplete,
+    this.onSkip,
   });
 
   @override
@@ -130,7 +133,13 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     );
 
     if (confirmed == true && mounted) {
-      _handleComplete();
+      if (widget.onSkip != null) {
+        widget.onSkip!();
+        // Navigate away — router redirect will handle the destination
+        if (mounted) context.go('/');
+      } else {
+        _handleComplete();
+      }
     }
   }
 
@@ -496,13 +505,17 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     return Scaffold(
       appBar: AppBar(
               automaticallyImplyLeading: false,
+              titleSpacing: 4,
               title: AnimatedOpacity(
                 opacity: dimOpacity,
                 duration: const Duration(milliseconds: 250),
                 child: Builder(
                   builder: (context) {
                     final l10n = AppLocalizations.of(context);
-                    return Text(l10n.tutorialAppBarTitle);
+                    return Text(
+                      l10n.tutorialAppBarTitle,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    );
                   },
                 ),
               ),
@@ -516,7 +529,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                       builder: (context) {
                         final l10n = AppLocalizations.of(context);
                         return IconButton(
-                          icon: const Icon(Icons.people_outline),
+                          icon: const Icon(Icons.people),
                           tooltip: l10n.participants,
                           onPressed: isEndTour ? null : _showTutorialParticipantsSheet,
                         );
@@ -583,13 +596,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         // Layer 0: existing Column layout (unchanged)
         Column(
           children: [
-            // Progress dots (not shown on complete)
-            if (state.currentStep != TutorialStep.complete)
-              AnimatedOpacity(
-                opacity: dimOpacity,
-                duration: const Duration(milliseconds: 250),
-                child: TutorialProgressDots(currentStep: state.currentStep),
-              ),
+            // Phase-aware accent strip (matches real chat screen)
+            _buildPhaseAccentStrip(state),
 
             // Chat History — wrapped in Stack for end-tour tooltip
             Expanded(
@@ -618,9 +626,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                                   ? 1.0
                                   : dimOpacity,
                               duration: const Duration(milliseconds: 250),
-                              child: _buildMessageCard(
-                                l10n.initialMessage,
-                                initialMessage,
+                              child: MessageCard(
+                                label: l10n.initialMessage,
+                                content: initialMessage,
                                 isPrimary: true,
                               ),
                             ),
@@ -639,10 +647,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                                     key: entry.key == state.consensusItems.length - 1
                                         ? _consensusCardKey
                                         : null,
-                                    child: _buildMessageCard(
-                                      l10n.consensusNumber(entry.key + 1),
-                                      entry.value.displayContent,
+                                    child: MessageCard(
+                                      label: l10n.consensusNumber(entry.key + 1),
+                                      content: entry.value.displayContent,
                                       isPrimary: true,
+                                      isConsensus: true,
                                     ),
                                   ),
                                 ),
@@ -840,7 +849,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
             Positioned.fill(
               child: Column(
                 children: [
-                  TutorialProgressDots(currentStep: step),
                   // Initial message card
                   Padding(
                     padding: const EdgeInsets.symmetric(
@@ -851,9 +859,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                         opacity: _chatTourOpacity(
                             step, TutorialStep.chatTourMessage),
                         duration: const Duration(milliseconds: 250),
-                        child: _buildMessageCard(
-                          l10n.initialMessage,
-                          initialMessage,
+                        child: MessageCard(
+                          label: l10n.initialMessage,
+                          content: initialMessage,
                           isPrimary: true,
                         ),
                       ),
@@ -874,46 +882,14 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                             top: BorderSide(color: theme.dividerColor),
                           ),
                         ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            // Proposing input
-                            Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Expanded(
-                                    child: TextField(
-                                      enabled: false,
-                                      decoration: InputDecoration(
-                                        hintText: l10n.shareYourIdea,
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(24),
-                                        ),
-                                        filled: true,
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 16, vertical: 12),
-                                        counterText: '',
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  SizedBox(
-                                    width: 48,
-                                    height: 48,
-                                    child: IconButton.filled(
-                                      onPressed: null,
-                                      icon: const Icon(Icons.send_rounded,
-                                          size: 22),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        child: AbsorbPointer(
+                          child: ProposingStatePanel(
+                            roundCustomId: 1,
+                            propositionsPerUser: 1,
+                            myPropositions: const [],
+                            propositionController: _propositionController,
+                            onSubmit: () {},
+                          ),
                         ),
                       ),
                     ),
@@ -1062,6 +1038,28 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
   bool _isEndTourStep(TutorialStep step) {
     return step == TutorialStep.round3Consensus ||
         step == TutorialStep.shareDemo;
+  }
+
+  /// Phase accent strip matching the real chat screen.
+  Widget _buildPhaseAccentStrip(TutorialChatState state) {
+    final phase = state.currentRound?.phase;
+    if (phase == null) return const SizedBox.shrink();
+
+    final Color color;
+    switch (phase) {
+      case RoundPhase.proposing:
+        color = AppColors.proposing;
+      case RoundPhase.rating:
+        color = AppColors.rating;
+      case RoundPhase.waiting:
+        color = AppColors.waiting;
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 3,
+      color: color.withValues(alpha: 0.6),
+    );
   }
 
   /// Measure position of consensus card to place tooltip right below it
@@ -1235,40 +1233,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
             );
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildMessageCard(String label, String content,
-      {bool isPrimary = false}) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isPrimary
-            ? Theme.of(context).colorScheme.primaryContainer.withAlpha(128)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-        border: isPrimary
-            ? Border(
-                left: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 4,
-                ),
-              )
-            : null,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(content),
-        ],
       ),
     );
   }

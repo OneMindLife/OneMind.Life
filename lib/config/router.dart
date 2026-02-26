@@ -91,6 +91,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tutorial',
         name: 'tutorial',
         builder: (context, state) => TutorialScreen(
+          onSkip: () {
+            // Skip tutorial AND home tour — go straight to the real app
+            ref.read(tutorialServiceProvider).markTutorialComplete();
+            ref.read(tutorialServiceProvider).markHomeTourComplete();
+            ref.invalidate(hasCompletedTutorialProvider);
+            ref.invalidate(hasCompletedHomeTourProvider);
+          },
           onComplete: () async {
             // Prevent double-execution (can happen when router rebuilds)
             if (_tutorialCompletionInProgress) {
