@@ -12,36 +12,28 @@ class QrCodeShareDialog extends StatelessWidget {
   final String inviteCode;
   final String? deepLinkUrl;
 
-  /// If true, shows a prominent "Continue" button instead of small "Done" text.
-  /// Use this for tutorial mode to make it clear users need to tap to proceed.
-  final bool showContinueButton;
-
   const QrCodeShareDialog({
     super.key,
     required this.chatName,
     required this.inviteCode,
     this.deepLinkUrl,
-    this.showContinueButton = false,
   });
 
   /// Show the QR code share dialog.
-  /// Returns `true` if the user tapped Continue, `null` otherwise.
-  static Future<bool?> show(
+  static Future<void> show(
     BuildContext context, {
     required String chatName,
     required String inviteCode,
     String? deepLinkUrl,
-    bool showContinueButton = false,
     bool barrierDismissible = true,
   }) {
-    return showDialog<bool>(
+    return showDialog<void>(
       context: context,
       barrierDismissible: barrierDismissible,
       builder: (context) => QrCodeShareDialog(
         chatName: chatName,
         inviteCode: inviteCode,
         deepLinkUrl: deepLinkUrl,
-        showContinueButton: showContinueButton,
       ),
     );
   }
@@ -50,14 +42,9 @@ class QrCodeShareDialog extends StatelessWidget {
     return deepLinkUrl ?? '${EnvConfig.webAppUrl}/join/$inviteCode';
   }
 
-  /// Copies link to clipboard and also opens native share sheet if available.
-  Future<void> _copyAndShare(BuildContext context) async {
+  Future<void> _copyLink(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
-
-    // Always copy to clipboard first
     await Clipboard.setData(ClipboardData(text: _fullUrl));
-
-    // Show feedback that link was copied
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -66,15 +53,18 @@ class QrCodeShareDialog extends StatelessWidget {
         ),
       );
     }
+  }
 
-    // Also try to open native share sheet (works on mobile, no-op on desktop)
+  Future<void> _shareLink(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
     try {
       await Share.share(
         _fullUrl,
         subject: l10n.shareLinkTitle(chatName),
       );
-    } catch (e) {
-      // Ignore share errors - link is already copied
+    } catch (_) {
+      // Fallback: copy to clipboard if share fails
+      if (context.mounted) await _copyLink(context);
     }
   }
 
@@ -87,13 +77,16 @@ class QrCodeShareDialog extends StatelessWidget {
     return AlertDialog(
       title: Row(
         children: [
-          const Icon(Icons.share),
-          const SizedBox(width: 8),
           Expanded(
             child: Text(
               l10n.shareLinkTitle(chatName),
               overflow: TextOverflow.ellipsis,
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed: () => Navigator.pop(context),
+            visualDensity: VisualDensity.compact,
           ),
         ],
       ),
@@ -101,10 +94,15 @@ class QrCodeShareDialog extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Full URL display
+            // URL with copy button
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.only(
+                left: 12,
+                top: 4,
+                bottom: 4,
+                right: 4,
+              ),
               decoration: BoxDecoration(
                 color: isDark
                     ? colorScheme.surfaceContainerHighest
@@ -114,21 +112,34 @@ class QrCodeShareDialog extends StatelessWidget {
                   color: colorScheme.outlineVariant,
                 ),
               ),
-              child: SelectableText(
-                _fullUrl,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.primary,
-                      fontFamily: 'monospace',
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      _fullUrl,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: colorScheme.primary,
+                            fontFamily: 'monospace',
+                          ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy, size: 18),
+                    tooltip: l10n.linkCopied,
+                    onPressed: () => _copyLink(context),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
 
-            // Share button (copies to clipboard + opens share sheet on mobile)
+            // Share button (opens native share sheet)
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-                onPressed: () => _copyAndShare(context),
+                onPressed: () => _shareLink(context),
                 icon: const Icon(Icons.share),
                 label: Text(l10n.shareButton),
               ),
@@ -154,7 +165,6 @@ class QrCodeShareDialog extends StatelessWidget {
             const SizedBox(height: 16),
 
             // QR Code
-            // IgnorePointer prevents QR code from blocking mouse events
             IgnorePointer(
               child: Container(
                 padding: const EdgeInsets.all(16),
@@ -199,78 +209,42 @@ class QrCodeShareDialog extends StatelessWidget {
                   ),
             ),
             const SizedBox(height: 4),
-            Text(
-              inviteCode,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    color: colorScheme.primary,
-                  ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  inviteCode,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
+                        color: colorScheme.primary,
+                      ),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.copy, size: 18),
+                  tooltip: l10n.codeCopied,
+                  visualDensity: VisualDensity.compact,
+                  onPressed: () async {
+                    await Clipboard.setData(
+                      ClipboardData(text: inviteCode),
+                    );
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(l10n.codeCopied),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
           ],
         ),
       ),
-      actions: [
-        if (showContinueButton) ...[
-          // Tutorial hint above Continue button
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer.withAlpha(100),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: colorScheme.primary.withAlpha(80),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.lightbulb_outline,
-                  size: 20,
-                  color: colorScheme.onPrimaryContainer,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    l10n.tutorialShareContinueHint,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onPrimaryContainer,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  l10n.continue_,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ),
-        ] else
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => Navigator.pop(context),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text(
-                  l10n.done,
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ),
-      ],
+      actionsPadding: EdgeInsets.zero,
     );
   }
 }

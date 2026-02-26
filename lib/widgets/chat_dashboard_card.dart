@@ -63,6 +63,11 @@ class ChatDashboardCard extends StatelessWidget {
     this.semanticLabel,
   });
 
+  /// Whether to show the language row (hide for English-only chats).
+  bool get _showLanguages =>
+      translationLanguages.length > 1 ||
+      (translationLanguages.length == 1 && translationLanguages.first != 'en');
+
   /// Resolves the vertical phase bar color.
   static Color phaseBarColor(
     BuildContext context, {
@@ -124,7 +129,7 @@ class ChatDashboardCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Row 1: Name + participant badge + optional trailing
+                        // Row 1: Name + phase badge + countdown + optional trailing
                         Row(
                           children: [
                             Expanded(
@@ -132,10 +137,19 @@ class ChatDashboardCard extends StatelessWidget {
                                 name,
                                 style:
                                     Theme.of(context).textTheme.titleMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            ParticipantBadge(count: participantCount),
+                            PhaseBadge(
+                              phase: phase,
+                              isPaused: isPaused,
+                            ),
+                            if (hasTimer) ...[
+                              const SizedBox(width: 6),
+                              CompactCountdown(remaining: timeRemaining),
+                            ],
                             if (trailing != null) ...[
                               const SizedBox(width: 8),
                               trailing!,
@@ -155,23 +169,30 @@ class ChatDashboardCard extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        // Row 3: Phase badge + countdown + spacer + language codes
+                        // Row 3: Languages + participant count
                         const SizedBox(height: 6),
                         Row(
                           children: [
-                            PhaseBadge(
-                              phase: phase,
-                              isPaused: isPaused,
-                            ),
-                            if (hasTimer) ...[
-                              const SizedBox(width: 8),
-                              CompactCountdown(remaining: timeRemaining),
-                            ],
-                            const Spacer(),
-                            _LanguageLabel(
-                              languages: translationLanguages,
-                              highlightCode: viewingLanguageCode,
-                            ),
+                            if (_showLanguages) ...[
+                              Icon(
+                                Icons.translate,
+                                size: 14,
+                                color: Theme.of(context)
+                                    .colorScheme
+                                    .onSurfaceVariant,
+                              ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: _LanguageLabel(
+                                  languages: translationLanguages,
+                                  highlightCode: viewingLanguageCode,
+                                  maxVisible: 2,
+                                ),
+                              ),
+                            ] else
+                              const Spacer(),
+                            const SizedBox(width: 8),
+                            ParticipantBadge(count: participantCount),
                           ],
                         ),
                       ],
@@ -187,12 +208,17 @@ class ChatDashboardCard extends StatelessWidget {
   }
 }
 
-/// Shows the language list with optional highlighting of the selected language.
+/// Shows the language list with optional highlighting and overflow handling.
 class _LanguageLabel extends StatelessWidget {
   final List<String> languages;
   final String? highlightCode;
+  final int maxVisible;
 
-  const _LanguageLabel({required this.languages, this.highlightCode});
+  const _LanguageLabel({
+    required this.languages,
+    this.highlightCode,
+    this.maxVisible = 2,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -203,21 +229,43 @@ class _LanguageLabel extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
           fontWeight: FontWeight.bold,
         );
+    final mutedStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(153),
+        );
 
-    final sorted = languages.map((code) => code).toList()..sort();
+    // Put highlighted language first, then remaining sorted alphabetically.
+    final ordered = <String>[];
+    final rest = <String>[];
+    for (final code in languages) {
+      if (code == highlightCode) {
+        ordered.insert(0, code);
+      } else {
+        rest.add(code);
+      }
+    }
+    rest.sort();
+    ordered.addAll(rest);
+
+    final visible = ordered.take(maxVisible).toList();
+    final overflow = ordered.length - maxVisible;
 
     return Text.rich(
       TextSpan(
         children: [
-          for (var i = 0; i < sorted.length; i++) ...[
+          for (var i = 0; i < visible.length; i++) ...[
             if (i > 0) TextSpan(text: ', ', style: defaultStyle),
             TextSpan(
-              text: LanguageUtils.displayName(sorted[i]),
-              style: sorted[i] == highlightCode ? highlightStyle : defaultStyle,
+              text: LanguageUtils.displayName(visible[i]),
+              style:
+                  visible[i] == highlightCode ? highlightStyle : defaultStyle,
             ),
           ],
+          if (overflow > 0)
+            TextSpan(text: ', +$overflow', style: mutedStyle),
         ],
       ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
     );
   }
 }

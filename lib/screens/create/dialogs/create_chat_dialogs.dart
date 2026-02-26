@@ -52,7 +52,6 @@ class CreateChatDialogs {
         context,
         chatName: chat.name,
         inviteCode: chat.inviteCode!,
-        showContinueButton: true,
         barrierDismissible: false,
       ).then((_) => onContinue());
       return;
