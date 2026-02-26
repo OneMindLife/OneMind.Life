@@ -149,7 +149,7 @@ The app bar shows the template-specific chat name (e.g., `"Community"`) and a pa
 
 **Text shown (TourTooltipCard):**
 - Title: `"Submit Ideas"`
-- Description: `"This is where you submit ideas. Each round, everyone proposes and then rates. The highest-rated idea wins the round."`
+- Description: `"This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other's ideas. The highest-rated idea wins the round."`
 - Progress: `"Step 3 of 4"`
 - Buttons: `"Skip tour"` / `"Next"`
 

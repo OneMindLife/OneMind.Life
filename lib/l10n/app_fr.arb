@@ -1257,7 +1257,7 @@
   "chatTourMessageTitle": "Question de Discussion",
   "chatTourMessageDesc": "C'est la question en cours de discussion. Tout le monde soumet des idees en reponse.",
   "chatTourProposingTitle": "Soumettre des Idees",
-  "chatTourProposingDesc": "C'est ici que vous soumettez des idées. À chaque tour, tout le monde propose puis évalue.",
+  "chatTourProposingDesc": "C'est ici que vous soumettez des idées. À chaque tour, chacun propose une idée puis tout le monde évalue les idées des autres.",
   "chatTourParticipantsTitle": "Participants",
   "chatTourParticipantsDesc": "Rencontrez les participants du tutoriel : Alice, Bob et Carol. Appuyez ici pour voir qui est dans le chat.",
   "chatTourShareTitle": "Partager le Chat",

@@ -4413,7 +4413,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatTourProposingDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is where you submit ideas. Each round, everyone proposes and then rates.'**
+  /// **'This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other\'s ideas.'**
   String get chatTourProposingDesc;
 
   /// No description provided for @chatTourParticipantsTitle.

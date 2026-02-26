@@ -1297,7 +1297,7 @@
   "chatTourMessageTitle": "Discussion Question",
   "chatTourMessageDesc": "This is the question being discussed. Everyone submits ideas in response.",
   "chatTourProposingTitle": "Submit Ideas",
-  "chatTourProposingDesc": "This is where you submit ideas. Each round, everyone proposes and then rates.",
+  "chatTourProposingDesc": "This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other's ideas.",
   "chatTourParticipantsTitle": "Participants",
   "chatTourParticipantsDesc": "Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who's in the chat.",
   "chatTourShareTitle": "Share Chat",

@@ -1258,7 +1258,7 @@
   "chatTourMessageTitle": "Diskussionsfrage",
   "chatTourMessageDesc": "Das ist die Frage, die diskutiert wird. Alle reichen Ideen als Antwort ein.",
   "chatTourProposingTitle": "Ideen Einreichen",
-  "chatTourProposingDesc": "Hier reichst du Ideen ein. In jeder Runde schlagen alle vor und bewerten dann.",
+  "chatTourProposingDesc": "Hier reichst du Ideen ein. In jeder Runde schlägt jeder eine Idee vor und dann bewerten alle die Ideen der anderen.",
   "chatTourParticipantsTitle": "Teilnehmer",
   "chatTourParticipantsDesc": "Lerne die Tutorial-Teilnehmer kennen: Alice, Bob und Carol. Tippe hier, um zu sehen, wer im Chat ist.",
   "chatTourShareTitle": "Chat Teilen",

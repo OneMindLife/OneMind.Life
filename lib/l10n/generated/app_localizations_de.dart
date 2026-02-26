@@ -2474,7 +2474,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get chatTourProposingDesc =>
-      'Hier reichst du Ideen ein. In jeder Runde schlagen alle vor und bewerten dann.';
+      'Hier reichst du Ideen ein. In jeder Runde schlägt jeder eine Idee vor und dann bewerten alle die Ideen der anderen.';
 
   @override
   String get chatTourParticipantsTitle => 'Teilnehmer';

@@ -1257,7 +1257,7 @@
   "chatTourMessageTitle": "Pregunta de Discusion",
   "chatTourMessageDesc": "Esta es la pregunta que se esta discutiendo. Todos envian ideas como respuesta.",
   "chatTourProposingTitle": "Enviar Ideas",
-  "chatTourProposingDesc": "Aquí es donde envías ideas. En cada ronda, todos proponen y luego califican.",
+  "chatTourProposingDesc": "Aquí es donde envías ideas. En cada ronda, todos proponen una idea y luego todos califican las ideas de los demás.",
   "chatTourParticipantsTitle": "Participantes",
   "chatTourParticipantsDesc": "Conoce a los participantes del tutorial: Alice, Bob y Carol. Toca aqui para ver quien esta en el chat.",
   "chatTourShareTitle": "Compartir Chat",
