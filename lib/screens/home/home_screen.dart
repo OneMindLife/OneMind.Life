@@ -16,7 +16,9 @@ import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
 import '../tutorial/tutorial_data.dart';
 import '../../widgets/chat_dashboard_card.dart';
+import '../../widgets/home_section_header.dart';
 import '../../widgets/language_selector.dart';
+import '../../widgets/pending_request_card.dart';
 import '../../widgets/welcome_header.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -386,13 +388,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             children: [
               // Pending Join Requests Section
               if (myChatsState.pendingRequests.isNotEmpty) ...[
-                _buildSectionHeader(context, l10n.pendingRequests),
+                HomeSectionHeader(l10n.pendingRequests),
                 const SizedBox(height: 8),
                 ...myChatsState.pendingRequests.map(
                   (request) => Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: _PendingRequestCard(
-                      request: request,
+                    child: PendingRequestCard(
+                      chatName: request.chatName ?? 'Chat #${request.chatId}',
+                      subtitle: request.chatInitialMessage,
                       onCancel: () => _cancelRequest(context, ref, request),
                     ),
                   ),
@@ -401,7 +404,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ],
 
               // My Chats
-              _buildSectionHeader(context, l10n.yourChats),
+              HomeSectionHeader(l10n.yourChats),
               const SizedBox(height: 8),
               Builder(
                 builder: (context) {
@@ -477,17 +480,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title.toUpperCase(),
-      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.8,
-          ),
-    );
-  }
-
   Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
     return Card(
@@ -546,107 +538,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PendingRequestCard extends StatelessWidget {
-  final JoinRequest request;
-  final VoidCallback onCancel;
-
-  const _PendingRequestCard({
-    required this.request,
-    required this.onCancel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final chatName = request.chatName ?? 'Chat #${request.chatId}';
-    final semanticLabel =
-        '${l10n.pending} request for $chatName. ${l10n.waitingForHostApproval}';
-
-    return Semantics(
-      label: semanticLabel,
-      child: Card(
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            children: [
-              // Warm amber left border — needs attention
-              ExcludeSemantics(
-                child: Container(
-                  width: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.consensus,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                    ),
-                  ),
-                ),
-              ),
-              // Content
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    chatName,
-                                    style: Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            if (request.chatInitialMessage != null) ...[
-                              const SizedBox(height: 4),
-                              Text(
-                                request.chatInitialMessage!,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
-                                    ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.waitingForHostApproval,
-                              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: Theme.of(context).colorScheme.outline,
-                                    fontStyle: FontStyle.italic,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Cancel button
-                      Semantics(
-                        button: true,
-                        label: l10n.cancelRequest,
-                        child: IconButton(
-                          icon: const Icon(Icons.close),
-                          tooltip: l10n.cancelRequest,
-                          onPressed: onCancel,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );

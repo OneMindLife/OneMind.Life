@@ -5,14 +5,25 @@ import '../providers/providers.dart';
 
 /// Compact "Welcome, Name" header with pencil icon for inline editing.
 /// Placed above the search bar on the home screen.
+///
+/// For tour/demo usage, set [displayNameOverride] to bypass the provider
+/// and [readOnly] to hide the edit button.
 class WelcomeHeader extends ConsumerWidget {
   final GlobalKey? widgetKey;
+  final String? displayNameOverride;
+  final bool readOnly;
 
-  const WelcomeHeader({super.key, this.widgetKey});
+  const WelcomeHeader({
+    super.key,
+    this.widgetKey,
+    this.displayNameOverride,
+    this.readOnly = false,
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final displayName = ref.watch(authDisplayNameProvider) ?? '';
+    final displayName =
+        displayNameOverride ?? ref.watch(authDisplayNameProvider) ?? '';
     final l10n = AppLocalizations.of(context);
 
     return Padding(
@@ -29,13 +40,15 @@ class WelcomeHeader extends ConsumerWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton(
-            icon: const Icon(Icons.edit, size: 18),
-            tooltip: l10n.editName,
-            visualDensity: VisualDensity.compact,
-            onPressed: () => _showEditDialog(context, ref, displayName),
-          ),
+          if (!readOnly) ...[
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.edit, size: 18),
+              tooltip: l10n.editName,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => _showEditDialog(context, ref, displayName),
+            ),
+          ],
         ],
       ),
     );

@@ -114,5 +114,51 @@ void main() {
       expect(find.byType(WelcomeHeader), findsOneWidget);
       expect(find.byIcon(Icons.edit), findsOneWidget);
     });
+
+    testWidgets('readOnly hides edit button', (tester) async {
+      await tester.pumpApp(
+        const WelcomeHeader(readOnly: true),
+        authService: mockAuthService,
+        additionalOverrides: [
+          authDisplayNameProvider.overrideWithValue('Brave Fox'),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Brave Fox'), findsOneWidget);
+      expect(find.byIcon(Icons.edit), findsNothing);
+    });
+
+    testWidgets('displayNameOverride bypasses provider', (tester) async {
+      await tester.pumpApp(
+        const WelcomeHeader(displayNameOverride: 'Custom Name'),
+        authService: mockAuthService,
+        additionalOverrides: [
+          authDisplayNameProvider.overrideWithValue('Provider Name'),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Custom Name'), findsOneWidget);
+      expect(find.textContaining('Provider Name'), findsNothing);
+    });
+
+    testWidgets('displayNameOverride with readOnly renders tour mode',
+        (tester) async {
+      await tester.pumpApp(
+        const WelcomeHeader(
+          displayNameOverride: 'Brave Fox',
+          readOnly: true,
+        ),
+        authService: mockAuthService,
+        additionalOverrides: [
+          authDisplayNameProvider.overrideWithValue('Real Name'),
+        ],
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Brave Fox'), findsOneWidget);
+      expect(find.byIcon(Icons.edit), findsNothing);
+    });
   });
 }

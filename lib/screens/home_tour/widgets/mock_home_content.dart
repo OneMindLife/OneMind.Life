@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/round.dart';
 import '../../../widgets/chat_dashboard_card.dart';
+import '../../../widgets/home_section_header.dart';
+import '../../../widgets/pending_request_card.dart';
+import '../../../widgets/welcome_header.dart';
 import '../models/home_tour_state.dart';
 
 /// A static mock of the home screen content with fake data.
@@ -60,24 +62,9 @@ class MockHomeContent extends StatelessWidget {
               key: welcomeHeaderKey,
               opacity: _opacity(HomeTourStep.welcomeName),
               duration: const Duration(milliseconds: 250),
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      l10n.welcomeName('Brave Fox'),
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.edit,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ],
+              child: const WelcomeHeader(
+                displayNameOverride: 'Brave Fox',
+                readOnly: true,
               ),
             ),
             const SizedBox(height: 8),
@@ -115,9 +102,9 @@ class MockHomeContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, l10n.pendingRequests),
+                  HomeSectionHeader(l10n.pendingRequests),
                   const SizedBox(height: 8),
-                  _MockPendingCard(
+                  const PendingRequestCard(
                     chatName: 'Book Club',
                     subtitle: 'What should we read next?',
                   ),
@@ -136,7 +123,7 @@ class MockHomeContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSectionHeader(context, l10n.yourChats),
+                  HomeSectionHeader(l10n.yourChats),
                   const SizedBox(height: 8),
                   ChatDashboardCard(
                     name: l10n.appTitle,
@@ -160,84 +147,6 @@ class MockHomeContent extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-    );
-  }
-}
-
-/// Mock pending request card matching the real home screen style:
-/// vertical amber bar + chat name + subtitle + "Waiting for host approval"
-class _MockPendingCard extends StatelessWidget {
-  final String chatName;
-  final String subtitle;
-
-  const _MockPendingCard({
-    required this.chatName,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: IntrinsicHeight(
-        child: Row(
-          children: [
-            // Warm amber left border (same as real pending card)
-            Container(
-              width: 4,
-              decoration: const BoxDecoration(
-                color: AppColors.consensus,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  bottomLeft: Radius.circular(16),
-                ),
-              ),
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      chatName,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
-                          ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.waitingForHostApproval,
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.outline,
-                            fontStyle: FontStyle.italic,
-                          ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
