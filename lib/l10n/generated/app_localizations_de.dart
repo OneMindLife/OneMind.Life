@@ -439,6 +439,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get seeAllResults => 'Alle Ergebnisse Anzeigen';
 
   @override
+  String get viewAllRatings => 'Alle Bewertungen Anzeigen';
+
+  @override
   String get startPhase => 'Phase Starten';
 
   @override

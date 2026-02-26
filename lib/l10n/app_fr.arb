@@ -254,6 +254,7 @@
   },
   "tiedWinNoConsensus": "Egalite (ne compte pas pour la convergence)",
   "seeAllResults": "Voir Tous les Resultats",
+  "viewAllRatings": "Voir Toutes les Notes",
   "startPhase": "Demarrer la Phase",
   "waiting": "En Attente",
   "waitingForHostToStart": "En attente que l'hote demarre...",

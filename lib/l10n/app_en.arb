@@ -253,6 +253,7 @@
     }
   },
   "seeAllResults": "See All Results",
+  "viewAllRatings": "View All Ratings",
   "startPhase": "Start Phase",
   "waiting": "Waiting",
   "waitingForHostToStart": "Waiting for host to start...",

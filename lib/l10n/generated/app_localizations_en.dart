@@ -434,6 +434,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get seeAllResults => 'See All Results';
 
   @override
+  String get viewAllRatings => 'View All Ratings';
+
+  @override
   String get startPhase => 'Start Phase';
 
   @override

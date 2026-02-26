@@ -797,7 +797,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           child: Column(
           children: [
             // Phase-aware accent strip
-            _PhaseAccentStrip(phase: state.currentRound?.phase),
+            PhaseAccentStrip(phase: state.currentRound?.phase),
             // Host paused banner
             if (state.chat?.hostPaused ?? widget.chat.hostPaused)
               HostPausedBanner(
@@ -1844,32 +1844,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 }
 
 /// Subtle colored strip at the top of the chat body showing current phase.
-class _PhaseAccentStrip extends StatelessWidget {
-  final RoundPhase? phase;
-
-  const _PhaseAccentStrip({this.phase});
-
-  @override
-  Widget build(BuildContext context) {
-    if (phase == null) return const SizedBox.shrink();
-
-    final Color color;
-    switch (phase!) {
-      case RoundPhase.proposing:
-        color = AppColors.proposing;
-      case RoundPhase.rating:
-        color = AppColors.rating;
-      case RoundPhase.waiting:
-        color = AppColors.waiting;
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: 3,
-      color: color.withValues(alpha: 0.6),
-    );
-  }
-}
 
 /// Compact credit balance chip displayed in the AppBar for hosts.
 class _CreditBalanceChip extends StatelessWidget {

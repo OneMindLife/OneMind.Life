@@ -254,6 +254,7 @@
   },
   "tiedWinNoConsensus": "Empate (nao conta para a convergencia)",
   "seeAllResults": "Ver Todos os Resultados",
+  "viewAllRatings": "Ver Todas as Avaliações",
   "startPhase": "Iniciar Fase",
   "waiting": "Aguardando",
   "waitingForHostToStart": "Aguardando o anfitriao iniciar...",

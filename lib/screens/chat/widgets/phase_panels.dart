@@ -1177,3 +1177,32 @@ class CreditPausedPanel extends StatelessWidget {
     );
   }
 }
+
+/// A thin colored strip indicating the current round phase.
+/// Used by both the chat screen and tutorial screen.
+class PhaseAccentStrip extends StatelessWidget {
+  final RoundPhase? phase;
+
+  const PhaseAccentStrip({super.key, this.phase});
+
+  @override
+  Widget build(BuildContext context) {
+    if (phase == null) return const SizedBox.shrink();
+
+    final Color color;
+    switch (phase!) {
+      case RoundPhase.proposing:
+        color = AppColors.proposing;
+      case RoundPhase.rating:
+        color = AppColors.rating;
+      case RoundPhase.waiting:
+        color = AppColors.waiting;
+    }
+
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      height: 3,
+      color: color.withValues(alpha: 0.6),
+    );
+  }
+}

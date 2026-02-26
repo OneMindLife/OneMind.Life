@@ -126,7 +126,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('See All Results'), findsOneWidget);
+      expect(find.text('View All Ratings'), findsOneWidget);
     });
 
     testWidgets('hides See Results button when previousRoundResults is empty', (tester) async {

@@ -254,6 +254,7 @@
   },
   "tiedWinNoConsensus": "Unentschieden (zaehlt nicht fuer Konvergenz)",
   "seeAllResults": "Alle Ergebnisse Anzeigen",
+  "viewAllRatings": "Alle Bewertungen Anzeigen",
   "startPhase": "Phase Starten",
   "waiting": "Warten",
   "waitingForHostToStart": "Warte auf Start durch den Gastgeber...",

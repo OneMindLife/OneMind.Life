@@ -35,6 +35,11 @@ class PreviousWinnerPanel extends StatelessWidget {
   /// Whether to show tutorial hint on the results screen
   final bool showTutorialHintOnResults;
 
+  /// Custom callback for viewing results. When provided, overrides the default
+  /// navigation to ReadOnlyResultsScreen. Useful for the tutorial which needs
+  /// to translate propositions before displaying.
+  final VoidCallback? onViewResults;
+
   const PreviousWinnerPanel({
     super.key,
     required this.previousRoundWinners,
@@ -51,6 +56,7 @@ class PreviousWinnerPanel extends StatelessWidget {
     this.previousRoundNumber,
     this.onResultsViewed,
     this.showTutorialHintOnResults = false,
+    this.onViewResults,
   });
 
   void _navigateToResultsGrid(BuildContext context) {
@@ -89,113 +95,121 @@ class PreviousWinnerPanel extends StatelessWidget {
     final currentWinner = previousRoundWinners[currentWinnerIndex];
 
     final theme = Theme.of(context);
-    final hasResults = showResultsButton && previousRoundResults != null && previousRoundResults!.isNotEmpty;
+    final hasResults = showResultsButton && (onViewResults != null || (previousRoundResults != null && previousRoundResults!.isNotEmpty));
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.consensus.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.consensus.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Tie indicator (only shown for multiple winners)
-          if (hasMultipleWinners) ...[
-            TieBadge(count: previousRoundWinners.length),
-            const SizedBox(height: 4),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Align(
+          alignment: Alignment.center,
+          child: Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.consensus.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: AppColors.consensus.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Tie indicator (only shown for multiple winners)
+                if (hasMultipleWinners) ...[
+                  TieBadge(count: previousRoundWinners.length),
+                  const SizedBox(height: 4),
+                ],
 
-          // Main content row: arrows + label/content + See Results
-          Row(
-            children: [
-              // Left arrow (for multiple winners)
-              if (hasMultipleWinners)
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: currentWinnerIndex > 0
-                      ? () => onWinnerIndexChanged(currentWinnerIndex - 1)
-                      : null,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  iconSize: 20,
-                ),
-
-              // Winner content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                // Main content row: arrows + label/content
+                Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      l10n.previousWinner,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
+                    // Left arrow (for multiple winners)
+                    if (hasMultipleWinners)
+                      IconButton(
+                        icon: const Icon(Icons.chevron_left),
+                        onPressed: currentWinnerIndex > 0
+                            ? () => onWinnerIndexChanged(currentWinnerIndex - 1)
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 20,
+                      ),
+
+                    // Winner content
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            l10n.previousWinner,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
                           ),
-                    ),
-                    const SizedBox(height: 2),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxHeight: 80),
-                      child: SingleChildScrollView(
-                        child: Text(
-                          currentWinner.displayContent ?? l10n.unknownProposition,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w500,
+                          const SizedBox(height: 2),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxHeight: 80),
+                            child: SingleChildScrollView(
+                              child: Text(
+                                currentWinner.displayContent ?? l10n.unknownProposition,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                    ),
                               ),
-                        ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    // Right arrow (for multiple winners)
+                    if (hasMultipleWinners)
+                      IconButton(
+                        icon: const Icon(Icons.chevron_right),
+                        onPressed: currentWinnerIndex < previousRoundWinners.length - 1
+                            ? () => onWinnerIndexChanged(currentWinnerIndex + 1)
+                            : null,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        iconSize: 20,
+                      ),
                   ],
                 ),
-              ),
 
-              // Right arrow (for multiple winners)
-              if (hasMultipleWinners)
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: currentWinnerIndex < previousRoundWinners.length - 1
-                      ? () => onWinnerIndexChanged(currentWinnerIndex + 1)
-                      : null,
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  iconSize: 20,
-                ),
-
-              // See Results inline (like tutorial)
-              if (hasResults)
-                TextButton(
-                  onPressed: () => _navigateToResultsGrid(context),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                // Page indicator dots for multiple winners
+                if (hasMultipleWinners) ...[
+                  const SizedBox(height: 8),
+                  WinnerPageIndicator(
+                    count: previousRoundWinners.length,
+                    currentIndex: currentWinnerIndex,
+                    onIndexChanged: onWinnerIndexChanged,
                   ),
-                  child: Text(
-                    l10n.seeAllResults,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-
-          // Page indicator dots for multiple winners
-          if (hasMultipleWinners) ...[
-            const SizedBox(height: 8),
-            WinnerPageIndicator(
-              count: previousRoundWinners.length,
-              currentIndex: currentWinnerIndex,
-              onIndexChanged: onWinnerIndexChanged,
+                ],
+              ],
             ),
-          ],
-        ],
-      ),
+          ),
+        ),
+
+        // See results button (outside the card)
+        if (hasResults)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: OutlinedButton(
+              onPressed: onViewResults ?? () => _navigateToResultsGrid(context),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                textStyle: theme.textTheme.labelSmall,
+              ),
+              child: Text(l10n.viewAllRatings),
+            ),
+          ),
+      ],
     );
   }
 }

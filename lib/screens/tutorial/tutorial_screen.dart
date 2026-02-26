@@ -6,12 +6,12 @@ import '../../config/env_config.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
-import '../../config/app_colors.dart';
 import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
 import '../chat/widgets/phase_panels.dart';
+import '../chat/widgets/previous_round_display.dart';
 import '../rating/read_only_results_screen.dart';
 import 'models/tutorial_state.dart';
 import 'notifiers/tutorial_notifier.dart';
@@ -597,7 +597,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         Column(
           children: [
             // Phase-aware accent strip (matches real chat screen)
-            _buildPhaseAccentStrip(state),
+            PhaseAccentStrip(phase: state.currentRound?.phase),
 
             // Chat History — wrapped in Stack for end-tour tooltip
             Expanded(
@@ -1041,26 +1041,6 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
   }
 
   /// Phase accent strip matching the real chat screen.
-  Widget _buildPhaseAccentStrip(TutorialChatState state) {
-    final phase = state.currentRound?.phase;
-    if (phase == null) return const SizedBox.shrink();
-
-    final Color color;
-    switch (phase) {
-      case RoundPhase.proposing:
-        color = AppColors.proposing;
-      case RoundPhase.rating:
-        color = AppColors.rating;
-      case RoundPhase.waiting:
-        color = AppColors.waiting;
-    }
-
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      height: 3,
-      color: color.withValues(alpha: 0.6),
-    );
-  }
 
   /// Measure position of consensus card to place tooltip right below it
   void _updateEndTourTooltipPosition(TutorialChatState state) {
@@ -1256,7 +1236,7 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         children: [
           // Inline emerging idea card (during proposing when a winner exists)
           if (hasPreviousWinner && isProposing)
-            _buildInlinePreviousWinner(state),
+            _buildTutorialWinnerPanel(state),
 
           // Current phase panel (always visible — textfield or rate button)
           _buildCurrentPhasePanel(state),
@@ -1276,17 +1256,28 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     return l10n.tutorialRound2PromptSimplified;
   }
 
-  /// Compact inline card showing the previous round's winner with "See Results" button.
-  Widget _buildInlinePreviousWinner(TutorialChatState state) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
+  /// Builds a PreviousWinnerPanel for the tutorial, translating winner content
+  /// and providing custom results navigation.
+  Widget _buildTutorialWinnerPanel(TutorialChatState state) {
     if (state.previousRoundWinners.isEmpty) return const SizedBox.shrink();
 
+    final l10n = AppLocalizations.of(context);
     final winner = state.previousRoundWinners.first;
-    final winnerContent = _translateProposition(winner.content ?? '', l10n);
+
+    // Translate the winner content for display
+    final translatedWinners = [
+      RoundWinner(
+        id: winner.id,
+        roundId: winner.roundId,
+        propositionId: winner.propositionId,
+        content: _translateProposition(winner.content ?? '', l10n),
+        globalScore: winner.globalScore,
+        rank: winner.rank,
+        createdAt: winner.createdAt,
+      ),
+    ];
 
     // Determine which round's results to show
-    // Winner roundId: -1 = Round 1, -2 = Round 2
     final winnerRoundId = winner.roundId;
     List<Proposition>? resultsToShow;
     int roundNumber = 1;
@@ -1298,62 +1289,18 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       roundNumber = 2;
     }
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.consensus.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: AppColors.consensus.withValues(alpha: 0.3),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.emoji_events_outlined,
-            size: 20,
-            color: AppColors.consensus,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  l10n.previousWinner,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  winnerContent,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (resultsToShow != null)
-            TextButton(
-              onPressed: () => _openResultsScreen(resultsToShow!, roundNumber),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: Text(
-                l10n.seeAllResults,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ),
-        ],
-      ),
+    return PreviousWinnerPanel(
+      previousRoundWinners: translatedWinners,
+      currentWinnerIndex: 0,
+      isSoleWinner: true,
+      consecutiveSoleWins: 1,
+      confirmationRoundsRequired: state.chat.confirmationRoundsRequired,
+      currentRoundCustomId: state.currentRound?.customId,
+      onWinnerIndexChanged: (_) {},
+      showResultsButton: resultsToShow != null,
+      onViewResults: resultsToShow != null
+          ? () => _openResultsScreen(resultsToShow!, roundNumber)
+          : null,
     );
   }
 

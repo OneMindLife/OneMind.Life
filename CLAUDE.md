@@ -146,30 +146,31 @@ All new users go through the tutorial to learn how the app works. This is critic
 The tutorial is a simulated 3-round chat that teaches proposing, rating, viewing results, and convergence. After that, a Home Tour teaches the main UI.
 
 #### Step 1: Template Selection (`intro`)
-User picks one of 7 localized templates (Family, Community, Workplace, Government, World, Personal, Classic). Each template provides a question, chat name, fake participant propositions, and a predetermined winner for R1.
+User picks one of 6 localized templates (Personal, Family, Community, Workplace, Government, World). Each template provides a question, chat name, fake participant propositions, and a predetermined winner for R1. A "Classic" template exists as a fallback but is not shown in the UI.
 
 #### Steps 2-5: Chat Tour (`chatTourTitle` → `chatTourProposing`)
-A 4-step progressive-reveal walkthrough of the chat interface. Elements fade in one at a time (title → participants button → initial message → proposing input). Each step shows a `TourTooltipCard` explaining that element.
+A 4-step progressive-reveal walkthrough of the chat interface. Elements fade in one at a time (title → participants button → initial message → proposing input). Each step shows a `TourTooltipCard` with titles: "Chat Name", "Participants", "Discussion Question", "Submit Ideas".
 
 #### Steps 6-8: Round 1 — Propose, Rate, Results
 - **`round1Proposing`**: User types a custom proposition. (Chat tour already explained this area — no additional hint.)
-- **`round1Rating`**: Floating hint explains rating. Title: "Rate Ideas", desc: "Everyone has submitted. Now rate their ideas to pick a winner!" User taps "Start Rating" to open rating screen (titled "Rating Results"). Rating screen has inline icon hints for binary (`[swap]`, `[check]`) and positioning (`[up]`, `[down]`) phases.
-- **`round1Result`**: Results screen auto-opens (titled "Rating Results"). Hint: "'{winner}' won! Press the back arrow to continue."
+- **`round1Rating`**: Floating hint explains rating. Title: "Rate Ideas", desc: "Everyone has submitted. Now rate their ideas to pick a winner!" User taps "Start Rating" to open rating screen (titled "Rate Ideas"). Rating screen has inline icon hints: binary phase (title: "Compare Ideas", markers: `[swap]`, `[check]`) and positioning phase (title: "Position Ideas", markers: `[up]`, `[down]`).
+- **`round1Result`**: Results screen auto-opens (titled "Rating Results"). Hint title: "Rating Results", desc: "'{winner}' won! Press the back arrow to continue."
 
 #### Steps 9-12: Round 2 — Propose, Rate, Results (User Wins)
-- **`round2Prompt`**: Emergence card shows the R1 winner. Floating hint: "'{winner}' will compete again this round. If it wins again, that's convergence — the group's answer. Can you beat it?" (introduces carry-forward + convergence + stakes)
-- **`round2Proposing`**: User submits a second proposition.
+- **`round2Prompt`**: Emergence card shows the R1 winner. Floating hint title: "Round 2", desc: "'{winner}' will compete again this round. If it wins again, that's convergence — the group's answer. Can you beat it?" User can submit their proposition during this step or the next.
+- **`round2Proposing`**: User submits a second proposition (if not already submitted during `round2Prompt`).
 - **`round2Rating`**: Rating screen auto-opens. No hints (user learned rating mechanics in R1).
-- **`round2Result`**: Results screen **auto-opens** showing the user's idea as winner. Hint: "Your idea won! Press the back arrow to continue." On dismiss, auto-advances to Round 3.
+- **`round2Result`**: Results screen **auto-opens** showing the user's idea as winner. Hint title: "You Won!", desc: "Your idea won! Press the back arrow to continue." On dismiss, auto-advances to Round 3.
 
-#### Steps 13-15: Round 3 — Convergence
-- **`round3Proposing`**: Floating hint: "'{winner}' replaced '{previousWinner}'. One more win means convergence!" (reinforcement only — no new concepts)
+#### Steps 13-16: Round 3 — Convergence
+- **`round3CarryForward`**: Emergence card shows the R2 winner (user's idea) being carried forward.
+- **`round3Proposing`**: Floating hint title: "You Won!", desc: "'{winner}' replaced '{previousWinner}'. One more win means convergence!" (reinforcement only — no new concepts)
 - **`round3Rating`**: Rating screen auto-opens. No hint (user is experienced by now).
-- **`round3Consensus`**: Spotlight overlay highlights the consensus card. Title: "Convergence Reached!", description: '"{proposition}" won 2 rounds in a row.' (just announces the result)
+- **`round3Consensus`**: Spotlight overlay highlights the consensus card. Title: "Convergence Reached!", description: '"{proposition}" won 2 rounds in a row.'
 
-#### Steps 16-17: Share & Complete
-- **`shareDemo`**: Tooltip prompts user to tap Share in the app bar → opens QR code dialog with invite link.
-- **`complete`**: Success screen with fade animation → "Continue" button → navigates to Home Tour.
+#### Steps 17-18: Share & Complete
+- **`shareDemo`**: Tooltip with title "Share Your Chat" prompts user to tap Share in the app bar. A "Continue" button also advances the tutorial without requiring the share tap.
+- **`complete`**: Success screen ("Chat tutorial complete!") with fade animation → "Continue" button → navigates to Home Tour.
 
 #### Hint System — `TourTooltipCard`
 
@@ -177,7 +178,7 @@ All hints across the entire onboarding (chat tour, round hints, rating hints, re
 
 - **Style**: Elevated Material card (`elevation: 8`, `surface` color, `borderRadius: 16`)
 - **Content**: Bold title + description text (or rich `descriptionWidget` for inline icons)
-- **Buttons**: Single `FilledButton` ("Got it", "Next", or "Finish"). No skip button, no progress dots.
+- **Buttons**: Single `FilledButton` (label varies: "Next", "Finish", "Continue", etc.). No skip button, no progress dots.
 - **Round hints float** as `Positioned` overlays in a `Stack` wrapper — they never shift layout.
 - **Dismissal**: Tap the button, or the hint auto-disappears when the user takes the expected action. Dismissed hints are tracked in `Set<String> _dismissedHints`.
 
@@ -187,27 +188,22 @@ After the tutorial completes, the Home Tour teaches the main UI. Same progressiv
 
 | Step | Element | Tooltip Title |
 |------|---------|---------------|
-| 1 | Welcome header | "Welcome to OneMind!" |
-| 2 | Search bar | "Find discussions" |
-| 3 | Pending requests | "Pending requests" |
-| 4 | Your Chats | "Your active chats" |
-| 5 | Create FAB | "Create a discussion" |
-| 6 | Explore button | "Discover public chats" |
-| 7 | Language selector | "Change language" |
-| 8 | How It Works | "Learn how it works" |
-| 9 | Legal docs | "Legal documents" |
+| 1 | Display name | "Your Display Name" |
+| 2 | Search bar | "Search Your Chats" |
+| 3 | Pending requests | "Pending Requests" |
+| 4 | Your Chats | "Your Chats" |
+| 5 | Create FAB | "Create a Chat" |
+| 6 | Explore button | "Explore Public Chats" |
+| 7 | Language selector | "Change Language" |
+| 8 | How It Works | "How It Works" |
+| 9 | Legal docs | "Legal Documents" |
 
 ### Post-Tutorial Navigation
 
-After completing both tutorial + home tour, the app checks if the user has any chats or pending join requests:
+After completing both tutorial + home tour, the router simply redirects to `/` (Home). There is no conditional branching based on chat state — the user always lands on the Home screen.
 
-| Condition | Action | Rationale |
-|-----------|--------|-----------|
-| Has chats or pending requests | Navigate to Home | User came via invite link - a chat is waiting for them |
-| No chats and no pending | Navigate to Create Chat | User visited directly - they need to create a chat to use the app |
-
-- **Invite flow**: User clicks invite link → requests to join → tutorial starts → tutorial ends → they already have a pending request, so go to Home where they can see it
-- **Direct flow**: User visits onemind.life → tutorial starts → tutorial ends → no chats exist, so guide them to create one immediately
+- **Invite flow**: User clicks invite link → requests to join → tutorial starts → tutorial ends → Home (pending request is visible there)
+- **Direct flow**: User visits onemind.life → tutorial starts → tutorial ends → Home
 
 ### Invite Link Behavior
 
@@ -220,7 +216,7 @@ When a user clicks an invite link (`/join/CODE`):
 - `lib/config/router.dart` - Routing logic, tutorial redirect, post-tutorial navigation
 - `lib/screens/tutorial/tutorial_screen.dart` - Main tutorial implementation (chat simulation, floating hints, rating screens)
 - `lib/screens/tutorial/models/tutorial_state.dart` - `TutorialStep` enum and state model
-- `lib/screens/tutorial/models/tutorial_data.dart` - Template data (questions, propositions, winners)
+- `lib/screens/tutorial/tutorial_data.dart` - Template data (questions, propositions, winners)
 - `lib/screens/home_tour/home_tour_screen.dart` - Home tour implementation
 - `lib/screens/home_tour/widgets/spotlight_overlay.dart` - `TourTooltipCard` widget (shared across all hints)
 - `lib/screens/rating/read_only_results_screen.dart` - Results screen with optional tutorial hint overlay

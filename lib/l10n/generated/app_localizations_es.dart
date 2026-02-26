@@ -440,6 +440,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get seeAllResults => 'Ver Todos los Resultados';
 
   @override
+  String get viewAllRatings => 'Ver Todas las Calificaciones';
+
+  @override
   String get startPhase => 'Iniciar Fase';
 
   @override

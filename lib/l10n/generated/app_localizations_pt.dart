@@ -441,6 +441,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get seeAllResults => 'Ver Todos os Resultados';
 
   @override
+  String get viewAllRatings => 'Ver Todas as Avaliações';
+
+  @override
   String get startPhase => 'Iniciar Fase';
 
   @override

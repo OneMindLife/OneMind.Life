@@ -860,6 +860,12 @@ abstract class AppLocalizations {
   /// **'See All Results'**
   String get seeAllResults;
 
+  /// No description provided for @viewAllRatings.
+  ///
+  /// In en, this message translates to:
+  /// **'View All Ratings'**
+  String get viewAllRatings;
+
   /// No description provided for @startPhase.
   ///
   /// In en, this message translates to:
