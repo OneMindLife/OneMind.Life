@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../providers/providers.dart';
+import '../../../widgets/error_view.dart';
 
 /// An embedded rating screen widget for rating propositions.
 /// Note: This is the legacy inline rating screen. The primary rating UI
@@ -52,9 +53,7 @@ class _RatingScreenEmbeddedState extends ConsumerState<RatingScreenEmbedded> {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         setState(() => _isSubmitting = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSubmitRatings(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToSubmitRatings(e.toString()));
       }
     }
   }

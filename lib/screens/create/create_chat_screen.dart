@@ -124,11 +124,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
 
     // Validate invite-only requires at least one email
     if (_accessMethod == AccessMethod.inviteOnly && _inviteEmails.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.addEmailForInviteOnly),
-        ),
-      );
+      context.showErrorMessage(l10n.addEmailForInviteOnly);
       return;
     }
 
@@ -141,9 +137,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         maxDuration: _adaptiveSettings.maxDurationSeconds,
       );
       if (error != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(error)),
-        );
+        context.showErrorMessage(error);
         return;
       }
     }
@@ -155,9 +149,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
         scheduledStartAt: _scheduleSettings.scheduledStartAt,
       );
       if (scheduleError != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(scheduleError)),
-        );
+        context.showErrorMessage(scheduleError);
         return;
       }
 
@@ -285,12 +277,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(e.toString());
       }
     } finally {
       if (mounted) {

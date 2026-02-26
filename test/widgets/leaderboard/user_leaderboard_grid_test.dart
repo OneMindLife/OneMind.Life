@@ -123,9 +123,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should show error and retry button
+      // Should show error and retry button (compact ErrorView uses icon-only)
       expect(find.textContaining('Error'), findsOneWidget);
-      expect(find.text('Try Again'), findsOneWidget);
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
     testWidgets('shows single card with trophy when current user is top-ranked', (tester) async {

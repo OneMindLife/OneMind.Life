@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/user_credits.dart';
 import '../../services/billing_service.dart';
+import '../../widgets/error_view.dart';
 import '../../widgets/glossary_term.dart';
 
 /// Screen for viewing and purchasing credits
@@ -96,22 +97,13 @@ class _CreditsScreenState extends State<CreditsScreen> {
       if (updated != null) {
         setState(() => _credits = updated);
         if (mounted) {
-          final l10n = AppLocalizations.of(context)!;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(enabled ? l10n.autoRefillEnabled : l10n.autoRefillDisabled),
-            ),
-          );
+          final l10n = AppLocalizations.of(context);
+          context.showSuccessSnackBar(enabled ? l10n.autoRefillEnabled : l10n.autoRefillDisabled);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(e.toString());
       }
     } finally {
       if (mounted) {
@@ -123,14 +115,12 @@ class _CreditsScreenState extends State<CreditsScreen> {
   Future<void> _updateAutoRefillSettings() async {
     if (_credits == null) return;
 
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final threshold = int.tryParse(_thresholdController.text) ?? 50;
     final amount = int.tryParse(_amountController.text) ?? 500;
 
     if (amount <= threshold) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.refillAmountMustBeGreater)),
-      );
+      context.showErrorMessage(l10n.refillAmountMustBeGreater);
       return;
     }
 
@@ -146,19 +136,12 @@ class _CreditsScreenState extends State<CreditsScreen> {
       if (updated != null) {
         setState(() => _credits = updated);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.autoRefillSettingsUpdated)),
-          );
+          context.showSuccessSnackBar(l10n.autoRefillSettingsUpdated);
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(e.toString());
       }
     } finally {
       if (mounted) {
@@ -200,12 +183,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(e.toString());
       }
     } finally {
       if (mounted) {
@@ -216,7 +194,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.creditsTitle),
@@ -254,7 +232,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildBalanceCard() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -357,7 +335,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildPurchaseCard() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final cost = BillingService.calculateCostDollars(_purchaseCredits);
 
     return Card(
@@ -499,7 +477,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildAutoRefillCard() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final hasPaymentMethod = _credits?.hasPaymentMethod ?? false;
     final autoRefillEnabled = _credits?.autoRefillEnabled ?? false;
     final lastError = _credits?.autoRefillLastError;
@@ -667,7 +645,7 @@ class _CreditsScreenState extends State<CreditsScreen> {
   }
 
   Widget _buildTransactionHistory() {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     if (_transactions == null || _transactions!.isEmpty) {
       return Card(
         child: Padding(

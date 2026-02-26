@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/error_view.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
@@ -59,9 +60,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       final chat = await chatService.getChatById(chatSummary.id);
       if (chat == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.chatNotFound)),
-          );
+          context.showErrorMessage(l10n.chatNotFound);
         }
         return;
       }
@@ -87,9 +86,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToJoinChat(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToJoinChat(e.toString()));
       }
     }
   }
@@ -287,28 +284,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   Widget _buildError(String error) {
     final l10n = AppLocalizations.of(context);
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            l10n.failedToLoadPublicChats(error),
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          FilledButton(
-            onPressed: () => ref.read(publicChatsProvider.notifier).refresh(),
-            child: Text(l10n.retry),
-          ),
-        ],
-      ),
+    return ErrorView(
+      message: l10n.failedToLoadPublicChats(error),
+      onRetry: () => ref.read(publicChatsProvider.notifier).refresh(),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../screens/tutorial/tutorial_data.dart';
 import '../../utils/language_utils.dart';
+import '../../widgets/error_view.dart';
 
 class JoinDialog extends ConsumerStatefulWidget {
   final void Function(Chat chat) onJoined;
@@ -174,11 +175,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
 
         if (mounted) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.joinRequestSent),
-            ),
-          );
+          context.showInfoSnackBar(l10n.joinRequestSent);
         }
       } else {
         // Join directly (auth.uid() is used automatically)

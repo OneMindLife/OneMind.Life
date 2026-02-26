@@ -477,6 +477,9 @@
 
   "pageNotFound": "Page Not Found",
   "goHome": "Go Home",
+  "somethingWentWrong": "Something went wrong",
+  "pageNotFoundMessage": "The page you're looking for doesn't exist.",
+  "demoTitle": "Demo",
 
   "allPropositionsCount": "All Propositions ({count})",
   "@allPropositionsCount": {

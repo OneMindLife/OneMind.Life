@@ -1550,6 +1550,24 @@ abstract class AppLocalizations {
   /// **'Go Home'**
   String get goHome;
 
+  /// No description provided for @somethingWentWrong.
+  ///
+  /// In en, this message translates to:
+  /// **'Something went wrong'**
+  String get somethingWentWrong;
+
+  /// No description provided for @pageNotFoundMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The page you\'re looking for doesn\'t exist.'**
+  String get pageNotFoundMessage;
+
+  /// No description provided for @demoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo'**
+  String get demoTitle;
+
   /// No description provided for @allPropositionsCount.
   ///
   /// In en, this message translates to:

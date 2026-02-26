@@ -505,6 +505,9 @@
   "processing": "Traitement...",
   "pageNotFound": "Page Non Trouvee",
   "goHome": "Aller a l'Accueil",
+  "somethingWentWrong": "Quelque chose s'est mal passe",
+  "pageNotFoundMessage": "La page que vous recherchez n'existe pas.",
+  "demoTitle": "Demo",
   "allPropositionsCount": "Toutes les Propositions ({count})",
   "@allPropositionsCount": {
     "placeholders": {

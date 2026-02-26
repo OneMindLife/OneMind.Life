@@ -840,6 +840,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goHome => 'Aller a l\'Accueil';
 
   @override
+  String get somethingWentWrong => 'Quelque chose s\'est mal passe';
+
+  @override
+  String get pageNotFoundMessage =>
+      'La page que vous recherchez n\'existe pas.';
+
+  @override
+  String get demoTitle => 'Demo';
+
+  @override
   String allPropositionsCount(int count) {
     return 'Toutes les Propositions ($count)';
   }

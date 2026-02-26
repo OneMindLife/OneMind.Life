@@ -112,15 +112,10 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: Text(
           l10n.roundResults,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        centerTitle: true,
         actions: [
           if (widget.onExitTutorial != null)
             IconButton(

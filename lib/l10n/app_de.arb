@@ -505,6 +505,9 @@
   "processing": "Verarbeitung...",
   "pageNotFound": "Seite Nicht Gefunden",
   "goHome": "Zur Startseite",
+  "somethingWentWrong": "Etwas ist schiefgelaufen",
+  "pageNotFoundMessage": "Die Seite, die Sie suchen, existiert nicht.",
+  "demoTitle": "Demo",
   "allPropositionsCount": "Alle Vorschlaege ({count})",
   "@allPropositionsCount": {
     "placeholders": {

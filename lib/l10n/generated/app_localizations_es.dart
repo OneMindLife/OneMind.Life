@@ -838,6 +838,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goHome => 'Ir al Inicio';
 
   @override
+  String get somethingWentWrong => 'Algo salio mal';
+
+  @override
+  String get pageNotFoundMessage => 'La pagina que buscas no existe.';
+
+  @override
+  String get demoTitle => 'Demo';
+
+  @override
   String allPropositionsCount(int count) {
     return 'Todas las Propuestas ($count)';
   }

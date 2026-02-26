@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/generated/app_localizations.dart';
 import '../providers/providers.dart';
+import '../widgets/error_view.dart';
 import '../screens/discover/discover_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/join/invite_join_screen.dart';
@@ -242,30 +244,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
     errorBuilder: (context, state) {
       setNoIndex();
+      final l10n = AppLocalizations.of(context);
       return Scaffold(
-        appBar: AppBar(title: const Text('Page Not Found')),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                state.uri.toString(),
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 24),
-              FilledButton(
-                onPressed: () => context.go('/'),
-                child: const Text('Go Home'),
-              ),
-            ],
-          ),
+        appBar: AppBar(title: Text(l10n.pageNotFound)),
+        body: ErrorView(
+          message: l10n.pageNotFoundMessage,
+          details: state.uri.toString(),
+          onRetry: () => context.go('/'),
+          actionLabel: l10n.goHome,
+          actionIcon: Icons.home,
         ),
       );
     },

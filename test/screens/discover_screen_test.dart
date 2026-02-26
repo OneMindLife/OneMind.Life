@@ -532,7 +532,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
-        expect(find.text('Retry'), findsOneWidget);
+        expect(find.text('Try Again'), findsOneWidget);
       });
 
       testWidgets('retry button reloads chats', (tester) async {
@@ -553,10 +553,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // Verify error state
-        expect(find.text('Retry'), findsOneWidget);
+        expect(find.text('Try Again'), findsOneWidget);
 
         // Tap retry
-        await tester.tap(find.text('Retry'));
+        await tester.tap(find.text('Try Again'));
         await tester.pumpAndSettle();
 
         // Verify reload was attempted

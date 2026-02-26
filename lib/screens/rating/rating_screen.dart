@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/error_view.dart';
 import '../../models/round.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
@@ -83,9 +84,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToSubmit(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSkipping = false);
@@ -107,21 +106,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           propositionsRated: rankings.length,
         );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.rankedSuccessfully(rankings.length)),
-            backgroundColor: Colors.green,
-          ),
-        );
+        context.showSuccessSnackBar(l10n.rankedSuccessfully(rankings.length));
         _hasPopped = true; // Prevent double-pop from phase change detection
         Navigator.of(context).pop(true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(l10n.failedToSaveRankings),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(l10n.failedToSaveRankings);
       }
     }
   }
@@ -143,9 +132,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final l10n = AppLocalizations.of(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.chatPausedByHost)),
-          );
+          context.showInfoSnackBar(l10n.chatPausedByHost);
           Navigator.of(context).pop(false);
         }
       });
@@ -173,9 +160,7 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final l10n = AppLocalizations.of(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.ratingPhaseEnded)),
-          );
+          context.showInfoSnackBar(l10n.ratingPhaseEnded);
           Navigator.of(context).pop(false);
         }
       });
@@ -185,10 +170,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: stateAsync.when(
           data: (state) => Column(
             mainAxisSize: MainAxisSize.min,
@@ -240,7 +221,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
         ),
-        centerTitle: true,
         actions: [
           if (canSkipRating)
             TextButton(
@@ -286,31 +266,11 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
               color: theme.colorScheme.primary,
             ),
           ),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: theme.colorScheme.error,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    error.toString(),
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(l10n.goBack),
-                  ),
-                ],
-              ),
-            ),
+          error: (error, _) => ErrorView(
+            message: error.toString(),
+            onRetry: () => Navigator.of(context).pop(),
+            actionLabel: l10n.goBack,
+            actionIcon: Icons.arrow_back,
           ),
         ),
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../error_view.dart';
 import '../../models/user_round_rank.dart';
 import '../../providers/providers.dart';
 import 'leaderboard_grid_painter.dart';
@@ -139,18 +140,10 @@ class _UserLeaderboardGridState extends ConsumerState<UserLeaderboardGrid> {
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(l10n.error(_error!)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadUserRanks,
-              child: Text(l10n.tryAgain),
-            ),
-          ],
-        ),
+      return ErrorView(
+        isCompact: true,
+        message: l10n.error(_error!),
+        onRetry: _loadUserRanks,
       );
     }
 

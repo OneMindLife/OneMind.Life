@@ -7,6 +7,8 @@ class ErrorView extends StatelessWidget {
   final String message;
   final String? details;
   final VoidCallback? onRetry;
+  final String? actionLabel;
+  final IconData? actionIcon;
   final bool isCompact;
 
   const ErrorView({
@@ -14,6 +16,8 @@ class ErrorView extends StatelessWidget {
     required this.message,
     this.details,
     this.onRetry,
+    this.actionLabel,
+    this.actionIcon,
     this.isCompact = false,
   });
 
@@ -21,12 +25,16 @@ class ErrorView extends StatelessWidget {
   factory ErrorView.fromException(
     AppException exception, {
     VoidCallback? onRetry,
+    String? actionLabel,
+    IconData? actionIcon,
     bool isCompact = false,
   }) {
     return ErrorView(
       message: ErrorMessages.getMessage(exception),
       details: exception.technicalDetails,
       onRetry: exception.isRetryable ? onRetry : null,
+      actionLabel: actionLabel,
+      actionIcon: actionIcon,
       isCompact: isCompact,
     );
   }
@@ -35,15 +43,26 @@ class ErrorView extends StatelessWidget {
   factory ErrorView.fromError(
     Object error, {
     VoidCallback? onRetry,
+    String? fallbackMessage,
+    String? actionLabel,
+    IconData? actionIcon,
     bool isCompact = false,
   }) {
     if (error is AppException) {
-      return ErrorView.fromException(error, onRetry: onRetry, isCompact: isCompact);
+      return ErrorView.fromException(
+        error,
+        onRetry: onRetry,
+        actionLabel: actionLabel,
+        actionIcon: actionIcon,
+        isCompact: isCompact,
+      );
     }
     return ErrorView(
-      message: 'Something went wrong',
+      message: fallbackMessage ?? 'Something went wrong',
       details: error.toString(),
       onRetry: onRetry,
+      actionLabel: actionLabel,
+      actionIcon: actionIcon,
       isCompact: isCompact,
     );
   }
@@ -83,7 +102,7 @@ class ErrorView extends StatelessWidget {
           if (onRetry != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.refresh, size: 20),
+              icon: Icon(actionIcon ?? Icons.refresh, size: 20),
               onPressed: onRetry,
               color: theme.colorScheme.onErrorContainer,
               padding: EdgeInsets.zero,
@@ -128,8 +147,8 @@ class ErrorView extends StatelessWidget {
               const SizedBox(height: 24),
               FilledButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
+                icon: Icon(actionIcon ?? Icons.refresh),
+                label: Text(actionLabel ?? 'Try Again'),
               ),
             ],
           ],
@@ -206,6 +225,25 @@ extension ErrorSnackBar on BuildContext {
       SnackBar(
         content: Text(message),
         backgroundColor: Colors.green,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void showErrorMessage(String message) {
+    ScaffoldMessenger.of(this).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(this).colorScheme.error,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void showInfoSnackBar(String message) {
+    ScaffoldMessenger.of(this).showSnackBar(
+      SnackBar(
+        content: Text(message),
         behavior: SnackBarBehavior.floating,
       ),
     );

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/error_view.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
@@ -468,33 +469,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         label: l10n.loadingChats,
         child: const Center(child: CircularProgressIndicator()),
       ),
-      error: (error, _) => Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.failedToLoadChats,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: () => ref.read(myChatsProvider.notifier).refresh(),
-              child: Text(l10n.retry),
-            ),
-          ],
-        ),
+      error: (error, _) => ErrorView(
+        message: l10n.failedToLoadChats,
+        details: error.toString(),
+        onRetry: () => ref.read(myChatsProvider.notifier).refresh(),
       ),
     );
   }

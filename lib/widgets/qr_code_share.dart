@@ -5,6 +5,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../config/env_config.dart';
 import '../l10n/generated/app_localizations.dart';
+import 'error_view.dart';
 
 /// A dialog that displays a QR code for sharing a chat invite.
 class QrCodeShareDialog extends StatelessWidget {
@@ -46,12 +47,7 @@ class QrCodeShareDialog extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     await Clipboard.setData(ClipboardData(text: _fullUrl));
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(l10n.linkCopied),
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      context.showSuccessSnackBar(l10n.linkCopied);
     }
   }
 
@@ -228,12 +224,7 @@ class QrCodeShareDialog extends StatelessWidget {
                             ClipboardData(text: inviteCode),
                           );
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.codeCopied),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
+                            context.showSuccessSnackBar(l10n.codeCopied);
                           }
                         },
                       ),

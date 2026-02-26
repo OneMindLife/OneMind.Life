@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
 import '../../services/invite_service.dart';
 import '../../utils/language_utils.dart';
+import '../../widgets/error_view.dart';
 import '../chat/chat_screen.dart';
 
 /// Screen that handles joining via invite token or code from URL
@@ -227,11 +228,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         ref.read(pendingJoinChatIdProvider.notifier).state = chatId;
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(l10n.joinRequestSent),
-            ),
-          );
+          context.showInfoSnackBar(l10n.joinRequestSent);
           context.go('/');
         }
       } else {

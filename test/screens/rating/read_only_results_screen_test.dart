@@ -40,24 +40,45 @@ void main() {
 
     testWidgets('shows back button in app bar', (tester) async {
       await tester.pumpWidget(
-        createTestWidget(
-          ReadOnlyResultsScreen(
-            propositions: [
-              Proposition(
-                id: 1,
-                roundId: 1,
-                content: 'Test',
-                createdAt: DateTime.now(),
-                finalRating: 50.0,
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
+          // Use a route stack so Flutter auto-generates a back button
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: ElevatedButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReadOnlyResultsScreen(
+                      propositions: [
+                        Proposition(
+                          id: 1,
+                          roundId: 1,
+                          content: 'Test',
+                          createdAt: DateTime.now(),
+                          finalRating: 50.0,
+                        ),
+                      ],
+                      roundNumber: 1,
+                    ),
+                  ),
+                ),
+                child: const Text('Go'),
               ),
-            ],
-            roundNumber: 1,
+            ),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+      // Navigate to the results screen
+      await tester.tap(find.text('Go'));
+      await tester.pumpAndSettle();
+
+      // Flutter auto-generates a BackButton when canPop is true
+      expect(find.byType(BackButton), findsOneWidget);
     });
 
     testWidgets('displays empty message when no propositions', (tester) async {

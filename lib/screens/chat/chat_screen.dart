@@ -147,9 +147,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToSubmit(e.toString()));
       }
     } finally {
       if (mounted) {
@@ -167,9 +165,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToSubmit(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSkipping = false);
@@ -185,9 +181,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToSubmit(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToSubmit(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSkipping = false);
@@ -221,9 +215,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToAdvancePhase(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToAdvancePhase(e.toString()));
       }
     }
   }
@@ -235,9 +227,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToCompleteRating(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToCompleteRating(e.toString()));
       }
     }
   }
@@ -253,15 +243,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.deleteProposition(propositionId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.propositionDeleted)),
-        );
+        context.showSuccessSnackBar(l10n.propositionDeleted);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToDelete(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToDelete(e.toString()));
       }
     }
   }
@@ -532,15 +518,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         await ref.read(chatDetailProvider(_params).notifier).deleteChat();
         if (mounted) {
           Navigator.pop(context); // Go back to home
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.chatDeleted)),
-          );
+          context.showSuccessSnackBar(l10n.chatDeleted);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToDeleteChat(e.toString()))),
-          );
+          context.showErrorMessage(l10n.failedToDeleteChat(e.toString()));
         }
       }
     }
@@ -575,15 +557,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           // Also remove from MyChats list
           ref.read(myChatsProvider.notifier).removeChat(widget.chat.id);
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.youHaveLeftChat)),
-          );
+          context.showInfoSnackBar(l10n.youHaveLeftChat);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToLeaveChat(e.toString()))),
-          );
+          context.showErrorMessage(l10n.failedToLeaveChat(e.toString()));
         }
       }
     }
@@ -646,9 +624,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (mounted) {
           final l10n = AppLocalizations.of(context);
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.chatHasBeenDeleted)),
-          );
+          context.showInfoSnackBar(l10n.chatHasBeenDeleted);
         }
       });
       return const Scaffold(
@@ -665,9 +641,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           final l10n = AppLocalizations.of(context);
           ref.read(myChatsProvider.notifier).removeChat(widget.chat.id);
           // Show snackbar BEFORE navigating away so context is valid
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.youHaveBeenRemoved)),
-          );
+          context.showInfoSnackBar(l10n.youHaveBeenRemoved);
           // Pop all dialogs and this screen - handles case when dialog is open
           Navigator.of(context).popUntil((route) => route.isFirst);
         }
@@ -1025,9 +999,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToDeleteConsensus(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToDeleteConsensus(e.toString()));
       }
       return false;
     }
@@ -1037,9 +1009,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.read(chatDetailProvider(_params).notifier).onConsensusDismissed(cycleId);
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.consensusDeleted)),
-      );
+      context.showSuccessSnackBar(l10n.consensusDeleted);
     }
   }
 
@@ -1070,9 +1040,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       return true;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToDeleteTaskResult(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToDeleteTaskResult(e.toString()));
       }
       return false;
     }
@@ -1082,9 +1050,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     ref.read(chatDetailProvider(_params).notifier).onTaskResultDismissed(cycleId);
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.taskResultDeleted)),
-      );
+      context.showSuccessSnackBar(l10n.taskResultDeleted);
     }
   }
 
@@ -1101,16 +1067,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _propositionController.clear();
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.taskResultSubmitted)),
-        );
+        context.showSuccessSnackBar(l10n.taskResultSubmitted);
       }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToForceConsensus(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToForceConsensus(e.toString()));
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -1144,15 +1106,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     try {
       await ref.read(chatDetailProvider(_params).notifier).deleteInitialMessage();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.initialMessageDeleted)),
-        );
+        context.showSuccessSnackBar(l10n.initialMessageDeleted);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToDeleteInitialMessage(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToDeleteInitialMessage(e.toString()));
       }
     }
   }
@@ -1197,15 +1155,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     try {
       await ref.read(chatDetailProvider(_params).notifier).updateInitialMessage(newMessage);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.initialMessageUpdated)),
-        );
+        context.showSuccessSnackBar(l10n.initialMessageUpdated);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.failedToUpdateInitialMessage(e.toString()))),
-        );
+        context.showErrorMessage(l10n.failedToUpdateInitialMessage(e.toString()));
       }
     }
   }
@@ -1470,12 +1424,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
+        context.showErrorMessage(e.toString());
       }
     }
   }
@@ -1711,15 +1660,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             .read(chatDetailProvider(_params).notifier)
             .kickParticipant(participant.id);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.participantRemoved(participant.displayName))),
-          );
+          context.showSuccessSnackBar(l10n.participantRemoved(participant.displayName));
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToKickParticipant(e.toString()))),
-          );
+          context.showErrorMessage(l10n.failedToKickParticipant(e.toString()));
         }
       }
     }
@@ -1749,15 +1694,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       try {
         await ref.read(chatDetailProvider(_params).notifier).pauseChat();
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.chatPausedSuccess)),
-          );
+          context.showSuccessSnackBar(l10n.chatPausedSuccess);
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.failedToPauseChat(e.toString()))),
-          );
+          context.showErrorMessage(l10n.failedToPauseChat(e.toString()));
         }
       }
     }
@@ -1817,15 +1758,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           .read(chatDetailProvider(_params).notifier)
           .approveJoinRequest(requestId);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.requestApproved)),
-        );
+        context.showSuccessSnackBar(l10n.requestApproved);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(l10n.error(e.toString()))),
-        );
+        context.showErrorMessage(l10n.error(e.toString()));
       }
     }
   }
@@ -1836,9 +1773,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         .read(chatDetailProvider(_params).notifier)
         .denyJoinRequest(requestId);
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.requestDenied)),
-      );
+      context.showInfoSnackBar(l10n.requestDenied);
     }
   }
 }
