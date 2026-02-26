@@ -144,102 +144,103 @@ class QrCodeShareDialog extends StatelessWidget {
                 label: Text(l10n.shareButton),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
 
-            // Divider with "or scan"
-            Row(
-              children: [
-                Expanded(child: Divider(color: colorScheme.outline)),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    l10n.orScan,
+            // Collapsible QR code + manual code section
+            Theme(
+              data: Theme.of(context).copyWith(
+                dividerColor: Colors.transparent,
+              ),
+              child: ExpansionTile(
+                tilePadding: EdgeInsets.zero,
+                childrenPadding: const EdgeInsets.only(top: 8),
+                title: Text(
+                  l10n.orScan,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ),
+                children: [
+                  // QR Code
+                  IgnorePointer(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withAlpha(25),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: SizedBox(
+                        width: 180,
+                        height: 180,
+                        child: QrImageView(
+                          data: _fullUrl,
+                          version: QrVersions.auto,
+                          size: 180,
+                          backgroundColor: Colors.white,
+                          eyeStyle: const QrEyeStyle(
+                            eyeShape: QrEyeShape.square,
+                            color: Colors.black,
+                          ),
+                          dataModuleStyle: const QrDataModuleStyle(
+                            dataModuleShape: QrDataModuleShape.square,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Manual code fallback
+                  Text(
+                    l10n.enterCodeManually,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                         ),
                   ),
-                ),
-                Expanded(child: Divider(color: colorScheme.outline)),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // QR Code
-            IgnorePointer(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: SizedBox(
-                  width: 180,
-                  height: 180,
-                  child: QrImageView(
-                    data: _fullUrl,
-                    version: QrVersions.auto,
-                    size: 180,
-                    backgroundColor: Colors.white,
-                    eyeStyle: const QrEyeStyle(
-                      eyeShape: QrEyeShape.square,
-                      color: Colors.black,
-                    ),
-                    dataModuleStyle: const QrDataModuleStyle(
-                      dataModuleShape: QrDataModuleShape.square,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Manual code fallback
-            Text(
-              l10n.enterCodeManually,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  inviteCode,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                        color: colorScheme.primary,
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        inviteCode,
+                        style:
+                            Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 2,
+                                  color: colorScheme.primary,
+                                ),
                       ),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.copy, size: 18),
-                  tooltip: l10n.codeCopied,
-                  visualDensity: VisualDensity.compact,
-                  onPressed: () async {
-                    await Clipboard.setData(
-                      ClipboardData(text: inviteCode),
-                    );
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(l10n.codeCopied),
-                          duration: const Duration(seconds: 2),
-                        ),
-                      );
-                    }
-                  },
-                ),
-              ],
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.copy, size: 18),
+                        tooltip: l10n.codeCopied,
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () async {
+                          await Clipboard.setData(
+                            ClipboardData(text: inviteCode),
+                          );
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(l10n.codeCopied),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
