@@ -9,7 +9,7 @@
 -- 5. Security: get_persona_api_keys() not callable by anon/authenticated/public
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(14);
+SELECT plan(15);
 
 -- =============================================================================
 -- TEST GROUP 1: All 5 personas have entries in agent_api_keys
@@ -17,9 +17,9 @@ SELECT plan(14);
 
 SELECT is(
     (SELECT count(*)::int FROM agent_api_keys
-     WHERE agent_name IN ('the_executor', 'the_demand_detector', 'the_clock', 'the_compounder', 'the_breaker')),
-    5,
-    '5 persona API keys registered in agent_api_keys'
+     WHERE agent_name IN ('the_executor', 'the_demand_detector', 'the_clock', 'the_compounder', 'the_breaker', 'the_advocate')),
+    6,
+    '6 persona API keys registered in agent_api_keys'
 );
 
 SELECT ok(
@@ -47,6 +47,11 @@ SELECT ok(
     'the_breaker has an API key'
 );
 
+SELECT ok(
+    EXISTS (SELECT 1 FROM agent_api_keys WHERE agent_name = 'the_advocate'),
+    'the_advocate has an API key'
+);
+
 -- =============================================================================
 -- TEST GROUP 2: Persona user_ids match between agent_personas and agent_api_keys
 -- =============================================================================
@@ -55,8 +60,8 @@ SELECT is(
     (SELECT count(*)::int FROM agent_personas ap
      JOIN agent_api_keys ak ON ak.agent_name = ap.name AND ak.user_id = ap.user_id
      WHERE ap.is_active = true),
-    5,
-    'All 5 persona user_ids match between agent_personas and agent_api_keys'
+    6,
+    'All 6 persona user_ids match between agent_personas and agent_api_keys'
 );
 
 -- =============================================================================
@@ -67,14 +72,14 @@ SELECT has_function('get_persona_api_keys', 'get_persona_api_keys() function exi
 
 SELECT is(
     (SELECT count(*)::int FROM get_persona_api_keys()),
-    5,
-    'get_persona_api_keys() returns 5 rows'
+    6,
+    'get_persona_api_keys() returns 6 rows'
 );
 
 -- Verify all returned keys start with onemind_sk_ prefix
 SELECT is(
     (SELECT count(*)::int FROM get_persona_api_keys() WHERE api_key LIKE 'onemind_sk_%'),
-    5,
+    6,
     'All persona API keys have onemind_sk_ prefix'
 );
 

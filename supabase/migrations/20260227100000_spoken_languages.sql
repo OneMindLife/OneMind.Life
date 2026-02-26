@@ -9,6 +9,8 @@ ALTER TABLE public.users
   ADD COLUMN IF NOT EXISTS spoken_languages TEXT[] DEFAULT ARRAY['en']::TEXT[];
 
 -- Update the RPC to validate all 5 languages
+-- Must DROP first because original returns BOOLEAN, CREATE OR REPLACE cannot change return type
+DROP FUNCTION IF EXISTS public.update_user_language_code(text);
 CREATE OR REPLACE FUNCTION public.update_user_language_code(p_language_code TEXT)
 RETURNS VOID
 LANGUAGE plpgsql
