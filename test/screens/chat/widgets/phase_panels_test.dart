@@ -195,6 +195,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Enter text so button becomes enabled (disabled when empty)
+      await tester.enterText(find.byType(TextField), 'My idea');
+      await tester.pump();
+
       await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);
     });
@@ -405,6 +409,10 @@ void main() {
       // Text field should be enabled
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.enabled, isTrue);
+
+      // Enter text so button becomes enabled (disabled when empty)
+      await tester.enterText(find.byType(TextField), 'My idea');
+      await tester.pump();
 
       // Button should be enabled
       final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
@@ -672,6 +680,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // Enter text so button becomes enabled (disabled when empty)
+      await tester.enterText(find.byType(TextField), 'My idea');
+      await tester.pump();
+
       // Button should be enabled
       final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
       expect(button.onPressed, isNotNull,
@@ -683,10 +695,9 @@ void main() {
           reason: 'onSubmit should be called when button is tapped');
     });
 
-    testWidgets('disables both submit and skip buttons when isSubmitting',
+    testWidgets('disables skip-in-send button when isSubmitting',
         (tester) async {
       final controller = TextEditingController();
-      var submitCalled = false;
       var skipCalled = false;
 
       await tester.pumpWidget(
@@ -696,7 +707,7 @@ void main() {
             propositionsPerUser: 1,
             myPropositions: [],
             propositionController: controller,
-            onSubmit: () => submitCalled = true,
+            onSubmit: () {},
             onSkip: () => skipCalled = true,
             canSkip: true,
             maxSkips: 3,
@@ -708,24 +719,19 @@ void main() {
       // animates continuously and will never "settle"
       await tester.pump();
 
-      // Submit button should be disabled
-      final submitButton = tester.widget<IconButton>(
-        find.byKey(const Key('submit-proposition-button')),
-      );
-      expect(submitButton.onPressed, isNull,
-          reason: 'Submit button should be disabled when isSubmitting');
+      // With empty text + canSkip, the button key is skip-proposing-button
+      // but it should be disabled due to isSubmitting
+      // The button shows a spinner when isSubmitting regardless of skip state
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-      // Skip button should also be disabled
-      final skipButton = tester.widget<TextButton>(
-        find.byType(TextButton),
-      );
-      expect(skipButton.onPressed, isNull,
-          reason: 'Skip button should be disabled when isSubmitting');
+      // No separate skip TextButton should exist (merged into send button)
+      expect(find.byType(TextButton), findsNothing);
 
-      // Tapping either should not call the callbacks
-      await tester.tap(find.byKey(const Key('submit-proposition-button')));
-      await tester.tap(find.byType(TextButton));
-      expect(submitCalled, isFalse);
+      // Tapping should not call callback
+      // Find the IconButton by type since key depends on text state
+      final buttons = find.byType(IconButton);
+      expect(buttons, findsWidgets);
+      await tester.tap(buttons.last);
       expect(skipCalled, isFalse);
     });
 
@@ -775,6 +781,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      // Enter text so button becomes enabled (disabled when empty)
+      await tester.enterText(find.byType(TextField), 'My idea');
+      await tester.pump();
 
       // Button should be enabled by default
       final button = tester.widget<IconButton>(find.byKey(const Key('submit-proposition-button')));
@@ -1151,6 +1161,10 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
+
+      // Enter text so button becomes enabled (disabled when empty)
+      await tester.enterText(find.byType(TextField), 'Task result');
+      await tester.pump();
 
       await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);

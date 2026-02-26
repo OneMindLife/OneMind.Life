@@ -496,7 +496,7 @@ class ProposingStatePanel extends StatelessWidget {
                               )
                             : Icon(
                                 showSkip
-                                    ? Icons.skip_next
+                                    ? Icons.close
                                     : Icons.send_rounded,
                                 size: 22,
                               ),
@@ -587,7 +587,7 @@ class ProposingStatePanel extends StatelessWidget {
           //   OutlinedButton.icon(
           //     key: const Key('advance-to-rating-button'),
           //     onPressed: onAdvancePhase,
-          //     icon: const Icon(Icons.skip_next),
+          //     icon: const Icon(Icons.close),
           //     label: Text(l10n.endProposingStartRating),
           //   ),
           // ],
@@ -960,7 +960,7 @@ class RatingStatePanel extends StatelessWidget {
           //   OutlinedButton.icon(
           //     key: const Key('advance-from-rating-button'),
           //     onPressed: onAdvancePhase,
-          //     icon: const Icon(Icons.skip_next),
+          //     icon: const Icon(Icons.close),
           //     label: Text(l10n.endRatingStartNextRound),
           //   ),
           // ],
