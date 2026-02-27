@@ -63,10 +63,8 @@ class ChatDashboardCard extends StatelessWidget {
     this.semanticLabel,
   });
 
-  /// Whether to show the language row (hide for English-only chats).
-  bool get _showLanguages =>
-      translationLanguages.length > 1 ||
-      (translationLanguages.length == 1 && translationLanguages.first != 'en');
+  /// Whether to show the language row.
+  bool get _showLanguages => translationLanguages.isNotEmpty;
 
   /// Resolves the vertical phase bar color.
   static Color phaseBarColor(

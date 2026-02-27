@@ -149,11 +149,14 @@ The tutorial is a simulated 3-round chat that teaches proposing, rating, viewing
 User picks one of 6 localized templates (Personal, Family, Community, Workplace, Government, World). Each template provides a question, chat name, fake participant propositions, and a predetermined winner for R1. A "Classic" template exists as a fallback but is not shown in the UI.
 
 #### Steps 2-5: Chat Tour (`chatTourTitle` → `chatTourProposing`)
-A 4-step progressive-reveal walkthrough of the chat interface. Elements fade in one at a time (title → participants button → initial message → proposing input). Each step shows a `TourTooltipCard` with titles: "Chat Name", "Participants", "Discussion Question", "Submit Ideas".
+A 4-step progressive-reveal walkthrough of the chat interface. Elements fade in one at a time (title → participants button → initial message → proposing input). Each step shows a `TourTooltipCard` with titles: "Chat Name", "Participants", "Discussion Question", "Submit Ideas". The proposing input includes a visible 5-minute countdown timer; the "Submit Ideas" tooltip mentions the timer ("before the timer runs out").
+
+#### Timers
+All tutorial rounds display a 5-minute countdown timer (same `CountdownTimer` widget used in real chats). If the timer reaches 0, it shows "Time expired" but nothing else happens — the tutorial does not auto-advance on expiry.
 
 #### Steps 6-8: Round 1 — Propose, Rate, Results
 - **`round1Proposing`**: User types a custom proposition. (Chat tour already explained this area — no additional hint.)
-- **`round1Rating`**: Floating hint explains rating. Title: "Rate Ideas", desc: "Everyone has submitted. Now rate their ideas to pick a winner!" User taps "Start Rating" to open rating screen (titled "Rate Ideas"). Rating screen has inline icon hints: binary phase (title: "Compare Ideas", markers: `[swap]`, `[check]`) and positioning phase (title: "Position Ideas", markers: `[up]`, `[down]`).
+- **`round1Rating`**: Floating hint explains rating. Title: "Rate Ideas", desc: "Everyone has submitted. Now rate their ideas to pick a winner before the timer runs out!" User taps "Start Rating" to open rating screen (titled "Rate Ideas"). Rating screen has inline icon hints: binary phase (title: "Compare Ideas", markers: `[swap]`, `[check]`) and positioning phase (title: "Position Ideas", markers: `[up]`, `[down]`).
 - **`round1Result`**: Results screen auto-opens (titled "Rating Results"). Hint title: "Rating Results", desc: "'{winner}' won! Press the back arrow to continue."
 
 #### Steps 9-12: Round 2 — Propose, Rate, Results (User Wins)
@@ -166,9 +169,10 @@ A 4-step progressive-reveal walkthrough of the chat interface. Elements fade in 
 - **`round3CarryForward`**: Emergence card shows the R2 winner (user's idea) being carried forward.
 - **`round3Proposing`**: Floating hint title: "You Won!", desc: "'{winner}' replaced '{previousWinner}'. One more win means convergence!" (reinforcement only — no new concepts)
 - **`round3Rating`**: Rating screen auto-opens. No hint (user is experienced by now).
-- **`round3Consensus`**: Spotlight overlay highlights the consensus card. Title: "Convergence Reached!", description: '"{proposition}" won 2 rounds in a row.'
+- **`round3Consensus`**: Spotlight overlay highlights the consensus card. Title: "Convergence Reached!", description: '"{proposition}" won 2 rounds in a row, so it gets added permanently to the chat.'
 
-#### Steps 17-18: Share & Complete
+#### Steps 17-19: Process Continues, Share & Complete
+- **`convergenceContinue`**: Tooltip positioned above the bottom text field. Title: "The Process Continues", desc: "Now the group works toward its next convergence." Everything on screen is fully visible (no dimming). The emergence card is hidden. A new Round 4 proposing phase is set so the text field appears, reinforcing that the process continues.
 - **`shareDemo`**: Tooltip with title "Share Your Chat" prompts user to tap Share in the app bar. A "Continue" button also advances the tutorial without requiring the share tap.
 - **`complete`**: Success screen ("Chat tutorial complete!") with fade animation → "Continue" button → navigates to Home Tour.
 

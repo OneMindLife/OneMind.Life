@@ -1008,12 +1008,14 @@
   "tutorialStartButton": "Tutorial Starten",
   "tutorialSkipButton": "Tutorial ueberspringen",
   "tutorialConsensusReached": "Konvergenz Erreicht!",
-  "tutorialWonTwoRounds": "\"{proposition}\" hat 2 Runden hintereinander gewonnen.",
+  "tutorialWonTwoRounds": "\"{proposition}\" hat 2 Runden hintereinander gewonnen und wird dauerhaft zum Chat hinzugefuegt.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
+  "tutorialProcessContinuesTitle": "Der Prozess geht weiter",
+  "tutorialProcessContinuesDesc": "Jetzt arbeitet die Gruppe auf ihre nächste Konvergenz hin.",
   "tutorialAddedToChat": "Du wurdest auch automatisch zum Offiziellen OneMind Chat hinzugefuegt, in dem alle gemeinsam Themen diskutieren.",
   "tutorialFinishButton": "Tutorial Beenden",
   "tutorialRound1Result": "'Erfolg' hat Runde 1 gewonnen!",
@@ -1021,7 +1023,7 @@
   "tutorialTimeRemaining": "Du hast noch {time}.",
   "tutorialProposingHintWithWinner": "Reiche eine neue Idee ein, um gegen den Gewinner der letzten Runde anzutreten.",
   "tutorialRatingHint": "Bewerte jetzt die Ideen aller. Die am besten bewertete Idee gewinnt die Runde.",
-  "tutorialRatingPhaseExplanation": "Alle haben eingereicht. Bewerte jetzt ihre Ideen, um einen Gewinner zu wählen!",
+  "tutorialRatingPhaseExplanation": "Alle haben eingereicht. Bewerte jetzt ihre Ideen, um einen Gewinner zu wählen, bevor die Zeit abläuft!",
   "tutorialRatingTimeRemaining": "Du hast noch {time} zum Bewerten.",
   "tutorialRatingBinaryHint": "Die obere Idee erhält eine höhere Punktzahl. Tippe auf [swap], um deine bevorzugte Idee nach oben zu setzen, dann [check] zum Bestätigen.",
   "tutorialRatingPositioningHint": "Platziere jede Idee auf der Skala. Verwende [up] [down] zum Verschieben, dann [check] zum Bestätigen.",
@@ -1258,7 +1260,7 @@
   "chatTourMessageTitle": "Diskussionsfrage",
   "chatTourMessageDesc": "Das ist die Frage, die diskutiert wird. Alle reichen Ideen als Antwort ein.",
   "chatTourProposingTitle": "Ideen Einreichen",
-  "chatTourProposingDesc": "Hier reichst du Ideen ein. In jeder Runde schlägt jeder eine Idee vor und dann bewerten alle die Ideen der anderen.",
+  "chatTourProposingDesc": "Hier reichst du Ideen ein, bevor die Zeit abläuft. In jeder Runde schlagen alle vor und bewerten dann.",
   "chatTourParticipantsTitle": "Teilnehmer",
   "chatTourParticipantsDesc": "Lerne die Tutorial-Teilnehmer kennen: Alice, Bob und Carol. Tippe hier, um zu sehen, wer im Chat ist.",
   "chatTourShareTitle": "Chat Teilen",

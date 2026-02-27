@@ -127,7 +127,7 @@ class MockHomeContent extends StatelessWidget {
                   const SizedBox(height: 8),
                   ChatDashboardCard(
                     name: l10n.appTitle,
-                    initialMessage: '...',
+                    initialMessage: 'What topic should we discuss next?',
                     onTap: () {},
                     participantCount: 12,
                     phase: RoundPhase.proposing,

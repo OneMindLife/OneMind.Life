@@ -3159,8 +3159,20 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialWonTwoRounds.
   ///
   /// In en, this message translates to:
-  /// **'\"{proposition}\" won 2 rounds in a row.'**
+  /// **'\"{proposition}\" won 2 rounds in a row, so it gets added permanently to the chat.'**
   String tutorialWonTwoRounds(String proposition);
+
+  /// No description provided for @tutorialProcessContinuesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Process Continues'**
+  String get tutorialProcessContinuesTitle;
+
+  /// No description provided for @tutorialProcessContinuesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Now the group works toward its next convergence.'**
+  String get tutorialProcessContinuesDesc;
 
   /// No description provided for @tutorialAddedToChat.
   ///
@@ -3207,7 +3219,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingPhaseExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Everyone has submitted. Now rate their ideas to pick a winner!'**
+  /// **'Everyone has submitted. Now rate their ideas to pick a winner before the timer runs out!'**
   String get tutorialRatingPhaseExplanation;
 
   /// No description provided for @tutorialRatingTimeRemaining.
@@ -4413,7 +4425,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatTourProposingDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other\'s ideas.'**
+  /// **'This is where you submit ideas before the timer runs out. Each round, everyone proposes and then rates.'**
   String get chatTourProposingDesc;
 
   /// No description provided for @chatTourParticipantsTitle.

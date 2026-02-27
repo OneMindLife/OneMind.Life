@@ -315,13 +315,17 @@ class TutorialData {
 
   // === ROUNDS ===
 
+  /// Tutorial timer: 5 minutes from now. If it expires, it just stays at 0.
+  static DateTime _tutorialDeadline() =>
+      DateTime.now().add(const Duration(minutes: 5));
+
   static Round round1({RoundPhase phase = RoundPhase.proposing}) => Round(
         id: -1,
         cycleId: -1,
         customId: 1,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: null, // No timer in tutorial
+        phaseEndsAt: _tutorialDeadline(),
         createdAt: DateTime.now(),
       );
 
@@ -331,7 +335,7 @@ class TutorialData {
         customId: 2,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: null, // No timer in tutorial
+        phaseEndsAt: _tutorialDeadline(),
         createdAt: DateTime.now(),
       );
 
@@ -341,7 +345,7 @@ class TutorialData {
         customId: 3,
         phase: phase,
         phaseStartedAt: DateTime.now(),
-        phaseEndsAt: null, // No timer in tutorial
+        phaseEndsAt: _tutorialDeadline(),
         createdAt: DateTime.now(),
       );
 

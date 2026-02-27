@@ -270,11 +270,33 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
 
   // === COMPLETION ===
 
+  /// Move to convergence continue (explains process continues)
+  /// Sets round to a new proposing phase so the bottom area shows a text field.
+  void continueToConvergenceContinue() {
+    print('[TUTORIAL] continueToConvergenceContinue() called, current step: ${state.currentStep}');
+    state = state.copyWith(
+      currentStep: TutorialStep.convergenceContinue,
+      currentRound: Round(
+        id: -4,
+        cycleId: -1,
+        customId: 4,
+        phase: RoundPhase.proposing,
+        phaseStartedAt: DateTime.now(),
+        phaseEndsAt: DateTime.now().add(const Duration(minutes: 5)),
+        createdAt: DateTime.now(),
+      ),
+      myPropositions: [],
+    );
+    print('[TUTORIAL] step is now: ${state.currentStep}');
+  }
+
   /// Move to share demo
   void continueToShareDemo() {
+    print('[TUTORIAL] continueToShareDemo() called, current step: ${state.currentStep}');
     state = state.copyWith(
       currentStep: TutorialStep.shareDemo,
     );
+    print('[TUTORIAL] step is now: ${state.currentStep}');
   }
 
   /// Complete the tutorial
@@ -298,6 +320,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
 
   /// Generic next step handler
   void nextStep() {
+    print('[TUTORIAL] nextStep() called, current step: ${state.currentStep}');
     switch (state.currentStep) {
       case TutorialStep.chatTourTitle:
       case TutorialStep.chatTourMessage:
@@ -318,6 +341,9 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         beginRound3Rating();
         break;
       case TutorialStep.round3Consensus:
+        continueToConvergenceContinue();
+        break;
+      case TutorialStep.convergenceContinue:
         continueToShareDemo();
         break;
       case TutorialStep.shareDemo:
@@ -412,6 +438,12 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
     );
   }
 
+  void continueToConvergenceContinue() {
+    state = state.copyWith(
+      currentStep: TutorialStep.convergenceContinue,
+    );
+  }
+
   void continueToShareDemo() {
     state = state.copyWith(
       currentStep: TutorialStep.shareDemo,
@@ -452,6 +484,9 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
         beginRound3Rating();
         break;
       case TutorialStep.round3Consensus:
+        continueToConvergenceContinue();
+        break;
+      case TutorialStep.convergenceContinue:
         continueToShareDemo();
         break;
       case TutorialStep.shareDemo:

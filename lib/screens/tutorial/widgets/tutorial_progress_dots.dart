@@ -34,12 +34,13 @@ class TutorialProgressDots extends StatelessWidget {
     TutorialStep.round3Proposing: 8,
     TutorialStep.round3Rating: 9,
     TutorialStep.round3Consensus: 10,
+    TutorialStep.convergenceContinue: 11,
     // Share demo and completion
-    TutorialStep.shareDemo: 11,
-    TutorialStep.complete: 12,
+    TutorialStep.shareDemo: 12,
+    TutorialStep.complete: 13,
   };
 
-  static const _totalSegments = 12;
+  static const _totalSegments = 13;
 
   /// Public accessor for total number of segments.
   static int get totalSegments => _totalSegments;

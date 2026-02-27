@@ -499,8 +499,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         state.currentStep == TutorialStep.complete;
 
     // End-tour steps: consensus + share demo use dimmed spotlight pattern
+    // convergenceContinue is an end-tour step but keeps everything fully visible
     final isEndTour = _isEndTourStep(state.currentStep);
-    final dimOpacity = isEndTour ? 0.25 : 1.0;
+    final dimOpacity = (isEndTour && state.currentStep != TutorialStep.convergenceContinue) ? 0.25 : 1.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -622,7 +623,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                         children: [
                           Center(
                             child: AnimatedOpacity(
-                              opacity: state.currentStep == TutorialStep.round3Consensus
+                              opacity: state.currentStep == TutorialStep.round3Consensus ||
+                                      state.currentStep == TutorialStep.convergenceContinue
                                   ? 1.0
                                   : dimOpacity,
                               duration: const Duration(milliseconds: 250),
@@ -636,7 +638,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                           const SizedBox(height: 16),
                           ...state.consensusItems.asMap().entries.map((entry) {
                             final isSpotlighted =
-                                state.currentStep == TutorialStep.round3Consensus;
+                                state.currentStep == TutorialStep.round3Consensus ||
+                                state.currentStep == TutorialStep.convergenceContinue;
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.only(bottom: 16),
@@ -889,6 +892,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
                             myPropositions: const [],
                             propositionController: _propositionController,
                             onSubmit: () {},
+                            phaseEndsAt: TutorialData.round1().phaseEndsAt,
+                            onPhaseExpired: () {},
                           ),
                         ),
                       ),
@@ -1034,9 +1039,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     return step == TutorialStep.intro;
   }
 
-  /// Whether we're in the end-tour (consensus + share demo spotlight steps)
+  /// Whether we're in the end-tour (consensus + convergenceContinue + share demo spotlight steps)
   bool _isEndTourStep(TutorialStep step) {
     return step == TutorialStep.round3Consensus ||
+        step == TutorialStep.convergenceContinue ||
         step == TutorialStep.shareDemo;
   }
 
@@ -1050,7 +1056,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
 
     double newTop;
 
-    if (state.currentStep == TutorialStep.round3Consensus) {
+    if (state.currentStep == TutorialStep.round3Consensus ||
+        state.currentStep == TutorialStep.convergenceContinue) {
       // Position right below the consensus card
       final consensusBox =
           _consensusCardKey.currentContext?.findRenderObject() as RenderBox?;
@@ -1078,11 +1085,11 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     }
   }
 
-  /// Build the TourTooltipCard for consensus / share demo steps
+  /// Build the TourTooltipCard for consensus / convergenceContinue / share demo steps
   Widget _buildEndTourTooltip(TutorialChatState state) {
+    print('[TUTORIAL] _buildEndTourTooltip called with step: ${state.currentStep}');
     final l10n = AppLocalizations.of(context);
     final notifier = ref.read(tutorialChatNotifierProvider.notifier);
-    final isConsensus = state.currentStep == TutorialStep.round3Consensus;
     final userProp = state.userProposition2 ?? l10n.tutorialYourIdea;
 
     final String title;
@@ -1091,20 +1098,46 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     final VoidCallback onNext;
     final String nextLabel;
 
-    if (isConsensus) {
+    if (state.currentStep == TutorialStep.round3Consensus) {
       title = l10n.tutorialConsensusReached;
       description = l10n.tutorialWonTwoRounds(userProp);
       stepIndex = 0;
+      onNext = () => notifier.continueToConvergenceContinue();
+      nextLabel = l10n.continue_;
+    } else if (state.currentStep == TutorialStep.convergenceContinue) {
+      title = l10n.tutorialProcessContinuesTitle;
+      description = l10n.tutorialProcessContinuesDesc;
+      stepIndex = 1;
       onNext = () => notifier.continueToShareDemo();
       nextLabel = l10n.continue_;
     } else {
       // shareDemo — "Continue" advances; share icon opens QR dialog
       title = l10n.tutorialShareTitle;
       description = l10n.tutorialShareExplanation;
-      stepIndex = 1;
+      stepIndex = 2;
       onNext = () =>
           ref.read(tutorialChatNotifierProvider.notifier).completeTutorial();
       nextLabel = l10n.continue_;
+    }
+
+    // convergenceContinue: anchor above the bottom text field area
+    if (state.currentStep == TutorialStep.convergenceContinue) {
+      return Positioned(
+        left: 16,
+        right: 16,
+        bottom: 8,
+        child: TourTooltipCard(
+          title: title,
+          description: description,
+          onNext: onNext,
+          onSkip: _handleSkip,
+          stepIndex: stepIndex,
+          totalSteps: 3,
+          nextLabel: nextLabel,
+          skipLabel: l10n.homeTourSkip,
+          stepOfLabel: l10n.homeTourStepOf(stepIndex + 1, 3),
+        ),
+      );
     }
 
     return Positioned(
@@ -1117,10 +1150,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         onNext: onNext,
         onSkip: _handleSkip,
         stepIndex: stepIndex,
-        totalSteps: 2,
+        totalSteps: 3,
         nextLabel: nextLabel,
         skipLabel: l10n.homeTourSkip,
-        stepOfLabel: l10n.homeTourStepOf(stepIndex + 1, 2),
+        stepOfLabel: l10n.homeTourStepOf(stepIndex + 1, 3),
       ),
     );
   }
@@ -1235,7 +1268,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
         mainAxisSize: MainAxisSize.min,
         children: [
           // Inline emerging idea card (during proposing when a winner exists)
-          if (hasPreviousWinner && isProposing)
+          // Hide during end-tour steps (convergenceContinue, shareDemo, complete)
+          if (hasPreviousWinner && isProposing &&
+              !_isEndTourStep(state.currentStep))
             _buildTutorialWinnerPanel(state),
 
           // Current phase panel (always visible — textfield or rate button)

@@ -1007,12 +1007,14 @@
   "tutorialStartButton": "Commencer le Tutoriel",
   "tutorialSkipButton": "Passer le tutoriel",
   "tutorialConsensusReached": "Convergence Atteinte!",
-  "tutorialWonTwoRounds": "\"{proposition}\" a gagne 2 tours d'affilee.",
+  "tutorialWonTwoRounds": "\"{proposition}\" a gagne 2 tours d'affilee, donc elle est ajoutee definitivement au chat.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
+  "tutorialProcessContinuesTitle": "Le processus continue",
+  "tutorialProcessContinuesDesc": "Le groupe travaille maintenant vers sa prochaine convergence.",
   "tutorialAddedToChat": "Vous avez egalement ete automatiquement ajoute au chat Officiel OneMind, ou tout le monde discute de sujets ensemble.",
   "tutorialFinishButton": "Terminer le Tutoriel",
   "tutorialRound1Result": "'Succès' a gagné le Tour 1 !",
@@ -1020,7 +1022,7 @@
   "tutorialTimeRemaining": "Il vous reste {time}.",
   "tutorialProposingHintWithWinner": "Soumettez une nouvelle idée pour concurrencer le gagnant du tour précédent.",
   "tutorialRatingHint": "Évaluez maintenant les idées de tous. L'idée la mieux notée remporte le tour.",
-  "tutorialRatingPhaseExplanation": "Tout le monde a soumis. Évaluez maintenant leurs idées pour choisir un gagnant !",
+  "tutorialRatingPhaseExplanation": "Tout le monde a soumis. Évaluez maintenant leurs idées pour choisir un gagnant avant la fin du chronomètre !",
   "tutorialRatingTimeRemaining": "Il vous reste {time} pour évaluer.",
   "tutorialRatingBinaryHint": "L'idée du haut obtient un score plus élevé. Appuyez sur [swap] pour mettre votre idée préférée en haut, puis [check] pour confirmer.",
   "tutorialRatingPositioningHint": "Placez chaque idée sur l'échelle. Utilisez [up] [down] pour déplacer, puis [check] pour confirmer.",
@@ -1257,7 +1259,7 @@
   "chatTourMessageTitle": "Question de Discussion",
   "chatTourMessageDesc": "C'est la question en cours de discussion. Tout le monde soumet des idees en reponse.",
   "chatTourProposingTitle": "Soumettre des Idees",
-  "chatTourProposingDesc": "C'est ici que vous soumettez des idées. À chaque tour, chacun propose une idée puis tout le monde évalue les idées des autres.",
+  "chatTourProposingDesc": "C'est ici que vous soumettez des idées avant la fin du chronomètre. À chaque tour, tout le monde propose puis évalue.",
   "chatTourParticipantsTitle": "Participants",
   "chatTourParticipantsDesc": "Rencontrez les participants du tutoriel : Alice, Bob et Carol. Appuyez ici pour voir qui est dans le chat.",
   "chatTourShareTitle": "Partager le Chat",

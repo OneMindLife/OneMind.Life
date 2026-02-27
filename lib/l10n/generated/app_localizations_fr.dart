@@ -1760,8 +1760,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String tutorialWonTwoRounds(String proposition) {
-    return '\"$proposition\" a gagne 2 tours d\'affilee.';
+    return '\"$proposition\" a gagne 2 tours d\'affilee, donc elle est ajoutee definitivement au chat.';
   }
+
+  @override
+  String get tutorialProcessContinuesTitle => 'Le processus continue';
+
+  @override
+  String get tutorialProcessContinuesDesc =>
+      'Le groupe travaille maintenant vers sa prochaine convergence.';
 
   @override
   String get tutorialAddedToChat =>
@@ -1792,7 +1799,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get tutorialRatingPhaseExplanation =>
-      'Tout le monde a soumis. Évaluez maintenant leurs idées pour choisir un gagnant !';
+      'Tout le monde a soumis. Évaluez maintenant leurs idées pour choisir un gagnant avant la fin du chronomètre !';
 
   @override
   String tutorialRatingTimeRemaining(String time) {
@@ -2477,7 +2484,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatTourProposingDesc =>
-      'C\'est ici que vous soumettez des idées. À chaque tour, chacun propose une idée puis tout le monde évalue les idées des autres.';
+      'C\'est ici que vous soumettez des idées avant la fin du chronomètre. À chaque tour, tout le monde propose puis évalue.';
 
   @override
   String get chatTourParticipantsTitle => 'Participants';

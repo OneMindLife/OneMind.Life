@@ -1007,12 +1007,14 @@
   "tutorialStartButton": "Iniciar Tutorial",
   "tutorialSkipButton": "Pular tutorial",
   "tutorialConsensusReached": "Convergencia Alcancada!",
-  "tutorialWonTwoRounds": "\"{proposition}\" venceu 2 rodadas seguidas.",
+  "tutorialWonTwoRounds": "\"{proposition}\" venceu 2 rodadas seguidas, entao e adicionada permanentemente ao chat.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
+  "tutorialProcessContinuesTitle": "O processo continua",
+  "tutorialProcessContinuesDesc": "Agora o grupo trabalha em direção à sua próxima convergência.",
   "tutorialAddedToChat": "Voce tambem foi adicionado automaticamente ao chat Oficial do OneMind, onde todos discutem topicos juntos.",
   "tutorialFinishButton": "Finalizar Tutorial",
   "tutorialRound1Result": "'Sucesso' venceu a Rodada 1!",
@@ -1020,7 +1022,7 @@
   "tutorialTimeRemaining": "Voce tem {time} restantes.",
   "tutorialProposingHintWithWinner": "Envie uma nova ideia para competir contra o vencedor da rodada anterior.",
   "tutorialRatingHint": "Agora avalie as ideias de todos. A ideia mais bem avaliada vence a rodada.",
-  "tutorialRatingPhaseExplanation": "Todos enviaram. Agora avalie as ideias para escolher um vencedor!",
+  "tutorialRatingPhaseExplanation": "Todos enviaram. Agora avalie as ideias para escolher um vencedor antes do tempo acabar!",
   "tutorialRatingTimeRemaining": "Você tem {time} para avaliar.",
   "tutorialRatingBinaryHint": "A ideia do topo pontua mais. Toque em [swap] para colocar sua ideia preferida no topo, depois [check] para confirmar.",
   "tutorialRatingPositioningHint": "Coloque cada ideia na escala. Use [up] [down] para mover, depois [check] para confirmar.",
@@ -1257,7 +1259,7 @@
   "chatTourMessageTitle": "Pergunta de Discussao",
   "chatTourMessageDesc": "Esta e a pergunta sendo discutida. Todos enviam ideias em resposta.",
   "chatTourProposingTitle": "Enviar Ideias",
-  "chatTourProposingDesc": "É aqui que você envia ideias. Em cada rodada, todos propõem uma ideia e depois todos avaliam as ideias uns dos outros.",
+  "chatTourProposingDesc": "É aqui que você envia ideias antes do tempo acabar. Em cada rodada, todos propõem e depois avaliam.",
   "chatTourParticipantsTitle": "Participantes",
   "chatTourParticipantsDesc": "Conheca os participantes do tutorial: Alice, Bob e Carol. Toque aqui para ver quem esta no chat.",
   "chatTourShareTitle": "Compartilhar Chat",

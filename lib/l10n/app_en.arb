@@ -965,12 +965,14 @@
   "tutorialStartButton": "Start Tutorial",
   "tutorialSkipButton": "Skip tutorial",
   "tutorialConsensusReached": "Convergence Reached!",
-  "tutorialWonTwoRounds": "\"{proposition}\" won 2 rounds in a row.",
+  "tutorialWonTwoRounds": "\"{proposition}\" won 2 rounds in a row, so it gets added permanently to the chat.",
   "@tutorialWonTwoRounds": {
     "placeholders": {
       "proposition": {"type": "String"}
     }
   },
+  "tutorialProcessContinuesTitle": "The Process Continues",
+  "tutorialProcessContinuesDesc": "Now the group works toward its next convergence.",
   "tutorialAddedToChat": "You've also been automatically added to the Official OneMind chat, where everyone discusses topics together.",
   "tutorialFinishButton": "Finish Tutorial",
   "tutorialRound1Result": "'Success' won Round 1!",
@@ -983,7 +985,7 @@
   },
   "tutorialProposingHintWithWinner": "Submit a new idea to compete against last round's winner.",
   "tutorialRatingHint": "Now rate everyone's ideas. The highest-rated idea wins the round.",
-  "tutorialRatingPhaseExplanation": "Everyone has submitted. Now rate their ideas to pick a winner!",
+  "tutorialRatingPhaseExplanation": "Everyone has submitted. Now rate their ideas to pick a winner before the timer runs out!",
   "tutorialRatingTimeRemaining": "You have {time} left to rate.",
   "@tutorialRatingTimeRemaining": {
     "placeholders": {
@@ -1297,7 +1299,7 @@
   "chatTourMessageTitle": "Discussion Question",
   "chatTourMessageDesc": "This is the question being discussed. Everyone submits ideas in response.",
   "chatTourProposingTitle": "Submit Ideas",
-  "chatTourProposingDesc": "This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other's ideas.",
+  "chatTourProposingDesc": "This is where you submit ideas before the timer runs out. Each round, everyone proposes and then rates.",
   "chatTourParticipantsTitle": "Participants",
   "chatTourParticipantsDesc": "Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who's in the chat.",
   "chatTourShareTitle": "Share Chat",

@@ -29,6 +29,9 @@ enum TutorialStep {
   round3Rating,
   round3Consensus,
 
+  // Post-convergence
+  convergenceContinue,
+
   // Completion
   shareDemo,
   complete,

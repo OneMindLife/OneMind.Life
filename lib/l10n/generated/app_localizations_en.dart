@@ -1734,8 +1734,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String tutorialWonTwoRounds(String proposition) {
-    return '\"$proposition\" won 2 rounds in a row.';
+    return '\"$proposition\" won 2 rounds in a row, so it gets added permanently to the chat.';
   }
+
+  @override
+  String get tutorialProcessContinuesTitle => 'The Process Continues';
+
+  @override
+  String get tutorialProcessContinuesDesc =>
+      'Now the group works toward its next convergence.';
 
   @override
   String get tutorialAddedToChat =>
@@ -1766,7 +1773,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tutorialRatingPhaseExplanation =>
-      'Everyone has submitted. Now rate their ideas to pick a winner!';
+      'Everyone has submitted. Now rate their ideas to pick a winner before the timer runs out!';
 
   @override
   String tutorialRatingTimeRemaining(String time) {
@@ -2449,7 +2456,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chatTourProposingDesc =>
-      'This is where you submit ideas. Each round, everyone proposes an idea and then everyone rates each other\'s ideas.';
+      'This is where you submit ideas before the timer runs out. Each round, everyone proposes and then rates.';
 
   @override
   String get chatTourParticipantsTitle => 'Participants';
