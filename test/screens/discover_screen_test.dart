@@ -55,6 +55,9 @@ class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   Future<void> cancelRequest(int requestId) async {}
 
   @override
+  void addPendingRequest(JoinRequest request) {}
+
+  @override
   Stream<Chat> get approvedChatStream => const Stream.empty();
 
   @override

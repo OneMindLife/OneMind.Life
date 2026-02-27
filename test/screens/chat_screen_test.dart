@@ -66,6 +66,9 @@ class FakeMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   @override
   Future<void> cancelRequest(int requestId) async {}
 
+  @override
+  void addPendingRequest(JoinRequest request) {}
+
   // Stream for approved chats - no-op for tests
   @override
   Stream<Chat> get approvedChatStream => const Stream.empty();
