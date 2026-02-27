@@ -1280,15 +1280,42 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     final currentState = state.valueOrNull;
     if (currentState == null) return;
 
-    // Optimistic update
+    // Find the request being approved so we can build an optimistic participant
+    final request = currentState.pendingJoinRequests
+        .cast<Map<String, dynamic>?>()
+        .firstWhere((r) => r?['id'] == requestId, orElse: () => null);
+
+    // Optimistic update: remove request + add participant
+    final updatedRequests = currentState.pendingJoinRequests
+        .where((r) => r['id'] != requestId)
+        .toList();
+
+    var updatedParticipants = currentState.participants;
+    if (request != null) {
+      updatedParticipants = [
+        ...currentState.participants,
+        Participant(
+          id: -1, // Temporary; next refresh will reconcile
+          chatId: chatId,
+          userId: request['user_id'] as String?,
+          displayName: request['display_name'] as String? ?? '',
+          isHost: false,
+          isAuthenticated: request['is_authenticated'] as bool? ?? true,
+          status: ParticipantStatus.active,
+          createdAt: DateTime.now(),
+        ),
+      ];
+    }
+
     state = AsyncData(currentState.copyWith(
-      pendingJoinRequests: currentState.pendingJoinRequests
-          .where((r) => r['id'] != requestId)
-          .toList(),
+      pendingJoinRequests: updatedRequests,
+      participants: updatedParticipants,
     ));
 
     try {
       await _participantService.approveRequest(requestId);
+      // Schedule a refresh to reconcile with server state
+      _scheduleRefresh();
     } catch (_) {
       // Revert on failure
       state = AsyncData(currentState);

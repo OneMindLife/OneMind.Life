@@ -103,7 +103,7 @@ class DurationDropdown extends StatelessWidget {
             // Minimum 60s due to cron job granularity (runs every minute)
             (60, l10n.duration1min),
             (120, l10n.duration2min),
-            (300, l10n.preset5min),
+            (120, l10n.duration2min),
             (600, l10n.duration10min),
             (1800, l10n.preset30min),
             (3600, l10n.preset1hour),
@@ -222,8 +222,8 @@ class SettingTile extends StatelessWidget {
 /// Returns a human-readable label for a timer preset key.
 String formatPresetLabel(String preset, AppLocalizations l10n) {
   switch (preset) {
-    case '5min':
-      return l10n.preset5min;
+    case '2min':
+      return l10n.duration2min;
     case '30min':
       return l10n.preset30min;
     case '1hour':
@@ -262,7 +262,7 @@ class TimerPresets extends StatefulWidget {
   final void Function(String preset, int duration) onChanged;
 
   static const Map<String, int> presets = {
-    '5min': 300,
+    '2min': 120,
     '30min': 1800,
     '1hour': 3600,
     '1day': 86400,
@@ -293,7 +293,7 @@ class _TimerPresetsState extends State<TimerPresets> {
 
   void _initControllers() {
     // Initialize from customDuration if available
-    final duration = widget.customDuration ?? 300; // Default 5 min
+    final duration = widget.customDuration ?? 120; // Default 2 min
     final hours = duration ~/ 3600;
     final minutes = (duration % 3600) ~/ 60;
     _hoursController = TextEditingController(text: hours.toString());
@@ -326,8 +326,8 @@ class _TimerPresetsState extends State<TimerPresets> {
 
   String _formatPreset(String preset, AppLocalizations l10n) {
     switch (preset) {
-      case '5min':
-        return l10n.preset5min;
+      case '2min':
+        return l10n.duration2min;
       case '30min':
         return l10n.preset30min;
       case '1hour':

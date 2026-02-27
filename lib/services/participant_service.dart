@@ -15,7 +15,7 @@ class ParticipantService {
         .select()
         .eq('chat_id', chatId)
         .eq('status', 'active')
-        .order('created_at');
+        .order('display_name');
 
     return (response as List).map((json) => Participant.fromJson(json)).toList();
   }
@@ -187,7 +187,7 @@ class ParticipantService {
         .from('join_requests')
         .select('''
           *,
-          chats!inner(name, initial_message)
+          chats(name, initial_message)
         ''')
         .eq('user_id', userId)
         .eq('status', 'pending')

@@ -47,13 +47,13 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   final int _autoStartCount = 3;
   final bool _enableSchedule = false;
 
-  // Timer settings - default to 5 minutes
+  // Timer settings - default to 2 minutes
   state.TimerSettings _timerSettings = const state.TimerSettings(
     useSameDuration: true,
-    proposingPreset: '5min',
-    ratingPreset: '5min',
-    proposingDuration: 300,
-    ratingDuration: 300,
+    proposingPreset: '2min',
+    ratingPreset: '2min',
+    proposingDuration: 120,
+    ratingDuration: 120,
   );
 
   // Other settings with defaults

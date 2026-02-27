@@ -350,6 +350,17 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     }
   }
 
+  /// Optimistically add a pending join request to local state.
+  /// The next DB refresh will reconcile with the server.
+  void addPendingRequest(JoinRequest request) {
+    final currentState = state.valueOrNull;
+    if (currentState == null) return;
+
+    state = AsyncData(currentState.copyWith(
+      pendingRequests: [request, ...currentState.pendingRequests],
+    ));
+  }
+
   /// Remove a chat from local state (optimistic update after leaving)
   void removeChat(int chatId) {
     final currentState = state.valueOrNull;

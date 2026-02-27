@@ -468,10 +468,11 @@ class ProposingStatePanel extends StatelessWidget {
                   valueListenable: propositionController,
                   builder: (context, value, child) {
                     final textEmpty = value.text.trim().isEmpty;
+                    // Show skip icon in real chats when text is empty
+                    // Tutorial doesn't pass onSkip, so it stays as disabled submit
                     final showSkip = textEmpty &&
-                        canSkip &&
+                        onSkip != null &&
                         newSubmissions == 0 &&
-                        maxSkips > 0 &&
                         !isTaskResultMode;
                     return SizedBox(
                       width: 48,
@@ -483,7 +484,7 @@ class ProposingStatePanel extends StatelessWidget {
                         onPressed: isPaused || isSubmitting
                             ? null
                             : showSkip
-                                ? onSkip
+                                ? (canSkip ? onSkip : null)
                                 : textEmpty
                                     ? null
                                     : onSubmit,
@@ -496,7 +497,7 @@ class ProposingStatePanel extends StatelessWidget {
                               )
                             : Icon(
                                 showSkip
-                                    ? Icons.close
+                                    ? Icons.skip_next
                                     : Icons.send_rounded,
                                 size: 22,
                               ),

@@ -1313,8 +1313,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           onViewAllPropositions: isHost ? () => _showAllPropositionsSheet(state) : null,
           isPaused: chat.isPaused,
           isSubmitting: _isSubmitting || _isSkipping,
-          // Skip feature
-          onSkip: state.canSkip ? _skipProposing : null,
+          // Skip feature - always pass callback; panel controls enabled state via canSkip
+          onSkip: _skipProposing,
           canSkip: state.canSkip,
           skipCount: state.skipCount,
           maxSkips: state.maxSkips,

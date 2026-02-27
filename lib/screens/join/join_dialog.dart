@@ -13,7 +13,10 @@ import '../../widgets/error_view.dart';
 class JoinDialog extends ConsumerStatefulWidget {
   final void Function(Chat chat) onJoined;
 
-  const JoinDialog({super.key, required this.onJoined});
+  /// If provided, skip Stage 1 (code entry) and open directly at Stage 2.
+  final Chat? preloadedChat;
+
+  const JoinDialog({super.key, required this.onJoined, this.preloadedChat});
 
   @override
   ConsumerState<JoinDialog> createState() => _JoinDialogState();
@@ -27,6 +30,29 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
   Chat? _foundChat;
   bool _isInviteOnly = false;
   String? _validatedInviteToken;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.preloadedChat != null) {
+      _foundChat = widget.preloadedChat;
+      // Check invite-only status asynchronously
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadInviteOnlyStatus());
+    }
+  }
+
+  Future<void> _loadInviteOnlyStatus() async {
+    if (_foundChat == null) return;
+    try {
+      final inviteService = ref.read(inviteServiceProvider);
+      final inviteOnly = await inviteService.isInviteOnly(_foundChat!.id);
+      if (mounted) {
+        setState(() => _isInviteOnly = inviteOnly);
+      }
+    } catch (_) {
+      // Non-critical — default is false (not invite-only)
+    }
+  }
 
   @override
   void dispose() {
@@ -174,7 +200,8 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
         );
 
         if (mounted) {
-          Navigator.pop(context);
+          // Pop with the chat so callers can do an optimistic update
+          Navigator.pop(context, _foundChat);
           context.showInfoSnackBar(l10n.joinRequestSent);
         }
       } else {
