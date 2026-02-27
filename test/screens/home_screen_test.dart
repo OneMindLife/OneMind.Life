@@ -313,17 +313,24 @@ void main() {
         expect(find.text('No matching chats'), findsOneWidget);
       });
 
-      testWidgets('typing 6-char code shows invite code banner', (tester) async {
+      testWidgets('typing 6-char code triggers invite code lookup', (tester) async {
+        // Mock getChatByCode to return null (code not found)
+        when(() => mockChatService.getChatByCode(
+              any(),
+              languageCode: any(named: 'languageCode'),
+            )).thenAnswer((_) async => null);
+
         await tester.pumpWidget(createTestWidget(chats: []));
         await tester.pumpAndSettle();
 
-        // Type a 6-character alphanumeric code
-        await tester.enterText(find.byType(TextField), 'ABC123');
+        // Type a 6-character alphanumeric code (NOT 'ABC123' which is the
+        // tutorial demo invite code and triggers a different UI path)
+        await tester.enterText(find.byType(TextField), 'XYZ789');
         await tester.pumpAndSettle();
 
-        // Should show invite code banner
-        expect(find.textContaining('Join with invite code'), findsOneWidget);
-        expect(find.byIcon(Icons.vpn_key), findsOneWidget);
+        // Should show "Chat not found" error after auto-lookup
+        expect(find.text('Chat not found'), findsOneWidget);
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
       });
     });
 

@@ -526,8 +526,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show proposing panel elements - submit button
-        expect(find.byKey(const Key('submit-proposition-button')), findsOneWidget);
+        // Should show proposing panel elements - skip button (shown when text field is empty)
+        expect(find.byKey(const Key('skip-proposing-button')), findsOneWidget);
       });
 
       testWidgets('shows text field for proposition input', (tester) async {

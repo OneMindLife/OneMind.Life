@@ -170,7 +170,7 @@ void main() {
       expect(find.text('Phase Duration'), findsOneWidget);
       expect(find.text('Same duration for both phases'), findsOneWidget);
       // Timer presets appear once (unified duration)
-      expect(find.text('5 min'), findsWidgets);
+      expect(find.text('2 min'), findsWidgets);
       expect(find.text('1 day'), findsWidgets);
     });
   });

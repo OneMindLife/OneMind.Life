@@ -240,7 +240,7 @@ void main() {
       // Minimum is 60s (1 min) due to cron job granularity
       expect(find.text('1 min'), findsAtLeastNWidgets(1));
       expect(find.text('2 min'), findsAtLeastNWidgets(1));
-      expect(find.text('5 min'), findsAtLeastNWidgets(1));
+      expect(find.text('10 min'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows max duration options when isMin is false', (tester) async {
@@ -305,7 +305,7 @@ void main() {
       );
 
       expect(find.text('Timer'), findsOneWidget);
-      expect(find.text('5 min'), findsOneWidget);
+      expect(find.text('2 min'), findsOneWidget);
       expect(find.text('30 min'), findsOneWidget);
       expect(find.text('1 hour'), findsOneWidget);
       expect(find.text('1 day'), findsOneWidget);
@@ -357,13 +357,13 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('5 min'));
-      expect(selectedPreset, '5min');
-      expect(selectedDuration, 300);
+      await tester.tap(find.text('2 min'));
+      expect(selectedPreset, '2min');
+      expect(selectedDuration, 120);
     });
 
     test('presets map has correct values', () {
-      expect(TimerPresets.presets['5min'], 300);
+      expect(TimerPresets.presets['2min'], 120);
       expect(TimerPresets.presets['30min'], 1800);
       expect(TimerPresets.presets['1hour'], 3600);
       expect(TimerPresets.presets['1day'], 86400);

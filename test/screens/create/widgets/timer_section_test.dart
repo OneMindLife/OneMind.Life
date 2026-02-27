@@ -80,7 +80,7 @@ void main() {
       );
 
       // With separate timers, each preset section shows these options (max is 1 day now)
-      expect(find.text('5 min'), findsNWidgets(2));
+      expect(find.text('2 min'), findsNWidgets(2));
       expect(find.text('30 min'), findsNWidgets(2));
       expect(find.text('1 hour'), findsNWidgets(2));
       expect(find.text('1 day'), findsNWidgets(2));
@@ -104,13 +104,13 @@ void main() {
         ),
       );
 
-      // Tap the first '5 min' chip (proposing)
-      await tester.tap(find.text('5 min').first);
+      // Tap the first '2 min' chip (proposing)
+      await tester.tap(find.text('2 min').first);
       await tester.pump();
 
       expect(updatedSettings, isNotNull);
-      expect(updatedSettings!.proposingPreset, '5min');
-      expect(updatedSettings!.proposingDuration, 300);
+      expect(updatedSettings!.proposingPreset, '2min');
+      expect(updatedSettings!.proposingDuration, 120);
     });
 
     testWidgets('calls onChanged when rating preset selected', (tester) async {
