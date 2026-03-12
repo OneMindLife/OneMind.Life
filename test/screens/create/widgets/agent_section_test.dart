@@ -47,7 +47,7 @@ void main() {
       ));
 
       expect(find.text('How many agents?'), findsNothing);
-      expect(find.text('Customize each agent separately?'), findsNothing);
+      expect(find.text('Customize agents?'), findsNothing);
     });
 
     testWidgets('shows agent settings when enabled', (tester) async {
@@ -58,12 +58,13 @@ void main() {
         ),
       ));
 
-      expect(find.text('How many agents?'), findsOneWidget);
-      expect(find.text('Customize each agent separately?'), findsOneWidget);
       expect(find.text('Should agents also rate?'), findsOneWidget);
+      expect(find.text('How many agents?'), findsOneWidget);
+      expect(find.text('Customize agents?'), findsOneWidget);
     });
 
-    testWidgets('shows shared instructions field by default', (tester) async {
+    testWidgets('does not show shared instructions when customizeAgents is off',
+        (tester) async {
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
           settings: AgentSettings.defaults().copyWith(enabled: true),
@@ -71,6 +72,27 @@ void main() {
         ),
       ));
 
+      // customizeAgents defaults to false, so no instructions field
+      expect(
+        find.byKey(const Key('agent_shared_instructions')),
+        findsNothing,
+      );
+      expect(find.text('Customize each agent separately?'), findsNothing);
+    });
+
+    testWidgets('shows shared instructions when customizeAgents is on',
+        (tester) async {
+      await tester.pumpWidget(_wrapWidget(
+        AgentSection(
+          settings: AgentSettings.defaults().copyWith(
+            enabled: true,
+            customizeAgents: true,
+          ),
+          onChanged: (_) {},
+        ),
+      ));
+
+      expect(find.text('Customize each agent separately?'), findsOneWidget);
       expect(
         find.byKey(const Key('agent_shared_instructions')),
         findsOneWidget,
@@ -83,6 +105,7 @@ void main() {
         AgentSection(
           settings: AgentSettings.defaults().copyWith(
             enabled: true,
+            customizeAgents: true,
             customizeIndividually: true,
           ),
           onChanged: (_) {},
@@ -186,7 +209,7 @@ void main() {
       expect(incrementButton.onPressed, isNull);
     });
 
-    testWidgets('shows agents also rate toggle when enabled',
+    testWidgets('shows correct question order when enabled',
         (tester) async {
       await tester.pumpWidget(_wrapWidget(
         AgentSection(
@@ -195,14 +218,18 @@ void main() {
         ),
       ));
 
+      // Find all Switches (no longer using SwitchListTile)
+      final switches = find.byType(Switch);
+      // Enable, Agents also rate, Customize agents = 3 switches
+      expect(switches, findsNWidgets(3));
+
+      // Verify question texts exist in correct order
+      expect(find.text('Start with AI agents?'), findsOneWidget);
       expect(find.text('Should agents also rate?'), findsOneWidget);
-      expect(
-        find.text('Yes, agents rate alongside humans'),
-        findsOneWidget,
-      );
+      expect(find.text('Customize agents?'), findsOneWidget);
     });
 
-    testWidgets('toggling agentsAlsoRate calls onChanged correctly',
+    testWidgets('toggling customizeAgents off resets customizeIndividually',
         (tester) async {
       AgentSettings? updated;
 
@@ -210,22 +237,26 @@ void main() {
         AgentSection(
           settings: AgentSettings.defaults().copyWith(
             enabled: true,
-            agentsAlsoRate: true,
+            customizeAgents: true,
+            customizeIndividually: true,
           ),
           onChanged: (v) => updated = v,
         ),
       ));
 
-      // "Should agents also rate?" is the 2nd switch (index 1)
+      // Tap the "Customize agents?" toggle to turn it off
+      // Find the Switch that corresponds to "Customize agents?"
       final switches = find.byType(Switch);
-      await tester.tap(switches.at(1));
+      // Order: Use AI agents?, Should agents also rate?, Customize agents?, Customize each agent separately?
+      await tester.tap(switches.at(2));
       await tester.pump();
 
       expect(updated, isNotNull);
-      expect(updated!.agentsAlsoRate, isFalse);
+      expect(updated!.customizeAgents, isFalse);
+      expect(updated!.customizeIndividually, isFalse);
     });
 
-    testWidgets('calls onChanged when toggling customizeIndividually',
+    testWidgets('calls onChanged when toggling customizeAgents',
         (tester) async {
       AgentSettings? updated;
 
@@ -236,9 +267,32 @@ void main() {
         ),
       ));
 
-      // "Customize each agent separately?" is the 3rd switch (index 2)
+      // "Customize agents?" is the 3rd switch (index 2)
       final switches = find.byType(Switch);
       await tester.tap(switches.at(2));
+      await tester.pump();
+
+      expect(updated, isNotNull);
+      expect(updated!.customizeAgents, isTrue);
+    });
+
+    testWidgets('calls onChanged when toggling customizeIndividually',
+        (tester) async {
+      AgentSettings? updated;
+
+      await tester.pumpWidget(_wrapWidget(
+        AgentSection(
+          settings: AgentSettings.defaults().copyWith(
+            enabled: true,
+            customizeAgents: true,
+          ),
+          onChanged: (v) => updated = v,
+        ),
+      ));
+
+      // "Customize each agent separately?" is the 4th switch (index 3)
+      final switches = find.byType(Switch);
+      await tester.tap(switches.at(3));
       await tester.pump();
 
       expect(updated, isNotNull);

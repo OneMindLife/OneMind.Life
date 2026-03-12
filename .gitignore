@@ -1,3 +1,6 @@
+# Binary archives
+*.tar.gz
+
 # Environment files
 .env
 .env.*

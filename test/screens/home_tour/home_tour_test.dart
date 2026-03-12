@@ -4,10 +4,10 @@ import 'package:onemind_app/screens/home_tour/notifiers/home_tour_notifier.dart'
 
 void main() {
   group('HomeTourStep', () {
-    test('has 9 steps before complete', () {
+    test('has 8 steps before complete', () {
       // All values except 'complete'
       final steps = HomeTourStep.values.where((s) => s != HomeTourStep.complete).toList();
-      expect(steps.length, 9);
+      expect(steps.length, 8);
     });
 
     test('steps are in correct order: body first, then app bar', () {
@@ -19,8 +19,7 @@ void main() {
         HomeTourStep.createFab,
         HomeTourStep.exploreButton,
         HomeTourStep.languageSelector,
-        HomeTourStep.howItWorks,
-        HomeTourStep.legalDocs,
+        HomeTourStep.menu,
         HomeTourStep.complete,
       ]);
     });
@@ -42,8 +41,8 @@ void main() {
       expect(state.totalSteps, HomeTourState.total);
     });
 
-    test('total is 9', () {
-      expect(HomeTourState.total, 9);
+    test('total is 8', () {
+      expect(HomeTourState.total, 8);
     });
 
     test('copyWith creates new instance with updated fields', () {
@@ -54,7 +53,7 @@ void main() {
       );
       expect(updated.currentStep, HomeTourStep.exploreButton);
       expect(updated.stepIndex, 5);
-      expect(updated.totalSteps, 9);
+      expect(updated.totalSteps, 8);
     });
   });
 
@@ -84,8 +83,7 @@ void main() {
         HomeTourStep.createFab,
         HomeTourStep.exploreButton,
         HomeTourStep.languageSelector,
-        HomeTourStep.howItWorks,
-        HomeTourStep.legalDocs,
+        HomeTourStep.menu,
         HomeTourStep.complete,
       ];
 
@@ -104,13 +102,13 @@ void main() {
       expect(notifier.state.stepIndex, 5);
     });
 
-    test('last step before complete is legalDocs', () {
-      // Advance 8 times to reach legalDocs
-      for (int i = 0; i < 8; i++) {
+    test('last step before complete is menu', () {
+      // Advance 7 times to reach menu
+      for (int i = 0; i < 7; i++) {
         notifier.nextStep();
       }
-      expect(notifier.state.currentStep, HomeTourStep.legalDocs);
-      expect(notifier.state.stepIndex, 8);
+      expect(notifier.state.currentStep, HomeTourStep.menu);
+      expect(notifier.state.stepIndex, 7);
 
       // One more advances to complete
       notifier.nextStep();

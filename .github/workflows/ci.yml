@@ -1,10 +1,13 @@
 name: CI
 
 on:
+  # Only run CI directly on PRs and develop branch
+  # Main branch CI runs via deploy.yml workflow_call (avoids duplicate runs)
   push:
-    branches: [main, develop]
+    branches: [develop]
   pull_request:
     branches: [main, develop]
+  workflow_call:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -29,18 +32,6 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Generate stub firebase_options.dart
-        run: |
-          cat > lib/firebase_options.dart << 'DART'
-          // Auto-generated stub for CI (real file is gitignored)
-          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-          class DefaultFirebaseOptions {
-            static FirebaseOptions get currentPlatform => const FirebaseOptions(
-              apiKey: 'stub', appId: 'stub', messagingSenderId: 'stub', projectId: 'stub',
-            );
-          }
-          DART
-
       - name: Analyze code
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
@@ -57,6 +48,9 @@ jobs:
             echo "Coverage report generated"
             # You can add coverage threshold checks here
           fi
+
+  # Note: Supabase SQL tests removed from CI due to Docker image availability issues
+  # Run locally with: supabase start && supabase test db
 
   # Edge Function Verification
   edge-functions:

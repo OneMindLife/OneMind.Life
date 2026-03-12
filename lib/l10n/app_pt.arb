@@ -963,7 +963,7 @@
   "inviteCodeAccess": "Código de Convite",
   "inviteOnlyAccess": "Somente por Convite",
 
-  "shareLinkTitle": "Compartilhar link para entrar em {chatName}",
+  "shareLinkTitle": "Qualquer pessoa com este link pode entrar em {chatName}",
   "@shareLinkTitle": {
     "placeholders": {
       "chatName": {"type": "String"}
@@ -1215,6 +1215,19 @@
   "wizardVisibilityPublicDesc": "Qualquer pessoa pode descobrir e entrar neste chat",
   "wizardVisibilityPrivateTitle": "Privado",
   "wizardVisibilityPrivateDesc": "Apenas pessoas com o codigo de convite podem entrar",
+  "wizardVisibilityPersonalCodeTitle": "Codigos Pessoais",
+  "wizardVisibilityPersonalCodeDesc": "Gere codigos unicos para cada pessoa. Cada codigo funciona uma vez.",
+  "personalCodes": "Codigos Pessoais",
+  "generateNewCode": "Gerar Novo Codigo",
+  "codeStatusActive": "Ativo",
+  "codeStatusUsed": "Usado",
+  "codeStatusRevoked": "Revogado",
+  "revokeCode": "Revogar",
+  "revokeCodeConfirm": "Revogar este codigo? Ele nao podera mais ser usado para entrar.",
+  "codeAlreadyUsed": "Este codigo ja foi usado.",
+  "noCodesYet": "Nenhum codigo ainda. Gere um para convidar alguem.",
+  "codeGenerated": "Codigo gerado!",
+  "codeRevoked": "Codigo revogado",
   "homeTourSearchBarTitle": "Pesquisar Seus Chats",
   "homeTourSearchBarDesc": "Filtre seus chats por nome, ou insira um codigo de convite de 6 caracteres para entrar em um chat privado.",
   "homeTourExploreButtonTitle": "Explorar Chats Publicos",

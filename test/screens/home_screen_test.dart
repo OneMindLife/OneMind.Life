@@ -194,6 +194,25 @@ void main() {
         expect(find.byIcon(Icons.explore), findsOneWidget);
       });
 
+      testWidgets('displays overflow menu with all items', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        // Overflow menu button should be visible
+        expect(find.byKey(const Key('overflow-menu')), findsOneWidget);
+        expect(find.byIcon(Icons.more_vert), findsOneWidget);
+
+        // Tap to open the menu
+        await tester.tap(find.byKey(const Key('overflow-menu')));
+        await tester.pumpAndSettle();
+
+        // All menu items should be visible
+        expect(find.text('How it works'), findsOneWidget);
+        expect(find.text('Contact'), findsOneWidget);
+        expect(find.text('Source Code'), findsOneWidget);
+        expect(find.text('Legal'), findsOneWidget);
+      });
+
       testWidgets('displays Create Chat FAB', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();

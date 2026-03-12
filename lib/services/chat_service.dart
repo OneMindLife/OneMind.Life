@@ -382,6 +382,9 @@ class ChatService {
       case AccessMethod.code:
         accessMethodString = 'code';
         break;
+      case AccessMethod.personalCode:
+        accessMethodString = 'personal_code';
+        break;
     }
 
     final insertData = <String, dynamic>{

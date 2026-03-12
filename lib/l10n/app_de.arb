@@ -964,7 +964,7 @@
   "inviteCodeAccess": "Einladungscode",
   "inviteOnlyAccess": "Nur auf Einladung",
 
-  "shareLinkTitle": "Link teilen, um {chatName} beizutreten",
+  "shareLinkTitle": "Jeder mit diesem Link kann {chatName} beitreten",
   "@shareLinkTitle": {
     "placeholders": {
       "chatName": {"type": "String"}
@@ -1216,6 +1216,19 @@
   "wizardVisibilityPublicDesc": "Jeder kann diesen Chat entdecken und beitreten",
   "wizardVisibilityPrivateTitle": "Privat",
   "wizardVisibilityPrivateDesc": "Nur Personen mit dem Einladungscode koennen beitreten",
+  "wizardVisibilityPersonalCodeTitle": "Persoenliche Codes",
+  "wizardVisibilityPersonalCodeDesc": "Erstelle einzigartige Codes fuer jede Person. Jeder Code funktioniert einmal.",
+  "personalCodes": "Persoenliche Codes",
+  "generateNewCode": "Neuen Code Erstellen",
+  "codeStatusActive": "Aktiv",
+  "codeStatusUsed": "Benutzt",
+  "codeStatusRevoked": "Widerrufen",
+  "revokeCode": "Widerrufen",
+  "revokeCodeConfirm": "Diesen Code widerrufen? Er kann nicht mehr zum Beitreten verwendet werden.",
+  "codeAlreadyUsed": "Dieser Code wurde bereits verwendet.",
+  "noCodesYet": "Noch keine Codes. Erstelle einen, um jemanden einzuladen.",
+  "codeGenerated": "Code erstellt!",
+  "codeRevoked": "Code widerrufen",
   "homeTourSearchBarTitle": "Deine Chats Suchen",
   "homeTourSearchBarDesc": "Filtere deine Chats nach Name, oder gib einen 6-stelligen Einladungscode ein, um einem privaten Chat beizutreten.",
   "homeTourExploreButtonTitle": "Oeffentliche Chats Entdecken",

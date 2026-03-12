@@ -75,6 +75,12 @@ final inviteServiceProvider = Provider<InviteService>((ref) {
   return InviteService(client);
 });
 
+/// Personal code service provider
+final personalCodeServiceProvider = Provider<PersonalCodeService>((ref) {
+  final client = ref.watch(supabaseProvider);
+  return PersonalCodeService(client);
+});
+
 /// Billing service provider
 /// Note: Requires OAuth authentication (Google/Magic Link), not anonymous auth.
 /// Methods will return null/empty if user is not authenticated via OAuth.

@@ -963,7 +963,7 @@
   "inviteCodeAccess": "Código de Invitación",
   "inviteOnlyAccess": "Solo por Invitación",
 
-  "shareLinkTitle": "Compartir enlace para unirse a {chatName}",
+  "shareLinkTitle": "Cualquier persona con este enlace puede unirse a {chatName}",
   "@shareLinkTitle": {
     "placeholders": {
       "chatName": {"type": "String"}
@@ -1215,6 +1215,19 @@
   "wizardVisibilityPublicDesc": "Cualquiera puede descubrir y unirse a este chat",
   "wizardVisibilityPrivateTitle": "Privado",
   "wizardVisibilityPrivateDesc": "Solo las personas con el codigo de invitacion pueden unirse",
+  "wizardVisibilityPersonalCodeTitle": "Codigos Personales",
+  "wizardVisibilityPersonalCodeDesc": "Genera codigos unicos para cada persona. Cada codigo funciona una sola vez.",
+  "personalCodes": "Codigos Personales",
+  "generateNewCode": "Generar Nuevo Codigo",
+  "codeStatusActive": "Activo",
+  "codeStatusUsed": "Usado",
+  "codeStatusRevoked": "Revocado",
+  "revokeCode": "Revocar",
+  "revokeCodeConfirm": "Revocar este codigo? Ya no podra usarse para unirse.",
+  "codeAlreadyUsed": "Este codigo ya ha sido usado.",
+  "noCodesYet": "Aun no hay codigos. Genera uno para invitar a alguien.",
+  "codeGenerated": "Codigo generado!",
+  "codeRevoked": "Codigo revocado",
   "homeTourSearchBarTitle": "Buscar Tus Chats",
   "homeTourSearchBarDesc": "Filtra tus chats por nombre, o ingresa un codigo de invitacion de 6 caracteres para unirte a un chat privado.",
   "homeTourExploreButtonTitle": "Explorar Chats Publicos",

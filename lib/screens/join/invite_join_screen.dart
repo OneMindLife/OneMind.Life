@@ -41,6 +41,9 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
   // Code-based lookup data
   Chat? _foundChat;
 
+  // Personal code flag — when true, join via redeem_personal_code
+  bool _isPersonalCode = false;
+
   @override
   void initState() {
     super.initState();
@@ -156,6 +159,16 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         return;
       }
 
+      // Personal code chats: set flag for direct redemption
+      if (chat.accessMethod == AccessMethod.personalCode) {
+        setState(() {
+          _foundChat = chat;
+          _isPersonalCode = true;
+          _isLoading = false;
+        });
+        return;
+      }
+
       // For invite-only chats accessed via code URL, redirect to home
       // since they need to enter their email to validate access
       final inviteOnly = await inviteService.isInviteOnly(chat.id);
@@ -212,6 +225,39 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
 
       // Get the invite token (only set for token-based invites)
       final inviteToken = widget.token;
+
+      // Personal code: redeem directly, no approval
+      if (_isPersonalCode && widget.code != null) {
+        final personalCodeService = ref.read(personalCodeServiceProvider);
+        final result = await personalCodeService.redeemCode(
+          code: widget.code!,
+          displayName: name,
+        );
+
+        // Refresh chat list
+        ref.read(myChatsProvider.notifier).refresh();
+
+        // Log analytics
+        ref.read(analyticsServiceProvider).logChatJoined(
+          chatId: (result['chat_id'] as int).toString(),
+          joinMethod: 'personal_code',
+        );
+
+        // Get full chat for navigation
+        final chat = _foundChat ?? await chatService.getChatById(result['chat_id'] as int);
+
+        if (mounted && chat != null) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ChatScreen(chat: chat),
+            ),
+          );
+        } else if (mounted) {
+          context.go('/');
+        }
+        return;
+      }
 
       final requireApproval =
           _inviteResult?.requireApproval ?? _foundChat?.requireApproval ?? false;
@@ -349,8 +395,9 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         _foundChat?.initialMessage ??
         '';
     final hostDisplayName = _foundChat?.hostDisplayName;
-    final requireApproval =
-        _inviteResult?.requireApproval ?? _foundChat?.requireApproval ?? false;
+    final requireApproval = _isPersonalCode
+        ? false
+        : _inviteResult?.requireApproval ?? _foundChat?.requireApproval ?? false;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),

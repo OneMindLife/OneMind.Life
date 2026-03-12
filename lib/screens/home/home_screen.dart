@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_colors.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -217,16 +218,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     if (result != null) {
       ref.read(myChatsProvider.notifier).refresh();
       if (context.mounted) {
-        _navigateToChat(context, ref, result);
+        _navigateToChat(context, ref, result, showShareDialog: true);
       }
     }
   }
 
-  void _navigateToChat(BuildContext context, WidgetRef ref, Chat chat) async {
+  void _navigateToChat(BuildContext context, WidgetRef ref, Chat chat, {bool showShareDialog = false}) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (ctx) => ChatScreen(chat: chat),
+        builder: (ctx) => ChatScreen(chat: chat, showShareDialog: showShareDialog),
       ),
     );
     // Refresh chat list when returning from chat screen
@@ -288,17 +289,62 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             onPressed: () => context.push('/discover'),
           ),
           const LanguageSelector(compact: true),
-          IconButton(
-            key: const Key('tutorial-button'),
-            icon: const Icon(Icons.help_outline),
-            tooltip: l10n.howItWorks,
-            onPressed: () => context.push('/tutorial'),
-          ),
-          IconButton(
-            key: const Key('legal-button'),
-            icon: const Icon(Icons.description_outlined),
-            tooltip: l10n.legalDocuments,
-            onPressed: () => showLegalDocumentsDialog(context),
+          PopupMenuButton<String>(
+            key: const Key('overflow-menu'),
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              switch (value) {
+                case 'tutorial':
+                  context.push('/tutorial');
+                case 'contact':
+                  launchUrl(Uri.parse('mailto:joel@onemind.life'));
+                case 'source':
+                  launchUrl(
+                    Uri.parse('https://github.com/OneMindLife/OneMind.Life'),
+                    mode: LaunchMode.externalApplication,
+                  );
+                case 'legal':
+                  showLegalDocumentsDialog(context);
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'tutorial',
+                child: ListTile(
+                  leading: const Icon(Icons.help_outline),
+                  title: Text(l10n.howItWorks),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'contact',
+                child: ListTile(
+                  leading: const Icon(Icons.email_outlined),
+                  title: Text(l10n.contact),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'source',
+                child: ListTile(
+                  leading: const Icon(Icons.code),
+                  title: Text(l10n.sourceCode),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem(
+                value: 'legal',
+                child: ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: Text(l10n.legalDocuments),
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
           ),
         ],
       ),

@@ -1636,6 +1636,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String get legalDocuments => 'Legal';
 
   @override
+  String get contact => 'Contact';
+
+  @override
+  String get sourceCode => 'Source Code';
+
+  @override
   String get byContinuingYouAgree => 'By continuing, you agree to our';
 
   @override
@@ -1648,7 +1654,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String shareLinkTitle(String chatName) {
-    return 'Compartilhar link para entrar em $chatName';
+    return 'Qualquer pessoa com este link pode entrar em $chatName';
   }
 
   @override
@@ -2325,6 +2331,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Consulte a Política de Privacidade e os Termos de Serviço aqui.';
 
   @override
+  String get homeTourMenuTitle => 'Menu';
+
+  @override
+  String get homeTourMenuDesc =>
+      'Replay the tutorial, contact us, view the source code, or read the legal documents.';
+
+  @override
   String get searchOrJoinWithCode =>
       'Pesquisar chats ou inserir codigo de convite...';
 
@@ -2360,6 +2373,47 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get wizardVisibilityPrivateDesc =>
       'Apenas pessoas com o codigo de convite podem entrar';
+
+  @override
+  String get wizardVisibilityPersonalCodeTitle => 'Codigos Pessoais';
+
+  @override
+  String get wizardVisibilityPersonalCodeDesc =>
+      'Gere codigos unicos para cada pessoa. Cada codigo funciona uma vez.';
+
+  @override
+  String get personalCodes => 'Codigos Pessoais';
+
+  @override
+  String get generateNewCode => 'Gerar Novo Codigo';
+
+  @override
+  String get codeStatusActive => 'Ativo';
+
+  @override
+  String get codeStatusUsed => 'Usado';
+
+  @override
+  String get codeStatusRevoked => 'Revogado';
+
+  @override
+  String get revokeCode => 'Revogar';
+
+  @override
+  String get revokeCodeConfirm =>
+      'Revogar este codigo? Ele nao podera mais ser usado para entrar.';
+
+  @override
+  String get codeAlreadyUsed => 'Este codigo ja foi usado.';
+
+  @override
+  String get noCodesYet => 'Nenhum codigo ainda. Gere um para convidar alguem.';
+
+  @override
+  String get codeGenerated => 'Codigo gerado!';
+
+  @override
+  String get codeRevoked => 'Codigo revogado';
 
   @override
   String get homeTourSearchBarTitle => 'Pesquisar Seus Chats';

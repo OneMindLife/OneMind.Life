@@ -25,7 +25,7 @@ UPDATE agent_personas SET display_name = 'Agent 2' WHERE name = 'the_demand_dete
 UPDATE agent_personas SET display_name = 'Agent 3' WHERE name = 'the_clock';
 UPDATE agent_personas SET display_name = 'Agent 4' WHERE name = 'the_compounder';
 UPDATE agent_personas SET display_name = 'Agent 5' WHERE name = 'the_breaker';
-UPDATE agent_personas SET display_name = 'Agent 6' WHERE name = 'the_advocate';
+UPDATE agent_personas SET display_name = 'Agent 6' WHERE name IN ('the_advocate', 'the_verifier');
 
 -- =============================================================================
 -- STEP 2: Clear system prompts

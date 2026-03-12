@@ -2,7 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import '../core/errors/app_exception.dart';
 
-enum AccessMethod { public, code, inviteOnly }
+enum AccessMethod { public, code, inviteOnly, personalCode }
 
 /// Facilitation mode: how proposing starts (independent of schedule).
 /// - manual: Host clicks a button to start proposing
@@ -276,6 +276,8 @@ class Chat extends Equatable {
         return AccessMethod.code;
       case 'invite_only':
         return AccessMethod.inviteOnly;
+      case 'personal_code':
+        return AccessMethod.personalCode;
       case null:
         return AccessMethod.public; // Default for null
       default:
@@ -373,6 +375,8 @@ class Chat extends Equatable {
         return 'code';
       case AccessMethod.inviteOnly:
         return 'invite_only';
+      case AccessMethod.personalCode:
+        return 'personal_code';
     }
   }
 

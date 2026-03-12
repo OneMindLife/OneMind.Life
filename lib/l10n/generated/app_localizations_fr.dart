@@ -1640,6 +1640,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get legalDocuments => 'Legal';
 
   @override
+  String get contact => 'Contact';
+
+  @override
+  String get sourceCode => 'Source Code';
+
+  @override
   String get byContinuingYouAgree => 'By continuing, you agree to our';
 
   @override
@@ -1652,7 +1658,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String shareLinkTitle(String chatName) {
-    return 'Partager le lien pour rejoindre $chatName';
+    return 'Toute personne ayant ce lien peut rejoindre $chatName';
   }
 
   @override
@@ -2330,6 +2336,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Consultez la Politique de Confidentialité et les Conditions d\'Utilisation ici.';
 
   @override
+  String get homeTourMenuTitle => 'Menu';
+
+  @override
+  String get homeTourMenuDesc =>
+      'Replay the tutorial, contact us, view the source code, or read the legal documents.';
+
+  @override
   String get searchOrJoinWithCode =>
       'Rechercher des chats ou entrer un code d\'invitation...';
 
@@ -2365,6 +2378,48 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get wizardVisibilityPrivateDesc =>
       'Seules les personnes avec le code d\'invitation peuvent rejoindre';
+
+  @override
+  String get wizardVisibilityPersonalCodeTitle => 'Codes Personnels';
+
+  @override
+  String get wizardVisibilityPersonalCodeDesc =>
+      'Generez des codes uniques pour chaque personne. Chaque code fonctionne une seule fois.';
+
+  @override
+  String get personalCodes => 'Codes Personnels';
+
+  @override
+  String get generateNewCode => 'Generer un Nouveau Code';
+
+  @override
+  String get codeStatusActive => 'Actif';
+
+  @override
+  String get codeStatusUsed => 'Utilise';
+
+  @override
+  String get codeStatusRevoked => 'Revoque';
+
+  @override
+  String get revokeCode => 'Revoquer';
+
+  @override
+  String get revokeCodeConfirm =>
+      'Revoquer ce code ? Il ne pourra plus etre utilise pour rejoindre.';
+
+  @override
+  String get codeAlreadyUsed => 'Ce code a deja ete utilise.';
+
+  @override
+  String get noCodesYet =>
+      'Pas encore de codes. Generez-en un pour inviter quelqu\'un.';
+
+  @override
+  String get codeGenerated => 'Code genere !';
+
+  @override
+  String get codeRevoked => 'Code revoque';
 
   @override
   String get homeTourSearchBarTitle => 'Rechercher Vos Chats';

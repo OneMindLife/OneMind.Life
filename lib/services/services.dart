@@ -4,4 +4,5 @@ export 'billing_service.dart';
 export 'chat_service.dart';
 export 'invite_service.dart';
 export 'participant_service.dart';
+export 'personal_code_service.dart';
 export 'proposition_service.dart';

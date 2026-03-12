@@ -9,6 +9,7 @@ export 'round.dart';
 export 'round_skip.dart';
 export 'round_winner.dart';
 export 'participant.dart';
+export 'personal_code.dart';
 export 'proposition.dart';
 export 'public_chat_summary.dart';
 export 'rating.dart';

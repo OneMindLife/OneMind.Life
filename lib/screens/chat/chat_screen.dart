@@ -17,13 +17,15 @@ import '../../widgets/proposition_content_card.dart';
 import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../rating/rating_screen.dart';
+import 'widgets/personal_code_sheet.dart';
 import 'widgets/previous_round_display.dart';
 import 'widgets/phase_panels.dart';
 
 class ChatScreen extends ConsumerStatefulWidget {
   final Chat chat;
+  final bool showShareDialog;
 
-  const ChatScreen({super.key, required this.chat});
+  const ChatScreen({super.key, required this.chat, this.showShareDialog = false});
 
   @override
   ConsumerState<ChatScreen> createState() => _ChatScreenState();
@@ -58,6 +60,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     super.initState();
     _setupScheduledTimeTimer();
     _setupLifecycleListener();
+    if (widget.showShareDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (widget.chat.accessMethod == AccessMethod.personalCode) {
+          // For personal_code chats, show the code management sheet
+          final state = ref.read(chatDetailProvider(_params)).valueOrNull;
+          if (state != null) _showPersonalCodeSheet(state);
+        } else if (widget.chat.inviteCode != null) {
+          _showQrCode();
+        }
+      });
+    }
   }
 
   /// Sets up app lifecycle listener to refresh state when app resumes.
@@ -667,8 +681,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final isHostPaused = state.chat?.hostPaused ?? widget.chat.hostPaused;
                 final pendingRequestCount = state.pendingJoinRequests.length;
                 final chat = state.chat ?? widget.chat;
-                final hasInviteCode = widget.chat.inviteCode != null &&
-                    widget.chat.accessMethod == AccessMethod.code;
+                final isPersonalCode = chat.accessMethod == AccessMethod.personalCode;
+                final hasInviteCode = widget.chat.inviteCode != null && !isPersonalCode;
                 final hasDescription =
                     (chat.displayDescription)?.trim().isNotEmpty == true;
 
@@ -682,13 +696,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     onLanguageChanged: (code) =>
                         ref.read(chatDetailProvider(_params).notifier).setViewingLanguage(code),
                   ),
-                  // Share button — visible when chat has invite code
+                  // Share button — visible when chat has invite code (not for personal_code)
                   if (hasInviteCode)
                     IconButton(
                       key: const Key('share-button'),
                       icon: const Icon(Icons.ios_share),
                       tooltip: 'Share Chat',
                       onPressed: _showQrCode,
+                    ),
+                  // Generate code button — for hosts of personal_code chats
+                  if (isPersonalCode && isHost)
+                    IconButton(
+                      key: const Key('generate-code-button'),
+                      icon: const Icon(Icons.vpn_key),
+                      tooltip: AppLocalizations.of(context).personalCodes,
+                      onPressed: () => _showPersonalCodeSheet(state),
                     ),
                   // Info button — only if chat has description
                   if (hasDescription)
@@ -1600,6 +1622,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       context,
       chatName: chatName,
       inviteCode: widget.chat.inviteCode!,
+    );
+  }
+
+  void _showPersonalCodeSheet(ChatDetailState state) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => PersonalCodeSheet(
+        chatId: widget.chat.id,
+        chatName: state.chat?.displayName ?? widget.chat.displayName,
+      ),
     );
   }
 

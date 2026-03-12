@@ -6,7 +6,6 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../utils/timezone_utils.dart';
 import '../../widgets/error_view.dart';
-import 'dialogs/create_chat_dialogs.dart';
 import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
 import 'widgets/wizard_step_agents.dart';
@@ -258,10 +257,9 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
       );
 
       // Send email invites if using invite-only mode
-      int invitesSent = 0;
       if (_accessMethod == AccessMethod.inviteOnly && _inviteEmails.isNotEmpty) {
         final inviteService = ref.read(inviteServiceProvider);
-        final results = await inviteService.sendInvites(
+        await inviteService.sendInvites(
           chatId: chat.id,
           emails: _inviteEmails,
           invitedByParticipantId: hostParticipant.id,
@@ -269,7 +267,6 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
           inviteCode: chat.inviteCode ?? '',
           inviterName: hostName,
         );
-        invitesSent = results.length;
       }
 
       // Log analytics event
@@ -282,15 +279,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
       );
 
       if (mounted) {
-        CreateChatDialogs.showSuccess(
-          context: context,
-          chat: chat,
-          accessMethod: _accessMethod,
-          invitesSent: invitesSent,
-          onContinue: () {
-            Navigator.pop(context, chat);
-          },
-        );
+        Navigator.pop(context, chat);
       }
     } catch (e) {
       if (mounted) {

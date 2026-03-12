@@ -10,8 +10,7 @@ enum HomeTourStep {
   createFab,
   exploreButton,
   languageSelector,
-  howItWorks,
-  legalDocs,
+  menu,
   complete,
 }
 
@@ -21,7 +20,7 @@ class HomeTourState extends Equatable {
   final int stepIndex;
   final int totalSteps;
 
-  static const int total = 9;
+  static const int total = 8;
 
   const HomeTourState({
     this.currentStep = HomeTourStep.welcomeName,

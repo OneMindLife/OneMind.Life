@@ -913,6 +913,8 @@
   "privacyPolicyTitle": "Privacy Policy",
   "termsOfServiceTitle": "Terms of Service",
   "legalDocuments": "Legal",
+  "contact": "Contact",
+  "sourceCode": "Source Code",
   "byContinuingYouAgree": "By continuing, you agree to our",
   "andText": "and",
   "lastUpdated": "Last updated: {date}",
@@ -922,7 +924,7 @@
     }
   },
 
-  "shareLinkTitle": "Share link to join {chatName}",
+  "shareLinkTitle": "Anyone with this link can join {chatName}",
   "@shareLinkTitle": {
     "placeholders": {
       "chatName": {"type": "String"}
@@ -1233,6 +1235,8 @@
   "homeTourHowItWorksDesc": "Need a refresher? Tap here to replay the tutorial anytime.",
   "homeTourLegalDocsTitle": "Legal Documents",
   "homeTourLegalDocsDesc": "View the Privacy Policy and Terms of Service here.",
+  "homeTourMenuTitle": "Menu",
+  "homeTourMenuDesc": "Replay the tutorial, contact us, view the source code, or read the legal documents.",
   "searchOrJoinWithCode": "Search chats or enter invite code...",
   "searchYourChatsOrJoinWithCode": "Search your chats or enter invite code...",
   "noMatchingChats": "No matching chats",
@@ -1248,6 +1252,19 @@
   "wizardVisibilityPublicDesc": "Anyone can discover and join this chat",
   "wizardVisibilityPrivateTitle": "Private",
   "wizardVisibilityPrivateDesc": "Only people with the invite code can join",
+  "wizardVisibilityPersonalCodeTitle": "Personal Codes",
+  "wizardVisibilityPersonalCodeDesc": "Generate unique codes for each person. Each code works once.",
+  "personalCodes": "Personal Codes",
+  "generateNewCode": "Generate New Code",
+  "codeStatusActive": "Active",
+  "codeStatusUsed": "Used",
+  "codeStatusRevoked": "Revoked",
+  "revokeCode": "Revoke",
+  "revokeCodeConfirm": "Revoke this code? It can no longer be used to join.",
+  "codeAlreadyUsed": "This code has already been used.",
+  "noCodesYet": "No codes yet. Generate one to invite someone.",
+  "codeGenerated": "Code generated!",
+  "codeRevoked": "Code revoked",
   "homeTourSearchBarTitle": "Search Your Chats",
   "homeTourSearchBarDesc": "Filter your chats by name, or enter a 6-character invite code to join a private chat.",
   "homeTourExploreButtonTitle": "Explore Public Chats",

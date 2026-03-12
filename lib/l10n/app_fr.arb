@@ -963,7 +963,7 @@
   "inviteCodeAccess": "Code d'Invitation",
   "inviteOnlyAccess": "Sur Invitation Uniquement",
 
-  "shareLinkTitle": "Partager le lien pour rejoindre {chatName}",
+  "shareLinkTitle": "Toute personne ayant ce lien peut rejoindre {chatName}",
   "@shareLinkTitle": {
     "placeholders": {
       "chatName": {"type": "String"}
@@ -1215,6 +1215,19 @@
   "wizardVisibilityPublicDesc": "Tout le monde peut decouvrir et rejoindre ce chat",
   "wizardVisibilityPrivateTitle": "Prive",
   "wizardVisibilityPrivateDesc": "Seules les personnes avec le code d'invitation peuvent rejoindre",
+  "wizardVisibilityPersonalCodeTitle": "Codes Personnels",
+  "wizardVisibilityPersonalCodeDesc": "Generez des codes uniques pour chaque personne. Chaque code fonctionne une seule fois.",
+  "personalCodes": "Codes Personnels",
+  "generateNewCode": "Generer un Nouveau Code",
+  "codeStatusActive": "Actif",
+  "codeStatusUsed": "Utilise",
+  "codeStatusRevoked": "Revoque",
+  "revokeCode": "Revoquer",
+  "revokeCodeConfirm": "Revoquer ce code ? Il ne pourra plus etre utilise pour rejoindre.",
+  "codeAlreadyUsed": "Ce code a deja ete utilise.",
+  "noCodesYet": "Pas encore de codes. Generez-en un pour inviter quelqu'un.",
+  "codeGenerated": "Code genere !",
+  "codeRevoked": "Code revoque",
   "homeTourSearchBarTitle": "Rechercher Vos Chats",
   "homeTourSearchBarDesc": "Filtrez vos chats par nom, ou entrez un code d'invitation de 6 caracteres pour rejoindre un chat prive.",
   "homeTourExploreButtonTitle": "Explorer les Chats Publics",

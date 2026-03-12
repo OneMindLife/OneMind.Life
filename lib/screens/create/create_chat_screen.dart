@@ -267,13 +267,7 @@ class _CreateChatScreenState extends ConsumerState<CreateChatScreen> {
       );
 
       if (mounted) {
-        CreateChatDialogs.showSuccess(
-          context: context,
-          chat: chat,
-          accessMethod: _accessMethod,
-          invitesSent: invitesSent,
-          onContinue: () => Navigator.pop(context, chat),
-        );
+        Navigator.pop(context, chat);
       }
     } catch (e) {
       if (mounted) {

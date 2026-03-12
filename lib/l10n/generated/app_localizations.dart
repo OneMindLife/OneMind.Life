@@ -2946,6 +2946,18 @@ abstract class AppLocalizations {
   /// **'Legal'**
   String get legalDocuments;
 
+  /// No description provided for @contact.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact'**
+  String get contact;
+
+  /// No description provided for @sourceCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Source Code'**
+  String get sourceCode;
+
   /// No description provided for @byContinuingYouAgree.
   ///
   /// In en, this message translates to:
@@ -2967,7 +2979,7 @@ abstract class AppLocalizations {
   /// No description provided for @shareLinkTitle.
   ///
   /// In en, this message translates to:
-  /// **'Share link to join {chatName}'**
+  /// **'Anyone with this link can join {chatName}'**
   String shareLinkTitle(String chatName);
 
   /// No description provided for @shareButton.
@@ -4158,6 +4170,18 @@ abstract class AppLocalizations {
   /// **'View the Privacy Policy and Terms of Service here.'**
   String get homeTourLegalDocsDesc;
 
+  /// No description provided for @homeTourMenuTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Menu'**
+  String get homeTourMenuTitle;
+
+  /// No description provided for @homeTourMenuDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the tutorial, contact us, view the source code, or read the legal documents.'**
+  String get homeTourMenuDesc;
+
   /// No description provided for @searchOrJoinWithCode.
   ///
   /// In en, this message translates to:
@@ -4217,6 +4241,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Only people with the invite code can join'**
   String get wizardVisibilityPrivateDesc;
+
+  /// No description provided for @wizardVisibilityPersonalCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Codes'**
+  String get wizardVisibilityPersonalCodeTitle;
+
+  /// No description provided for @wizardVisibilityPersonalCodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate unique codes for each person. Each code works once.'**
+  String get wizardVisibilityPersonalCodeDesc;
+
+  /// No description provided for @personalCodes.
+  ///
+  /// In en, this message translates to:
+  /// **'Personal Codes'**
+  String get personalCodes;
+
+  /// No description provided for @generateNewCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate New Code'**
+  String get generateNewCode;
+
+  /// No description provided for @codeStatusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get codeStatusActive;
+
+  /// No description provided for @codeStatusUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'Used'**
+  String get codeStatusUsed;
+
+  /// No description provided for @codeStatusRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked'**
+  String get codeStatusRevoked;
+
+  /// No description provided for @revokeCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke'**
+  String get revokeCode;
+
+  /// No description provided for @revokeCodeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke this code? It can no longer be used to join.'**
+  String get revokeCodeConfirm;
+
+  /// No description provided for @codeAlreadyUsed.
+  ///
+  /// In en, this message translates to:
+  /// **'This code has already been used.'**
+  String get codeAlreadyUsed;
+
+  /// No description provided for @noCodesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No codes yet. Generate one to invite someone.'**
+  String get noCodesYet;
+
+  /// No description provided for @codeGenerated.
+  ///
+  /// In en, this message translates to:
+  /// **'Code generated!'**
+  String get codeGenerated;
+
+  /// No description provided for @codeRevoked.
+  ///
+  /// In en, this message translates to:
+  /// **'Code revoked'**
+  String get codeRevoked;
 
   /// No description provided for @homeTourSearchBarTitle.
   ///

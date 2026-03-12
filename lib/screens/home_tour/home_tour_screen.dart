@@ -38,8 +38,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
   bool _isAppBarStep(HomeTourStep step) {
     return step == HomeTourStep.exploreButton ||
         step == HomeTourStep.languageSelector ||
-        step == HomeTourStep.howItWorks ||
-        step == HomeTourStep.legalDocs;
+        step == HomeTourStep.menu;
   }
 
   /// Whether the body cards should be dimmed (FAB or app bar is active).
@@ -111,19 +110,9 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
           ),
           _appBarButton(
             step: step,
-            activeOn: HomeTourStep.howItWorks,
+            activeOn: HomeTourStep.menu,
             child: IconButton(
-              icon: const Icon(Icons.help_outline),
-              tooltip: l10n.howItWorks,
-              onPressed: () {},
-            ),
-          ),
-          _appBarButton(
-            step: step,
-            activeOn: HomeTourStep.legalDocs,
-            child: IconButton(
-              icon: const Icon(Icons.description_outlined),
-              tooltip: l10n.legalDocuments,
+              icon: const Icon(Icons.more_vert),
               onPressed: () {},
             ),
           ),
@@ -281,8 +270,7 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
         }
 
       // All app bar steps: tooltip at top of body
-      case HomeTourStep.howItWorks:
-      case HomeTourStep.legalDocs:
+      case HomeTourStep.menu:
         newTop = 8;
 
       case HomeTourStep.complete:
@@ -338,12 +326,9 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen> {
       case HomeTourStep.createFab:
         title = l10n.homeTourCreateFabTitle;
         description = l10n.homeTourCreateFabDesc;
-      case HomeTourStep.howItWorks:
-        title = l10n.homeTourHowItWorksTitle;
-        description = l10n.homeTourHowItWorksDesc;
-      case HomeTourStep.legalDocs:
-        title = l10n.homeTourLegalDocsTitle;
-        description = l10n.homeTourLegalDocsDesc;
+      case HomeTourStep.menu:
+        title = l10n.homeTourMenuTitle;
+        description = l10n.homeTourMenuDesc;
       case HomeTourStep.complete:
         return const SizedBox.shrink();
     }

@@ -252,7 +252,7 @@ psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "
     WHEN command LIKE '%get_edge_function_url%' THEN 'VAULT-BASED ✓'
     ELSE 'HARDCODED ✗'
   END as target
-  FROM cron.job WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats', 'moltbook-agent-heartbeat');"
+  FROM cron.job WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats');"
 
 # Verify vault secret points to local
 psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "

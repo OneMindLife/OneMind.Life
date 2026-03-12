@@ -384,6 +384,15 @@ class RatingModel extends ChangeNotifier {
     _virtualPosition = 50.0;
     _currentPropositionIndex++;
 
+    // Update original positions for ALL inactive cards to their current positions.
+    // This ensures decompression targets where cards actually are now,
+    // not where they were when first introduced (which may be stale after
+    // previous compressions changed the layout).
+    for (var prop in _rankedPropositions) {
+      if (!prop.isActive) {
+        _originalPositions[prop.id] = prop.position;
+      }
+    }
     if (!_originalPositions.containsKey(newCardId)) {
       _originalPositions[newCardId] = 50.0;
     }
@@ -879,6 +888,11 @@ class RatingModel extends ChangeNotifier {
       isActive: false,
       placementOrder: _placementCounter,
     );
+
+    // Clear stale compression/expansion state so the next card starts clean.
+    _isExpanding = false;
+    _compressedPositions.clear();
+    _expansionProgress = 0.0;
 
     _normalizePositions();
 
