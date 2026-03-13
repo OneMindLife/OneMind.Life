@@ -351,6 +351,8 @@ class ChatSettingsSheet extends StatelessWidget {
         return AppLocalizations.of(context)!.inviteCodeAccess;
       case AccessMethod.inviteOnly:
         return AppLocalizations.of(context)!.inviteOnlyAccess;
+      case AccessMethod.personalCode:
+        return AppLocalizations.of(context)!.personalCodes;
     }
   }
 
