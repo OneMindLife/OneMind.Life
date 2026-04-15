@@ -1,0 +1,27 @@
+OneMind - Collective consensus-building mobile application
+Copyright (C) 2025 OneMind.Life LLC
+https://github.com/onemind-life/onemind-oss
+
+ADDITIONAL TERMS UNDER SECTION 7(b) OF THE AGPL-3.0
+====================================================
+
+As permitted under Section 7(b) of the GNU Affero General Public License
+version 3, the following additional attribution terms apply to this software
+and all derivative works:
+
+1. IN-APP ATTRIBUTION (Required)
+
+   Any application derived from or incorporating this software must display
+   the following attribution in a user-accessible location such as an "About",
+   "Settings", or "Legal" screen:
+
+       Powered by OneMind (https://github.com/onemind-life/onemind-oss)
+
+   The attribution must include a functional link to the original repository.
+
+2. WEB AND LANDING PAGE ATTRIBUTION (Required for network services)
+
+   If a derivative work is made available as a network service (including but
+   not limited to web applications, hosted platforms, or API services), the
+   attribution described in (1) must also appear on the public-facing landing
+   page or website footer, with a functional link to the original repository.
