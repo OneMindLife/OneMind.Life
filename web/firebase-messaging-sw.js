@@ -1,14 +1,16 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
+// Fill in your Firebase Web config. Generate via `flutterfire configure`
+// or copy from your Firebase Console → Project Settings → Your apps (Web).
 firebase.initializeApp({
-  apiKey: 'AIzaSyAdxcfvFN10TYeVGEmLzwhz1GSYfJqRmXA',
-  appId: '1:772415659270:web:d7e397a8fd8d5af7dfd287',
-  messagingSenderId: '772415659270',
-  projectId: 'onemind-bfba5',
-  authDomain: 'onemind-bfba5.firebaseapp.com',
-  storageBucket: 'onemind-bfba5.firebasestorage.app',
-  measurementId: 'G-2XCF0J8BGQ',
+  apiKey: 'YOUR_API_KEY',
+  appId: 'YOUR_APP_ID',
+  messagingSenderId: 'YOUR_SENDER_ID',
+  projectId: 'YOUR_PROJECT_ID',
+  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
+  storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
+  measurementId: 'YOUR_MEASUREMENT_ID',
 });
 
 const messaging = firebase.messaging();
