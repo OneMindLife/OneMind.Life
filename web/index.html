@@ -18,9 +18,9 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-visual">
-  <meta name="description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
-  <meta name="keywords" content="group decision making tool, team consensus app, anonymous voting, async decision making, meeting alternative, consensus without meetings, Loomio alternative">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-visual">
+  <meta name="description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
+  <meta name="keywords" content="group decision making tool, team consensus app, anonymous voting, async decision making, meeting alternative, consensus without meetings, Loomio alternative, facilitation tool, decision making software, group consensus, team alignment">
   <meta name="author" content="OneMind.Life LLC">
 
   <!-- Theme Color -->
@@ -32,7 +32,7 @@
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://onemind.life/">
   <meta property="og:title" content="OneMind - Direction Without Division">
-  <meta property="og:description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
+  <meta property="og:description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
   <meta property="og:image" content="https://onemind.life/OMLogo.png">
   <meta property="og:site_name" content="OneMind">
 
@@ -40,7 +40,7 @@
   <meta name="twitter:card" content="summary">
   <meta name="twitter:url" content="https://onemind.life/">
   <meta name="twitter:title" content="OneMind - Direction Without Division">
-  <meta name="twitter:description" content="An open-source alignment system where the collective leads. No authority decides. No agenda is imposed. Shared direction just emerges.">
+  <meta name="twitter:description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
   <meta name="twitter:image" content="https://onemind.life/OMLogo.png">
 
   <!-- iOS meta tags & icons -->
@@ -50,16 +50,353 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" href="OMLogo.svg" sizes="any">
+  <link rel="icon" href="favicon.png" type="image/png">
 
   <!-- Canonical URL -->
   <link rel="canonical" href="https://onemind.life/">
 
   <title>OneMind - Group Consensus in 10 Minutes | Free Decision-Making Tool</title>
   <link rel="manifest" href="manifest.json">
+
+  <!-- Preload Flutter assets so the browser starts downloading immediately -->
+  <link rel="preload" href="flutter_bootstrap.js" as="script">
+  <link rel="preload" href="main.dart.js" as="script">
+
+  <!-- Google Analytics (gtag.js) — loads before Flutter for splash tracking -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BMGWEGECWY"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-BMGWEGECWY', { send_page_view: false });
+    window._splashStart = Date.now();
+    window._flutterReady = false;
+    window._htmlPlayTapped = false;
+
+    // Engagement heartbeat — fixes 0% engagement in in-app browsers (Instagram,
+    // Facebook) that kill the WebView without firing visibilitychange/pagehide,
+    // preventing gtag's automatic user_engagement event from flushing.
+    (function() {
+      var lastFlush = Date.now();
+      function flush() {
+        if (typeof gtag !== 'function') return;
+        var now = Date.now();
+        var delta = now - lastFlush;
+        if (delta < 1000) return;
+        lastFlush = now;
+        gtag('event', 'page_view', { engagement_time_msec: delta });
+      }
+      // Flush every 15 s while the tab is visible
+      setInterval(function() { if (!document.hidden) flush(); }, 15000);
+      // Best-effort flush on page hide / unload
+      document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') flush();
+      });
+      window.addEventListener('pagehide', flush);
+    })();
+
+    // Called from Flutter via JS interop on route changes
+    window._onemindPageView = function(path, title) {
+      if (typeof gtag !== 'function') return;
+      gtag('event', 'page_view', {
+        page_path: path,
+        page_title: title || document.title
+      });
+    };
+
+    // ── PWA install detection ──
+    // Capture the beforeinstallprompt event (Android/desktop Chrome)
+    window._pwaInstallPrompt = null;
+    window.addEventListener('beforeinstallprompt', function(e) {
+      e.preventDefault();
+      window._pwaInstallPrompt = e;
+    });
+
+    // Returns true if running as installed PWA (standalone mode)
+    window._isPwaInstalled = function() {
+      if (window.matchMedia('(display-mode: standalone)').matches) return true;
+      if (window.navigator.standalone === true) return true; // iOS Safari
+      return false;
+    };
+
+    // Returns true if on a mobile device
+    window._isMobileDevice = function() {
+      return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    };
+
+    // Returns true if on iOS
+    window._isIos = function() {
+      return /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    };
+
+    // Triggers the native install prompt (Android Chrome).
+    // Returns a Promise that resolves to true if user accepted, false otherwise.
+    window._triggerPwaInstall = function() {
+      if (window._pwaInstallPrompt) {
+        var prompt = window._pwaInstallPrompt;
+        window._pwaInstallPrompt = null;
+        prompt.prompt();
+        return prompt.userChoice.then(function(result) {
+          return result.outcome === 'accepted';
+        });
+      }
+      return Promise.resolve(false);
+    };
+
+    // Returns true if the PWA is already installed (Android/Chromium only)
+    window._hasInstalledPwa = function() {
+      if (!navigator.getInstalledRelatedApps) return Promise.resolve(false);
+      return navigator.getInstalledRelatedApps().then(function(apps) {
+        return apps.length > 0;
+      }).catch(function() { return false; });
+    };
+
+    // Returns true if beforeinstallprompt was captured
+    window._hasInstallPrompt = function() {
+      return window._pwaInstallPrompt != null;
+    };
+  </script>
 </head>
 <body>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    /* Shared overlay base */
+    #splash, #play-screen {
+      position: fixed; inset: 0; z-index: 999;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      background: linear-gradient(145deg, #1a2e35 0%, #0d1f26 50%, #162a32 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    /* ── Loading splash (returning users / special routes) ── */
+    #splash-brand {
+      font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: 1px; margin-bottom: 8px;
+    }
+    #splash-text {
+      font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.7); letter-spacing: 0.5px;
+    }
+    #splash-tagline {
+      font-size: 14px; color: rgba(255,255,255,0.4); margin-top: 8px; letter-spacing: 0.5px;
+    }
+    #splash-dots { margin-top: 32px; display: flex; gap: 8px; }
+    #splash-dots span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.4);
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    #splash-dots span:nth-child(2) { animation-delay: 0.2s; }
+    #splash-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    /* ── HTML Play Screen (new users at /) ── */
+    #play-brand {
+      font-size: 32px; font-weight: 700; color: #ffffff; letter-spacing: 1px; margin-bottom: 8px;
+    }
+    #play-title {
+      font-size: 18px; font-weight: 400; color: rgba(255,255,255,0.7); letter-spacing: 0.5px;
+    }
+    #play-subtitle {
+      font-size: 14px; color: rgba(255,255,255,0.4); margin-top: 8px;
+      padding: 0 16px; text-align: center;
+    }
+    #play-btn {
+      margin-top: 56px; width: 120px; height: 120px; border-radius: 50%;
+      background: #0D7377; border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 24px 6px rgba(13,115,119,0.35);
+      transition: opacity 0.2s;
+    }
+    #play-btn:active { opacity: 0.8; }
+    #play-btn svg { width: 64px; height: 64px; fill: #ffffff; }
+    /* Loading spinner (replaces play icon when loading) */
+    #play-btn .spinner {
+      display: none; width: 48px; height: 48px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top-color: #ffffff; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    #play-btn.loading svg { display: none; }
+    #play-btn.loading .spinner { display: block; }
+    #play-btn.loading { background: rgba(13,115,119,0.5); cursor: default; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #play-label {
+      margin-top: 12px; font-size: 14px; font-weight: 500;
+      color: rgba(255,255,255,0.6);
+    }
+    #play-legal {
+      margin-top: 48px; font-size: 12px; color: rgba(255,255,255,0.5);
+      text-align: center; padding: 0 24px;
+    }
+    #play-legal a {
+      color: #0D7377; text-decoration: underline; cursor: pointer;
+    }
+    #play-skip {
+      margin-top: 12px; background: none; border: none; cursor: pointer;
+      font-family: inherit; font-size: 14px; color: rgba(255,255,255,0.5);
+      padding: 8px 16px;
+    }
+    #play-skip:active { opacity: 0.7; }
+  </style>
+
+  <!-- Loading splash (hidden by default, shown for returning users) -->
+  <div id="splash" style="display:none">
+    <div id="splash-brand">OneMind</div>
+    <div id="splash-text">Many people. One mind.</div>
+    <div id="splash-tagline">Anonymous groupchats where many minds think as one.</div>
+    <div id="splash-dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <!-- HTML Play Screen (hidden by default, shown for new users at /) -->
+  <div id="play-screen" style="display:none">
+    <div id="play-brand">OneMind</div>
+    <div id="play-title">Many people. One mind.</div>
+    <div id="play-subtitle">Anonymous groupchats where many minds think as one.</div>
+    <button id="play-btn" onclick="window._onPlayTap()">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      <div class="spinner"></div>
+    </button>
+    <div id="play-label">See how it works</div>
+    <div id="play-legal">
+      By continuing you agree to
+      <a onclick="window._onLegalTap('terms')">Terms of Service</a>
+      and
+      <a onclick="window._onLegalTap('privacy')">Privacy Policy</a>.
+    </div>
+    <button id="play-skip" onclick="window._onSkipTap()">Skip</button>
+  </div>
+
+  <script>
+    // ── Decide which screen to show ──
+    (function() {
+      var path = window.location.pathname;
+      var tutorialDone = localStorage.getItem('flutter.tutorial_completed') === 'true';
+      var isSpecialRoute = path.startsWith('/join') || path.startsWith('/blog') ||
+          path === '/privacy' || path === '/terms' ||
+          path === '/demo' || path === '/discover';
+      // Also skip for SEO landing pages (any path that isn't / or /tutorial)
+      var isRootOrTutorial = (path === '/' || path === '/tutorial');
+      var showPlayScreen = !tutorialDone && !isSpecialRoute && isRootOrTutorial;
+
+      window._showingPlayScreen = showPlayScreen;
+      if (showPlayScreen) {
+        document.getElementById('play-screen').style.display = 'flex';
+        window._playScreenStart = Date.now();
+        gtag('event', 'play_screen_viewed', {
+          event_category: 'onboarding',
+          referrer: document.referrer || '(none)'
+        });
+      } else {
+        document.getElementById('splash').style.display = 'flex';
+        gtag('event', 'splash_shown', { event_category: 'loading' });
+      }
+    })();
+
+    // ── Helper: remove overlay (play screen or splash) ──
+    function _removeOverlay() {
+      var el = document.getElementById('play-screen') || document.getElementById('splash');
+      if (el) { el.remove(); }
+    }
+
+    // ── Helper: show loading state on play button ──
+    function _showPlayLoading() {
+      var btn = document.getElementById('play-btn');
+      if (btn) btn.classList.add('loading');
+      var label = document.getElementById('play-label');
+      if (label) label.textContent = 'Loading...';
+    }
+
+    // ── Helper: transition to Flutter (remove overlay or wait) ──
+    // action: 'play' | 'skip' | 'legal'
+    function _transitionToFlutter(action) {
+      if (window._flutterReady) {
+        _removeOverlay();
+      } else {
+        _showPlayLoading();
+        // Will be removed by MutationObserver when Flutter renders
+        window._pendingAction = action;
+      }
+    }
+
+    // ── Play button tapped ──
+    window._onPlayTap = function() {
+      if (window._htmlPlayTapped) return; // prevent double-tap
+      window._htmlPlayTapped = true;
+      var elapsed = Date.now() - (window._playScreenStart || Date.now());
+      gtag('event', 'play_button_tapped', {
+        event_category: 'onboarding',
+        time_on_play_screen_ms: elapsed,
+        flutter_was_ready: window._flutterReady
+      });
+      // If Flutter already registered its auto-advance callback, call it
+      if (typeof window._flutterAutoAdvance === 'function') {
+        window._flutterAutoAdvance();
+      }
+      _transitionToFlutter('play');
+    };
+
+    // ── Skip button tapped ──
+    window._onSkipTap = function() {
+      var elapsed = Date.now() - (window._playScreenStart || Date.now());
+      gtag('event', 'play_screen_skip_tapped', {
+        event_category: 'onboarding',
+        time_on_play_screen_ms: elapsed,
+        flutter_was_ready: window._flutterReady
+      });
+      // Set tutorial + home tour as complete so Flutter goes to home
+      localStorage.setItem('flutter.tutorial_completed', 'true');
+      localStorage.setItem('flutter.home_tour_completed', 'true');
+      _transitionToFlutter('skip');
+    };
+
+    // ── Legal link tapped ──
+    window._onLegalTap = function(page) {
+      var elapsed = Date.now() - (window._playScreenStart || Date.now());
+      gtag('event', 'play_screen_legal_tapped', {
+        event_category: 'onboarding',
+        link: page,
+        time_on_play_screen_ms: elapsed
+      });
+      // Navigate to legal page — Flutter will handle routing
+      history.replaceState(null, '', '/' + page);
+      _transitionToFlutter('legal');
+    };
+  </script>
+
+  <!-- Load Flutter immediately (preloads in background while play screen is visible) -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Watch for Flutter's first frame
+    new MutationObserver(function(mutations, observer) {
+      var flt = document.querySelector('flt-glass-pane, flutter-view');
+      if (flt) {
+        var loadMs = Date.now() - (window._splashStart || Date.now());
+        window._flutterReady = true;
+
+        if (typeof gtag === 'function') {
+          gtag('event', 'flutter_loaded', {
+            event_category: 'loading',
+            load_time_ms: loadMs,
+          });
+          gtag('event', 'page_view');
+        }
+
+        if (window._showingPlayScreen) {
+          // Play screen mode: only remove overlay if user already acted
+          if (window._htmlPlayTapped || window._pendingAction) {
+            _removeOverlay();
+          }
+          // Otherwise keep play screen on top — user hasn't tapped yet
+        } else {
+          // Splash mode (returning user): remove immediately
+          var splash = document.getElementById('splash');
+          if (splash) splash.remove();
+        }
+        observer.disconnect();
+      }
+    }).observe(document.body, { childList: true, subtree: true });
+  </script>
   <script>
     // Fix mobile keyboard dismiss bug: viewInsets.bottom gets stuck on iOS Safari
     // and some Android browsers, leaving the app squished after keyboard closes.

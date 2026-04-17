@@ -29,78 +29,21 @@ class TutorialTemplate {
     required this.round3Props,
   });
 
+  /// Default template key used for the tutorial.
+  static const defaultKey = 'saturday';
+
   static const templates = <String, TutorialTemplate>{
-    'family': TutorialTemplate(
-      key: 'family',
-      nameKey: 'tutorialTemplateFamily',
-      descriptionKey: 'tutorialTemplateFamilyDesc',
-      icon: Icons.family_restroom,
-      question: 'Where should we go on vacation?',
-      chatName: 'Family',
-      round1Props: ['Beach Resort', 'Mountain Cabin', 'City Trip'],
-      round1Winner: 'Beach Resort',
-      round2Props: ['Road Trip', 'Camping Adventure', 'Beach Resort'],
-      round3Props: ['Cruise', 'Theme Park', 'Cultural Exchange'],
-    ),
-    'community': TutorialTemplate(
-      key: 'community',
-      nameKey: 'tutorialTemplateCommunity',
-      descriptionKey: 'tutorialTemplateCommunityDesc',
-      icon: Icons.location_city,
-      question: 'What should our neighborhood do together?',
-      chatName: 'Community',
-      round1Props: ['Block Party', 'Community Garden', 'Neighborhood Watch'],
-      round1Winner: 'Community Garden',
-      round2Props: ['Tool Library', 'Mutual Aid Fund', 'Community Garden'],
-      round3Props: ['Free Little Library', 'Street Mural', 'Skill-Share Night'],
-    ),
-    'workplace': TutorialTemplate(
-      key: 'workplace',
-      nameKey: 'tutorialTemplateWorkplace',
-      descriptionKey: 'tutorialTemplateWorkplaceDesc',
-      icon: Icons.business,
-      question: 'What should our team focus on?',
-      chatName: 'Workplace',
-      round1Props: ['Flexible Hours', 'Mental Health Support', 'Team Building'],
-      round1Winner: 'Mental Health Support',
-      round2Props: ['Skills Training', 'Open Communication', 'Mental Health Support'],
-      round3Props: ['Fair Compensation', 'Work-Life Balance', 'Innovation Time'],
-    ),
-    'government': TutorialTemplate(
-      key: 'government',
-      nameKey: 'tutorialTemplateGovernment',
-      descriptionKey: 'tutorialTemplateGovernmentDesc',
-      icon: Icons.account_balance,
-      question: 'How should we spend the city budget?',
-      chatName: 'City Budget',
-      round1Props: ['Public Transportation', 'School Funding', 'Emergency Services'],
-      round1Winner: 'Emergency Services',
-      round2Props: ['Road Repairs', 'Public Health', 'Emergency Services'],
-      round3Props: ['Affordable Housing', 'Small Business Grants', 'Parks & Recreation'],
-    ),
-    'world': TutorialTemplate(
-      key: 'world',
-      nameKey: 'tutorialTemplateWorld',
-      descriptionKey: 'tutorialTemplateWorldDesc',
-      icon: Icons.public,
-      question: 'What global issue matters most?',
-      chatName: 'Global Issues',
-      round1Props: ['Climate Change', 'Global Poverty', 'AI Governance'],
-      round1Winner: 'Climate Change',
-      round2Props: ['Pandemic Preparedness', 'Nuclear Disarmament', 'Climate Change'],
-      round3Props: ['Ocean Conservation', 'Digital Rights', 'Space Cooperation'],
-    ),
-    'personal': TutorialTemplate(
-      key: 'personal',
-      nameKey: 'tutorialTemplatePersonal',
-      descriptionKey: 'tutorialTemplatePersonalDesc',
-      icon: Icons.person,
-      question: 'What should I do after graduation?',
-      chatName: 'Personal Decision',
-      round1Props: ['Travel Abroad', 'Start a Business', 'Graduate School'],
-      round1Winner: 'Graduate School',
-      round2Props: ['Get a Job First', 'Take a Gap Year', 'Graduate School'],
-      round3Props: ['Freelance', 'Move to a New City', 'Volunteer Program'],
+    'saturday': TutorialTemplate(
+      key: 'saturday',
+      nameKey: 'tutorialTemplateSaturday',
+      descriptionKey: 'tutorialTemplateSaturdayDesc',
+      icon: Icons.calendar_today,
+      question: "What's the best way to spend a free Saturday?",
+      chatName: 'Saturday Plans',
+      round1Props: ['Movie Night', 'Cook-off', 'Board Games'],
+      round1Winner: 'Movie Night',
+      round2Props: ['Karaoke', 'Potluck Dinner', 'Movie Night', 'Board Games'],
+      round3Props: ['DIY Craft Night', 'Trivia Night', 'Video Game Tournament'],
     ),
     'classic': TutorialTemplate(
       key: 'classic',
@@ -117,24 +60,14 @@ class TutorialTemplate {
   };
 
   static TutorialTemplate getTemplate(String? key) {
-    return templates[key] ?? templates['classic']!;
+    return templates[key] ?? templates[defaultKey]!;
   }
 
   /// Translate a template question using l10n description keys.
   static String translateQuestion(String? templateKey, dynamic l10n) {
     switch (templateKey) {
-      case 'personal':
-        return l10n.tutorialTemplatePersonalDesc;
-      case 'family':
-        return l10n.tutorialTemplateFamilyDesc;
-      case 'community':
-        return l10n.tutorialTemplateCommunityDesc;
-      case 'workplace':
-        return l10n.tutorialTemplateWorkplaceDesc;
-      case 'government':
-        return l10n.tutorialTemplateGovernmentDesc;
-      case 'world':
-        return l10n.tutorialTemplateWorldDesc;
+      case 'saturday':
+        return l10n.tutorialTemplateSaturdayDesc;
       default:
         return l10n.tutorialQuestion;
     }
@@ -153,7 +86,16 @@ class TutorialTemplate {
   }
 
   static final Map<String, String Function(dynamic)> _propTranslations = {
-    // Classic
+    // Saturday
+    'Movie Night': (l10n) => l10n.tutorialPropMovieNight,
+    'Cook-off': (l10n) => l10n.tutorialPropCookOff,
+    'Board Games': (l10n) => l10n.tutorialPropBoardGames,
+    'Karaoke': (l10n) => l10n.tutorialPropKaraoke,
+    'Potluck Dinner': (l10n) => l10n.tutorialPropPotluckDinner,
+    'DIY Craft Night': (l10n) => l10n.tutorialPropDiyCraftNight,
+    'Trivia Night': (l10n) => l10n.tutorialPropTriviaNight,
+    'Video Game Tournament': (l10n) => l10n.tutorialPropVideoGameTournament,
+    // Classic (fallback)
     'Success': (l10n) => l10n.tutorialPropSuccess,
     'Adventure': (l10n) => l10n.tutorialPropAdventure,
     'Growth': (l10n) => l10n.tutorialPropGrowth,
@@ -162,60 +104,6 @@ class TutorialTemplate {
     'Freedom': (l10n) => l10n.tutorialPropFreedom,
     'Security': (l10n) => l10n.tutorialPropSecurity,
     'Stability': (l10n) => l10n.tutorialPropStability,
-    // Personal
-    'Travel Abroad': (l10n) => l10n.tutorialPropTravelAbroad,
-    'Start a Business': (l10n) => l10n.tutorialPropStartABusiness,
-    'Graduate School': (l10n) => l10n.tutorialPropGraduateSchool,
-    'Get a Job First': (l10n) => l10n.tutorialPropGetAJobFirst,
-    'Take a Gap Year': (l10n) => l10n.tutorialPropTakeAGapYear,
-    'Freelance': (l10n) => l10n.tutorialPropFreelance,
-    'Move to a New City': (l10n) => l10n.tutorialPropMoveToANewCity,
-    'Volunteer Program': (l10n) => l10n.tutorialPropVolunteerProgram,
-    // Family
-    'Beach Resort': (l10n) => l10n.tutorialPropBeachResort,
-    'Mountain Cabin': (l10n) => l10n.tutorialPropMountainCabin,
-    'City Trip': (l10n) => l10n.tutorialPropCityTrip,
-    'Road Trip': (l10n) => l10n.tutorialPropRoadTrip,
-    'Camping Adventure': (l10n) => l10n.tutorialPropCampingAdventure,
-    'Cruise': (l10n) => l10n.tutorialPropCruise,
-    'Theme Park': (l10n) => l10n.tutorialPropThemePark,
-    'Cultural Exchange': (l10n) => l10n.tutorialPropCulturalExchange,
-    // Community
-    'Block Party': (l10n) => l10n.tutorialPropBlockParty,
-    'Community Garden': (l10n) => l10n.tutorialPropCommunityGarden,
-    'Neighborhood Watch': (l10n) => l10n.tutorialPropNeighborhoodWatch,
-    'Tool Library': (l10n) => l10n.tutorialPropToolLibrary,
-    'Mutual Aid Fund': (l10n) => l10n.tutorialPropMutualAidFund,
-    'Free Little Library': (l10n) => l10n.tutorialPropFreeLittleLibrary,
-    'Street Mural': (l10n) => l10n.tutorialPropStreetMural,
-    'Skill-Share Night': (l10n) => l10n.tutorialPropSkillShareNight,
-    // Workplace
-    'Flexible Hours': (l10n) => l10n.tutorialPropFlexibleHours,
-    'Mental Health Support': (l10n) => l10n.tutorialPropMentalHealthSupport,
-    'Team Building': (l10n) => l10n.tutorialPropTeamBuilding,
-    'Skills Training': (l10n) => l10n.tutorialPropSkillsTraining,
-    'Open Communication': (l10n) => l10n.tutorialPropOpenCommunication,
-    'Fair Compensation': (l10n) => l10n.tutorialPropFairCompensation,
-    'Work-Life Balance': (l10n) => l10n.tutorialPropWorkLifeBalance,
-    'Innovation Time': (l10n) => l10n.tutorialPropInnovationTime,
-    // Government
-    'Public Transportation': (l10n) => l10n.tutorialPropPublicTransportation,
-    'School Funding': (l10n) => l10n.tutorialPropSchoolFunding,
-    'Emergency Services': (l10n) => l10n.tutorialPropEmergencyServices,
-    'Road Repairs': (l10n) => l10n.tutorialPropRoadRepairs,
-    'Public Health': (l10n) => l10n.tutorialPropPublicHealth,
-    'Affordable Housing': (l10n) => l10n.tutorialPropAffordableHousing,
-    'Small Business Grants': (l10n) => l10n.tutorialPropSmallBusinessGrants,
-    'Parks & Recreation': (l10n) => l10n.tutorialPropParksAndRecreation,
-    // World
-    'Climate Change': (l10n) => l10n.tutorialPropClimateChange,
-    'Global Poverty': (l10n) => l10n.tutorialPropGlobalPoverty,
-    'AI Governance': (l10n) => l10n.tutorialPropAiGovernance,
-    'Pandemic Preparedness': (l10n) => l10n.tutorialPropPandemicPreparedness,
-    'Nuclear Disarmament': (l10n) => l10n.tutorialPropNuclearDisarmament,
-    'Ocean Conservation': (l10n) => l10n.tutorialPropOceanConservation,
-    'Digital Rights': (l10n) => l10n.tutorialPropDigitalRights,
-    'Space Cooperation': (l10n) => l10n.tutorialPropSpaceCooperation,
   };
 }
 
@@ -223,9 +111,9 @@ class TutorialTemplate {
 class TutorialData {
   TutorialData._();
 
-  // Default tutorial question (classic template / fallback)
-  static const String question = 'What do we value?';
-  static const String chatName = 'Values';
+  // Default tutorial question
+  static const String question = "What's the best way to spend a free Saturday?";
+  static const String chatName = 'Saturday Plans';
   static const String initialMessage = question;
 
   /// Get question for a given template key (falls back to classic)
@@ -280,8 +168,8 @@ class TutorialData {
         Participant(
           id: -2,
           chatId: -1,
-          userId: 'tutorial-alice',
-          displayName: 'Alice',
+          userId: 'tutorial-alex',
+          displayName: 'Alex',
           isHost: false,
           isAuthenticated: false,
           status: ParticipantStatus.active,
@@ -290,8 +178,8 @@ class TutorialData {
         Participant(
           id: -3,
           chatId: -1,
-          userId: 'tutorial-bob',
-          displayName: 'Bob',
+          userId: 'tutorial-sam',
+          displayName: 'Sam',
           isHost: false,
           isAuthenticated: false,
           status: ParticipantStatus.active,
@@ -300,8 +188,8 @@ class TutorialData {
         Participant(
           id: -4,
           chatId: -1,
-          userId: 'tutorial-carol',
-          displayName: 'Carol',
+          userId: 'tutorial-jordan',
+          displayName: 'Jordan',
           isHost: false,
           isAuthenticated: false,
           status: ParticipantStatus.active,
@@ -352,17 +240,18 @@ class TutorialData {
   // === PROPOSITIONS (for rating screen) ===
 
   /// Round 1 propositions (3 visible + user's hidden = 4 total)
-  static const round1PropositionContents = ['Success', 'Adventure', 'Growth'];
+  static const round1PropositionContents = ['Movie Night', 'Cook-off', 'Board Games'];
 
-  /// Round 2 propositions (Success carried + 2 new + user's = 4 total)
+  /// Round 2 propositions (3 new NPC + Movie Night carried + user's = 5 total)
   static const round2PropositionContents = [
-    'Harmony',
-    'Innovation',
-    'Success'
+    'Karaoke',
+    'Potluck Dinner',
+    'Movie Night',
+    'Board Games'
   ];
 
   /// Round 3 propositions (user's carried + 3 new = 4 total)
-  static const round3PropositionContents = ['Freedom', 'Security', 'Stability'];
+  static const round3PropositionContents = ['DIY Craft Night', 'Trivia Night', 'Video Game Tournament'];
 
   /// Template-aware proposition getters
   static List<String> round1Props(String? templateKey) =>
@@ -425,8 +314,8 @@ class TutorialData {
 
   // === WINNERS ===
 
-  /// Round 1 winner (always "Success" for classic template)
-  static const round1WinnerContent = 'Success';
+  /// Round 1 winner
+  static const round1WinnerContent = 'Movie Night';
 
   /// Template-aware round 1 winner content
   static String round1WinnerForTemplate(String? templateKey) =>
@@ -440,6 +329,23 @@ class TutorialData {
         createdAt: DateTime.now(),
         content: round1WinnerForTemplate(templateKey),
       );
+
+  /// Round 1 tied winner (second winner for testing tie display)
+  static RoundWinner round1TiedWinner({String? templateKey}) {
+    final template = TutorialTemplate.getTemplate(templateKey);
+    // Use the second proposition from round 1 as the tied winner
+    final tiedContent = template.round1Props.length > 1
+        ? template.round1Props[1]
+        : template.round1Props[0];
+    return RoundWinner(
+      id: -10,
+      roundId: -1,
+      propositionId: -101,
+      rank: 1,
+      createdAt: DateTime.now(),
+      content: tiedContent,
+    );
+  }
 
   /// Round 2 winner (user's proposition)
   static RoundWinner round2Winner(String userProposition) => RoundWinner(
@@ -473,34 +379,35 @@ class TutorialData {
   // === LEGACY: Tutorial Propositions (for backwards compat) ===
 
   static const round1Propositions = [
-    TutorialProposition(id: 'r1_1', content: 'Success'),
-    TutorialProposition(id: 'r1_2', content: 'Adventure'),
-    TutorialProposition(id: 'r1_3', content: 'Growth'),
+    TutorialProposition(id: 'r1_1', content: 'Movie Night'),
+    TutorialProposition(id: 'r1_2', content: 'Cook-off'),
+    TutorialProposition(id: 'r1_3', content: 'Board Games'),
   ];
 
   static const round2Propositions = [
+    TutorialProposition(id: 'r2_1', content: 'Karaoke'),
+    TutorialProposition(id: 'r2_2', content: 'Potluck Dinner'),
     TutorialProposition(
-      id: 'r2_1',
-      content: 'Success',
+      id: 'r2_3',
+      content: 'Movie Night',
       isCarriedForward: true,
     ),
-    TutorialProposition(id: 'r2_2', content: 'Harmony'),
-    TutorialProposition(id: 'r2_3', content: 'Innovation'),
+    TutorialProposition(id: 'r2_4', content: 'Board Games'),
   ];
 
   static const round3Propositions = [
-    TutorialProposition(id: 'r3_1', content: 'Freedom'),
-    TutorialProposition(id: 'r3_2', content: 'Security'),
-    TutorialProposition(id: 'r3_3', content: 'Stability'),
+    TutorialProposition(id: 'r3_1', content: 'DIY Craft Night'),
+    TutorialProposition(id: 'r3_2', content: 'Trivia Night'),
+    TutorialProposition(id: 'r3_3', content: 'Video Game Tournament'),
   ];
 
   // === MESSAGES ===
 
   static const round1ResultMessage =
-      "The group chose 'Success'. But is that the best we can do?";
+      "The group chose 'Movie Night'. But can you come up with something better?";
 
   static const round2Prompt =
-      "Seeing 'Success' as the group's current answer - what do you think we REALLY value?";
+      "'Movie Night' is the current winner — what's your best idea to beat it?";
 
   static String round2ResultMessage(String userProp) =>
       "Your idea '$userProp' is now leading! One more round to confirm convergence.";
@@ -560,10 +467,11 @@ class TutorialData {
   }
 
   /// Round 2 results - user's proposition wins!
-  /// R1 winner is carried forward, user's new idea beats it.
+  /// R1 winner is carried forward, 3 new NPC props, user's new idea beats all.
   static List<Proposition> round2ResultsWithRatings(String userProposition, {String? templateKey}) {
     final template = TutorialTemplate.getTemplate(templateKey);
     final props = template.round2Props;
+    // props layout: [new0, new1, carried, new3]
     return [
       Proposition(
         id: -200,
@@ -577,8 +485,8 @@ class TutorialData {
         id: -201,
         roundId: -2,
         participantId: -2, // Alice (carried forward from R1)
-        content: props[2], // R1 winner carried forward (now last)
-        finalRating: 67.0,
+        content: props[2], // R1 winner carried forward (Movie Night)
+        finalRating: 75.0,
         createdAt: DateTime.now(),
       ),
       Proposition(
@@ -586,7 +494,7 @@ class TutorialData {
         roundId: -2,
         participantId: -3, // Bob
         content: props[0],
-        finalRating: 33.0,
+        finalRating: 50.0,
         createdAt: DateTime.now(),
       ),
       Proposition(
@@ -594,6 +502,14 @@ class TutorialData {
         roundId: -2,
         participantId: -4, // Carol
         content: props[1],
+        finalRating: 25.0,
+        createdAt: DateTime.now(),
+      ),
+      Proposition(
+        id: -204,
+        roundId: -2,
+        participantId: -2, // Alice (new submission)
+        content: props[3],
         finalRating: 0.0,
         createdAt: DateTime.now(),
       ),
@@ -602,7 +518,7 @@ class TutorialData {
 
   /// Round 3 results - user's proposition wins again = CONSENSUS!
   /// User's idea carried forward and wins again.
-  static List<Proposition> round3ResultsWithRatings(String userProposition, {String? templateKey}) {
+  static List<Proposition> round3ResultsWithRatings(String userProposition, {String? templateKey, String? userR3Proposition}) {
     final template = TutorialTemplate.getTemplate(templateKey);
     final props = template.round3Props;
     return [
@@ -614,12 +530,22 @@ class TutorialData {
         finalRating: 100.0, // Winner again - CONSENSUS!
         createdAt: DateTime.now(),
       ),
+      // User's R3 submission (if they submitted instead of skipping)
+      if (userR3Proposition != null)
+        Proposition(
+          id: -304,
+          roundId: -3,
+          participantId: -1, // User (new R3 idea)
+          content: userR3Proposition,
+          finalRating: 75.0,
+          createdAt: DateTime.now(),
+        ),
       Proposition(
         id: -301,
         roundId: -3,
         participantId: -2, // Alice
         content: props[0],
-        finalRating: 67.0,
+        finalRating: userR3Proposition != null ? 50.0 : 67.0,
         createdAt: DateTime.now(),
       ),
       Proposition(
@@ -627,7 +553,7 @@ class TutorialData {
         roundId: -3,
         participantId: -3, // Bob
         content: props[1],
-        finalRating: 33.0,
+        finalRating: userR3Proposition != null ? 25.0 : 33.0,
         createdAt: DateTime.now(),
       ),
       Proposition(
@@ -635,7 +561,7 @@ class TutorialData {
         roundId: -3,
         participantId: -4, // Carol
         content: props[2],
-        finalRating: 0.0,
+        finalRating: userR3Proposition != null ? 0.0 : 0.0,
         createdAt: DateTime.now(),
       ),
     ];

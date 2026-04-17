@@ -305,7 +305,7 @@ void main() {
       );
 
       expect(find.text('Timer'), findsOneWidget);
-      expect(find.text('2 min'), findsOneWidget);
+      expect(find.text('1 min'), findsOneWidget);
       expect(find.text('30 min'), findsOneWidget);
       expect(find.text('1 hour'), findsOneWidget);
       expect(find.text('1 day'), findsOneWidget);
@@ -357,13 +357,13 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('2 min'));
-      expect(selectedPreset, '2min');
-      expect(selectedDuration, 120);
+      await tester.tap(find.text('1 min'));
+      expect(selectedPreset, '1min');
+      expect(selectedDuration, 60);
     });
 
     test('presets map has correct values', () {
-      expect(TimerPresets.presets['2min'], 120);
+      expect(TimerPresets.presets['1min'], 60);
       expect(TimerPresets.presets['30min'], 1800);
       expect(TimerPresets.presets['1hour'], 3600);
       expect(TimerPresets.presets['1day'], 86400);

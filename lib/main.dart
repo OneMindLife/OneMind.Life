@@ -30,8 +30,7 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-  } catch (e) {
-    debugPrint('Firebase initialization failed: $e');
+  } catch (_) {
     // Continue without Analytics - not critical for app function
   }
 
@@ -125,6 +124,16 @@ SentryLevel _sentryLevelFromString(String level) {
   }
 }
 
+const _fadeTransitions = PageTransitionsTheme(
+  builders: {
+    TargetPlatform.android: _CrossFadePageTransitionsBuilder(),
+    TargetPlatform.iOS: _CrossFadePageTransitionsBuilder(),
+    TargetPlatform.linux: _CrossFadePageTransitionsBuilder(),
+    TargetPlatform.macOS: _CrossFadePageTransitionsBuilder(),
+    TargetPlatform.windows: _CrossFadePageTransitionsBuilder(),
+  },
+);
+
 ThemeData _buildLightTheme() {
   final colorScheme = ColorScheme.fromSeed(
     seedColor: AppColors.seed,
@@ -156,6 +165,7 @@ ThemeData _buildLightTheme() {
       ),
     ),
     scaffoldBackgroundColor: AppColors.surfaceWarm,
+    pageTransitionsTheme: _fadeTransitions,
     appBarTheme: AppBarTheme(
       centerTitle: false,
       elevation: 0,
@@ -245,6 +255,7 @@ ThemeData _buildDarkTheme() {
       ),
     ),
     scaffoldBackgroundColor: AppColors.darkSurface,
+    pageTransitionsTheme: _fadeTransitions,
     appBarTheme: AppBarTheme(
       centerTitle: false,
       elevation: 0,
@@ -351,7 +362,33 @@ class _OneMindAppState extends ConsumerState<OneMindApp> {
       ],
       theme: _buildLightTheme(),
       darkTheme: _buildDarkTheme(),
-      themeMode: ThemeMode.system,
+      themeMode: ThemeMode.dark,
+      ),
+    );
+  }
+}
+
+/// Cross-fade transition: outgoing page fades out, incoming page fades in.
+class _CrossFadePageTransitionsBuilder extends PageTransitionsBuilder {
+  const _CrossFadePageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
+    return ColoredBox(
+      color: bgColor,
+      child: FadeTransition(
+        opacity: animation,
+        child: FadeTransition(
+          opacity: Tween<double>(begin: 1.0, end: 0.0).animate(secondaryAnimation),
+          child: child,
+        ),
       ),
     );
   }

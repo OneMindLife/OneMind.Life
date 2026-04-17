@@ -275,6 +275,12 @@ extension MockPropositionServiceSetup on MockPropositionService {
         .thenAnswer((_) async => hasRated);
   }
 
+  /// Setup getParticipantsWhoRated
+  void setupGetParticipantsWhoRated(int roundId, Set<int> participantIds) {
+    when(() => getParticipantsWhoRated(roundId))
+        .thenAnswer((_) async => participantIds);
+  }
+
   /// Setup getUserRoundRanks (for leaderboard display)
   void setupGetUserRoundRanks(List<UserRoundRank> ranks) {
     when(() => getUserRoundRanks(

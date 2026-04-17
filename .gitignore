@@ -6,6 +6,7 @@
 .env.*
 !.env.example
 supabase/functions/.env
+googlekey.json
 supabase/.env.local
 .secrets.env
 
@@ -66,3 +67,4 @@ e2e/playwright-report/
 e2e/blob-report/
 e2e/.env
 !e2e/.env.example
+onemind-bfba5-firebase-adminsdk-fbsvc-1f7d3feb27.json

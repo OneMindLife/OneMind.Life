@@ -9,14 +9,12 @@ import 'form_inputs.dart';
 class WizardStepTiming extends StatelessWidget {
   final TimerSettings timerSettings;
   final void Function(TimerSettings) onTimerSettingsChanged;
-  final VoidCallback onBack;
   final VoidCallback onContinue;
 
   const WizardStepTiming({
     super.key,
     required this.timerSettings,
     required this.onTimerSettingsChanged,
-    required this.onBack,
     required this.onContinue,
   });
 
@@ -160,37 +158,20 @@ class WizardStepTiming extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Navigation buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onBack,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.arrow_back, size: 18),
-                      const SizedBox(width: 8),
-                      Text(l10n.back),
-                    ],
-                  ),
-                ),
+          // Navigation button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onContinue,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.continue_),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 18),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: onContinue,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(l10n.continue_),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

@@ -1,6 +1,6 @@
 import 'package:equatable/equatable.dart';
 
-enum PersonalCodeStatus { active, used, revoked }
+enum PersonalCodeStatus { active, reserved, used, revoked }
 
 class PersonalCode extends Equatable {
   final int id;
@@ -8,6 +8,8 @@ class PersonalCode extends Equatable {
   final String? label;
   final String? usedBy;
   final DateTime? usedAt;
+  final String? reservedBy;
+  final DateTime? reservedAt;
   final DateTime? revokedAt;
   final DateTime createdAt;
 
@@ -17,6 +19,8 @@ class PersonalCode extends Equatable {
     this.label,
     this.usedBy,
     this.usedAt,
+    this.reservedBy,
+    this.reservedAt,
     this.revokedAt,
     required this.createdAt,
   });
@@ -24,6 +28,11 @@ class PersonalCode extends Equatable {
   PersonalCodeStatus get status {
     if (revokedAt != null) return PersonalCodeStatus.revoked;
     if (usedAt != null) return PersonalCodeStatus.used;
+    if (reservedBy != null && reservedAt != null) {
+      // Check if reservation is still valid (< 5 min old)
+      final age = DateTime.now().difference(reservedAt!);
+      if (age.inMinutes < 5) return PersonalCodeStatus.reserved;
+    }
     return PersonalCodeStatus.active;
   }
 
@@ -38,6 +47,10 @@ class PersonalCode extends Equatable {
       usedAt: json['used_at'] != null
           ? DateTime.parse(json['used_at'] as String)
           : null,
+      reservedBy: json['reserved_by'] as String?,
+      reservedAt: json['reserved_at'] != null
+          ? DateTime.parse(json['reserved_at'] as String)
+          : null,
       revokedAt: json['revoked_at'] != null
           ? DateTime.parse(json['revoked_at'] as String)
           : null,
@@ -46,5 +59,5 @@ class PersonalCode extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, code, label, usedBy, usedAt, revokedAt, createdAt];
+  List<Object?> get props => [id, code, label, usedBy, usedAt, reservedBy, reservedAt, revokedAt, createdAt];
 }

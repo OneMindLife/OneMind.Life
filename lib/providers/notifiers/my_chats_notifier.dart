@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/models.dart';
@@ -268,8 +267,6 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         // Chat is new (wasn't in old chats) AND was in pending requests
         if (!oldChatIds.contains(dashInfo.chat.id) &&
             oldPendingChatIds.contains(dashInfo.chat.id)) {
-          debugPrint(
-              '[MyChatsNotifier] Join request approved for chat ${dashInfo.chat.id}: ${dashInfo.chat.name}');
           _approvedChatController.add(dashInfo.chat);
         }
       }
@@ -312,8 +309,6 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         for (final dashInfo in dashboardChats) {
           if (!oldChatIds.contains(dashInfo.chat.id) &&
               oldPendingChatIds.contains(dashInfo.chat.id)) {
-            debugPrint(
-                '[MyChatsNotifier] Join request approved for chat ${dashInfo.chat.id}: ${dashInfo.chat.name}');
             _approvedChatController.add(dashInfo.chat);
           }
         }

@@ -1,0 +1,62 @@
+[
+  {
+    "word": "These",
+    "start": 0.0,
+    "end": 0.325
+  },
+  {
+    "word": "are",
+    "start": 0.36,
+    "end": 0.441
+  },
+  {
+    "word": "the",
+    "start": 0.464,
+    "end": 0.534
+  },
+  {
+    "word": "participants",
+    "start": 0.569,
+    "end": 1.184
+  },
+  {
+    "word": "in",
+    "start": 1.219,
+    "end": 1.277
+  },
+  {
+    "word": "the",
+    "start": 1.312,
+    "end": 1.382
+  },
+  {
+    "word": "chat.",
+    "start": 1.405,
+    "end": 1.834
+  },
+  {
+    "word": "You,",
+    "start": 1.997,
+    "end": 2.357
+  },
+  {
+    "word": "Alex,",
+    "start": 2.519,
+    "end": 3.03
+  },
+  {
+    "word": "Sam,",
+    "start": 3.111,
+    "end": 3.541
+  },
+  {
+    "word": "and",
+    "start": 3.576,
+    "end": 3.715
+  },
+  {
+    "word": "Jordan.",
+    "start": 3.785,
+    "end": 4.365
+  }
+]

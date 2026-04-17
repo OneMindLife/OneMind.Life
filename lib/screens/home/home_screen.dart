@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../config/app_colors.dart';
-import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/error_view.dart';
 import '../../models/models.dart';
@@ -13,13 +11,15 @@ import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../../utils/dashboard_sort.dart';
 import '../chat/chat_screen.dart';
-import '../join/join_dialog.dart';
 import '../create/create_chat_wizard.dart';
 import '../legal/legal_documents_dialog.dart';
-import '../tutorial/tutorial_data.dart';
 import '../../widgets/chat_dashboard_card.dart';
 import '../../widgets/language_selector.dart';
+import '../action_picker/action_picker_screen.dart';
+import '../../widgets/pwa_install_banner.dart';
 import '../../widgets/welcome_header.dart';
+
+const String _donateUrl = 'https://buy.stripe.com/aFa6oHbXedYZg1xap4b3q01';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key, this.returnToChatId});
@@ -39,15 +39,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   bool _hasPlayedEntrance = false;
   Timer? _tickTimer;
 
-  /// Regex to detect a 6 alphanumeric character invite code
-  static final _inviteCodeRegex = RegExp(r'^[A-Za-z0-9]{6}$');
-
-  // Invite code auto-lookup state
-  Chat? _inviteCodeChat;
-  bool _inviteCodeLoading = false;
-  String? _inviteCodeError;
-  String? _lastLookedUpCode;
-  bool _inviteCodeAlreadyMember = false;
+  // Invite code state removed — joining now handled via action picker
 
   @override
   void initState() {
@@ -61,80 +53,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupApprovedChatListener();
       _handleReturnToChat();
+      ref.read(pushNotificationServiceProvider).initialize();
     });
   }
 
   void _onSearchChanged() {
     final query = _searchController.text.trim();
     setState(() => _isSearching = query.isNotEmpty);
-
-    final code = _detectedInviteCode;
-    if (code != null && code != _lastLookedUpCode) {
-      _lookupInviteCode(code);
-    } else if (code == null) {
-      // No longer a valid code — clear state
-      if (_lastLookedUpCode != null ||
-          _inviteCodeChat != null ||
-          _inviteCodeError != null) {
-        setState(() {
-          _inviteCodeChat = null;
-          _inviteCodeLoading = false;
-          _inviteCodeError = null;
-          _lastLookedUpCode = null;
-          _inviteCodeAlreadyMember = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _lookupInviteCode(String code) async {
-    setState(() {
-      _inviteCodeLoading = true;
-      _inviteCodeError = null;
-      _inviteCodeChat = null;
-      _inviteCodeAlreadyMember = false;
-      _lastLookedUpCode = code;
-    });
-
-    try {
-      final chatService = ref.read(chatServiceProvider);
-      final participantService = ref.read(participantServiceProvider);
-      final languageCode = ref.read(localeProvider).languageCode;
-      final chat = await chatService.getChatByCode(
-        code,
-        languageCode: languageCode,
-      );
-
-      // Check if the code changed while we were loading
-      if (_lastLookedUpCode != code || !mounted) return;
-
-      if (chat == null) {
-        setState(() {
-          _inviteCodeError = AppLocalizations.of(context).chatNotFound;
-          _inviteCodeLoading = false;
-        });
-        return;
-      }
-
-      // Check if already a member
-      final existing = await participantService.getMyParticipant(chat.id);
-      if (_lastLookedUpCode != code || !mounted) return;
-
-      final alreadyMember =
-          existing != null && existing.status == ParticipantStatus.active;
-
-      setState(() {
-        _inviteCodeChat = chat;
-        _inviteCodeAlreadyMember = alreadyMember;
-        _inviteCodeLoading = false;
-      });
-    } catch (_) {
-      if (_lastLookedUpCode != code || !mounted) return;
-      setState(() {
-        _inviteCodeError = AppLocalizations.of(context).failedToLookupChat;
-        _inviteCodeLoading = false;
-      });
-    }
   }
 
   void _setupApprovedChatListener() {
@@ -169,44 +94,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     _approvedChatSubscription?.cancel();
     _searchController.dispose();
     _tickTimer?.cancel();
-    _lastLookedUpCode = null;
     super.dispose();
   }
 
-  void _openJoinDialog(BuildContext context, WidgetRef ref, {Chat? preloadedChat}) async {
-    // showDialog returns the Chat when a request-to-join was sent (via Navigator.pop(context, chat))
-    // and null when cancelled or when a direct join happened (handled by onJoined).
-    final requestedChat = await showDialog<Chat>(
-      context: context,
-      builder: (ctx) => JoinDialog(
-        preloadedChat: preloadedChat,
-        onJoined: (chat) {
-          ref.read(myChatsProvider.notifier).refresh();
-          _navigateToChat(context, ref, chat);
-        },
-      ),
+  void _openActionPicker(BuildContext context, WidgetRef ref) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ActionPickerScreen()),
     );
-
-    if (!mounted) return;
-    _searchController.clear();
-
-    // Optimistic update: add the pending request to local state immediately
-    if (requestedChat != null) {
-      final authService = ref.read(authServiceProvider);
-      ref.read(myChatsProvider.notifier).addPendingRequest(
-        JoinRequest(
-          id: -1, // Temporary; next DB refresh will reconcile
-          chatId: requestedChat.id,
-          userId: authService.currentUserId,
-          displayName: authService.displayName ?? '',
-          isAuthenticated: true,
-          status: JoinRequestStatus.pending,
-          createdAt: DateTime.now(),
-          chatName: requestedChat.displayName,
-          chatInitialMessage: requestedChat.displayInitialMessage,
-          translationLanguages: requestedChat.translationLanguages,
-        ),
-      );
+    // Refresh chat list in case they created/joined a chat
+    if (mounted) {
+      ref.read(myChatsProvider.notifier).refresh();
     }
   }
 
@@ -263,12 +161,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// Check if the current search text looks like a 6-char invite code
-  String? get _detectedInviteCode {
-    final text = _searchController.text.trim();
-    if (_inviteCodeRegex.hasMatch(text)) return text.toUpperCase();
-    return null;
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -283,19 +176,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
         actions: [
           IconButton(
-            key: const Key('explore-button'),
-            icon: const Icon(Icons.explore),
-            tooltip: l10n.discoverChats,
-            onPressed: () => context.push('/discover'),
+            key: const Key('donate-button'),
+            icon: const Icon(Icons.favorite_outline),
+            tooltip: l10n.donate,
+            onPressed: () => launchUrl(
+              Uri.parse(_donateUrl),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
-          const LanguageSelector(compact: true),
+          IconButton(
+            key: const Key('tutorial-button'),
+            icon: const Icon(Icons.help_outline),
+            tooltip: l10n.howItWorks,
+            onPressed: () => context.push('/tutorial?skipIntro=true'),
+          ),
           PopupMenuButton<String>(
             key: const Key('overflow-menu'),
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               switch (value) {
-                case 'tutorial':
-                  context.push('/tutorial');
+                case 'language':
+                  showEnhancedLanguageDialog(context, ref);
                 case 'contact':
                   launchUrl(Uri.parse('mailto:joel@onemind.life'));
                 case 'source':
@@ -309,10 +210,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             },
             itemBuilder: (context) => [
               PopupMenuItem(
-                value: 'tutorial',
+                value: 'language',
                 child: ListTile(
-                  leading: const Icon(Icons.help_outline),
-                  title: Text(l10n.howItWorks),
+                  leading: const Icon(Icons.language),
+                  title: Text(l10n.language),
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -352,6 +253,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           // Welcome header with editable display name
           const WelcomeHeader(),
+          // PWA install prompt (mobile only, once per session)
+          const PwaInstallBanner(),
           // Persistent search bar (outside RefreshIndicator)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -388,7 +291,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       ),
       floatingActionButton: FloatingActionButton(
         key: const Key('create-chat-fab'),
-        onPressed: () => _openCreateChat(context, ref),
+        onPressed: () => _openActionPicker(context, ref),
         child: const Icon(Icons.add),
       ),
     );
@@ -399,7 +302,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     AsyncValue<MyChatsState> myChatsStateAsync,
     AppLocalizations l10n,
   ) {
-    final inviteCode = _detectedInviteCode;
     final query = _searchController.text.trim().toLowerCase();
 
     return myChatsStateAsync.when(
@@ -412,114 +314,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
           children: [
-            // Invite code inline preview
-            if (inviteCode != null) ...[
-              // Tutorial code shortcut
-              if (inviteCode == TutorialData.demoInviteCode)
-                Card(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: () => context.go('/tutorial'),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.school,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              l10n.inviteCodeDetected(inviteCode),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                          ),
-                          Icon(Icons.arrow_forward,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimaryContainer),
-                        ],
-                      ),
-                    ),
-                  ),
-                )
-              // Loading state
-              else if (_inviteCodeLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                )
-              // Error / not found
-              else if (_inviteCodeError != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error_outline,
-                          size: 20,
-                          color: Theme.of(context).colorScheme.error),
-                      const SizedBox(width: 8),
-                      Text(
-                        _inviteCodeError!,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                      ),
-                    ],
-                  ),
-                )
-              // Found — already a member
-              else if (_inviteCodeChat != null && _inviteCodeAlreadyMember)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ChatDashboardCard(
-                    name: _inviteCodeChat!.displayName,
-                    initialMessage: _inviteCodeChat!.displayInitialMessage,
-                    onTap: () =>
-                        _navigateToChat(context, ref, _inviteCodeChat!),
-                    translationLanguages:
-                        _inviteCodeChat!.translationLanguages,
-                  ),
-                )
-              // Found — not a member (show Join button)
-              else if (_inviteCodeChat != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: ChatDashboardCard(
-                    name: _inviteCodeChat!.displayName,
-                    initialMessage: _inviteCodeChat!.displayInitialMessage,
-                    onTap: () => _openJoinDialog(context, ref,
-                        preloadedChat: _inviteCodeChat),
-                    translationLanguages:
-                        _inviteCodeChat!.translationLanguages,
-                    trailing: FilledButton(
-                      onPressed: () => _openJoinDialog(context, ref,
-                          preloadedChat: _inviteCodeChat),
-                      child: Text(_inviteCodeChat!.requireApproval
-                          ? l10n.requestToJoin
-                          : l10n.join),
-                    ),
-                  ),
-                ),
-              const SizedBox(height: 8),
-            ],
-
             // Filtered own chats
             if (filtered.isEmpty)
               Padding(
@@ -529,7 +323,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Icon(
                       Icons.search_off,
                       size: 48,
-                      color: AppColors.textMuted,
+                      color: Theme.of(context).colorScheme.outline,
                     ),
                     const SizedBox(height: 16),
                     Text(
@@ -590,22 +384,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
             children: [
-              // Pending Join Requests Section
-              if (myChatsState.pendingRequests.isNotEmpty) ...[
-                _buildSectionHeader(context, l10n.pendingRequests),
-                const SizedBox(height: 8),
-                ...myChatsState.pendingRequests.map(
-                  (request) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _PendingRequestCard(
-                      request: request,
-                      onCancel: () => _cancelRequest(context, ref, request),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-              ],
-
               // My Chats
               _buildSectionHeader(context, l10n.yourChats),
               const SizedBox(height: 8),
@@ -667,6 +445,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   );
                 },
               ),
+
+              // Pending Join Requests Section (below chats)
+              if (myChatsState.pendingRequests.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _buildSectionHeader(context, l10n.pendingRequests),
+                const SizedBox(height: 8),
+                ...myChatsState.pendingRequests.map(
+                  (request) => Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _PendingRequestCard(
+                      request: request,
+                      onCancel: () => _cancelRequest(context, ref, request),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -687,7 +481,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return Text(
       title.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
           ),
@@ -704,7 +498,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Icon(
               Icons.chat_bubble_outline,
               size: 48,
-              color: AppColors.textMuted,
+              color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(height: 16),
             Text(
@@ -715,7 +509,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             Text(
               l10n.discoverPublicChatsJoinOrCreate,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -740,14 +534,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           children: [
             Icon(
               Icons.info_outline,
-              color: AppColors.textMuted,
+              color: Theme.of(context).colorScheme.outline,
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 l10n.noActiveChatsYet,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                     ),
               ),
             ),
@@ -785,9 +579,9 @@ class _PendingRequestCard extends StatelessWidget {
               ExcludeSemantics(
                 child: Container(
                   width: 4,
-                  decoration: const BoxDecoration(
-                    color: AppColors.consensus,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.tertiary,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       bottomLeft: Radius.circular(16),
                     ),
@@ -819,7 +613,7 @@ class _PendingRequestCard extends StatelessWidget {
                               Text(
                                 request.chatInitialMessage!,
                                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.textSecondary,
+                                      color: Theme.of(context).colorScheme.onSurfaceVariant,
                                     ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,

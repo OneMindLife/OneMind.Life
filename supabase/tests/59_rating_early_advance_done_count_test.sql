@@ -1,25 +1,27 @@
--- Test: Rating early advance uses "done participant" count instead of avg raters per prop
--- This ensures the fix for uneven proposition counts works correctly.
+-- Test: Rating early advance uses per-proposition model
+-- Verifies that trigger functions use the per-proposition approach:
+--   threshold = min(10, max(active_raters - 1, 1))
+--   advance when min(ratings per proposition) >= threshold
 
 BEGIN;
 SELECT plan(6);
 
 -- ============================================================
--- Test 1: Function exists with updated logic (uses done_count not avg)
+-- Test 1: Function exists
 -- ============================================================
 SELECT has_function('check_early_advance_on_rating');
 
 -- ============================================================
--- Test 2: Function source contains "done_count" (new approach)
+-- Test 2: Function source contains per-proposition min check
 -- ============================================================
 SELECT matches(
     (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating'),
-    'v_done_count',
-    'check_early_advance_on_rating uses done_count approach'
+    'v_min_ratings',
+    'check_early_advance_on_rating uses per-proposition min_ratings approach'
 );
 
 -- ============================================================
--- Test 3: Function source does NOT contain avg_raters_per_prop (old approach removed)
+-- Test 3: Function source does NOT contain old avg_raters_per_prop
 -- ============================================================
 SELECT ok(
     (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating')
@@ -28,25 +30,25 @@ SELECT ok(
 );
 
 -- ============================================================
--- Test 4: Function checks for rating_skips (skip support)
+-- Test 4: Function source does NOT contain old done_count user model
 -- ============================================================
-SELECT matches(
-    (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating'),
-    'rating_skips',
-    'check_early_advance_on_rating checks rating_skips table'
+SELECT ok(
+    (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating')
+    NOT LIKE '%v_done_count%',
+    'check_early_advance_on_rating does not use done_count user model'
 );
 
 -- ============================================================
--- Test 5: Skip trigger function also uses done_count
+-- Test 5: Skip trigger also uses per-proposition min check
 -- ============================================================
 SELECT matches(
     (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating_skip'),
-    'v_done_count',
-    'check_early_advance_on_rating_skip uses done_count approach'
+    'v_min_ratings',
+    'check_early_advance_on_rating_skip uses per-proposition min_ratings approach'
 );
 
 -- ============================================================
--- Test 6: Skip trigger function does NOT use avg_raters_per_prop
+-- Test 6: Skip trigger does NOT use old avg_raters_per_prop
 -- ============================================================
 SELECT ok(
     (SELECT prosrc FROM pg_proc WHERE proname = 'check_early_advance_on_rating_skip')

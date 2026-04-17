@@ -1,7 +1,7 @@
--- Tests that rating early advance accounts for self-skip
--- When rating_threshold_percent = 100, the required raters per proposition
--- should be capped at participants - 1 (since each person skips their own).
--- Without this fix, 100% threshold is unreachable.
+-- Tests that rating early advance works with per-proposition model.
+-- 3 participants, 0 skips, 3 propositions.
+-- Threshold = min(10, max(3-1, 1)) = 2.
+-- Advance when every proposition has >= 2 ratings.
 BEGIN;
 SELECT plan(5);
 
@@ -78,7 +78,7 @@ SELECT is(
 
 -- =============================================================================
 -- TEST 2: User1 rates Prop B and Prop C (skips own Prop A)
--- avg = 2/3 = 0.67 raters/prop. Required = LEAST(3, 3-1) = 2. Not met.
+-- Per-prop: prop_a=0, prop_b=1, prop_c=1 → min=0 < threshold=2. Not met.
 -- =============================================================================
 
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
@@ -89,12 +89,12 @@ VALUES
 SELECT is(
     (SELECT completed_at IS NULL FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
     true,
-    'After User1 rates others: NOT completed (avg = 0.67, need 2)'
+    'After User1 rates others: NOT completed (min=0 < threshold=2)'
 );
 
 -- =============================================================================
 -- TEST 3: User2 rates Prop A and Prop C (skips own Prop B)
--- avg = 4/3 = 1.33 raters/prop. Required = 2. Not met.
+-- Per-prop: prop_a=1, prop_b=1, prop_c=2 → min=1 < threshold=2. Not met.
 -- =============================================================================
 
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
@@ -105,14 +105,12 @@ VALUES
 SELECT is(
     (SELECT completed_at IS NULL FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
     true,
-    'After User2 rates others: NOT completed (avg = 1.33, need 2)'
+    'After User2 rates others: NOT completed (min=1 < threshold=2)'
 );
 
 -- =============================================================================
 -- TEST 4: User3 rates Prop A and Prop B (skips own Prop C)
--- Total: 6 ratings / 3 props = 2.0 avg raters/prop
--- Required = LEAST(CEIL(3*100/100), 3-1) = LEAST(3, 2) = 2. MET!
--- This is the key test: without the -1 cap, required=3 and 2.0 < 3 = never advances
+-- Per-prop: prop_a=2, prop_b=2, prop_c=2 → min=2 >= threshold=2. MET!
 -- =============================================================================
 
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
@@ -123,7 +121,7 @@ VALUES
 SELECT is(
     (SELECT completed_at IS NOT NULL FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
     true,
-    'After all rate others: COMPLETED (avg=2.0 >= cap of participants-1=2)'
+    'After all rate others: COMPLETED (min=2 >= threshold=2)'
 );
 
 -- =============================================================================

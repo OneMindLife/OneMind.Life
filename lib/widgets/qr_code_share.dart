@@ -12,12 +12,20 @@ class QrCodeShareDialog extends StatelessWidget {
   final String chatName;
   final String inviteCode;
   final String? deepLinkUrl;
+  final GlobalKey? closeButtonKey;
+  final bool closeEnabled;
+  final bool closeVisible;
+  final VoidCallback? onClose;
 
   const QrCodeShareDialog({
     super.key,
     required this.chatName,
     required this.inviteCode,
     this.deepLinkUrl,
+    this.closeButtonKey,
+    this.closeEnabled = true,
+    this.closeVisible = true,
+    this.onClose,
   });
 
   /// Show the QR code share dialog.
@@ -72,17 +80,25 @@ class QrCodeShareDialog extends StatelessWidget {
 
     return AlertDialog(
       title: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Text(
               l10n.shareLinkTitle(chatName),
-              overflow: TextOverflow.ellipsis,
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-            visualDensity: VisualDensity.compact,
+          AnimatedOpacity(
+            opacity: closeVisible ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: IgnorePointer(
+              ignoring: !closeEnabled,
+              child: IconButton(
+                key: closeButtonKey,
+                icon: const Icon(Icons.close),
+                onPressed: onClose ?? () => Navigator.pop(context),
+                visualDensity: VisualDensity.compact,
+              ),
+            ),
           ),
         ],
       ),
@@ -117,8 +133,6 @@ class QrCodeShareDialog extends StatelessWidget {
                             color: colorScheme.primary,
                             fontFamily: 'monospace',
                           ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   IconButton(

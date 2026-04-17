@@ -6,6 +6,60 @@ import 'rating_painter.dart';
 import 'proposition_card.dart';
 import 'stacked_proposition_card.dart';
 
+/// Controller for tutorial demos to invoke rating actions directly.
+/// Populated by _RatingWidgetState when the widget mounts.
+class RatingDemoController {
+  VoidCallback? swap;
+  void Function(int direction)? startMove; // 1 = up, -1 = down
+  VoidCallback? stopMove;
+
+  /// Visual press/release for buttons during demo (triggers scale animation)
+  VoidCallback? pressSwap;
+  VoidCallback? releaseSwap;
+  VoidCallback? pressUp;
+  VoidCallback? releaseUp;
+  VoidCallback? pressDown;
+  VoidCallback? releaseDown;
+}
+
+/// Pure math helpers for grid coordinate conversions (testable without widgets)
+class GridZoomMath {
+  static const double buffer = 75.0;
+
+  /// Convert a screen Y coordinate to a grid position (0-100).
+  /// screenY: where on screen the user is touching (0 = top of viewport)
+  /// scrollOffset: current scroll position of the SingleChildScrollView
+  /// availableHeight: viewport height
+  /// zoomLevel: current zoom multiplier
+  static double screenYToPosition(
+      double screenY, double scrollOffset, double availableHeight, double zoomLevel) {
+    final gridHeight = availableHeight * zoomLevel;
+    final stackHeight = gridHeight - (buffer * 2);
+    final gridY = scrollOffset + screenY;
+    return 100 * (1 - (gridY - buffer) / stackHeight);
+  }
+
+  /// Convert a grid position (0-100) to a grid Y coordinate (absolute, not screen).
+  static double positionToGridY(double position, double availableHeight, double zoomLevel) {
+    final gridHeight = availableHeight * zoomLevel;
+    final stackHeight = gridHeight - (buffer * 2);
+    return (1 - position / 100) * stackHeight + buffer;
+  }
+
+  /// Calculate the scroll offset needed to keep a grid position at the same screen Y
+  /// after a zoom change.
+  static double scrollForFocalPoint(
+      double screenY, double scrollOffset,
+      double availableHeight, double oldZoom, double newZoom) {
+    // What grid position is at the screen Y?
+    final position = screenYToPosition(screenY, scrollOffset, availableHeight, oldZoom);
+    // Where is that position in the new grid?
+    final newGridY = positionToGridY(position, availableHeight, newZoom);
+    // Scroll so it's at the same screen Y
+    return newGridY - screenY;
+  }
+}
+
 /// Constants for layout calculations
 class GridRankingConstants {
   static const double proposedMessageMaxHeight = 150.0;
@@ -49,6 +103,24 @@ class RatingWidget extends StatefulWidget {
   /// Callback when the rating phase changes (binary → positioning → completed)
   final void Function(RatingPhase phase)? onPhaseChanged;
 
+  /// Optional keys for tutorial to find button positions
+  final GlobalKey? swapButtonKey;
+  final GlobalKey? checkButtonKey;
+  final GlobalKey? movementControlsKey;
+
+  /// Notifier for all proposition positions during positioning phase.
+  /// Map of proposition id → position (0-100). Updated every frame.
+  final ValueNotifier<Map<String, double>>? positionsNotifier;
+
+  /// Controller for tutorial demos to invoke rating actions directly
+  /// (swap, start/stop continuous move) without simulated pointer events.
+  final RatingDemoController? demoController;
+
+  /// Optional key to attach to a specific proposition card (identified by id)
+  final GlobalKey? trackedCardKey;
+  /// The proposition id to attach the tracked key to
+  final String? trackedCardId;
+
   const RatingWidget({
     super.key,
     required this.propositions,
@@ -61,6 +133,13 @@ class RatingWidget extends StatefulWidget {
     this.isResuming = false,
     this.readOnly = false,
     this.onPhaseChanged,
+    this.swapButtonKey,
+    this.checkButtonKey,
+    this.movementControlsKey,
+    this.positionsNotifier,
+    this.demoController,
+    this.trackedCardKey,
+    this.trackedCardId,
   });
 
   @override
@@ -74,12 +153,21 @@ class RatingWidgetState extends State<RatingWidget>
   final ScrollController _scrollController = ScrollController();
 
   double _zoomLevel = 1.0;
+  double _pinchStartZoom = 1.0;
+  double _pinchFocalY = 0.0;
+  double _pinchStartDistance = 0.0;
+  double _pinchStartScroll = 0.0;
+  final Map<int, Offset> _activePointers = {};
+  bool _isPinching = false;
+  bool _isButtonZooming = false;
   Timer? _moveTimer;
   double? _lastAvailableHeight;
   double? _lastConstraintsHeight;
   int _lastPropositionCount = 0;
+  bool _isDraggingCard = false;
+  Timer? _dragHoldTimer;
+  double _dragTargetPosition = 50.0;
   bool _hasAutoSubmitted = false;
-  double _currentScrollOffset = 0.0;
   RatingPhase? _lastNotifiedPhase;
 
   @override
@@ -96,6 +184,13 @@ class RatingWidgetState extends State<RatingWidget>
     );
     _model.addListener(_onModelChange);
     _lastPropositionCount = _model.rankedPropositions.length;
+
+    // Expose model actions to tutorial demo controller
+    if (widget.demoController != null) {
+      widget.demoController!.swap = _model.swapBinaryPositions;
+      widget.demoController!.startMove = (direction) => _startContinuousMove(direction.toDouble());
+      widget.demoController!.stopMove = _stopContinuousMove;
+    }
 
     if (widget.onCounterUpdate != null || widget.onPhaseChanged != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -117,15 +212,14 @@ class RatingWidgetState extends State<RatingWidget>
     }
 
     _scrollController.addListener(() {
-      setState(() {
-        _currentScrollOffset = _scrollController.offset;
-      });
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
     _moveTimer?.cancel();
+    _dragHoldTimer?.cancel();
     _model.removeListener(_onModelChange);
     _model.dispose();
     _scrollController.dispose();
@@ -150,14 +244,9 @@ class RatingWidgetState extends State<RatingWidget>
   void _onModelChange() {
     final currentPropositionCount = _model.rankedPropositions.length;
     if (currentPropositionCount != _lastPropositionCount) {
-      _zoomLevel = 1.0;
       _lastPropositionCount = currentPropositionCount;
-      _currentScrollOffset = 0.0;
-
+      _zoomLevel = 1.0;
       if (_scrollController.hasClients) {
-        if (_scrollController.position.isScrollingNotifier.value) {
-          _scrollController.jumpTo(_scrollController.offset);
-        }
         _scrollController.jumpTo(0.0);
       }
     }
@@ -191,121 +280,51 @@ class RatingWidgetState extends State<RatingWidget>
   }
 
   void _zoomIn() {
-    if (_lastAvailableHeight == null || _lastConstraintsHeight == null) {
-      setState(() {
-        _zoomLevel = (_zoomLevel * 1.25).clamp(1.0, 15.0);
-      });
-      return;
-    }
-
     final oldZoom = _zoomLevel;
     final newZoom = (oldZoom * 1.25).clamp(1.0, 15.0);
-
     if (oldZoom == newZoom) return;
-
-    final activeProposition = _model.rankedPropositions.firstWhere(
-      (p) => p.isActive,
-      orElse: () => _model.rankedPropositions.first,
-    );
-
-    final activeCount = _model.rankedPropositions.where((p) => p.isActive).length;
-
-    setState(() {
-      _zoomLevel = newZoom;
-    });
-
-    if (activeCount != 1) return;
-
-    final normalizedPosition = activeProposition.position / 100.0;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-
-      final newGridHeight = _lastAvailableHeight! * newZoom;
-      final viewportHeight = _lastConstraintsHeight!;
-      final messageY = (1 - normalizedPosition) * newGridHeight;
-      final cardHalfHeight = GridRankingConstants.proposedMessageMaxHeight / 2;
-      final cardTop = messageY - cardHalfHeight;
-      final cardBottom = messageY + cardHalfHeight;
-
-      var targetScroll = messageY - (viewportHeight / 2);
-
-      if (cardBottom > targetScroll + viewportHeight) {
-        targetScroll = cardBottom - viewportHeight;
-      }
-      if (cardTop < targetScroll) {
-        targetScroll = cardTop;
-      }
-
-      final clampedScroll =
-          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent);
-      _scrollController.jumpTo(clampedScroll);
-
-      setState(() {
-        _currentScrollOffset = clampedScroll;
-      });
-    });
+    _applyButtonZoom(oldZoom, newZoom);
   }
 
   void _zoomOut() {
-    if (_lastAvailableHeight == null || _lastConstraintsHeight == null) {
-      setState(() {
-        _zoomLevel = (_zoomLevel / 1.25).clamp(1.0, 15.0);
-      });
-      return;
-    }
-
     final oldZoom = _zoomLevel;
     final newZoom = (oldZoom / 1.25).clamp(1.0, 15.0);
-
     if (oldZoom == newZoom) return;
+    _applyButtonZoom(oldZoom, newZoom);
+  }
 
-    final activeProposition = _model.rankedPropositions.firstWhere(
-      (p) => p.isActive,
-      orElse: () => _model.rankedPropositions.first,
+  void _applyButtonZoom(double oldZoom, double newZoom) {
+    final avail = _lastAvailableHeight ?? 600.0;
+    final screenCenter = (_lastConstraintsHeight ?? 600.0) / 2;
+    final oldScroll = _scrollController.hasClients ? _scrollController.offset : 0.0;
+    final targetScroll = GridZoomMath.scrollForFocalPoint(
+      screenCenter, oldScroll, avail, oldZoom, newZoom,
     );
 
-    final activeCount = _model.rankedPropositions.where((p) => p.isActive).length;
-
-    setState(() {
-      _zoomLevel = newZoom;
-    });
-
-    if (activeCount != 1) return;
-
-    final normalizedPosition = activeProposition.position / 100.0;
-
+    final maxExtent = avail * newZoom - avail;
+    final clamped = targetScroll.clamp(0.0, maxExtent > 0 ? maxExtent : 0.0);
+    if (_scrollController.hasClients) {
+      _scrollController.position.correctPixels(clamped);
+    }
+    _isButtonZooming = true;
+    setState(() { _zoomLevel = newZoom; });
+    // Clear after this frame so normal animations resume
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scrollController.hasClients) return;
-
-      final newGridHeight = _lastAvailableHeight! * newZoom;
-      final viewportHeight = _lastConstraintsHeight!;
-      final messageY = (1 - normalizedPosition) * newGridHeight;
-      final cardHalfHeight = GridRankingConstants.proposedMessageMaxHeight / 2;
-      final cardTop = messageY - cardHalfHeight;
-      final cardBottom = messageY + cardHalfHeight;
-
-      var targetScroll = messageY - (viewportHeight / 2);
-
-      if (cardBottom > targetScroll + viewportHeight) {
-        targetScroll = cardBottom - viewportHeight;
-      }
-      if (cardTop < targetScroll) {
-        targetScroll = cardTop;
-      }
-
-      final clampedScroll =
-          targetScroll.clamp(0.0, _scrollController.position.maxScrollExtent);
-      _scrollController.jumpTo(clampedScroll);
-
-      setState(() {
-        _currentScrollOffset = clampedScroll;
-      });
+      if (mounted) setState(() { _isButtonZooming = false; });
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    // Update positions notifier for tutorial demo
+    if (widget.positionsNotifier != null && _model.phase == RatingPhase.positioning) {
+      final positions = <String, double>{};
+      for (final p in _model.rankedPropositions) {
+        positions[p.id] = p.position;
+      }
+      widget.positionsNotifier!.value = positions;
+    }
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Row(
@@ -318,6 +337,7 @@ class RatingWidgetState extends State<RatingWidget>
               ),
             ),
             Container(
+              key: widget.swapButtonKey,
               padding: const EdgeInsets.all(4),
               child: _buildControls(),
             ),
@@ -335,74 +355,132 @@ class RatingWidgetState extends State<RatingWidget>
     _lastAvailableHeight = availableHeight;
     _lastConstraintsHeight = constraints.maxHeight;
 
-    return SingleChildScrollView(
-      controller: _scrollController,
-      child: SizedBox(
-        height: gridHeight,
-        child: Stack(
-          children: [
-            // Border decoration
-            Positioned(
-              top: 75,
-              left: 0,
-              right: 0,
-              bottom: 75,
-              child: Container(
-                decoration: BoxDecoration(
-                  border: Border.all(
-                    color: theme.colorScheme.outline.withValues(alpha:0.3),
-                    width: 1,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) {
+        _activePointers[event.pointer] = event.localPosition;
+        if (_activePointers.length == 2) {
+          _pinchStartZoom = _zoomLevel;
+          _pinchStartScroll = _scrollController.hasClients
+              ? _scrollController.offset : 0.0;
+          final points = _activePointers.values.toList();
+          _pinchStartDistance = (points[0] - points[1]).distance;
+          _pinchFocalY = (points[0].dy + points[1].dy) / 2;
+          setState(() { _isPinching = true; });
+        }
+      },
+      onPointerMove: (event) {
+        _activePointers[event.pointer] = event.localPosition;
+        if (_activePointers.length >= 2 && _isPinching) {
+          final points = _activePointers.values.toList();
+          final currentDistance = (points[0] - points[1]).distance;
+          if (_pinchStartDistance > 0) {
+            final scale = currentDistance / _pinchStartDistance;
+            final newZoom = (_pinchStartZoom * scale).clamp(1.0, 15.0);
+
+            if ((newZoom - _zoomLevel).abs() > 0.01) {
+              // Always compute from pinch START state to avoid drift
+              final targetScroll = GridZoomMath.scrollForFocalPoint(
+                _pinchFocalY, _pinchStartScroll, availableHeight,
+                _pinchStartZoom, newZoom,
+              );
+
+              final maxExtent = availableHeight * newZoom - availableHeight;
+              final clamped = targetScroll.clamp(0.0, maxExtent > 0 ? maxExtent : 0.0);
+
+              // Apply scroll synchronously to avoid jitter
+              if (_scrollController.hasClients) {
+                _scrollController.position.correctPixels(clamped);
+              }
+              setState(() { _zoomLevel = newZoom; });
+            }
+          }
+        }
+      },
+      onPointerUp: (event) {
+        _activePointers.remove(event.pointer);
+        if (_activePointers.length < 2 && _isPinching) {
+          setState(() { _isPinching = false; });
+        }
+      },
+      onPointerCancel: (event) {
+        _activePointers.remove(event.pointer);
+        if (_activePointers.length < 2 && _isPinching) {
+          setState(() { _isPinching = false; });
+        }
+      },
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: _isPinching ? const NeverScrollableScrollPhysics() : null,
+        child: SizedBox(
+          height: gridHeight,
+          child: Stack(
+            children: [
+              // Border decoration
+              Positioned(
+                top: 75,
+                left: 0,
+                right: 0,
+                bottom: 75,
+                child: Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withValues(alpha:0.3),
+                      width: 1,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
-            ),
 
-            // Content layer
-            Positioned.fill(
-              child: Stack(
-                children: [
-                  // Grid background
-                  Positioned(
-                    top: 75,
-                    left: 0,
-                    right: 0,
-                    child: CustomPaint(
-                      size: Size(constraints.maxWidth, gridHeight - 150),
-                      painter: RatingPainter(
-                        propositions: _model.rankedPropositions,
-                        scrollOffset: _currentScrollOffset - 75,
-                        gridColor: theme.colorScheme.outline,
-                        activeColor: theme.colorScheme.primary,
-                        labelStyle: theme.textTheme.bodyMedium!,
-                        viewportHeight: constraints.maxHeight,
-                        activePosition: _model.rankedPropositions
-                                .any((p) => p.isActive)
-                            ? _model.rankedPropositions
-                                .firstWhere((p) => p.isActive)
-                                .position
-                            : null,
+              // Content layer
+              Positioned.fill(
+                child: Stack(
+                  children: [
+                    // Grid background
+                    Positioned(
+                      top: 75,
+                      left: 0,
+                      right: 0,
+                      child: CustomPaint(
+                        size: Size(constraints.maxWidth, gridHeight - 150),
+                        painter: RatingPainter(
+                          propositions: _model.rankedPropositions,
+                          scrollOffset: _scrollController.hasClients
+                              ? _scrollController.offset - 75
+                              : -75,
+                          gridColor: theme.colorScheme.outline,
+                          activeColor: theme.colorScheme.primary,
+                          labelStyle: theme.textTheme.bodyMedium!,
+                          viewportHeight: constraints.maxHeight,
+                          activePosition: _model.rankedPropositions
+                                  .any((p) => p.isActive)
+                              ? _model.rankedPropositions
+                                  .firstWhere((p) => p.isActive)
+                                  .position
+                              : null,
+                        ),
                       ),
                     ),
-                  ),
 
-                  // Proposition cards
-                  Positioned.fill(
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 30),
-                        Expanded(
-                          child: Stack(
-                            children: _buildPropositionCards(gridHeight),
+                    // Proposition cards
+                    Positioned.fill(
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 30),
+                          Expanded(
+                            child: Stack(
+                              children: _buildPropositionCards(gridHeight),
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -456,7 +534,7 @@ class RatingWidgetState extends State<RatingWidget>
           key: stackKey,
           defaultCard: actualDefaultCard,
           allCardsInStack: allCardsInStack,
-          isActive: actualDefaultCard.isActive,
+          isActive: widget.readOnly || actualDefaultCard.isActive,
           model: _model,
         );
       } else if (stack != null && isDefaultCard && !activeAtThisPosition) {
@@ -474,7 +552,7 @@ class RatingWidgetState extends State<RatingWidget>
           key: stackKey,
           defaultCard: actualDefaultCard,
           allCardsInStack: allCardsInStack,
-          isActive: actualDefaultCard.isActive,
+          isActive: widget.readOnly || actualDefaultCard.isActive,
           model: _model,
         );
       } else if (stack != null && (!isDefaultCard || activeAtThisPosition)) {
@@ -488,14 +566,97 @@ class RatingWidgetState extends State<RatingWidget>
       } else {
         cardWidget = PropositionCard(
           proposition: proposition,
-          isActive: proposition.isActive,
+          isActive: widget.readOnly || proposition.isActive,
           isBinaryPhase: _model.phase == RatingPhase.binary,
           activeGlowColor: theme.colorScheme.primary,
         );
       }
 
-      return AnimatedPositioned(
-        duration: const Duration(milliseconds: 300),
+      // During drag, pinch, or button zoom, snap instantly instead of animating
+      final animDuration = (_isDraggingCard && proposition.isActive) || _isPinching || _isButtonZooming
+          ? Duration.zero
+          : const Duration(milliseconds: 400);
+
+      // Wrap active cards with drag gesture for touch-based positioning
+      Widget cardContent = Opacity(
+        opacity: shouldHide ? 0.0 : 1.0,
+        child: cardWidget,
+      );
+
+      // Tap either card during binary phase to swap
+      if (!shouldHide &&
+          _model.phase == RatingPhase.binary &&
+          !widget.readOnly) {
+        cardContent = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _model.swapBinaryPositions,
+          child: cardContent,
+        );
+      }
+
+      if (proposition.isActive &&
+          !shouldHide &&
+          _model.phase == RatingPhase.positioning &&
+          !widget.readOnly) {
+        cardContent = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onVerticalDragStart: (_) {
+            setState(() => _isDraggingCard = true);
+            _stopContinuousMove();
+            _dragTargetPosition = _model.rankedPropositions
+                .firstWhere((p) => p.isActive)
+                .position;
+          },
+          onVerticalDragUpdate: (details) {
+            final height = _lastAvailableHeight;
+            if (height == null) return;
+            final gridHeight = height * _zoomLevel;
+            const buffer = 75.0;
+            final stackHeight = gridHeight - (buffer * 2);
+            if (stackHeight <= 0) return;
+
+            final positionDelta = -(details.delta.dy / stackHeight) * 100;
+            _dragTargetPosition += positionDelta;
+
+            final activePos = _model.rankedPropositions
+                .firstWhere((p) => p.isActive)
+                .position;
+            final isAtTop = activePos >= 99.5;
+            final isAtBottom = activePos <= 0.5;
+            final fingerPastTop = _dragTargetPosition > 100;
+            final fingerPastBottom = _dragTargetPosition < 0;
+            final fingerInsideGrid = !fingerPastTop && !fingerPastBottom;
+
+            if (fingerPastTop) {
+              _startContinuousDragMove(1);
+            } else if (fingerPastBottom) {
+              _startContinuousDragMove(-1);
+            } else if (isAtTop && fingerInsideGrid) {
+              _startContinuousDragMove(-1);
+            } else if (isAtBottom && fingerInsideGrid) {
+              _startContinuousDragMove(1);
+            } else {
+              _stopContinuousDragMove();
+              _model.setActivePropositionPosition(_dragTargetPosition);
+            }
+
+          },
+          onVerticalDragEnd: (_) {
+            _stopContinuousDragMove();
+            setState(() => _isDraggingCard = false);
+            _model.normalizeVirtualPositionOnRelease();
+          },
+          onVerticalDragCancel: () {
+            _stopContinuousDragMove();
+            setState(() => _isDraggingCard = false);
+            _model.normalizeVirtualPositionOnRelease();
+          },
+          child: cardContent,
+        );
+      }
+
+      final positioned = AnimatedPositioned(
+        duration: animDuration,
         curve: Curves.easeOutCubic,
         top: yPosition,
         left: 0,
@@ -506,14 +667,18 @@ class RatingWidgetState extends State<RatingWidget>
             alignment: Alignment.center,
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 600),
-              child: Opacity(
-                opacity: shouldHide ? 0.0 : 1.0,
-                child: cardWidget,
-              ),
+              child: cardContent,
             ),
           ),
         ),
       );
+
+      // Attach tracked key if this is the tracked proposition
+      if (widget.trackedCardKey != null &&
+          widget.trackedCardId == proposition.id) {
+        return KeyedSubtree(key: widget.trackedCardKey!, child: positioned);
+      }
+      return positioned;
     }).toList();
   }
 
@@ -627,6 +792,7 @@ class RatingWidgetState extends State<RatingWidget>
             _AnimatedControlButton(
               onTap: _model.confirmBinaryChoice,
               child: Container(
+                key: widget.checkButtonKey,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.primary,
                   shape: BoxShape.circle,
@@ -713,6 +879,7 @@ class RatingWidgetState extends State<RatingWidget>
 
           // Movement controls
           Container(
+            key: widget.movementControlsKey,
             padding: const EdgeInsets.all(4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
@@ -813,7 +980,7 @@ class RatingWidgetState extends State<RatingWidget>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(24),
                 border: Border.all(
-                  color: const Color(0xFF8B0000).withValues(alpha:0.5),
+                  color: const Color(0xFFEF5350).withValues(alpha:0.5),
                   width: 1,
                 ),
               ),
@@ -827,14 +994,14 @@ class RatingWidgetState extends State<RatingWidget>
                       color: theme.colorScheme.surface,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFF8B0000).withValues(alpha:0.5),
+                        color: const Color(0xFFEF5350).withValues(alpha:0.5),
                         width: 2,
                       ),
                     ),
                     child: Icon(
                       Icons.undo,
                       size: 25,
-                      color: const Color(0xFF8B0000).withValues(alpha:0.5),
+                      color: const Color(0xFFEF5350).withValues(alpha:0.5),
                     ),
                   ),
                 ),
@@ -878,6 +1045,47 @@ class RatingWidgetState extends State<RatingWidget>
     _moveTimer?.cancel();
     _moveTimer = null;
     _model.normalizeVirtualPositionOnRelease();
+  }
+
+  double _dragMoveDirection = 0;
+
+  /// Start continuous movement in a direction — same as holding an arrow button.
+  /// If already moving in this direction, does nothing (keeps acceleration).
+  /// If direction changes, restarts.
+  void _startContinuousDragMove(double direction) {
+    if (_dragHoldTimer != null && _dragMoveDirection == direction) return;
+    _stopContinuousDragMove();
+    _dragMoveDirection = direction;
+
+    _model.moveActiveProposition(direction);
+    int holdDuration = 0;
+
+    _dragHoldTimer = Timer(const Duration(milliseconds: 300), () {
+      _dragHoldTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+        if (!_isDraggingCard) {
+          _stopContinuousDragMove();
+          return;
+        }
+        holdDuration++;
+        double acceleration = 1.0;
+        if (holdDuration > 10) acceleration = 2.0;
+        if (holdDuration > 20) acceleration = 4.0;
+        if (holdDuration > 30) acceleration = 8.0;
+        if (holdDuration > 40) acceleration = 16.0;
+        if (holdDuration > 60) acceleration = 32.0;
+        if (holdDuration > 80) acceleration = 64.0;
+        if (holdDuration > 100) {
+          acceleration = pow(2, holdDuration / 20).toDouble();
+        }
+        _model.moveActiveProposition(_dragMoveDirection * acceleration);
+      });
+    });
+  }
+
+  void _stopContinuousDragMove() {
+    _dragHoldTimer?.cancel();
+    _dragHoldTimer = null;
+    _dragMoveDirection = 0;
   }
 }
 

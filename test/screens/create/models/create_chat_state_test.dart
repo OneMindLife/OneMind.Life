@@ -222,11 +222,10 @@ void main() {
       expect(settings.customizeAgents, false);
       expect(settings.customizeIndividually, false);
       expect(settings.agentsAlsoRate, true);
-      expect(settings.agentCount, 2);
+      expect(settings.agentCount, 1);
       expect(settings.sharedInstructions, '');
-      expect(settings.agents.length, 2);
+      expect(settings.agents.length, 1);
       expect(settings.agents[0].name, 'Agent 1');
-      expect(settings.agents[1].name, 'Agent 2');
     });
 
     test('copyWith updates enabled only', () {
@@ -235,7 +234,7 @@ void main() {
       expect(updated.enabled, true);
       expect(updated.customizeAgents, false);
       expect(updated.customizeIndividually, false);
-      expect(updated.agentCount, 2);
+      expect(updated.agentCount, 1);
     });
 
     test('copyWith updates customizeAgents', () {
@@ -252,14 +251,14 @@ void main() {
     });
 
     test('withCount grows agents list', () {
-      final settings = AgentSettings.defaults(); // 2 agents
+      final settings = AgentSettings.defaults(); // 1 agent
       final updated = settings.withCount(5);
       expect(updated.agentCount, 5);
       expect(updated.agents.length, 5);
-      // Original agents preserved
+      // Original agent preserved
       expect(updated.agents[0].name, 'Agent 1');
-      expect(updated.agents[1].name, 'Agent 2');
       // New agents auto-named
+      expect(updated.agents[1].name, 'Agent 2');
       expect(updated.agents[2].name, 'Agent 3');
       expect(updated.agents[3].name, 'Agent 4');
       expect(updated.agents[4].name, 'Agent 5');
@@ -290,7 +289,7 @@ void main() {
     test('withCount clamps to valid range', () {
       final settings = AgentSettings.defaults();
       final tooLow = settings.withCount(0);
-      expect(tooLow.agentCount, 2);
+      expect(tooLow.agentCount, 1);
 
       final tooHigh = settings.withCount(10);
       expect(tooHigh.agentCount, 5);

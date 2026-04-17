@@ -5,11 +5,11 @@ import 'package:equatable/equatable.dart';
 enum HomeTourStep {
   welcomeName,
   searchBar,
-  pendingRequest,
   yourChats,
+  pendingRequest,
   createFab,
-  exploreButton,
   languageSelector,
+  tutorialButton,
   menu,
   complete,
 }

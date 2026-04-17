@@ -252,6 +252,10 @@ void main() {
     // Setup language service mock
     when(() => mockLanguageService.getCurrentLanguage()).thenReturn('en');
 
+    // Setup default leaderboard (no rankings)
+    when(() => mockChatService.getChatLeaderboard(any()))
+        .thenAnswer((_) async => []);
+
     // Setup default channel behavior
     when(() => mockSupabase.channel(any())).thenReturn(mockChannel);
     when(() => mockChannel.onPostgresChanges(
@@ -330,6 +334,9 @@ void main() {
     bool isDeleted = false,
     ChatCredits? chatCredits,
     bool isMyParticipantFunded = true,
+    Set<int> participantsWhoRated = const {},
+    Set<int> participantsWhoSkippedProposing = const {},
+    Set<int> participantsWhoSkippedRating = const {},
   }) {
     return ChatDetailState(
       chat: chat ?? ChatFixtures.model(),
@@ -351,6 +358,9 @@ void main() {
       isDeleted: isDeleted,
       chatCredits: chatCredits,
       isMyParticipantFunded: isMyParticipantFunded,
+      participantsWhoRated: participantsWhoRated,
+      participantsWhoSkippedProposing: participantsWhoSkippedProposing,
+      participantsWhoSkippedRating: participantsWhoSkippedRating,
     );
   }
 
@@ -730,11 +740,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly (no longer in popup menu)
-        await tester.tap(find.byIcon(Icons.people));
+        await tester.tap(find.byIcon(Icons.leaderboard));
         await tester.pumpAndSettle();
 
         // Verify modal shows participants
-        expect(find.text('Participants (2)'), findsOneWidget);
+        expect(find.text('Leaderboard (2)'), findsOneWidget);
         expect(find.text('Host User'), findsOneWidget);
         expect(find.text('Regular User'), findsOneWidget);
       });
@@ -756,7 +766,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.people));
+        await tester.tap(find.byIcon(Icons.leaderboard));
         await tester.pumpAndSettle();
 
         // Host should see kick button for regular user
@@ -785,7 +795,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.people));
+        await tester.tap(find.byIcon(Icons.leaderboard));
         await tester.pumpAndSettle();
 
         // Non-host should NOT see kick button
@@ -810,14 +820,373 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.people));
+        await tester.tap(find.byIcon(Icons.leaderboard));
         await tester.pumpAndSettle();
 
         // Verify modal is showing with correct count
-        expect(find.text('Participants (1)'), findsOneWidget);
+        expect(find.text('Leaderboard (1)'), findsOneWidget);
 
         // The Consumer widget in the modal ensures it watches state changes
         // Integration test would verify actual realtime behavior
+      });
+      testWidgets('shows ranking numbers from leaderboard data', (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+        final participants = [hostParticipant, p2, p3];
+
+        // Return rankings: Alice #1 (highest avg_rank), Host #2, Bob unranked
+        when(() => mockChatService.getChatLeaderboard(chat.id))
+            .thenAnswer((_) async => [
+                  {'participant_id': 2, 'display_name': 'Alice', 'avg_rank': 80.0, 'rounds_participated': 5, 'total_rounds': 5},
+                  {'participant_id': 1, 'display_name': 'Host User', 'avg_rank': 50.0, 'rounds_participated': 5, 'total_rounds': 5},
+                  {'participant_id': 3, 'display_name': 'Bob', 'avg_rank': null, 'rounds_participated': 0, 'total_rounds': 5},
+                ]);
+
+        final state = createTestState(
+          chat: chat,
+          participants: participants,
+          myParticipant: hostParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.pumpAndSettle();
+
+        // Ranked participants show position numbers
+        expect(find.text('#1'), findsOneWidget);
+        expect(find.text('#2'), findsOneWidget);
+        // Unranked participant shows dash
+        expect(find.text('—'), findsOneWidget);
+      });
+
+      testWidgets('shows all dashes when no rounds completed', (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final participants = [hostParticipant, p2];
+
+        // No rankings at all
+        when(() => mockChatService.getChatLeaderboard(chat.id))
+            .thenAnswer((_) async => [
+                  {'participant_id': 1, 'display_name': 'Host User', 'avg_rank': null, 'rounds_participated': 0, 'total_rounds': 0},
+                  {'participant_id': 2, 'display_name': 'Alice', 'avg_rank': null, 'rounds_participated': 0, 'total_rounds': 0},
+                ]);
+
+        final state = createTestState(
+          chat: chat,
+          participants: participants,
+          myParticipant: hostParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.pumpAndSettle();
+
+        // All participants should show dashes
+        expect(find.text('—'), findsNWidgets(2));
+        expect(find.text('#1'), findsNothing);
+      });
+
+      testWidgets('sorts participants by rank with ranked first', (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host(); // id 1
+        final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+        // Deliberately put unranked first in the list
+        final participants = [p3, hostParticipant, p2];
+
+        // Alice #1 (highest), Host #2, Bob unranked
+        when(() => mockChatService.getChatLeaderboard(chat.id))
+            .thenAnswer((_) async => [
+                  {'participant_id': 2, 'display_name': 'Alice', 'avg_rank': 90.0, 'rounds_participated': 3, 'total_rounds': 3},
+                  {'participant_id': 1, 'display_name': 'Host User', 'avg_rank': 40.0, 'rounds_participated': 3, 'total_rounds': 3},
+                  {'participant_id': 3, 'display_name': 'Bob', 'avg_rank': null, 'rounds_participated': 0, 'total_rounds': 3},
+                ]);
+
+        final state = createTestState(
+          chat: chat,
+          participants: participants,
+          myParticipant: hostParticipant,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.pumpAndSettle();
+
+        // Find all ListTile widgets and verify order
+        final listTiles = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
+        // First should be #1 Alice, second #2 Host, third unranked Bob
+        final titles = listTiles.map((t) => (t.title as Text).data).toList();
+        expect(titles, ['Alice', 'Host User', 'Bob']);
+      });
+
+      group('Done label for participation tracking', () {
+        testWidgets('shows Done for participants who proposed in proposing phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final participants = [hostParticipant, p2, p3];
+
+          // Host and Alice have submitted propositions, Bob has not
+          final propositions = [
+            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
+            PropositionFixtures.model(id: 2, roundId: 1, participantId: 2, content: 'Alice idea'),
+          ];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.proposing(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            propositions: propositions,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host and Alice should show "Done", Bob should not
+          expect(find.text('Done'), findsNWidgets(2));
+        });
+
+        testWidgets('shows Done for participants who skipped proposing', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final participants = [hostParticipant, p2, p3];
+
+          // Host proposed, Alice skipped, Bob hasn't acted
+          final propositions = [
+            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
+          ];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.proposing(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            propositions: propositions,
+            participantsWhoSkippedProposing: {2}, // Alice skipped
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host (proposed) and Alice (skipped) should show "Done"
+          expect(find.text('Done'), findsNWidgets(2));
+        });
+
+        testWidgets('shows Done for participants who rated in rating phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final participants = [hostParticipant, p2, p3];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.rating(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            participantsWhoRated: {1, 2}, // Host and Alice rated
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host and Alice should show "Done", Bob should not
+          expect(find.text('Done'), findsNWidgets(2));
+        });
+
+        testWidgets('shows Done for participants who skipped rating', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final participants = [hostParticipant, p2, p3];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.rating(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            participantsWhoRated: {1}, // Host rated
+            participantsWhoSkippedRating: {2}, // Alice skipped rating
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host (rated) and Alice (skipped rating) should both show "Done"
+          expect(find.text('Done'), findsNWidgets(2));
+        });
+
+        testWidgets('dims participants who have not acted during active phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final participants = [hostParticipant, p2];
+
+          // Host proposed, Alice hasn't acted
+          final propositions = [
+            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
+          ];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.proposing(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            propositions: propositions,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Find Opacity widgets wrapping ListTiles
+          final opacities = tester.widgetList<Opacity>(find.byType(Opacity)).toList();
+          // Host (acted) should be 1.0, Alice (not acted) should be 0.5
+          final opacityValues = opacities.map((o) => o.opacity).toList();
+          expect(opacityValues, contains(1.0));
+          expect(opacityValues, contains(0.5));
+        });
+
+        testWidgets('mixed: some propose, some skip, rest not acted in proposing phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final p4 = ParticipantFixtures.model(id: 4, displayName: 'Carol');
+          final participants = [hostParticipant, p2, p3, p4];
+
+          // Host proposed, Alice skipped, Bob and Carol haven't acted
+          final propositions = [
+            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
+          ];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.proposing(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            propositions: propositions,
+            participantsWhoSkippedProposing: {2}, // Alice skipped
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host (proposed) and Alice (skipped) = 2 "Done"
+          expect(find.text('Done'), findsNWidgets(2));
+        });
+
+        testWidgets('mixed: some rate, some skip rating, rest not acted in rating phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
+          final p4 = ParticipantFixtures.model(id: 4, displayName: 'Carol');
+          final participants = [hostParticipant, p2, p3, p4];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.rating(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            participantsWhoRated: {1, 3}, // Host and Bob rated
+            participantsWhoSkippedRating: {2}, // Alice skipped rating
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Host (rated), Alice (skipped), Bob (rated) = 3 "Done"
+          expect(find.text('Done'), findsNWidgets(3));
+        });
+
+        testWidgets('no Done labels when no active phase', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final participants = [hostParticipant, p2];
+
+          // No round = no active phase
+          final state = createTestState(
+            chat: chat,
+            participants: participants,
+            myParticipant: hostParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // No Done labels should show when there's no active phase
+          expect(find.text('Done'), findsNothing);
+        });
+
+        testWidgets('carried forward propositions do not count as participation', (tester) async {
+          final chat = ChatFixtures.model();
+          final hostParticipant = ParticipantFixtures.host(); // id 1
+          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+          final participants = [hostParticipant, p2];
+
+          // Only a carried-forward proposition exists for participant 2 (Alice)
+          // This should NOT count as Alice having proposed
+          final propositions = [
+            PropositionFixtures.carriedForward(id: 1, roundId: 1, carriedFromId: 99),
+            PropositionFixtures.model(id: 2, roundId: 1, participantId: 1, content: 'Host idea'),
+          ];
+
+          final state = createTestState(
+            chat: chat,
+            round: RoundFixtures.proposing(),
+            participants: participants,
+            myParticipant: hostParticipant,
+            propositions: propositions,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byIcon(Icons.leaderboard));
+          await tester.pumpAndSettle();
+
+          // Only Host should show "Done" (carried forward doesn't count)
+          expect(find.text('Done'), findsOneWidget);
+        });
       });
     });
 
@@ -1071,9 +1440,9 @@ void main() {
         await tester.pumpAndSettle();
 
         // Should show Previous Winner content (simplified UI)
-        expect(find.text('Winning proposition'), findsOneWidget);
+        expect(find.text('Winning proposition'), findsWidgets);
         // Winner tab and card label should be visible
-        expect(find.text('Emergence'), findsWidgets);
+        expect(find.textContaining('Round'), findsWidgets);
       });
 
       testWidgets('shows winner content in panel',
@@ -1105,7 +1474,7 @@ void main() {
         expect(find.text('Strong proposition'), findsOneWidget);
       });
 
-      testWidgets('hides emergence card during rating phase', (tester) async {
+      testWidgets('shows emergence card during rating phase', (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.rating(customId: 2); // Rating phase
         final participant = ParticipantFixtures.model();
@@ -1117,6 +1486,7 @@ void main() {
 
         // State with previous round winners but in rating phase
         // hasStartedRating=true prevents auto-navigation to rating screen
+        // hasRated=true means user finished rating, so previous winner is visible
         final state = createTestState(
           chat: chat,
           round: round,
@@ -1126,14 +1496,15 @@ void main() {
           consecutiveSoleWins: 1,
           previousRoundId: 1,
           hasStartedRating: true, // Prevent auto-navigation
+          hasRated: true, // User has rated — card becomes visible
         );
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Emergence card should be HIDDEN during rating phase
-        expect(find.text('Winning proposition'), findsNothing,
-            reason: 'Emergence card should be hidden during rating phase');
+        // Previous winner should be VISIBLE during rating phase when user has rated
+        expect(find.text('Winning proposition'), findsWidgets,
+            reason: 'Previous winner should be visible during rating phase after rating');
       });
 
       testWidgets('shows emergence card during proposing phase with previous winners',
@@ -1162,7 +1533,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Winner tab and card label should be VISIBLE during proposing phase
-        expect(find.text('Emergence'), findsWidgets,
+        expect(find.textContaining('Round'), findsWidgets,
             reason: 'Winner tab should be visible during proposing phase');
       });
     });

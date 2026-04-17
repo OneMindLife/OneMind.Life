@@ -1,0 +1,47 @@
+[
+  {
+    "word": "Try",
+    "start": 0.0,
+    "end": 0.29
+  },
+  {
+    "word": "to",
+    "start": 0.337,
+    "end": 0.383
+  },
+  {
+    "word": "replace",
+    "start": 0.453,
+    "end": 0.801
+  },
+  {
+    "word": "Movie",
+    "start": 0.836,
+    "end": 1.08
+  },
+  {
+    "word": "Night.",
+    "start": 1.115,
+    "end": 1.405
+  },
+  {
+    "word": "Send",
+    "start": 1.533,
+    "end": 1.707
+  },
+  {
+    "word": "your",
+    "start": 1.741,
+    "end": 1.846
+  },
+  {
+    "word": "best",
+    "start": 1.892,
+    "end": 2.113
+  },
+  {
+    "word": "idea!",
+    "start": 2.159,
+    "end": 2.833
+  }
+]

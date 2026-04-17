@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/personal_code.dart';
@@ -27,17 +28,84 @@ class _PersonalCodeSheetState extends ConsumerState<PersonalCodeSheet> {
   bool _isLoading = true;
   bool _isGenerating = false;
   String? _error;
+  RealtimeChannel? _codesChannel;
+  bool _qrDialogOpen = false;
 
   @override
   void initState() {
     super.initState();
     _loadCodes();
+    _subscribeToChanges();
+  }
+
+  @override
+  void dispose() {
+    _codesChannel?.unsubscribe();
+    super.dispose();
+  }
+
+  void _subscribeToChanges() {
+    final supabase = ref.read(supabaseProvider);
+    _codesChannel = supabase
+        .channel('personal_codes:${widget.chatId}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'personal_codes',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'chat_id',
+            value: widget.chatId,
+          ),
+          callback: (payload) {
+
+            if (payload.eventType == PostgresChangeEvent.update) {
+              final newData = payload.newRecord;
+              // Code was redeemed or reserved — refresh + auto-generate a new one
+              if (newData['used_at'] != null || newData['reserved_at'] != null) {
+                _loadCodes();
+                _autoGenerateCode();
+              } else {
+                // Other update (e.g. revoke, reservation cleared) — just refresh
+                _loadCodes();
+              }
+            } else {
+              // INSERT or DELETE — just refresh the list
+
+              _loadCodes();
+            }
+          },
+        )
+        .subscribe();
+  }
+
+  Future<void> _autoGenerateCode() async {
+    try {
+
+      final service = ref.read(personalCodeServiceProvider);
+      final code = await service.generateCode(widget.chatId);
+
+      if (mounted) {
+        setState(() {
+          _codes = [code, ...?_codes];
+        });
+        // If a QR dialog is open, replace it with the new code
+        if (_qrDialogOpen) {
+          Navigator.of(context, rootNavigator: true).pop();
+          _showCodeQr(code);
+        }
+      }
+    } catch (e) {
+
+    }
   }
 
   Future<void> _loadCodes() async {
     try {
+
       final service = ref.read(personalCodeServiceProvider);
       final codes = await service.listCodes(widget.chatId);
+
       if (mounted) {
         setState(() {
           _codes = codes;
@@ -45,6 +113,7 @@ class _PersonalCodeSheetState extends ConsumerState<PersonalCodeSheet> {
         });
       }
     } catch (e) {
+
       if (mounted) {
         setState(() {
           _error = e.toString();
@@ -68,11 +137,7 @@ class _PersonalCodeSheetState extends ConsumerState<PersonalCodeSheet> {
         });
 
         // Show QR dialog for the new code
-        QrCodeShareDialog.show(
-          context,
-          chatName: widget.chatName,
-          inviteCode: code.code,
-        );
+        _showCodeQr(code);
       }
     } catch (e) {
       if (mounted) {
@@ -135,11 +200,14 @@ class _PersonalCodeSheetState extends ConsumerState<PersonalCodeSheet> {
   }
 
   void _showCodeQr(PersonalCode code) {
+    _qrDialogOpen = true;
     QrCodeShareDialog.show(
       context,
       chatName: widget.chatName,
       inviteCode: code.code,
-    );
+    ).then((_) {
+      _qrDialogOpen = false;
+    });
   }
 
   @override
@@ -262,14 +330,18 @@ class _PersonalCodeTile extends StatelessWidget {
     final isActive = code.status == PersonalCodeStatus.active;
     final isUsed = code.status == PersonalCodeStatus.used;
 
+    final isReserved = code.status == PersonalCodeStatus.reserved;
+
     final statusLabel = switch (code.status) {
       PersonalCodeStatus.active => l10n.codeStatusActive,
+      PersonalCodeStatus.reserved => l10n.codeStatusReserved,
       PersonalCodeStatus.used => l10n.codeStatusUsed,
       PersonalCodeStatus.revoked => l10n.codeStatusRevoked,
     };
 
     final statusColor = switch (code.status) {
       PersonalCodeStatus.active => Colors.green,
+      PersonalCodeStatus.reserved => Colors.orange,
       PersonalCodeStatus.used => colorScheme.onSurfaceVariant,
       PersonalCodeStatus.revoked => colorScheme.error,
     };
@@ -288,9 +360,11 @@ class _PersonalCodeTile extends StatelessWidget {
         child: Icon(
           isActive
               ? Icons.vpn_key
-              : isUsed
-                  ? Icons.check_circle_outline
-                  : Icons.block,
+              : isReserved
+                  ? Icons.hourglass_top
+                  : isUsed
+                      ? Icons.check_circle_outline
+                      : Icons.block,
           color: isActive
               ? colorScheme.onPrimaryContainer
               : colorScheme.onSurfaceVariant,

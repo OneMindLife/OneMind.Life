@@ -274,17 +274,16 @@ class AgentSettings extends Equatable {
         customizeAgents: false,
         customizeIndividually: false,
         agentsAlsoRate: true,
-        agentCount: 2,
+        agentCount: 1,
         sharedInstructions: '',
         agents: [
           AgentConfig(name: 'Agent 1'),
-          AgentConfig(name: 'Agent 2'),
         ],
       );
 
   /// Returns a copy with updated count, growing/shrinking agents list to match.
   AgentSettings withCount(int count) {
-    final clampedCount = count.clamp(2, 5);
+    final clampedCount = count.clamp(1, 5);
     return copyWith(
       agentCount: clampedCount,
       agents: List.generate(
@@ -361,6 +360,35 @@ class TranslationSettings extends Equatable {
 
   @override
   List<Object?> get props => [enabled, languages];
+}
+
+/// Skip settings for proposing and rating phases
+class SkipSettings extends Equatable {
+  final bool allowSkipProposing;
+  final bool allowSkipRating;
+
+  const SkipSettings({
+    required this.allowSkipProposing,
+    required this.allowSkipRating,
+  });
+
+  factory SkipSettings.defaults() => const SkipSettings(
+        allowSkipProposing: true,
+        allowSkipRating: true,
+      );
+
+  SkipSettings copyWith({
+    bool? allowSkipProposing,
+    bool? allowSkipRating,
+  }) {
+    return SkipSettings(
+      allowSkipProposing: allowSkipProposing ?? this.allowSkipProposing,
+      allowSkipRating: allowSkipRating ?? this.allowSkipRating,
+    );
+  }
+
+  @override
+  List<Object?> get props => [allowSkipProposing, allowSkipRating];
 }
 
 /// Consensus and results settings
@@ -469,6 +497,7 @@ class ScheduleWindow extends Equatable {
 class ScheduleSettings extends Equatable {
   final ScheduleType type;
   final DateTime scheduledStartAt; // For one-time schedule
+  final DateTime? scheduledEndAt; // For one-time schedule (optional)
   final List<ScheduleWindow> windows; // For recurring schedules
   final String timezone;
   final bool visibleOutsideSchedule;
@@ -476,6 +505,7 @@ class ScheduleSettings extends Equatable {
   const ScheduleSettings({
     required this.type,
     required this.scheduledStartAt,
+    this.scheduledEndAt,
     required this.windows,
     required this.timezone,
     required this.visibleOutsideSchedule,
@@ -485,6 +515,7 @@ class ScheduleSettings extends Equatable {
       ScheduleSettings(
         type: ScheduleType.once,
         scheduledStartAt: DateTime.now().add(const Duration(hours: 1)),
+        scheduledEndAt: null,
         windows: const [], // Empty by default - user adds windows if they switch to recurring
         timezone: timezone,
         visibleOutsideSchedule: true,
@@ -528,6 +559,7 @@ class ScheduleSettings extends Equatable {
     return ScheduleSettings(
       type: ScheduleType.recurring,
       scheduledStartAt: now.add(const Duration(hours: 1)),
+      scheduledEndAt: null,
       windows: [
         ScheduleWindow(
           startDay: dayName,
@@ -552,9 +584,12 @@ class ScheduleSettings extends Equatable {
     return days[weekday - 1]; // weekday is 1-7 (Mon-Sun)
   }
 
+  /// Use [clearEndAt] to explicitly set scheduledEndAt to null.
   ScheduleSettings copyWith({
     ScheduleType? type,
     DateTime? scheduledStartAt,
+    DateTime? scheduledEndAt,
+    bool clearEndAt = false,
     List<ScheduleWindow>? windows,
     String? timezone,
     bool? visibleOutsideSchedule,
@@ -562,6 +597,7 @@ class ScheduleSettings extends Equatable {
     return ScheduleSettings(
       type: type ?? this.type,
       scheduledStartAt: scheduledStartAt ?? this.scheduledStartAt,
+      scheduledEndAt: clearEndAt ? null : (scheduledEndAt ?? this.scheduledEndAt),
       windows: windows ?? this.windows,
       timezone: timezone ?? this.timezone,
       visibleOutsideSchedule:
@@ -573,6 +609,7 @@ class ScheduleSettings extends Equatable {
   List<Object?> get props => [
         type,
         scheduledStartAt,
+        scheduledEndAt,
         windows,
         timezone,
         visibleOutsideSchedule,

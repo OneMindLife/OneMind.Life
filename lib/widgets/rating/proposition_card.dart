@@ -39,14 +39,14 @@ class PropositionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: primaryColor.withValues(alpha: 0.4),
-              blurRadius: 12,
-              spreadRadius: 2,
+              color: primaryColor.withValues(alpha: 0.2),
+              blurRadius: 8,
+              spreadRadius: 1,
             ),
             BoxShadow(
-              color: primaryColor.withValues(alpha: 0.2),
-              blurRadius: 20,
-              spreadRadius: 4,
+              color: primaryColor.withValues(alpha: 0.1),
+              blurRadius: 16,
+              spreadRadius: 2,
             ),
           ],
         ),

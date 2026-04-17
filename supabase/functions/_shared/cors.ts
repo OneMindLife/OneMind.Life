@@ -52,12 +52,13 @@ const securityHeaders: Record<string, string> = {
 function isAllowedOrigin(origin: string | null): boolean {
   if (!origin) return false;
 
-  // Always allow localhost origins for development
+  // Always allow localhost and ngrok origins for development
   // This allows local Flutter web debugging to work even when
   // ALLOWED_ORIGINS is set for production
   if (
     origin.startsWith("http://localhost:") ||
-    origin.startsWith("http://127.0.0.1:")
+    origin.startsWith("http://127.0.0.1:") ||
+    origin.endsWith(".ngrok-free.app")
   ) {
     return true;
   }

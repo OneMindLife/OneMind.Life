@@ -6,45 +6,80 @@ import '../fixtures/chat_dashboard_info_fixtures.dart';
 
 void main() {
   group('sortByUrgency', () {
-    test('active + timed chats come first, sorted by soonest timer', () {
-      final soonTimer = ChatDashboardInfoFixtures.proposingTimed(
+    test('not participated + timed comes before participated + timed', () {
+      final notParticipated = ChatDashboardInfoFixtures.proposingTimed(
+        id: 1,
+        name: 'NeedAttention',
+        hasParticipated: false,
+        timerRemaining: const Duration(minutes: 5),
+      );
+      final participated = ChatDashboardInfoFixtures.proposingTimed(
+        id: 2,
+        name: 'Done',
+        hasParticipated: true,
+        timerRemaining: const Duration(minutes: 1),
+      );
+
+      final sorted = sortByUrgency([participated, notParticipated]);
+
+      expect(sorted[0].chat.name, 'NeedAttention');
+      expect(sorted[1].chat.name, 'Done');
+    });
+
+    test('not participated chats sorted by soonest timer', () {
+      final soon = ChatDashboardInfoFixtures.proposingTimed(
+        id: 1,
+        name: 'Soon',
+        hasParticipated: false,
+        timerRemaining: const Duration(minutes: 1),
+      );
+      final later = ChatDashboardInfoFixtures.ratingTimed(
+        id: 2,
+        name: 'Later',
+        hasParticipated: false,
+        timerRemaining: const Duration(minutes: 10),
+      );
+
+      final sorted = sortByUrgency([later, soon]);
+
+      expect(sorted[0].chat.name, 'Soon');
+      expect(sorted[1].chat.name, 'Later');
+    });
+
+    test('participated + timed sorted by soonest timer', () {
+      final soon = ChatDashboardInfoFixtures.proposingTimed(
         id: 1,
         name: 'Soon',
         timerRemaining: const Duration(minutes: 1),
       );
-      final laterTimer = ChatDashboardInfoFixtures.ratingTimed(
+      final later = ChatDashboardInfoFixtures.ratingTimed(
         id: 2,
         name: 'Later',
         timerRemaining: const Duration(minutes: 10),
       );
-      final idle = ChatDashboardInfoFixtures.idle(id: 3, name: 'Idle');
 
-      final sorted = sortByUrgency([laterTimer, idle, soonTimer]);
+      final sorted = sortByUrgency([later, soon]);
 
       expect(sorted[0].chat.name, 'Soon');
       expect(sorted[1].chat.name, 'Later');
-      expect(sorted[2].chat.name, 'Idle');
     });
 
-    test('active + no timer comes after timed, before paused', () {
-      final timed = ChatDashboardInfoFixtures.proposingTimed(
+    test('not participated + manual comes before participated + manual', () {
+      final notParticipated = ChatDashboardInfoFixtures.proposingManual(
         id: 1,
-        name: 'Timed',
+        name: 'NeedAttention',
+        hasParticipated: false,
       );
-      final manual = ChatDashboardInfoFixtures.proposingManual(
+      final participated = ChatDashboardInfoFixtures.proposingManual(
         id: 2,
-        name: 'Manual',
-      );
-      final paused = ChatDashboardInfoFixtures.paused(
-        id: 3,
-        name: 'Paused',
+        name: 'Done',
+        hasParticipated: true,
       );
 
-      final sorted = sortByUrgency([paused, manual, timed]);
+      final sorted = sortByUrgency([participated, notParticipated]);
 
-      expect(sorted[0].chat.name, 'Timed');
-      expect(sorted[1].chat.name, 'Manual');
-      expect(sorted[2].chat.name, 'Paused');
+      expect(sorted[0].chat.name, 'NeedAttention');
+      expect(sorted[1].chat.name, 'Done');
     });
 
     test('paused comes before idle', () {
@@ -92,18 +127,54 @@ void main() {
       expect(sorted[0], single);
     });
 
-    test('full urgency ordering: timed > manual > paused > idle', () {
-      final timed = ChatDashboardInfoFixtures.proposingTimed(id: 1, name: 'Timed');
-      final manual = ChatDashboardInfoFixtures.proposingManual(id: 2, name: 'Manual');
-      final paused = ChatDashboardInfoFixtures.paused(id: 3, name: 'Paused');
-      final idle = ChatDashboardInfoFixtures.idle(id: 4, name: 'Idle');
+    test('full urgency ordering: all 6 groups', () {
+      final notParticipatedTimed = ChatDashboardInfoFixtures.proposingTimed(
+        id: 1, name: 'NotParticipated+Timed', hasParticipated: false,
+      );
+      final notParticipatedManual = ChatDashboardInfoFixtures.proposingManual(
+        id: 2, name: 'NotParticipated+Manual', hasParticipated: false,
+      );
+      final participatedTimed = ChatDashboardInfoFixtures.proposingTimed(
+        id: 3, name: 'Participated+Timed',
+      );
+      final participatedManual = ChatDashboardInfoFixtures.proposingManual(
+        id: 4, name: 'Participated+Manual',
+      );
+      final paused = ChatDashboardInfoFixtures.paused(id: 5, name: 'Paused');
+      final idle = ChatDashboardInfoFixtures.idle(id: 6, name: 'Idle');
 
-      final sorted = sortByUrgency([idle, paused, timed, manual]);
+      final sorted = sortByUrgency([
+        idle, paused, participatedTimed, notParticipatedManual,
+        participatedManual, notParticipatedTimed,
+      ]);
 
-      expect(sorted[0].chat.name, 'Timed');
-      expect(sorted[1].chat.name, 'Manual');
-      expect(sorted[2].chat.name, 'Paused');
-      expect(sorted[3].chat.name, 'Idle');
+      expect(sorted[0].chat.name, 'NotParticipated+Timed');
+      expect(sorted[1].chat.name, 'NotParticipated+Manual');
+      expect(sorted[2].chat.name, 'Participated+Timed');
+      expect(sorted[3].chat.name, 'Participated+Manual');
+      expect(sorted[4].chat.name, 'Paused');
+      expect(sorted[5].chat.name, 'Idle');
+    });
+
+    test('hasParticipated defaults to true for idle chats', () {
+      final idle = ChatDashboardInfoFixtures.idle(id: 1, name: 'Idle');
+      expect(idle.hasParticipated, true);
+    });
+
+    test('ChatDashboardInfo.fromJson parses has_participated', () {
+      final json = ChatDashboardInfoFixtures.json(
+        hasParticipated: false,
+        currentRoundPhase: 'proposing',
+      );
+      final info = ChatDashboardInfo.fromJson(json);
+      expect(info.hasParticipated, false);
+    });
+
+    test('ChatDashboardInfo.fromJson defaults has_participated to true', () {
+      final json = ChatDashboardInfoFixtures.json();
+      json.remove('has_participated');
+      final info = ChatDashboardInfo.fromJson(json);
+      expect(info.hasParticipated, true);
     });
   });
 }

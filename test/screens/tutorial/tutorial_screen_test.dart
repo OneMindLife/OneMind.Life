@@ -7,14 +7,12 @@ import 'package:onemind_app/screens/tutorial/tutorial_screen.dart';
 
 import '../../helpers/pump_app.dart';
 
-/// Helper to navigate from intro to proposing by tapping a template card
+/// Helper to navigate from intro to proposing by tapping the play button
 /// then skipping the chat tour via the notifier (the tooltip requires
 /// post-frame measurement to render, which can be flaky in widget tests).
 Future<void> _navigateToProposing(WidgetTester tester) async {
-  // Select Community Decision template directly from intro
-  await tester.ensureVisible(find.text('Community Decision'));
-  await tester.pumpAndSettle();
-  await tester.tap(find.text('Community Decision'));
+  // Tap play button to start with saturday template
+  await tester.tap(find.byIcon(Icons.play_arrow_rounded));
   await tester.pumpAndSettle();
 
   // Skip the chat tour using the notifier directly
@@ -27,7 +25,7 @@ Future<void> _navigateToProposing(WidgetTester tester) async {
 
 void main() {
   group('TutorialScreen', () {
-    testWidgets('displays intro panel with template cards on start', (tester) async {
+    testWidgets('displays intro panel with play button on start', (tester) async {
       var completed = false;
 
       await tester.pumpApp(
@@ -39,12 +37,10 @@ void main() {
       // Wait for post-frame callback to start tutorial
       await tester.pumpAndSettle();
 
-      expect(find.text('Welcome to OneMind!'), findsOneWidget);
-      expect(find.text('Personal Decision'), findsOneWidget);
-      expect(find.text('Community Decision'), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
-    testWidgets('shows app bar with tutorial title on intro and after template pick', (tester) async {
+    testWidgets('shows app bar with tutorial title on intro and after play tap', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -56,17 +52,20 @@ void main() {
       expect(find.byType(AppBar), findsOneWidget);
       expect(find.text('OneMind Tutorial'), findsOneWidget);
 
-      // Select a template
-      await tester.ensureVisible(find.text('Community Decision'));
+      // Tap play button
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Community Decision'));
+      // Pump through all intro delays and animations (may fire multiple timers)
+      for (var i = 0; i < 5; i++) {
+        await tester.pump(const Duration(seconds: 1));
+      }
       await tester.pumpAndSettle();
 
-      // App bar still visible with 3-dot menu after template pick
+      // App bar still visible with 3-dot menu after play tap
       expect(find.byType(AppBar), findsOneWidget);
     });
 
-    testWidgets('navigates to round 1 proposing after selecting template',
+    testWidgets('navigates to round 1 proposing after tapping play',
         (tester) async {
       await tester.pumpApp(
         TutorialScreen(
@@ -94,7 +93,7 @@ void main() {
       await _navigateToProposing(tester);
 
       // Submit a proposition
-      await tester.enterText(find.byType(TextField), 'Family');
+      await tester.enterText(find.byType(TextField), 'Bowling');
       await tester.pumpAndSettle();
 
       // Find and tap submit button
@@ -116,10 +115,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Skip button in intro panel
-      await tester.ensureVisible(find.text('Skip tutorial'));
+      // Skip button in intro panel (may be off-screen in test viewport)
+      final skipFinder = find.text('Skip');
+      await tester.ensureVisible(skipFinder);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Skip tutorial'));
+      await tester.tap(skipFinder);
       await tester.pumpAndSettle();
 
       // Confirmation dialog should appear
@@ -138,10 +138,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Skip button in intro panel
-      await tester.ensureVisible(find.text('Skip tutorial'));
+      // Skip button in intro panel (may be off-screen in test viewport)
+      final skipFinder = find.text('Skip');
+      await tester.ensureVisible(skipFinder);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Skip tutorial'));
+      await tester.tap(skipFinder);
       await tester.pumpAndSettle();
 
       // Confirm skip
@@ -161,10 +162,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Skip button in intro panel
-      await tester.ensureVisible(find.text('Skip tutorial'));
+      // Skip button in intro panel (may be off-screen in test viewport)
+      final skipFinder = find.text('Skip');
+      await tester.ensureVisible(skipFinder);
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Skip tutorial'));
+      await tester.tap(skipFinder);
       await tester.pumpAndSettle();
 
       // Cancel skip
@@ -173,11 +175,11 @@ void main() {
 
       // Should still be on intro, not completed
       expect(completed, isFalse);
-      expect(find.text('Welcome to OneMind!'), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
 
-    testWidgets('navigates to proposing state after selecting template', (tester) async {
+    testWidgets('navigates to proposing state after tapping play', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -192,7 +194,7 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
     });
 
-    testWidgets('displays template-specific initial message in chat history', (tester) async {
+    testWidgets('displays saturday initial message in chat history', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -200,18 +202,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Navigate to proposing (community template)
+      // Navigate to proposing (saturday template)
       await _navigateToProposing(tester);
 
-      // Initial message should display the community template question
+      // Initial message should display the saturday template question
       expect(
-        find.textContaining('What should our neighborhood do together?'),
+        find.textContaining('best way to spend a free Saturday'),
         findsWidgets,
       );
     });
 
     group('Tutorial panel widgets', () {
-      testWidgets('intro panel has template cards and skip button', (tester) async {
+      testWidgets('intro panel has play button and skip button', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -219,8 +221,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Personal Decision'), findsOneWidget);
-        expect(find.text('Skip tutorial'), findsOneWidget);
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.text('Skip'), findsOneWidget);
       });
 
       testWidgets('proposing state shows text field', (tester) async {
@@ -273,12 +275,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // These strings come from l10n, not hardcoded
-        expect(find.text('Welcome to OneMind!'), findsOneWidget);
-        expect(find.text('Choose a topic to practice with'), findsOneWidget);
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.text('See how it works'), findsOneWidget);
       });
 
-      testWidgets('displays template cards', (tester) async {
+      testWidgets('displays play button', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -286,9 +287,8 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Personal Decision'), findsOneWidget);
-        expect(find.text('Family'), findsOneWidget);
-        expect(find.text('Community Decision'), findsOneWidget);
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.text('See how it works'), findsOneWidget);
       });
 
       testWidgets('displays localized button labels', (tester) async {
@@ -299,10 +299,10 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Skip tutorial'), findsOneWidget);
+        expect(find.text('Skip'), findsOneWidget);
       });
 
-      testWidgets('displays template-specific initial message after selecting template', (tester) async {
+      testWidgets('displays saturday initial message after tapping play', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},
@@ -310,11 +310,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Navigate to proposing (community template)
+        // Navigate to proposing (saturday template)
         await _navigateToProposing(tester);
 
-        // Initial message should display the community question
-        expect(find.textContaining('What should our neighborhood do together?'), findsWidgets);
+        // Initial message should display the saturday question
+        expect(find.textContaining('best way to spend a free Saturday'), findsWidgets);
       });
     });
 
@@ -331,7 +331,7 @@ void main() {
         await _navigateToProposing(tester);
 
         // Participants icon visible, share icon not yet revealed
-        expect(find.byIcon(Icons.people), findsOneWidget);
+        expect(find.byIcon(Icons.leaderboard), findsOneWidget);
         expect(find.byKey(const Key('tutorial-share-button')), findsNothing);
       });
 
@@ -346,8 +346,8 @@ void main() {
         // Navigate to proposing
         await _navigateToProposing(tester);
 
-        // Tap the close button in AppBar
-        await tester.tap(find.byIcon(Icons.close));
+        // Tap the exit button in AppBar
+        await tester.tap(find.byIcon(Icons.exit_to_app));
         await tester.pumpAndSettle();
 
         // Skip confirmation dialog should appear
@@ -415,7 +415,7 @@ void main() {
         );
       });
 
-      testWidgets('auto-opens results screen after completing round 1 rating',
+      testWidgets('state advances to round1Result after completing rating',
           (tester) async {
         await tester.pumpApp(
           TutorialScreen(onComplete: () {}),
@@ -436,9 +436,11 @@ void main() {
         notifier.completeRound1Rating();
         await tester.pumpAndSettle();
 
-        // The ReadOnlyResultsScreen should have auto-opened via ref.listen
-        // It shows "Rating Results" in the app bar (may appear in both AppBar title and elsewhere)
-        expect(find.text('Rating Results'), findsWidgets);
+        // State should be at round1Result (results screen is opened by
+        // _pushResultsReplacement from rating onComplete, not by ref.listen)
+        final state = container.read(tutorialChatNotifierProvider);
+        expect(state.currentStep, TutorialStep.round1Result);
+        expect(state.previousRoundWinners, isNotEmpty);
       });
     });
 
@@ -452,11 +454,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Go to proposing (community template)
+        // Go to proposing (saturday template)
         await _navigateToProposing(tester);
 
-        // Try to submit "Block Party" (which exists in community round 1)
-        await tester.enterText(find.byType(TextField), 'Block Party');
+        // Try to submit "Movie Night" (which exists in saturday round 1)
+        await tester.enterText(find.byType(TextField), 'Movie Night');
         await tester.pumpAndSettle();
 
         final submitFinder = find.byIcon(Icons.send_rounded);
@@ -483,11 +485,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Go to proposing (community template)
+        // Go to proposing (saturday template)
         await _navigateToProposing(tester);
 
-        // Try to submit "block party" (lowercase - should match "Block Party")
-        await tester.enterText(find.byType(TextField), 'block party');
+        // Try to submit "movie night" (lowercase - should match "Movie Night")
+        await tester.enterText(find.byType(TextField), 'movie night');
         await tester.pumpAndSettle();
 
         final submitFinder = find.byIcon(Icons.send_rounded);
@@ -511,11 +513,11 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        // Go to proposing (community template)
+        // Go to proposing (saturday template)
         await _navigateToProposing(tester);
 
         // Submit a unique proposition
-        await tester.enterText(find.byType(TextField), 'Education');
+        await tester.enterText(find.byType(TextField), 'Bowling');
         await tester.pumpAndSettle();
 
         final submitFinder = find.byIcon(Icons.send_rounded);

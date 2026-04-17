@@ -100,6 +100,10 @@ class RatingModel extends ChangeNotifier {
   /// Which boundary we're expanding from (true = top/100, false = bottom/0)
   bool _expandingFromTop = false;
 
+  /// Public getters for expansion state (used by drag gesture)
+  bool get isExpanding => _isExpanding;
+  bool get expandingFromTop => _expandingFromTop;
+
   /// Whether more propositions are expected (for lazy loading)
   bool _morePropositionsExpected = false;
 
@@ -1177,10 +1181,16 @@ class RatingModel extends ChangeNotifier {
         String? preservedDefaultId;
 
         if (hasActiveProp) {
-          final activeProp = entry.value.firstWhere((p) => p.isActive);
-          defaultCardId = activeProp.id;
+          // Preserve user's manual cycle selection if it's still in the stack
+          if (oldStack != null && allCardIds.contains(oldStack.defaultCardId)) {
+            defaultCardId = oldStack.defaultCardId;
+            preservedDefaultId = oldStack.preservedDefaultId;
+          } else {
+            final activeProp = entry.value.firstWhere((p) => p.isActive);
+            defaultCardId = activeProp.id;
+          }
 
-          if (oldStack != null && oldStack.defaultCardId != activeProp.id) {
+          if (oldStack != null && oldStack.defaultCardId != defaultCardId) {
             preservedDefaultId = oldStack.defaultCardId;
           } else if (oldStack?.preservedDefaultId != null) {
             preservedDefaultId = oldStack!.preservedDefaultId;
@@ -1242,14 +1252,18 @@ class RatingModel extends ChangeNotifier {
           break;
         }
       }
-      if (stack == null) return;
+      if (stack == null) {
+        return;
+      }
     }
 
     if (!stack.hasMultipleCards) return;
 
     final cardsAtPosition = stack.allCardIds;
     final currentIndex = cardsAtPosition.indexOf(currentCardId);
-    if (currentIndex == -1) return;
+    if (currentIndex == -1) {
+      return;
+    }
 
     final nextIndex = (currentIndex + 1) % cardsAtPosition.length;
     final nextCardId = cardsAtPosition[nextIndex];

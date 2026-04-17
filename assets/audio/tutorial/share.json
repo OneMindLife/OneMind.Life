@@ -1,0 +1,72 @@
+[
+  {
+    "word": "Share",
+    "start": 0.0,
+    "end": 0.267
+  },
+  {
+    "word": "this",
+    "start": 0.313,
+    "end": 0.453
+  },
+  {
+    "word": "link,",
+    "start": 0.546,
+    "end": 0.894
+  },
+  {
+    "word": "QR",
+    "start": 1.022,
+    "end": 1.382
+  },
+  {
+    "word": "code,",
+    "start": 1.486,
+    "end": 1.823
+  },
+  {
+    "word": "or",
+    "start": 1.927,
+    "end": 2.055
+  },
+  {
+    "word": "invite",
+    "start": 2.101,
+    "end": 2.461
+  },
+  {
+    "word": "code",
+    "start": 2.508,
+    "end": 2.786
+  },
+  {
+    "word": "for",
+    "start": 2.821,
+    "end": 2.926
+  },
+  {
+    "word": "others",
+    "start": 2.995,
+    "end": 3.216
+  },
+  {
+    "word": "to",
+    "start": 3.262,
+    "end": 3.32
+  },
+  {
+    "word": "join",
+    "start": 3.402,
+    "end": 3.622
+  },
+  {
+    "word": "your",
+    "start": 3.669,
+    "end": 3.785
+  },
+  {
+    "word": "chat.",
+    "start": 3.82,
+    "end": 4.551
+  }
+]

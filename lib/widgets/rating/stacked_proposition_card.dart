@@ -1,9 +1,9 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'rating_model.dart';
 import 'proposition_card.dart';
 
-/// Auto-cycling widget for displaying a stack of propositions at the same position
+/// Widget for displaying a stack of propositions at the same position.
+/// User cycles through cards with left/right arrows.
 class StackedPropositionCard extends StatefulWidget {
   final RatingProposition defaultCard;
   final List<RatingProposition> allCardsInStack;
@@ -24,29 +24,22 @@ class StackedPropositionCard extends StatefulWidget {
 
 class _StackedPropositionCardState extends State<StackedPropositionCard>
     with SingleTickerProviderStateMixin {
-  Timer? _cycleTimer;
+  int _currentIndex = 0;
   late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
-  late RatingProposition _displayedCard;
 
   @override
   void initState() {
     super.initState();
-    _displayedCard = widget.defaultCard;
-
+    _currentIndex = _findIndex(widget.defaultCard.id);
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 200),
       vsync: this,
+      value: 1.0,
     );
-    _fadeAnimation =
-        Tween<double>(begin: 1.0, end: 0.0).animate(_fadeController);
-
-    _startAutoCycle();
   }
 
   @override
   void dispose() {
-    _cycleTimer?.cancel();
     _fadeController.dispose();
     super.dispose();
   }
@@ -54,74 +47,55 @@ class _StackedPropositionCardState extends State<StackedPropositionCard>
   @override
   void didUpdateWidget(StackedPropositionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    if (oldWidget.allCardsInStack.length != widget.allCardsInStack.length) {
-      _startAutoCycle();
-    }
-
-    if (oldWidget.defaultCard.id != widget.defaultCard.id) {
-      final positionChanged =
-          (oldWidget.defaultCard.position - widget.defaultCard.position).abs() >
-              0.01;
-
-      if (widget.defaultCard.isActive &&
-          !_displayedCard.isActive &&
-          positionChanged) {
-        setState(() {
-          _displayedCard = widget.defaultCard;
-        });
-        _fadeController.reset();
-        return;
+    if (widget.defaultCard.id != oldWidget.defaultCard.id) {
+      final newIndex = _findIndex(widget.defaultCard.id);
+      if (newIndex != _currentIndex) {
+        _cycleTo(newIndex);
       }
-
-      if (_displayedCard.isActive &&
-          !widget.defaultCard.isActive &&
-          positionChanged) {
-        _fadeController.value = 1.0;
-        setState(() {
-          _displayedCard = widget.defaultCard;
-        });
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            _fadeController.reverse();
-          }
-        });
-        return;
-      }
-
-      _fadeController.forward(from: 0.0).then((_) {
-        if (mounted) {
-          setState(() {
-            _displayedCard = widget.defaultCard;
-          });
-          _fadeController.reverse();
-        }
-      });
+    } else if (_currentIndex >= widget.allCardsInStack.length) {
+      _currentIndex = 0;
     }
   }
 
-  void _startAutoCycle() {
-    _cycleTimer?.cancel();
+  int _findIndex(String id) {
+    final idx = widget.allCardsInStack.indexWhere((c) => c.id == id);
+    return idx >= 0 ? idx : 0;
+  }
 
-    if (widget.allCardsInStack.length > 1) {
-      _cycleTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-        if (mounted) {
-          widget.model.cycleStackCard(
-            widget.defaultCard.position,
-            widget.defaultCard.id,
-          );
-        }
-      });
+  RatingProposition get _currentCard =>
+      widget.allCardsInStack[_currentIndex];
+
+  void _cycleTo(int newIndex) {
+    if (_fadeController.isAnimating) {
+      _fadeController.stop();
     }
+    _fadeController.reverse().then((_) {
+      if (mounted) {
+        setState(() => _currentIndex = newIndex);
+        _fadeController.forward();
+      }
+    });
+  }
+
+  void _cycleNext() {
+    _cycleTo((_currentIndex + 1) % widget.allCardsInStack.length);
+  }
+
+  void _cyclePrevious() {
+    _cycleTo(
+      (_currentIndex - 1 + widget.allCardsInStack.length) %
+          widget.allCardsInStack.length,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final card = _currentCard;
 
     Widget cardContent = PropositionCard(
-      proposition: _displayedCard,
-      isActive: _displayedCard.isActive,
+      proposition: card,
+      isActive: widget.isActive || card.isActive,
       activeGlowColor: theme.colorScheme.primary,
     );
 
@@ -130,62 +104,24 @@ class _StackedPropositionCardState extends State<StackedPropositionCard>
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Left arrow
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              widget.model.cyclePreviousStackCard(
-                widget.defaultCard.position,
-                widget.defaultCard.id,
-              );
-            },
+            onTap: _cyclePrevious,
             child: Icon(
               Icons.chevron_left,
               color: theme.colorScheme.primary,
               size: 28,
             ),
           ),
-
-          // Card content
           Flexible(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Stack indicator badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha:0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: theme.colorScheme.primary.withValues(alpha:0.3),
-                    ),
-                  ),
-                  child: Text(
-                    '${widget.allCardsInStack.length} stacked',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: cardContent,
-                ),
-              ],
+            child: FadeTransition(
+              opacity: _fadeController,
+              child: cardContent,
             ),
           ),
-
-          // Right arrow
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: () {
-              widget.model.cycleStackCard(
-                widget.defaultCard.position,
-                widget.defaultCard.id,
-              );
-            },
+            onTap: _cycleNext,
             child: Icon(
               Icons.chevron_right,
               color: theme.colorScheme.primary,
@@ -195,10 +131,7 @@ class _StackedPropositionCardState extends State<StackedPropositionCard>
         ],
       );
     } else {
-      return FadeTransition(
-        opacity: _fadeAnimation,
-        child: cardContent,
-      );
+      return cardContent;
     }
   }
 }

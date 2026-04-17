@@ -5,8 +5,8 @@ import 'basic_info_section.dart';
 import 'form_inputs.dart';
 
 /// Step 1 of the create chat wizard: The Question
-/// Focuses purely on chat name and initial message/question.
-class WizardStepQuestion extends StatelessWidget {
+/// Focuses purely on chat name and optional initial message/question.
+class WizardStepQuestion extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController messageController;
   final GlobalKey<FormState> formKey;
@@ -20,8 +20,15 @@ class WizardStepQuestion extends StatelessWidget {
     required this.onContinue,
   });
 
+  @override
+  State<WizardStepQuestion> createState() => _WizardStepQuestionState();
+}
+
+class _WizardStepQuestionState extends State<WizardStepQuestion> {
+  late bool _showMessage = widget.messageController.text.isNotEmpty;
+
   bool _validate() {
-    return formKey.currentState?.validate() ?? false;
+    return widget.formKey.currentState?.validate() ?? false;
   }
 
   @override
@@ -36,7 +43,7 @@ class WizardStepQuestion extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Form(
-                key: formKey,
+                key: widget.formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -56,39 +63,50 @@ class WizardStepQuestion extends StatelessWidget {
                       ),
                       textAlign: TextAlign.center,
                     ),
+                    const SizedBox(height: 8),
                     const SizedBox(height: 24),
 
                     // Chat name field
-                    SettingTile(
-                      question: 'What should we call this chat?',
-                      description: 'A short name participants will see',
-                      child: TextFormField(
-                        controller: nameController,
-                        maxLength: kChatNameMaxLength,
-                        decoration: InputDecoration(
-                          hintText: l10n.chatNameHint,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
+                    TextFormField(
+                      controller: widget.nameController,
+                      maxLength: kChatNameMaxLength,
+                      decoration: InputDecoration(
+                        labelText: l10n.chatName,
+                        hintText: l10n.chatNameHint,
+                        floatingLabelBehavior: FloatingLabelBehavior.always,
+                        filled: true,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
                         ),
-                        textCapitalization: TextCapitalization.sentences,
-                        validator: (v) => v == null || v.trim().isEmpty
-                            ? l10n.required
-                            : null,
                       ),
+                      textCapitalization: TextCapitalization.sentences,
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? l10n.required
+                          : null,
                     ),
                     const SizedBox(height: 8),
 
-                    // Initial message field (optional)
-                    SettingTile(
-                      question: 'Set the opening topic (optional)',
-                      description: 'A question or prompt to kick things off',
-                      child: TextFormField(
-                        controller: messageController,
+                    // Toggle for initial message
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(l10n.setFirstMessage),
+                      value: _showMessage,
+                      onChanged: (v) {
+                        setState(() => _showMessage = v);
+                        if (!v) widget.messageController.clear();
+                      },
+                    ),
+
+                    // Initial message field (shown when toggled on)
+                    if (_showMessage) ...[
+                      const SizedBox(height: 8),
+                      TextFormField(
+                        controller: widget.messageController,
                         decoration: InputDecoration(
+                          labelText: l10n.initialMessageLabel,
                           hintText: l10n.initialMessageHint,
+                          floatingLabelBehavior: FloatingLabelBehavior.always,
                           filled: true,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -98,7 +116,7 @@ class WizardStepQuestion extends StatelessWidget {
                         maxLines: 3,
                         textCapitalization: TextCapitalization.sentences,
                       ),
-                    ),
+                    ],
                   ],
                 ),
               ),
@@ -112,7 +130,7 @@ class WizardStepQuestion extends StatelessWidget {
             child: FilledButton(
               onPressed: () {
                 if (_validate()) {
-                  onContinue();
+                  widget.onContinue();
                 }
               },
               child: Row(

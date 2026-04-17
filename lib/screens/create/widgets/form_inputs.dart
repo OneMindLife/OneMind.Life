@@ -222,8 +222,8 @@ class SettingTile extends StatelessWidget {
 /// Returns a human-readable label for a timer preset key.
 String formatPresetLabel(String preset, AppLocalizations l10n) {
   switch (preset) {
-    case '2min':
-      return l10n.duration2min;
+    case '1min':
+      return l10n.duration1min;
     case '30min':
       return l10n.preset30min;
     case '1hour':
@@ -262,7 +262,7 @@ class TimerPresets extends StatefulWidget {
   final void Function(String preset, int duration) onChanged;
 
   static const Map<String, int> presets = {
-    '2min': 120,
+    '1min': 60,
     '30min': 1800,
     '1hour': 3600,
     '1day': 86400,
@@ -326,8 +326,8 @@ class _TimerPresetsState extends State<TimerPresets> {
 
   String _formatPreset(String preset, AppLocalizations l10n) {
     switch (preset) {
-      case '2min':
-        return l10n.duration2min;
+      case '1min':
+        return l10n.duration1min;
       case '30min':
         return l10n.preset30min;
       case '1hour':

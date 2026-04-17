@@ -7,10 +7,16 @@ enum TutorialStep {
   intro,
 
   // Chat screen tour (after template, before rounds)
+  chatTourIntro,
   chatTourTitle,
-  chatTourParticipants,
   chatTourMessage,
-  chatTourProposing,
+  chatTourPlaceholder,
+  chatTourRound,
+  chatTourPhases,
+  chatTourProgress,
+  chatTourTimer,
+  chatTourParticipants,
+  chatTourSubmit,
 
   // Round 1
   round1Proposing,
@@ -70,6 +76,7 @@ class TutorialChatState extends Equatable {
   final bool hasRated;
   final bool hasStartedRating;
   final List<RoundWinner> previousRoundWinners;
+  final int currentWinnerIndex;
   final bool isSoleWinner;
   final int consecutiveSoleWins;
 
@@ -78,6 +85,7 @@ class TutorialChatState extends Equatable {
   final String? customQuestion; // custom topic question (only for 'custom' template)
   final String? userProposition1; // Round 1 submission
   final String? userProposition2; // Round 2 submission
+  final String? userProposition3; // Round 3 submission (null if skipped)
 
   /// Round 1 results with final ratings (for "See Results" grid)
   final List<Proposition> round1Results;
@@ -100,12 +108,14 @@ class TutorialChatState extends Equatable {
     this.hasRated = false,
     this.hasStartedRating = false,
     this.previousRoundWinners = const [],
+    this.currentWinnerIndex = 0,
     this.isSoleWinner = false,
     this.consecutiveSoleWins = 0,
     this.selectedTemplate,
     this.customQuestion,
     this.userProposition1,
     this.userProposition2,
+    this.userProposition3,
     this.round1Results = const [],
     this.round2Results = const [],
     this.round3Results = const [],
@@ -113,15 +123,15 @@ class TutorialChatState extends Equatable {
 
   /// Whether the current step is a chat tour step
   bool get isChatTourStep =>
-      currentStep.index >= TutorialStep.chatTourTitle.index &&
-      currentStep.index <= TutorialStep.chatTourProposing.index;
+      currentStep.index >= TutorialStep.chatTourIntro.index &&
+      currentStep.index <= TutorialStep.chatTourSubmit.index;
 
-  /// Zero-based index within the chat tour (0..4)
+  /// Zero-based index within the chat tour (0..chatTourTotalSteps-1)
   int get chatTourStepIndex =>
-      currentStep.index - TutorialStep.chatTourTitle.index;
+      currentStep.index - TutorialStep.chatTourIntro.index;
 
   /// Total number of chat tour steps
-  static const int chatTourTotalSteps = 4;
+  static const int chatTourTotalSteps = 10;
 
   /// Get the user's current proposition based on round
   String? get currentUserProposition {
@@ -150,12 +160,14 @@ class TutorialChatState extends Equatable {
     bool? hasRated,
     bool? hasStartedRating,
     List<RoundWinner>? previousRoundWinners,
+    int? currentWinnerIndex,
     bool? isSoleWinner,
     int? consecutiveSoleWins,
     String? selectedTemplate,
     String? customQuestion,
     String? userProposition1,
     String? userProposition2,
+    String? userProposition3,
     List<Proposition>? round1Results,
     List<Proposition>? round2Results,
     List<Proposition>? round3Results,
@@ -172,12 +184,14 @@ class TutorialChatState extends Equatable {
       hasRated: hasRated ?? this.hasRated,
       hasStartedRating: hasStartedRating ?? this.hasStartedRating,
       previousRoundWinners: previousRoundWinners ?? this.previousRoundWinners,
+      currentWinnerIndex: currentWinnerIndex ?? this.currentWinnerIndex,
       isSoleWinner: isSoleWinner ?? this.isSoleWinner,
       consecutiveSoleWins: consecutiveSoleWins ?? this.consecutiveSoleWins,
       selectedTemplate: selectedTemplate ?? this.selectedTemplate,
       customQuestion: customQuestion ?? this.customQuestion,
       userProposition1: userProposition1 ?? this.userProposition1,
       userProposition2: userProposition2 ?? this.userProposition2,
+      userProposition3: userProposition3 ?? this.userProposition3,
       round1Results: round1Results ?? this.round1Results,
       round2Results: round2Results ?? this.round2Results,
       round3Results: round3Results ?? this.round3Results,
@@ -203,6 +217,7 @@ class TutorialChatState extends Equatable {
         customQuestion,
         userProposition1,
         userProposition2,
+        userProposition3,
         round1Results,
         round2Results,
         round3Results,

@@ -10,12 +10,10 @@ class ScheduleSettingsCard extends StatelessWidget {
   final DateTime scheduledStartAt;
   final List<state.ScheduleWindow> windows;
   final String scheduleTimezone;
-  final bool visibleOutsideSchedule;
   final void Function(ScheduleType) onScheduleTypeChanged;
   final void Function(DateTime) onScheduledStartAtChanged;
   final void Function(List<state.ScheduleWindow>) onWindowsChanged;
   final void Function(String) onScheduleTimezoneChanged;
-  final void Function(bool) onVisibleOutsideScheduleChanged;
 
   const ScheduleSettingsCard({
     super.key,
@@ -23,12 +21,10 @@ class ScheduleSettingsCard extends StatelessWidget {
     required this.scheduledStartAt,
     required this.windows,
     required this.scheduleTimezone,
-    required this.visibleOutsideSchedule,
     required this.onScheduleTypeChanged,
     required this.onScheduledStartAtChanged,
     required this.onWindowsChanged,
     required this.onScheduleTimezoneChanged,
-    required this.onVisibleOutsideScheduleChanged,
   });
 
   @override
@@ -75,20 +71,6 @@ class ScheduleSettingsCard extends StatelessWidget {
                 onScheduleTimezoneChanged: onScheduleTimezoneChanged,
               ),
 
-            const SizedBox(height: 16),
-            const Divider(),
-            const SizedBox(height: 8),
-
-            // Visibility outside schedule
-            SwitchListTile(
-              title: Text(l10n.hideOutsideSchedule),
-              subtitle: Text(visibleOutsideSchedule
-                  ? l10n.visiblePaused
-                  : l10n.hiddenUntilWindow),
-              value: !visibleOutsideSchedule,
-              onChanged: (v) => onVisibleOutsideScheduleChanged(!v),
-              contentPadding: EdgeInsets.zero,
-            ),
           ],
         ),
       ),

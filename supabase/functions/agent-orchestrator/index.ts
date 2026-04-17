@@ -4,7 +4,7 @@
 // DISPATCHER MODE (no persona_name): Called by DB trigger. Fires 5 independent
 //   worker calls (one per persona), waits for all, retries failures once (~30-60s).
 // WORKER MODE (persona_name present): Processes a single persona —
-//   Gemini 2.0 Flash reasoning, API call. Each worker has its own 150s gateway window.
+//   DeepSeek V3.2 reasoning, API call. Each worker has its own 150s gateway window.
 //
 // Receives: { round_id, chat_id, cycle_id, phase, persona_name? }
 //
@@ -29,15 +29,15 @@ const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const tavilyApiKey = Deno.env.get("TAVILY_API_KEY") ?? "";
 
 const openai = new OpenAI({
-  apiKey: Deno.env.get("GEMINI_API_KEY") ?? "",
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
+  apiKey: Deno.env.get("DEEPSEEK_API_KEY") ?? "",
+  baseURL: "https://api.deepseek.com",
 });
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const MAX_CONTENT_LENGTH = 200;
 const LOG_PREFIX = "[AGENT-ORCHESTRATOR]";
-const LLM_TIMEOUT_MS = 30_000;      // 30s per Gemini call — typically responds in 1-5s
+const LLM_TIMEOUT_MS = 60_000;      // 60s per DeepSeek call — typically responds in 5-30s
 const TAVILY_TIMEOUT_MS = 15_000;   // 15s for Tavily search (raw results, no synthesis)
 const TAVILY_MAX_RESULTS = 10;      // Max search results per Tavily call
 const WORKER_WAIT_MS = 60_000;      // 60s max to wait for all workers (LLM ~5-15s)
@@ -163,7 +163,7 @@ Respond with ONLY valid JSON in this exact format, no other text:
     const startMs = Date.now();
     const response = await openai.chat.completions.create(
       {
-        model: "gemini-2.5-flash",
+        model: "deepseek-chat",
         messages: [{ role: "user", content: generationPrompt }],
         temperature: 1.0,
       },
@@ -359,7 +359,7 @@ async function classifyConsensus(content: string, logContext?: { chat_id?: numbe
   try {
     const response = await openai.chat.completions.create(
       {
-        model: "gemini-2.5-flash",
+        model: "deepseek-chat",
         max_tokens: 50,
         messages: [
           {
@@ -487,7 +487,7 @@ async function synthesizeFromSources(
   try {
     const response = await openai.chat.completions.create(
       {
-        model: "gemini-2.5-flash",
+        model: "deepseek-chat",
         max_tokens: 4096,
         messages: [
           {
@@ -557,7 +557,7 @@ async function evaluateCompleteness(
   try {
     const response = await openai.chat.completions.create(
       {
-        model: "gemini-2.5-flash",
+        model: "deepseek-chat",
         max_tokens: 512,
         response_format: { type: "json_object" },
         messages: [
@@ -616,7 +616,7 @@ async function buildSearchQuery(brief: ResearchBrief): Promise<string> {
   try {
     const response = await openai.chat.completions.create(
       {
-        model: "gemini-2.5-flash",
+        model: "deepseek-chat",
         max_tokens: 200,
         messages: [
           {
@@ -1027,7 +1027,7 @@ async function callAgentPropose(
   content: string,
   apiKey: string,
   category?: string,
-): Promise<{ success: boolean; duplicate?: boolean; proposition_id?: number; propositions_remaining?: number }> {
+): Promise<{ success: boolean; skipped?: boolean; skip_reason?: string; duplicate?: boolean; proposition_id?: number; propositions_remaining?: number }> {
   const url = `${supabaseUrl}/functions/v1/agent-propose`;
   const body: Record<string, unknown> = { chat_id: chatId, content };
   if (category) body.category = category;
@@ -1044,9 +1044,9 @@ async function callAgentPropose(
 
   if (!response.ok) {
     const errorCode = responseBody?.code || "";
-    // Graceful cases: phase moved on, already at limit
+    // Graceful cases: phase moved on, already at limit — return skipped so callers can log accurately
     if (errorCode === "LIMIT_REACHED" || errorCode === "WRONG_PHASE" || errorCode === "PHASE_ENDED") {
-      return { success: true };
+      return { success: true, skipped: true, skip_reason: errorCode };
     }
     if (response.status === 409) {
       return { success: false, duplicate: true }; // Caller should retry with different content
@@ -1063,7 +1063,7 @@ async function callAgentRate(
   chatId: number,
   ratings: Record<string, number>,
   apiKey: string,
-): Promise<{ success: boolean; rated_count?: number; total_to_rate?: number; is_complete?: boolean }> {
+): Promise<{ success: boolean; skipped?: boolean; skip_reason?: string; rated_count?: number; total_to_rate?: number; is_complete?: boolean }> {
   const url = `${supabaseUrl}/functions/v1/agent-rate`;
   const response = await fetch(url, {
     method: "POST",
@@ -1078,9 +1078,9 @@ async function callAgentRate(
 
   if (!response.ok) {
     const errorCode = body?.code || "";
-    // Graceful cases: phase moved on
+    // Graceful cases: phase moved on — return skipped so callers can log accurately
     if (errorCode === "WRONG_PHASE" || errorCode === "PHASE_ENDED") {
-      return { success: true }; // Treat as no-op success
+      return { success: true, skipped: true, skip_reason: errorCode };
     }
     throw new Error(
       `agent-rate failed (${response.status} ${errorCode}): ${body?.error || "Unknown"}`
@@ -1153,7 +1153,6 @@ async function handleProposing(
   roundId: number,
   chatId: number,
   apiKey: string,
-  allowedCategories?: string[],
   allPersonas?: Persona[],
 ): Promise<void> {
   // Check idempotency FIRST — skip if this persona already proposed this round
@@ -1228,50 +1227,7 @@ This is a multi-round consensus process. A proposition must win ${confirmRounds}
     contextBlock += `\nNOTE: Your proposition must make sense as a standalone entry in the consensus chain. The front-runner may or may not reach consensus, so do not reference it directly — a reader of the final conversation won't see it unless it wins.`;
   }
 
-  // Category-aware format instruction
-  const categoryDescriptions: Record<string, string> = {
-    question: "A question that explores, asks 'how?', 'why?', 'what specifically?'. MUST end with '?'.",
-    thought: "A concrete statement, idea, or actionable answer. Must NOT end with '?'.",
-    human_task: "A task that ONLY a human can physically do — writing code, sending emails, making phone calls, recording videos, deploying software, attending meetings. If a web search could accomplish it, use research_task instead.",
-    research_task: "A task that can be answered by searching the web — finding lists, looking up facts, discovering communities, comparing options, gathering data. Use this whenever the answer exists online, even if phrased as 'create a list' or 'find X'.",
-  };
-
-  const categoryExamples: Record<string, string> = {
-    question: "[question] What specific DAOs should we contact first?",
-    thought: "[thought] We should focus on indie hacker communities first since they're the most aligned audience.",
-    human_task: "[human_task] Record a 1-minute demo video showing OneMind reaching consensus on a sample topic.",
-    research_task: "[research_task] Find 10 online communities (subreddits, Discord servers) focused on collective decision-making tools.",
-  };
-
-  let formatInstruction: string;
-  if (allowedCategories && allowedCategories.length > 0) {
-    const allowed = allowedCategories
-      .filter(c => categoryDescriptions[c])
-      .map(c => `- ${c}: ${categoryDescriptions[c]}`)
-      .join("\n");
-
-    const examples = allowedCategories
-      .filter(c => categoryExamples[c])
-      .map(c => `Example: ${categoryExamples[c]}`)
-      .join("\n");
-
-    formatInstruction = `CATEGORY RULE: You MUST classify your proposition as EXACTLY one of these types (NO other categories are valid):
-${allowed}
-
-Output format: [category] your proposition text
-${examples}`;
-  } else {
-    // Legacy fallback: Q/A alternation
-    const lastMessage = consensusHistory.length > 0
-      ? consensusHistory[consensusHistory.length - 1].winning_content
-      : (chatContext.initial_message || "");
-    const lastMessageIsQuestion = lastMessage.trim().endsWith("?");
-    const mustBeQuestion = !lastMessageIsQuestion;
-
-    formatInstruction = mustBeQuestion
-      ? `FORMAT RULE: The previous consensus was a STATEMENT/ANSWER. You MUST submit a QUESTION that digs deeper into that answer — asking "how?", "why?", "what specifically?", or challenging an assumption. Your proposition MUST end with "?".`
-      : `FORMAT RULE: The previous message was a QUESTION. You MUST submit a concrete, actionable ANSWER to that question. Do NOT submit another question. Your proposition must NOT end with "?".`;
-  }
+  const formatInstruction = `GOAL: Submit the proposition you think the group will most agree with. The winning proposition is the one that resonates with everyone, not just you.`;
 
   const userPrompt = `${contextBlock}
 
@@ -1293,7 +1249,7 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
 
       const response = await openai.chat.completions.create(
         {
-          model: "gemini-2.5-flash",
+          model: "deepseek-chat",
           max_tokens: 8192,
           messages: [
             { role: "system", content: fullProposingSystemPrompt },
@@ -1363,7 +1319,7 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
         try {
           const response = await openai.chat.completions.create(
             {
-              model: "gemini-2.5-flash",
+              model: "deepseek-chat",
               max_tokens: 8192,
               messages: [
                 { role: "system", content: fullProposingSystemPrompt },
@@ -1392,24 +1348,24 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
       }
     }
 
-    // Extract [category] prefix from LLM output if present
-    const ALL_CATEGORIES = ["question", "thought", "human_task", "research_task", "human_task_result", "research_task_result"];
-    let category: string | undefined;
-    if (allowedCategories && allowedCategories.length > 0) {
-      const catMatch = content!.match(/^\[(\w+)\]\s*/);
-      if (catMatch) {
-        content = content!.replace(/^\[\w+\]\s*/, "");
-        if (ALL_CATEGORIES.includes(catMatch[1]) && allowedCategories.includes(catMatch[1])) {
-          category = catMatch[1];
-        }
-      }
-      if (!category) {
-        category = content!.trim().endsWith("?") ? "question" : allowedCategories[0];
-      }
-    }
+    // Auto-detect category from content shape
+    const category = content!.trim().endsWith("?") ? "question" : "thought";
 
     // Submit via Agent API (validates phase, sanitizes content, detects duplicates)
     const result = await callAgentPropose(chatId, content!, apiKey, category);
+
+    if (result.skipped) {
+      console.warn(
+        `${LOG_PREFIX} [${persona.name}] Propose skipped — ${result.skip_reason}`
+      );
+      await logAgent({
+        chat_id: chatId, round_id: roundId, persona_name: persona.name, phase: "proposing",
+        event_type: "propose_skipped",
+        message: `Propose skipped — ${result.skip_reason}`,
+        metadata: { skip_reason: result.skip_reason },
+      });
+      return;
+    }
 
     if (result.duplicate) {
       rejectedContents.push(content!);
@@ -1558,7 +1514,7 @@ Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposit
     try {
       const response = await openai.chat.completions.create(
         {
-          model: "gemini-2.5-flash",
+          model: "deepseek-chat",
           max_tokens: 8192,
           response_format: { type: "json_object" },
           messages: [
@@ -1629,6 +1585,20 @@ Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposit
 
       // Submit via Agent API (validates phase, prevents self-rating, upserts)
       const result = await callAgentRate(chatId, ratingsMap, apiKey);
+
+      if (result.skipped) {
+        console.warn(
+          `${LOG_PREFIX} [${persona.name}] Rating skipped — ${result.skip_reason} (${Object.keys(ratingsMap).length} ratings discarded)`
+        );
+        await logAgent({
+          chat_id: chatId, round_id: roundId, persona_name: persona.name, phase: "rating",
+          event_type: "rate_skipped",
+          message: `Rating skipped — ${result.skip_reason} (${Object.keys(ratingsMap).length} ratings not written)`,
+          metadata: { skip_reason: result.skip_reason, discarded_count: Object.keys(ratingsMap).length },
+        });
+        return;
+      }
+
       console.log(
         `${LOG_PREFIX} [${persona.name}] Rated via API (${Object.keys(ratingsMap).length} props, ${result.rated_count ?? "?"}/${result.total_to_rate ?? "?"}, complete: ${result.is_complete ?? "?"})`
       );
@@ -1669,6 +1639,12 @@ Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposit
           fallbackRatings[String(p.id)] = 50;
         }
         const result = await callAgentRate(chatId, fallbackRatings, apiKey);
+        if (result.skipped) {
+          console.warn(
+            `${LOG_PREFIX} [${persona.name}] Fallback rating also skipped — ${result.skip_reason}`
+          );
+          return;
+        }
         console.log(
           `${LOG_PREFIX} [${persona.name}] Submitted fallback neutral ratings (${Object.keys(fallbackRatings).length} props, ${result.rated_count ?? "?"}/${result.total_to_rate ?? "?"}, complete: ${result.is_complete ?? "?"})`
         );
@@ -2012,8 +1988,7 @@ Deno.serve(async (req: Request) => {
 
     if (phase === "proposing") {
       const carriedPropositions = await fetchCarriedPropositions(round_id);
-      const allowedCategories = (await fetchAllowedCategories(chat_id)).filter(c => c !== "research_task");
-      await handleProposing(persona, chatContext, consensusHistory, carriedPropositions, round_id, chat_id, apiKey, allowedCategories, personas);
+      await handleProposing(persona, chatContext, consensusHistory, carriedPropositions, round_id, chat_id, apiKey, personas);
     } else {
       const allPropositions = await fetchAllPropositions(round_id);
       await handleRating(persona, chatContext, consensusHistory, allPropositions, round_id, chat_id, apiKey, personas);

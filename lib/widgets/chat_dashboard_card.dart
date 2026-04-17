@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../models/round.dart';
-import '../utils/language_utils.dart';
 import 'compact_countdown.dart';
 import 'participant_badge.dart';
 import 'phase_badge.dart';
@@ -63,9 +62,6 @@ class ChatDashboardCard extends StatelessWidget {
     this.semanticLabel,
   });
 
-  /// Whether to show the language row.
-  bool get _showLanguages => translationLanguages.isNotEmpty;
-
   /// Resolves the vertical phase bar color.
   static Color phaseBarColor(
     BuildContext context, {
@@ -120,76 +116,59 @@ class ChatDashboardCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Content
+                // Content: left column (info) + right column (status/action)
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Column(
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Row 1: Name + phase badge + countdown + optional trailing
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
+                        // Left column: title, message
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
                                 name,
-                                style:
-                                    Theme.of(context).textTheme.titleMedium,
+                                style: Theme.of(context).textTheme.titleMedium,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                initialMessage,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            const SizedBox(width: 8),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        // Right column: trailing, phase, timer, participants
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (trailing != null) ...[
+                              trailing!,
+                              const SizedBox(height: 4),
+                            ],
                             PhaseBadge(
                               phase: phase,
                               isPaused: isPaused,
                             ),
                             if (hasTimer) ...[
-                              const SizedBox(width: 6),
+                              const SizedBox(height: 4),
                               CompactCountdown(remaining: timeRemaining),
                             ],
-                            if (trailing != null) ...[
-                              const SizedBox(width: 8),
-                              trailing!,
-                            ],
-                          ],
-                        ),
-                        // Row 2: Initial message (1 line, muted)
-                        const SizedBox(height: 4),
-                        Text(
-                          initialMessage,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodySmall
-                              ?.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        // Row 3: Languages + participant count
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            if (_showLanguages) ...[
-                              Icon(
-                                Icons.translate,
-                                size: 14,
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: _LanguageLabel(
-                                  languages: translationLanguages,
-                                  highlightCode: viewingLanguageCode,
-                                  maxVisible: 2,
-                                ),
-                              ),
-                            ] else
-                              const Spacer(),
-                            const SizedBox(width: 8),
+                            const SizedBox(height: 4),
                             ParticipantBadge(count: participantCount),
                           ],
                         ),
@@ -202,68 +181,6 @@ class ChatDashboardCard extends StatelessWidget {
           ),
         ),
       ),
-    );
-  }
-}
-
-/// Shows the language list with optional highlighting and overflow handling.
-class _LanguageLabel extends StatelessWidget {
-  final List<String> languages;
-  final String? highlightCode;
-  final int maxVisible;
-
-  const _LanguageLabel({
-    required this.languages,
-    this.highlightCode,
-    this.maxVisible = 2,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final defaultStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        );
-    final highlightStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
-          fontWeight: FontWeight.bold,
-        );
-    final mutedStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(153),
-        );
-
-    // Put highlighted language first, then remaining sorted alphabetically.
-    final ordered = <String>[];
-    final rest = <String>[];
-    for (final code in languages) {
-      if (code == highlightCode) {
-        ordered.insert(0, code);
-      } else {
-        rest.add(code);
-      }
-    }
-    rest.sort();
-    ordered.addAll(rest);
-
-    final visible = ordered.take(maxVisible).toList();
-    final overflow = ordered.length - maxVisible;
-
-    return Text.rich(
-      TextSpan(
-        children: [
-          for (var i = 0; i < visible.length; i++) ...[
-            if (i > 0) TextSpan(text: ', ', style: defaultStyle),
-            TextSpan(
-              text: LanguageUtils.displayName(visible[i]),
-              style:
-                  visible[i] == highlightCode ? highlightStyle : defaultStyle,
-            ),
-          ],
-          if (overflow > 0)
-            TextSpan(text: ', +$overflow', style: mutedStyle),
-        ],
-      ),
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
     );
   }
 }

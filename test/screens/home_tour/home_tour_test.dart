@@ -5,7 +5,6 @@ import 'package:onemind_app/screens/home_tour/notifiers/home_tour_notifier.dart'
 void main() {
   group('HomeTourStep', () {
     test('has 8 steps before complete', () {
-      // All values except 'complete'
       final steps = HomeTourStep.values.where((s) => s != HomeTourStep.complete).toList();
       expect(steps.length, 8);
     });
@@ -14,22 +13,18 @@ void main() {
       expect(HomeTourStep.values, [
         HomeTourStep.welcomeName,
         HomeTourStep.searchBar,
-        HomeTourStep.pendingRequest,
         HomeTourStep.yourChats,
+        HomeTourStep.pendingRequest,
         HomeTourStep.createFab,
-        HomeTourStep.exploreButton,
         HomeTourStep.languageSelector,
+        HomeTourStep.tutorialButton,
         HomeTourStep.menu,
         HomeTourStep.complete,
       ]);
     });
 
-    test('exploreButton is at index 5', () {
-      expect(HomeTourStep.values.indexOf(HomeTourStep.exploreButton), 5);
-    });
-
-    test('languageSelector is at index 6', () {
-      expect(HomeTourStep.values.indexOf(HomeTourStep.languageSelector), 6);
+    test('languageSelector is at index 5', () {
+      expect(HomeTourStep.values.indexOf(HomeTourStep.languageSelector), 5);
     });
   });
 
@@ -48,10 +43,10 @@ void main() {
     test('copyWith creates new instance with updated fields', () {
       const state = HomeTourState();
       final updated = state.copyWith(
-        currentStep: HomeTourStep.exploreButton,
+        currentStep: HomeTourStep.languageSelector,
         stepIndex: 5,
       );
-      expect(updated.currentStep, HomeTourStep.exploreButton);
+      expect(updated.currentStep, HomeTourStep.languageSelector);
       expect(updated.stepIndex, 5);
       expect(updated.totalSteps, 8);
     });
@@ -78,11 +73,11 @@ void main() {
     test('nextStep progresses through all steps', () {
       final expectedSteps = [
         HomeTourStep.searchBar,
-        HomeTourStep.pendingRequest,
         HomeTourStep.yourChats,
+        HomeTourStep.pendingRequest,
         HomeTourStep.createFab,
-        HomeTourStep.exploreButton,
         HomeTourStep.languageSelector,
+        HomeTourStep.tutorialButton,
         HomeTourStep.menu,
         HomeTourStep.complete,
       ];
@@ -93,24 +88,21 @@ void main() {
       }
     });
 
-    test('exploreButton step shows at step index 5', () {
-      // Advance 5 times: welcomeName -> searchBar -> pendingRequest -> yourChats -> createFab -> exploreButton
+    test('languageSelector step shows at step index 5', () {
       for (int i = 0; i < 5; i++) {
         notifier.nextStep();
       }
-      expect(notifier.state.currentStep, HomeTourStep.exploreButton);
+      expect(notifier.state.currentStep, HomeTourStep.languageSelector);
       expect(notifier.state.stepIndex, 5);
     });
 
     test('last step before complete is menu', () {
-      // Advance 7 times to reach menu
       for (int i = 0; i < 7; i++) {
         notifier.nextStep();
       }
       expect(notifier.state.currentStep, HomeTourStep.menu);
       expect(notifier.state.stepIndex, 7);
 
-      // One more advances to complete
       notifier.nextStep();
       expect(notifier.state.currentStep, HomeTourStep.complete);
     });
@@ -122,10 +114,27 @@ void main() {
     });
 
     test('skip from middle jumps to complete', () {
-      notifier.nextStep(); // searchBar
-      notifier.nextStep(); // pendingRequest
+      notifier.nextStep();
+      notifier.nextStep();
       notifier.skip();
       expect(notifier.state.currentStep, HomeTourStep.complete);
+    });
+
+    test('reset returns to welcomeName after progression', () {
+      notifier.nextStep();
+      notifier.nextStep();
+      notifier.nextStep();
+      notifier.reset();
+      expect(notifier.state.currentStep, HomeTourStep.welcomeName);
+      expect(notifier.state.stepIndex, 0);
+    });
+
+    test('reset returns to welcomeName after complete', () {
+      notifier.skip();
+      expect(notifier.state.currentStep, HomeTourStep.complete);
+      notifier.reset();
+      expect(notifier.state.currentStep, HomeTourStep.welcomeName);
+      expect(notifier.state.stepIndex, 0);
     });
   });
 }

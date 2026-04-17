@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/public_chat_summary.dart';
 import '../../../utils/language_utils.dart';
@@ -70,7 +69,7 @@ class PublicChatCard extends StatelessWidget {
                   child: Text(
                     chat.displayInitialMessage,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: AppColors.textSecondary,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,

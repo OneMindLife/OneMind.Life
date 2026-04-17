@@ -736,4 +736,131 @@ void main() {
       expect(state1, isNot(equals(state3)));
     });
   });
+
+  group('canSkip respects chat.allowSkipProposing', () {
+    test('canSkip is false when chat disallows skip proposing', () {
+      final chat = Chat.fromJson(ChatFixtures.json(
+        allowSkipProposing: false,
+        proposingMinimum: 2,
+      ));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasSkipped: false,
+        skipCount: 0,
+      );
+
+      expect(state.canSkip, false);
+    });
+
+    test('canSkip is true when chat allows skip proposing', () {
+      final chat = Chat.fromJson(ChatFixtures.json(
+        allowSkipProposing: true,
+        proposingMinimum: 2,
+      ));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasSkipped: false,
+        skipCount: 0,
+      );
+
+      expect(state.canSkip, true);
+    });
+  });
+
+  group('canSkipRating respects chat.allowSkipRating', () {
+    test('canSkipRating is false when chat disallows skip rating', () {
+      final chat = Chat.fromJson(ChatFixtures.json(
+        allowSkipRating: false,
+        ratingMinimum: 2,
+      ));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasRated: false,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+      );
+
+      expect(state.canSkipRating, false);
+    });
+
+    test('canSkipRating is true when chat allows skip rating', () {
+      final chat = Chat.fromJson(ChatFixtures.json(
+        allowSkipRating: true,
+        ratingMinimum: 2,
+      ));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasRated: false,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+      );
+
+      expect(state.canSkipRating, true);
+    });
+  });
+
+  group('participantsWhoRated', () {
+    test('defaults to empty set', () {
+      const state = ChatDetailState();
+      expect(state.participantsWhoRated, isEmpty);
+    });
+
+    test('copyWith preserves participantsWhoRated', () {
+      final state = const ChatDetailState().copyWith(
+        participantsWhoRated: {1, 2, 3},
+      );
+      expect(state.participantsWhoRated, {1, 2, 3});
+
+      // copyWith without participantsWhoRated preserves existing
+      final state2 = state.copyWith(hasRated: true);
+      expect(state2.participantsWhoRated, {1, 2, 3});
+    });
+
+    test('copyWith can replace participantsWhoRated', () {
+      final state = const ChatDetailState().copyWith(
+        participantsWhoRated: {1, 2},
+      );
+      final state2 = state.copyWith(participantsWhoRated: {3, 4, 5});
+      expect(state2.participantsWhoRated, {3, 4, 5});
+    });
+
+    test('included in Equatable props', () {
+      final state1 = const ChatDetailState().copyWith(
+        participantsWhoRated: {1, 2},
+      );
+      final state2 = const ChatDetailState().copyWith(
+        participantsWhoRated: {1, 3},
+      );
+      final state3 = const ChatDetailState().copyWith(
+        participantsWhoRated: {1, 2},
+      );
+
+      expect(state1, isNot(equals(state2)));
+      expect(state1, equals(state3));
+    });
+  });
 }

@@ -8,6 +8,12 @@
     "description": "OneMind - Collective Alignment Platform. Find shared direction together.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "related_applications": [
+        {
+            "platform": "webapp",
+            "url": "https://onemind.life/manifest.json"
+        }
+    ],
     "icons": [
         {
             "src": "icons/Icon-192.png",

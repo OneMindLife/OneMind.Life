@@ -13,16 +13,16 @@ class MockHomeContent extends StatelessWidget {
   final HomeTourStep currentStep;
   final GlobalKey welcomeHeaderKey;
   final GlobalKey searchBarKey;
-  final GlobalKey pendingRequestKey;
   final GlobalKey yourChatsKey;
+  final GlobalKey pendingRequestKey;
 
   const MockHomeContent({
     super.key,
     required this.currentStep,
     required this.welcomeHeaderKey,
     required this.searchBarKey,
-    required this.pendingRequestKey,
     required this.yourChatsKey,
+    required this.pendingRequestKey,
   });
 
   bool _isRevealed(HomeTourStep step) {
@@ -32,8 +32,8 @@ class MockHomeContent extends StatelessWidget {
   double _opacity(HomeTourStep step) {
     // For non-body steps, all cards at uniform opacity
     // (parent handles overall dimming via outer AnimatedOpacity)
-    if (currentStep == HomeTourStep.exploreButton ||
-        currentStep == HomeTourStep.languageSelector ||
+    if (currentStep == HomeTourStep.languageSelector ||
+        currentStep == HomeTourStep.tutorialButton ||
         currentStep == HomeTourStep.createFab ||
         currentStep == HomeTourStep.menu ||
         currentStep == HomeTourStep.complete) {
@@ -105,28 +105,7 @@ class MockHomeContent extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // --- Pending Requests (step 3) ---
-          if (_isRevealed(HomeTourStep.pendingRequest)) ...[
-            AnimatedOpacity(
-              key: pendingRequestKey,
-              opacity: _opacity(HomeTourStep.pendingRequest),
-              duration: const Duration(milliseconds: 250),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionHeader(context, l10n.pendingRequests),
-                  const SizedBox(height: 8),
-                  _MockPendingCard(
-                    chatName: 'Book Club',
-                    subtitle: 'What should we read next?',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-          ],
-
-          // --- Your Chats (step 4) ---
+          // --- Your Chats (step 3) ---
           if (_isRevealed(HomeTourStep.yourChats)) ...[
             AnimatedOpacity(
               key: yourChatsKey,
@@ -157,6 +136,27 @@ class MockHomeContent extends StatelessWidget {
                 ],
               ),
             ),
+            const SizedBox(height: 24),
+          ],
+
+          // --- Pending Requests (after Your Chats) ---
+          if (_isRevealed(HomeTourStep.pendingRequest)) ...[
+            AnimatedOpacity(
+              key: pendingRequestKey,
+              opacity: _opacity(HomeTourStep.pendingRequest),
+              duration: const Duration(milliseconds: 250),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionHeader(context, l10n.pendingRequests),
+                  const SizedBox(height: 8),
+                  _MockPendingCard(
+                    chatName: 'Book Club',
+                    subtitle: 'What should we read next?',
+                  ),
+                ],
+              ),
+            ),
           ],
         ],
       ),
@@ -167,7 +167,7 @@ class MockHomeContent extends StatelessWidget {
     return Text(
       title.toUpperCase(),
       style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: AppColors.textSecondary,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             fontWeight: FontWeight.w600,
             letterSpacing: 0.8,
           ),
@@ -175,8 +175,6 @@ class MockHomeContent extends StatelessWidget {
   }
 }
 
-/// Mock pending request card matching the real home screen style:
-/// vertical amber bar + chat name + subtitle + "Waiting for host approval"
 class _MockPendingCard extends StatelessWidget {
   final String chatName;
   final String subtitle;
@@ -195,7 +193,6 @@ class _MockPendingCard extends StatelessWidget {
       child: IntrinsicHeight(
         child: Row(
           children: [
-            // Warm amber left border (same as real pending card)
             Container(
               width: 4,
               decoration: const BoxDecoration(
@@ -220,7 +217,7 @@ class _MockPendingCard extends StatelessWidget {
                     Text(
                       subtitle,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -243,3 +240,4 @@ class _MockPendingCard extends StatelessWidget {
     );
   }
 }
+

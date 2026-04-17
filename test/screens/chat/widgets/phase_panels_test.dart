@@ -124,7 +124,7 @@ void main() {
       expect(find.byKey(const Key('submit-proposition-button')), findsOneWidget);
     });
 
-    testWidgets('shows submitted propositions when all submitted',
+    testWidgets('shows View propositions button when all submitted (multi)',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -136,23 +136,27 @@ void main() {
         createTestWidget(
           ProposingStatePanel(
             roundCustomId: 2,
-            propositionsPerUser: 2, // Equal to propositions count so cards shown
+            propositionsPerUser: 2,
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
+            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Shows submitted propositions and waiting message
-      expect(find.text('First idea'), findsOneWidget);
-      expect(find.text('Second idea'), findsOneWidget);
-      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // Input and individual proposition cards are gone; button replaces them
       expect(find.byType(TextField), findsNothing);
+      expect(find.text('First idea'), findsNothing);
+      expect(find.text('Second idea'), findsNothing);
+      expect(
+        find.byKey(const Key('view-other-propositions-button')),
+        findsOneWidget,
+      );
     });
 
-    testWidgets('shows waiting message when all propositions submitted',
+    testWidgets('shows View propositions button in single-prop mode',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -167,15 +171,112 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
+            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Only idea'), findsOneWidget);
-      expect(find.text('Waiting for rating phase...'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
-      expect(find.byType(FilledButton), findsNothing);
+      expect(find.text('Only idea'), findsNothing);
+      expect(
+        find.byKey(const Key('view-other-propositions-button')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('View propositions button fires callback when tapped',
+        (tester) async {
+      final controller = TextEditingController();
+      var viewCalled = false;
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [PropositionFixtures.model(id: 1, content: 'Idea')],
+            propositionController: controller,
+            onSubmit: () {},
+            onViewOtherPropositions: () => viewCalled = true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const Key('view-other-propositions-button')));
+      expect(viewCalled, isTrue);
+    });
+
+    testWidgets('View propositions button is disabled when callback null',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: [PropositionFixtures.model(id: 1, content: 'Idea')],
+            propositionController: controller,
+            onSubmit: () {},
+            // intentionally no onViewOtherPropositions
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final button = tester.widget<FilledButton>(
+        find.byKey(const Key('view-other-propositions-button')),
+      );
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('View propositions button hidden while still able to submit',
+        (tester) async {
+      final controller = TextEditingController();
+      final myProps = [PropositionFixtures.model(id: 1, content: 'One')];
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 3, // submitted 1 of 3
+            myPropositions: myProps,
+            propositionController: controller,
+            onSubmit: () {},
+            onViewOtherPropositions: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Input branch is active, button should not be present.
+      expect(find.byKey(const Key('view-other-propositions-button')),
+          findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('View propositions button hidden when no submissions yet',
+        (tester) async {
+      final controller = TextEditingController();
+
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: const [],
+            propositionController: controller,
+            onSubmit: () {},
+            onViewOtherPropositions: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const Key('view-other-propositions-button')),
+          findsNothing);
     });
 
     testWidgets('calls onSubmit when button pressed', (tester) async {
@@ -223,7 +324,7 @@ void main() {
       expect(find.text('0/1 submitted'), findsNothing);
     });
 
-    testWidgets('shows numbered circles for multiple propositions',
+    testWidgets('does not show submitted proposition content after submission',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -235,17 +336,19 @@ void main() {
         createTestWidget(
           ProposingStatePanel(
             roundCustomId: 1,
-            propositionsPerUser: 2, // Equal to propositions count so cards shown
+            propositionsPerUser: 2,
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
+            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('1'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+      // Proposition content is no longer shown inline; a button replaces it.
+      expect(find.text('First'), findsNothing);
+      expect(find.text('Second'), findsNothing);
     });
 
     // Feature intentionally hidden - host should not see propositions to preserve anonymity
@@ -500,7 +603,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Shows waiting message and no button when already rated
-      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // "Waiting for rating phase to end" text removed — timer is in RoundPhaseBar
       expect(find.byType(FilledButton), findsNothing);
     });
 
@@ -821,7 +924,7 @@ void main() {
       await tester.pump();
 
       // Should show the waiting text and countdown timer
-      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
       // Timer should be present (showing minutes)
       expect(find.textContaining('m'), findsWidgets);
     });
@@ -849,7 +952,7 @@ void main() {
       // Should show skipped indicator
       expect(find.byKey(const Key('skipped-indicator')), findsOneWidget);
       // Should show waiting text with countdown
-      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
       // Timer should be present (showing minutes)
       expect(find.textContaining('m'), findsWidgets);
     });
@@ -876,7 +979,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show waiting text without timer parentheses
-      expect(find.text('Waiting for rating phase...'), findsOneWidget);
+      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
       // Should not have parentheses for timer
       expect(find.text('('), findsNothing);
     });
@@ -995,7 +1098,7 @@ void main() {
       expect(find.byKey(const Key('rating-skipped-indicator')), findsOneWidget);
       expect(find.text('Skipped'), findsOneWidget);
       // Should show waiting message
-      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // "Waiting for rating phase to end" text removed — timer is in RoundPhaseBar
       // Should NOT show Start Rating button
       expect(find.byKey(const Key('start-rating-button')), findsNothing);
     });
@@ -1191,7 +1294,7 @@ void main() {
 
       // Should show the rating complete indicator
       expect(find.byKey(const Key('rating-complete-indicator')), findsOneWidget);
-      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // "Waiting for rating phase to end" text removed — timer is in RoundPhaseBar
       // Timer should be present (showing minutes)
       expect(find.textContaining('m'), findsWidgets);
     });
@@ -1212,7 +1315,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show waiting text
-      expect(find.text('Waiting for rating phase to end.'), findsOneWidget);
+      // "Waiting for rating phase to end" text removed — timer is in RoundPhaseBar
       // No countdown timer widget should be present in the rating-complete-indicator
       final container = find.byKey(const Key('rating-complete-indicator'));
       expect(container, findsOneWidget);

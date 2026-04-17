@@ -11,8 +11,6 @@ void main() {
     late DateTime scheduledStartAt;
     late List<state.ScheduleWindow> windows;
     late String scheduleTimezone;
-    late bool visibleOutsideSchedule;
-
     setUp(() {
       scheduleType = ScheduleType.once;
       scheduledStartAt = DateTime(2026, 1, 15, 10, 0);
@@ -25,7 +23,6 @@ void main() {
         ),
       ];
       scheduleTimezone = 'America/New_York';
-      visibleOutsideSchedule = true;
     });
 
     Widget createTestWidget({
@@ -33,7 +30,6 @@ void main() {
       void Function(DateTime)? onScheduledStartAtChanged,
       void Function(List<state.ScheduleWindow>)? onWindowsChanged,
       void Function(String)? onScheduleTimezoneChanged,
-      void Function(bool)? onVisibleOutsideScheduleChanged,
     }) {
       return MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -46,13 +42,10 @@ void main() {
               scheduledStartAt: scheduledStartAt,
               windows: windows,
               scheduleTimezone: scheduleTimezone,
-              visibleOutsideSchedule: visibleOutsideSchedule,
               onScheduleTypeChanged: onScheduleTypeChanged ?? (_) {},
               onScheduledStartAtChanged: onScheduledStartAtChanged ?? (_) {},
               onWindowsChanged: onWindowsChanged ?? (_) {},
               onScheduleTimezoneChanged: onScheduleTimezoneChanged ?? (_) {},
-              onVisibleOutsideScheduleChanged:
-                  onVisibleOutsideScheduleChanged ?? (_) {},
             ),
           ),
         ),
@@ -225,53 +218,6 @@ void main() {
 
         // Only one window, so delete should not be shown
         expect(find.byIcon(Icons.delete_outline), findsNothing);
-      });
-    });
-
-    group('Visibility Toggle', () {
-      testWidgets('displays visibility switch', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-
-        expect(find.text('Hide when outside schedule'), findsOneWidget);
-        expect(find.byType(SwitchListTile), findsOneWidget);
-      });
-
-      testWidgets('shows correct subtitle when visible outside schedule',
-          (tester) async {
-        visibleOutsideSchedule = true;
-
-        await tester.pumpWidget(createTestWidget());
-
-        expect(find.text('Chat visible but paused outside schedule'),
-            findsOneWidget);
-      });
-
-      testWidgets('shows correct subtitle when hidden outside schedule',
-          (tester) async {
-        visibleOutsideSchedule = false;
-
-        await tester.pumpWidget(createTestWidget());
-
-        expect(find.text('Chat hidden until next scheduled window'),
-            findsOneWidget);
-      });
-
-      testWidgets('calls onVisibleOutsideScheduleChanged when toggled',
-          (tester) async {
-        bool? changedValue;
-        visibleOutsideSchedule = true;
-
-        await tester.pumpWidget(createTestWidget(
-          onVisibleOutsideScheduleChanged: (v) => changedValue = v,
-        ));
-
-        // Toggle the switch (it's inverted in UI)
-        await tester.tap(find.byType(Switch));
-        await tester.pump();
-
-        // Switch is inverted: toggling "Hide when outside" to true
-        // means visibleOutsideSchedule should become false
-        expect(changedValue, isFalse);
       });
     });
 

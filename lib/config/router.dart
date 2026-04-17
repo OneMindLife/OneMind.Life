@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -7,6 +6,11 @@ import '../providers/providers.dart';
 import '../widgets/error_view.dart';
 import '../screens/discover/discover_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/blog/blog_data.dart';
+import '../screens/blog/blog_index_screen.dart';
+import '../screens/blog/blog_post_screen.dart';
+import '../screens/landing/seo_landing_page.dart';
+import '../screens/landing/seo_pages.dart';
 import '../screens/join/invite_join_screen.dart';
 import '../screens/legal/legal_document_screen.dart';
 import '../screens/demo/demo_screen.dart';
@@ -27,7 +31,8 @@ final routerProvider = Provider<GoRouter>((ref) {
   final hasCompletedTutorial = ref.watch(hasCompletedTutorialProvider);
   final hasCompletedHomeTour = ref.watch(hasCompletedHomeTourProvider);
 
-  return GoRouter(
+  late final GoRouter router;
+  router = GoRouter(
     navigatorKey: rootNavigatorKey,
     debugLogDiagnostics: false,
     observers: observer != null ? [observer] : [],
@@ -42,11 +47,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isDemoRoute = state.matchedLocation == '/demo';
       final isDiscoverRoute = state.matchedLocation == '/discover';
 
-      if (kDebugMode) {
-        debugPrint('[Router] redirect: path=${state.matchedLocation} '
-            'tutorial=$hasCompletedTutorial homeTour=$hasCompletedHomeTour');
-      }
-
       // Don't redirect if already going to tutorial
       if (isGoingToTutorial) return null;
 
@@ -59,30 +59,26 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Don't redirect demo route (accessible without tutorial)
       if (isDemoRoute) return null;
 
+      // Don't redirect SEO landing pages (accessible without tutorial)
+      final isSeoRoute = seoPages.containsKey(
+          state.matchedLocation.replaceFirst('/', ''));
+      if (isSeoRoute) return null;
+
+      // Don't redirect blog routes (accessible without tutorial)
+      if (state.matchedLocation.startsWith('/blog')) return null;
+
       // Don't redirect discover route (accessible from home app bar)
       if (isDiscoverRoute) return null;
 
       // Home tour route: redirect to home if already completed
       if (isHomeTourRoute && hasCompletedHomeTour) {
-        if (kDebugMode) {
-          debugPrint('[Router] home tour already completed, redirecting to /');
-        }
         return '/';
       }
       if (isHomeTourRoute) return null;
 
-      // Redirect to tutorial if not completed
-      if (!hasCompletedTutorial) {
+      // New users landing on home: redirect to tutorial (play button)
+      if (!hasCompletedTutorial && state.matchedLocation == '/') {
         return '/tutorial';
-      }
-
-      // First-time user completed tutorial but not home tour → show tour
-      if (!hasCompletedHomeTour) {
-        if (kDebugMode) {
-          debugPrint('[Router] tutorial done but home tour not done, '
-              'redirecting to /home-tour');
-        }
-        return '/home-tour';
       }
 
       return null;
@@ -93,6 +89,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/tutorial',
         name: 'tutorial',
         builder: (context, state) => TutorialScreen(
+          skipIntro: state.uri.queryParameters['skipIntro'] == 'true',
           onSkip: () {
             // Skip tutorial AND home tour — go straight to the real app
             ref.read(tutorialServiceProvider).markTutorialComplete();
@@ -102,62 +99,42 @@ final routerProvider = Provider<GoRouter>((ref) {
           },
           onComplete: () async {
             // Prevent double-execution (can happen when router rebuilds)
-            if (_tutorialCompletionInProgress) {
-              return;
-            }
+            if (_tutorialCompletionInProgress) return;
             _tutorialCompletionInProgress = true;
 
             try {
-              // Check if this is a returning user (already completed tutorial,
-              // opened it from "How It Works" button)
               final isFirstTime = !ref.read(hasCompletedTutorialProvider);
 
-              if (kDebugMode) {
-                debugPrint('[Router] tutorial onComplete: '
-                    'isFirstTime=$isFirstTime');
-              }
-
-              // Mark tutorial as complete FIRST so user is never stuck
-              // on a broken tutorial screen if network calls fail
               ref.read(tutorialServiceProvider).markTutorialComplete();
 
               if (!isFirstTime) {
                 // Returning user ("How It Works") — reset home tour
                 // so they get the full onboarding experience again
                 await ref.read(tutorialServiceProvider).resetHomeTour();
-                ref.invalidate(hasCompletedTutorialProvider);
-                ref.invalidate(hasCompletedHomeTourProvider);
-                // Router redirect will see hasCompletedHomeTour=false
-                // and send to /home-tour
-                return;
               }
 
               // First-time user: auto-join official chat silently
-              try {
-                final chatService = ref.read(chatServiceProvider);
-                final participantService = ref.read(participantServiceProvider);
-                final officialChat = await chatService.getOfficialChat();
-                if (officialChat != null) {
-                  await participantService.joinPublicChat(
-                      chatId: officialChat.id);
-                  if (kDebugMode) {
-                    debugPrint('[Router] auto-joined official chat');
+              if (isFirstTime) {
+                try {
+                  final chatService = ref.read(chatServiceProvider);
+                  final participantService =
+                      ref.read(participantServiceProvider);
+                  final officialChat = await chatService.getOfficialChat();
+                  if (officialChat != null) {
+                    await participantService.joinPublicChat(
+                        chatId: officialChat.id);
                   }
-                }
-              } catch (e) {
-                if (kDebugMode) {
-                  debugPrint('[Router] failed to join official chat: $e');
-                }
+                } catch (_) {}
               }
 
-              // Invalidate AFTER join attempt so redirect fires with
-              // hasCompletedTutorial=true + hasCompletedHomeTour=false
-              // → router redirects to /home-tour automatically
-              if (kDebugMode) {
-                debugPrint('[Router] invalidating tutorial provider, '
-                    'expecting redirect to /home-tour');
-              }
+              // Invalidate providers so the router rebuilds with fresh
+              // values (homeTour=false), then navigate on the next frame
+              // so the new router instance handles the /home-tour route.
               ref.invalidate(hasCompletedTutorialProvider);
+              ref.invalidate(hasCompletedHomeTourProvider);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                router.go('/home-tour');
+              });
             } finally {
               _tutorialCompletionInProgress = false;
             }
@@ -170,10 +147,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'home-tour',
         builder: (context, state) => HomeTourScreen(
           onComplete: () {
-            if (kDebugMode) {
-              debugPrint('[Router] home tour onComplete — marking done, '
-                  'expecting redirect to /');
-            }
             ref.read(tutorialServiceProvider).markHomeTourComplete();
             // Invalidating triggers router rebuild; redirect sees
             // hasCompletedHomeTour=true and sends /home-tour → /
@@ -241,6 +214,38 @@ final routerProvider = Provider<GoRouter>((ref) {
           return InviteJoinScreen(code: code);
         },
       ),
+      // Blog
+      GoRoute(
+        path: '/blog',
+        name: 'blog',
+        builder: (context, state) => const BlogIndexScreen(),
+      ),
+      GoRoute(
+        path: '/blog/:slug',
+        name: 'blog-post',
+        builder: (context, state) {
+          final slug = state.pathParameters['slug'] ?? '';
+          final post = blogPosts.cast<BlogPost?>().firstWhere(
+                (p) => p!.slug == slug,
+                orElse: () => null,
+              );
+          if (post == null) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Not Found')),
+              body: const Center(child: Text('Article not found.')),
+            );
+          }
+          return BlogPostScreen(post: post);
+        },
+      ),
+      // SEO keyword landing pages
+      ...seoPages.entries.map(
+        (entry) => GoRoute(
+          path: '/${entry.key}',
+          name: entry.key,
+          builder: (context, state) => SeoLandingPage(data: entry.value),
+        ),
+      ),
     ],
     errorBuilder: (context, state) {
       setNoIndex();
@@ -257,4 +262,5 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
   );
+  return router;
 });

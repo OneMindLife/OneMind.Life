@@ -1,14 +1,14 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../services/analytics_service.dart';
 import '../models/home_tour_state.dart';
 
 /// Notifier that manages the home screen tour step progression
 class HomeTourNotifier extends StateNotifier<HomeTourState> {
-  HomeTourNotifier() : super(const HomeTourState()) {
-    if (kDebugMode) {
-      debugPrint('[HomeTourNotifier] created, starting at ${state.currentStep}');
-    }
-  }
+  final AnalyticsService? _analytics;
+
+  HomeTourNotifier({AnalyticsService? analytics})
+      : _analytics = analytics,
+        super(const HomeTourState());
 
   /// Advance to the next tour step, or mark complete
   void nextStep() {
@@ -19,16 +19,22 @@ class HomeTourNotifier extends StateNotifier<HomeTourState> {
         currentStep: HomeTourStep.complete,
         stepIndex: nextIndex,
       );
+      _analytics?.logHomeTourCompleted();
     } else {
       state = state.copyWith(
         currentStep: steps[nextIndex],
         stepIndex: nextIndex,
       );
+      _analytics?.logHomeTourStepCompleted(
+        stepName: steps[nextIndex].name,
+        stepIndex: nextIndex,
+      );
     }
-    if (kDebugMode) {
-      debugPrint('[HomeTourNotifier] nextStep → ${state.currentStep} '
-          '(${state.stepIndex}/${state.totalSteps})');
-    }
+  }
+
+  /// Reset tour to the beginning
+  void reset() {
+    state = const HomeTourState();
   }
 
   /// Skip remaining steps and mark tour complete
@@ -37,8 +43,6 @@ class HomeTourNotifier extends StateNotifier<HomeTourState> {
       currentStep: HomeTourStep.complete,
       stepIndex: HomeTourState.total,
     );
-    if (kDebugMode) {
-      debugPrint('[HomeTourNotifier] skip → complete');
-    }
+    _analytics?.logHomeTourCompleted();
   }
 }

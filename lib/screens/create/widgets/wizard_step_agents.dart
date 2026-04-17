@@ -9,7 +9,6 @@ import 'agent_section.dart';
 class WizardStepAgents extends StatelessWidget {
   final AgentSettings agentSettings;
   final void Function(AgentSettings) onAgentSettingsChanged;
-  final VoidCallback onBack;
   final VoidCallback onContinue;
   final VoidCallback onCreate;
   final bool needsHostName;
@@ -19,7 +18,6 @@ class WizardStepAgents extends StatelessWidget {
     super.key,
     required this.agentSettings,
     required this.onAgentSettingsChanged,
-    required this.onBack,
     required this.onContinue,
     required this.onCreate,
     required this.needsHostName,
@@ -48,7 +46,7 @@ class WizardStepAgents extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'AI Agents',
+                    'Add AI agents?',
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -64,55 +62,38 @@ class WizardStepAgents extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isLoading ? null : onBack,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.arrow_back, size: 18),
-                      const SizedBox(width: 8),
-                      Text(l10n.back),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: isLoading
-                      ? null
-                      : isFinalStep
-                          ? onCreate
-                          : onContinue,
-                  child: isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(isFinalStep
-                                ? l10n.createChat
-                                : l10n.continue_),
-                            const SizedBox(width: 8),
-                            Icon(
-                              isFinalStep
-                                  ? Icons.rocket_launch
-                                  : Icons.arrow_forward,
-                              size: 18,
-                            ),
-                          ],
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: isLoading
+                  ? null
+                  : isFinalStep
+                      ? onCreate
+                      : onContinue,
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(isFinalStep
+                            ? l10n.createChat
+                            : l10n.continue_),
+                        const SizedBox(width: 8),
+                        Icon(
+                          isFinalStep
+                              ? Icons.rocket_launch
+                              : Icons.arrow_forward,
+                          size: 18,
                         ),
-                ),
-              ),
-            ],
+                      ],
+                    ),
+            ),
           ),
         ],
       ),

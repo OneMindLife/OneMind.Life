@@ -6,7 +6,6 @@ import 'package:onemind_app/core/l10n/language_service.dart';
 import 'package:onemind_app/core/l10n/locale_provider.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/providers/providers.dart';
-import 'package:onemind_app/screens/create/create_chat_screen.dart';
 import 'package:onemind_app/screens/join/join_dialog.dart';
 import 'package:onemind_app/services/auth_service.dart';
 import 'package:onemind_app/services/chat_service.dart';
@@ -53,59 +52,7 @@ void main() {
     when(() => mockLanguageService.getCurrentLanguage()).thenReturn('en');
   });
 
-  group('CreateChatScreen', () {
-    testWidgets('displays title and basic info section', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            authServiceProvider.overrideWithValue(mockAuthService),
-            chatServiceProvider.overrideWithValue(mockChatService),
-            participantServiceProvider.overrideWithValue(mockParticipantService),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            locale: const Locale('en'),
-            home: const CreateChatScreen(),
-          ),
-        ),
-      );
-
-      // Check that the title is displayed
-      expect(find.text('Create Chat'), findsOneWidget);
-
-      // Check that basic info section is present
-      expect(find.text('Basic Info'), findsOneWidget);
-
-      // Check that required fields are present
-      expect(find.text('Chat Name *'), findsOneWidget);
-      expect(find.text('Initial Message *'), findsOneWidget);
-    });
-
-    // Commented out - access method uses localized strings from cards
-    // testWidgets('displays access method selector', (WidgetTester tester) async {
-    //   await tester.pumpWidget(
-    //     ProviderScope(
-    //       overrides: [
-    //         authServiceProvider.overrideWithValue(mockAuthService),
-    //         chatServiceProvider.overrideWithValue(mockChatService),
-    //         participantServiceProvider.overrideWithValue(mockParticipantService),
-    //       ],
-    //       child: MaterialApp(
-    //         localizationsDelegates: AppLocalizations.localizationsDelegates,
-    //         supportedLocales: AppLocalizations.supportedLocales,
-    //         locale: const Locale('en'),
-    //         home: const CreateChatScreen(),
-    //       ),
-    //     ),
-    //   );
-
-    //   // Check that access method options are present (code is default for MVP)
-    //   expect(find.text('Public'), findsOneWidget);
-    //   expect(find.text('Invite Code'), findsOneWidget);
-    //   // Email Invite Only hidden for MVP
-    // });
-  });
+  // CreateChatScreen tests removed — screen deleted, replaced by CreateChatWizard
 
   group('JoinDialog', () {
     testWidgets('displays invite code prompt', (WidgetTester tester) async {

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/screens/tutorial/models/tutorial_state.dart';
 import 'package:onemind_app/screens/tutorial/notifiers/tutorial_notifier.dart';
 import 'package:onemind_app/screens/tutorial/tutorial_data.dart';
@@ -62,7 +63,7 @@ void main() {
         notifier.completeRound1Rating();
 
         expect(notifier.state.currentStep, TutorialStep.round1Result);
-        expect(notifier.state.currentWinnerContent, 'Success');
+        expect(notifier.state.currentWinnerContent, 'Movie Night');
         expect(notifier.state.isUserWinner, false);
       });
 
@@ -227,7 +228,7 @@ void main() {
         expect(notifier.state.currentStep, TutorialStep.round1Rating);
 
         notifier.completeRound1Rating();
-        expect(notifier.state.currentWinnerContent, 'Success');
+        expect(notifier.state.currentWinnerContent, 'Movie Night');
         expect(notifier.state.currentStep, TutorialStep.round1Result);
 
         // Round 2
@@ -359,11 +360,11 @@ void main() {
     });
 
     group('template selection', () {
-      test('selectTemplate sets template and advances to chatTourTitle', () {
-        chatNotifier.selectTemplate('community');
+      test('selectTemplate sets template and advances to chatTourIntro', () {
+        chatNotifier.selectTemplate('saturday');
 
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
-        expect(chatNotifier.state.selectedTemplate, 'community');
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourIntro);
+        expect(chatNotifier.state.selectedTemplate, 'saturday');
       });
 
       test('selectTemplate with custom question stores question', () {
@@ -371,28 +372,46 @@ void main() {
 
         expect(chatNotifier.state.selectedTemplate, 'classic');
         expect(chatNotifier.state.customQuestion, 'My question?');
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourIntro);
       });
 
       test('skipChatTour jumps to round1Proposing', () {
-        chatNotifier.selectTemplate('community');
+        chatNotifier.selectTemplate('saturday');
         chatNotifier.skipChatTour();
 
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
       });
 
       test('nextChatTourStep progresses through tour then to round1Proposing', () {
-        chatNotifier.selectTemplate('community');
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
+        chatNotifier.selectTemplate('saturday');
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourIntro);
 
         chatNotifier.nextChatTourStep();
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
 
         chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.chatTourMessage);
 
         chatNotifier.nextChatTourStep();
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourProposing);
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourPlaceholder);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourRound);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourPhases);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourProgress);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTimer);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourParticipants);
+
+        chatNotifier.nextChatTourStep();
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourSubmit);
 
         chatNotifier.nextChatTourStep();
         expect(chatNotifier.state.currentStep, TutorialStep.round1Proposing);
@@ -401,67 +420,192 @@ void main() {
     });
 
     group('template-aware propositions', () {
-      test('community template uses community props in round 1', () {
-        chatNotifier.selectTemplate('community');
+      test('saturday template uses saturday props in round 1', () {
+        chatNotifier.selectTemplate('saturday');
         chatNotifier.skipChatTour();
         chatNotifier.submitRound1Proposition('My Idea');
 
-        // Should contain community props + user prop
+        // Should contain saturday props + user prop
         final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
-        expect(propContents, contains('Block Party'));
-        expect(propContents, contains('Community Garden'));
-        expect(propContents, contains('Neighborhood Watch'));
+        expect(propContents, contains('Movie Night'));
+        expect(propContents, contains('Cook-off'));
+        expect(propContents, contains('Board Games'));
         expect(propContents, contains('My Idea'));
       });
 
-      test('community template round 1 winner is Community Garden', () {
-        chatNotifier.selectTemplate('community');
+      test('saturday template round 1 winner is Movie Night', () {
+        chatNotifier.selectTemplate('saturday');
         chatNotifier.skipChatTour();
         chatNotifier.submitRound1Proposition('My Idea');
         chatNotifier.completeRound1Rating();
 
         final winnerContent = chatNotifier.state.previousRoundWinners.first.content;
-        expect(winnerContent, 'Community Garden');
+        expect(winnerContent, 'Movie Night');
       });
 
-      test('workplace template uses workplace props', () {
-        chatNotifier.selectTemplate('workplace');
-        chatNotifier.skipChatTour();
-        chatNotifier.submitRound1Proposition('My Idea');
-
-        final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
-        expect(propContents, contains('Flexible Hours'));
-        expect(propContents, contains('Mental Health Support'));
-        expect(propContents, contains('Team Building'));
-      });
-
-      test('classic template (null) uses default props', () {
-        // beginRound1 without selectTemplate (backwards compat)
+      test('default template (null) uses saturday props', () {
+        // beginRound1 without selectTemplate (backwards compat — defaults to saturday)
         chatNotifier.beginRound1();
         chatNotifier.submitRound1Proposition('My Idea');
 
         final propContents = chatNotifier.state.propositions.map((p) => p.content).toList();
-        expect(propContents, contains('Success'));
-        expect(propContents, contains('Adventure'));
-        expect(propContents, contains('Growth'));
+        expect(propContents, contains('Movie Night'));
+        expect(propContents, contains('Cook-off'));
+        expect(propContents, contains('Board Games'));
+      });
+    });
+
+    group('hasStartedRating resets', () {
+      test('continueToRound2 resets hasStartedRating', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('My Idea');
+        chatNotifier.markRatingStarted();
+        expect(chatNotifier.state.hasStartedRating, true);
+
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        expect(chatNotifier.state.hasStartedRating, false);
+      });
+
+      test('submitRound2Proposition resets hasStartedRating', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.markRatingStarted();
+        expect(chatNotifier.state.hasStartedRating, true);
+
+        // Reset when going back to false for R2 rating
+        chatNotifier.submitRound2Proposition('Better Idea');
+        expect(chatNotifier.state.hasStartedRating, false);
+      });
+
+      test('continueToRound3 resets hasStartedRating', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.markRatingStarted();
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        expect(chatNotifier.state.hasStartedRating, false);
+      });
+
+      test('submitRound3Proposition resets hasStartedRating', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        chatNotifier.markRatingStarted();
+        expect(chatNotifier.state.hasStartedRating, true);
+
+        chatNotifier.submitRound3Proposition('Final Idea');
+        expect(chatNotifier.state.hasStartedRating, false);
+      });
+
+      test('beginRound3Rating resets hasStartedRating', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        chatNotifier.markRatingStarted();
+
+        chatNotifier.beginRound3Rating();
+        expect(chatNotifier.state.hasStartedRating, false);
+      });
+
+      test('markRatingStarted sets hasStartedRating to true', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        expect(chatNotifier.state.hasStartedRating, false);
+
+        chatNotifier.markRatingStarted();
+        expect(chatNotifier.state.hasStartedRating, true);
+      });
+    });
+
+    group('continueToConvergenceContinue', () {
+      test('clears previousRoundWinners for new cycle', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        chatNotifier.submitRound3Proposition('Final');
+        chatNotifier.completeRound3Rating();
+        expect(chatNotifier.state.previousRoundWinners, isNotEmpty);
+
+        chatNotifier.continueToConvergenceContinue();
+        expect(chatNotifier.state.previousRoundWinners, isEmpty);
+      });
+
+      test('advances to convergenceContinue step', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        chatNotifier.submitRound3Proposition('Final');
+        chatNotifier.completeRound3Rating();
+
+        chatNotifier.continueToConvergenceContinue();
+        expect(chatNotifier.state.currentStep, TutorialStep.convergenceContinue);
+        expect(chatNotifier.state.currentRound?.customId, 4);
+        expect(chatNotifier.state.currentRound?.phase, RoundPhase.proposing);
+      });
+
+      test('preserves consensusItems', () {
+        chatNotifier.selectTemplate('saturday');
+        chatNotifier.skipChatTour();
+        chatNotifier.submitRound1Proposition('Idea');
+        chatNotifier.completeRound1Rating();
+        chatNotifier.continueToRound2();
+        chatNotifier.submitRound2Proposition('Better Idea');
+        chatNotifier.completeRound2Rating();
+        chatNotifier.continueToRound3();
+        chatNotifier.submitRound3Proposition('Final');
+        chatNotifier.completeRound3Rating();
+        expect(chatNotifier.state.consensusItems, isNotEmpty);
+
+        chatNotifier.continueToConvergenceContinue();
+        expect(chatNotifier.state.consensusItems, isNotEmpty);
       });
     });
 
     group('full flow with template', () {
-      test('completes entire flow with community template', () {
-        chatNotifier.selectTemplate('community');
-        expect(chatNotifier.state.currentStep, TutorialStep.chatTourTitle);
-        expect(chatNotifier.state.selectedTemplate, 'community');
+      test('completes entire flow with saturday template', () {
+        chatNotifier.selectTemplate('saturday');
+        expect(chatNotifier.state.currentStep, TutorialStep.chatTourIntro);
+        expect(chatNotifier.state.selectedTemplate, 'saturday');
 
         // Skip chat tour to get to round 1
         chatNotifier.skipChatTour();
 
-        chatNotifier.submitRound1Proposition('Education');
+        chatNotifier.submitRound1Proposition('Bowling');
         expect(chatNotifier.state.currentStep, TutorialStep.round1Rating);
 
         chatNotifier.completeRound1Rating();
         expect(chatNotifier.state.currentStep, TutorialStep.round1Result);
-        expect(chatNotifier.state.previousRoundWinners.first.content, 'Community Garden');
+        expect(chatNotifier.state.previousRoundWinners.first.content, 'Movie Night');
 
         chatNotifier.continueToRound2();
         chatNotifier.submitRound2Proposition('Better Education');
@@ -472,6 +616,10 @@ void main() {
         chatNotifier.submitRound3Proposition('Arts');
         chatNotifier.completeRound3Rating();
         expect(chatNotifier.state.currentStep, TutorialStep.round3Consensus);
+
+        chatNotifier.continueToConvergenceContinue();
+        expect(chatNotifier.state.currentStep, TutorialStep.convergenceContinue);
+        expect(chatNotifier.state.previousRoundWinners, isEmpty);
 
         chatNotifier.continueToShareDemo();
         expect(chatNotifier.state.currentStep, TutorialStep.shareDemo);

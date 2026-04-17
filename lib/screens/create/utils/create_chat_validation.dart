@@ -29,10 +29,14 @@ class CreateChatValidation {
   static String? validateSchedule({
     required ScheduleType type,
     required DateTime scheduledStartAt,
+    DateTime? scheduledEndAt,
   }) {
     if (type == ScheduleType.once) {
       if (scheduledStartAt.isBefore(DateTime.now())) {
         return 'Scheduled start time must be in the future';
+      }
+      if (scheduledEndAt != null && scheduledEndAt.isBefore(scheduledStartAt)) {
+        return 'End time must be after start time';
       }
     }
     return null;

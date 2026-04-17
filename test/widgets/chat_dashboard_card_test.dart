@@ -103,12 +103,14 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('renders language label', (tester) async {
+    testWidgets('accepts translationLanguages parameter without rendering',
+        (tester) async {
+      // Languages are no longer rendered on the card (filtered at discover screen level)
+      // but the parameter is still accepted for backwards compatibility
       await tester.pumpWidget(buildCard(
         translationLanguages: ['en', 'es'],
       ));
-      // LanguageUtils.shortLabel returns comma-separated native names
-      expect(find.textContaining('English'), findsOneWidget);
+      expect(find.byIcon(Icons.translate), findsNothing);
     });
   });
 

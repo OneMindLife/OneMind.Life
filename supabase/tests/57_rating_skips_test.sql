@@ -140,8 +140,8 @@ SELECT is(
 
 -- =============================================================================
 -- TEST 7: User1 rates (skips own Prop A, rates B, C, D)
--- With 2 skippers: required = LEAST(CEIL(4*100/100), 4-1-2) = LEAST(4, 1) = 1
--- After User1: avg = 3/4 = 0.75 raters/prop. Need 1. 0.75 < 1. NOT met.
+-- active_raters = 4 - 2 skips = 2. threshold = min(10, max(2-1, 1)) = 1.
+-- Per-prop after User1: prop_a=0, prop_b=1, prop_c=1, prop_d=1 → min=0 < 1. NOT met.
 -- =============================================================================
 
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
@@ -153,12 +153,12 @@ VALUES
 SELECT is(
     (SELECT completed_at IS NULL FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
     true,
-    'After User1 rates (avg=0.75, need 1): NOT completed'
+    'After User1 rates (min=0 < threshold=1): NOT completed'
 );
 
 -- =============================================================================
 -- TEST 8: User2 rates (skips own Prop B, rates A, C, D)
--- After User2: total=6 ratings / 4 props = 1.5 avg raters/prop. Need 1. 1.5 >= 1. MET!
+-- Per-prop after User2: prop_a=1, prop_b=1, prop_c=2, prop_d=2 → min=1 >= threshold=1. MET!
 -- =============================================================================
 
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
@@ -170,7 +170,7 @@ VALUES
 SELECT is(
     (SELECT completed_at IS NOT NULL FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
     true,
-    'After User2 rates (avg=1.5 >= 1): COMPLETED with rating skips lowering threshold'
+    'After User2 rates (min=1 >= threshold=1): COMPLETED with rating skips lowering threshold'
 );
 
 -- =============================================================================

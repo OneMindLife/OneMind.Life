@@ -10,7 +10,9 @@ import 'models/create_chat_state.dart' as state;
 import 'utils/create_chat_validation.dart';
 import 'widgets/wizard_step_agents.dart';
 import 'widgets/wizard_step_indicator.dart';
+import 'widgets/wizard_step_participation.dart';
 import 'widgets/wizard_step_question.dart';
+import 'widgets/wizard_step_schedule.dart';
 import 'widgets/wizard_step_timing.dart';
 import 'widgets/wizard_step_translations.dart';
 import 'widgets/wizard_step_visibility.dart';
@@ -40,19 +42,19 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   AccessMethod _accessMethod = AccessMethod.public;
   final List<String> _inviteEmails = [];
   final bool _requireAuth = false;
-  final bool _requireApproval = true;
+  bool _requireApproval = false;
   final StartMode _startMode = StartMode.auto;
   final StartMode _ratingStartMode = StartMode.auto;
   final int _autoStartCount = 3;
-  final bool _enableSchedule = false;
+  bool _enableSchedule = false;
 
-  // Timer settings - default to 2 minutes
+  // Timer settings - default to 1 minute
   state.TimerSettings _timerSettings = const state.TimerSettings(
     useSameDuration: true,
-    proposingPreset: '2min',
-    ratingPreset: '2min',
-    proposingDuration: 120,
-    ratingDuration: 120,
+    proposingPreset: '1min',
+    ratingPreset: '1min',
+    proposingDuration: 60,
+    ratingDuration: 60,
   );
 
   // Other settings with defaults
@@ -64,6 +66,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   state.ScheduleSettings _scheduleSettings = state.ScheduleSettings.defaults();
   state.AgentSettings _agentSettings = state.AgentSettings.defaults();
   state.TranslationSettings _translationSettings = state.TranslationSettings.defaults();
+  state.SkipSettings _skipSettings = state.SkipSettings.defaults();
   final state.ConsensusSettings _consensusSettings =
       state.ConsensusSettings.defaults();
 
@@ -119,7 +122,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
-  int get _totalSteps => 5;
+  int get _totalSteps => 7;
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
@@ -163,6 +166,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
       final scheduleError = CreateChatValidation.validateSchedule(
         type: _scheduleSettings.type,
         scheduledStartAt: _scheduleSettings.scheduledStartAt,
+        scheduledEndAt: _scheduleSettings.scheduledEndAt,
       );
       if (scheduleError != null) {
         context.showErrorMessage(scheduleError);
@@ -233,6 +237,10 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                 _scheduleSettings.type == state.ScheduleType.once
             ? _scheduleSettings.scheduledStartAt
             : null,
+        scheduledEndAt: _enableSchedule &&
+                _scheduleSettings.type == state.ScheduleType.once
+            ? _scheduleSettings.scheduledEndAt
+            : null,
         scheduleWindows: _enableSchedule &&
                 _scheduleSettings.type == state.ScheduleType.recurring
             ? _scheduleSettings.windows
@@ -247,6 +255,8 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
         visibleOutsideSchedule: _scheduleSettings.visibleOutsideSchedule,
         translationsEnabled: _translationSettings.enabled,
         translationLanguages: _translationSettings.languages.toList(),
+        allowSkipProposing: _skipSettings.allowSkipProposing,
+        allowSkipRating: _skipSettings.allowSkipRating,
       );
 
       // Join as host
@@ -299,6 +309,12 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.createChatTitle),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _currentStep == 0
+              ? () => Navigator.pop(context)
+              : _previousStep,
+        ),
       ),
       body: SafeArea(
         child: Column(
@@ -332,37 +348,55 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     onAccessMethodChanged: (method) {
                       setState(() => _accessMethod = method);
                     },
-                    onBack: _previousStep,
                     onContinue: _nextStep,
                   ),
 
-                  // Step 3: Translations
-                  WizardStepTranslations(
-                    translationSettings: _translationSettings,
-                    onTranslationSettingsChanged: (settings) {
-                      setState(() => _translationSettings = settings);
-                    },
-                    onBack: _previousStep,
-                    onContinue: _nextStep,
-                  ),
-
-                  // Step 4: Set the Pace (timers)
+                  // Step 3: Set the Pace (timers)
                   WizardStepTiming(
                     timerSettings: _timerSettings,
                     onTimerSettingsChanged: (settings) {
                       setState(() => _timerSettings = settings);
                     },
-                    onBack: _previousStep,
                     onContinue: _nextStep,
                   ),
 
-                  // Step 5: AI Agents (final step — always creates)
+                  // Step 4: Participation (skip settings)
+                  WizardStepParticipation(
+                    skipSettings: _skipSettings,
+                    onSkipSettingsChanged: (settings) {
+                      setState(() => _skipSettings = settings);
+                    },
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 5: Schedule
+                  WizardStepSchedule(
+                    enableSchedule: _enableSchedule,
+                    scheduleSettings: _scheduleSettings,
+                    onEnableScheduleChanged: (enabled) {
+                      setState(() => _enableSchedule = enabled);
+                    },
+                    onScheduleSettingsChanged: (settings) {
+                      setState(() => _scheduleSettings = settings);
+                    },
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 6: Translations
+                  WizardStepTranslations(
+                    translationSettings: _translationSettings,
+                    onTranslationSettingsChanged: (settings) {
+                      setState(() => _translationSettings = settings);
+                    },
+                    onContinue: _nextStep,
+                  ),
+
+                  // Step 7: AI Agents (final step — always creates)
                   WizardStepAgents(
                     agentSettings: _agentSettings,
                     onAgentSettingsChanged: (settings) {
                       setState(() => _agentSettings = settings);
                     },
-                    onBack: _previousStep,
                     onContinue: _nextStep,
                     onCreate: _createChat,
                     needsHostName: false,

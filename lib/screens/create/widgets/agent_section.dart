@@ -19,17 +19,14 @@ class AgentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SettingTile(
-          question: 'Start with AI agents?',
-          description: settings.enabled
-              ? 'Yes, pre-fill the chat with AI agents'
-              : 'No, start without AI agents',
-          trailing: Switch(
-            value: settings.enabled,
-            onChanged: (v) => onChanged(settings.copyWith(enabled: v)),
-          ),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(settings.enabled ? 'Yes' : 'No'),
+          value: settings.enabled,
+          onChanged: (v) => onChanged(settings.copyWith(enabled: v)),
         ),
         if (settings.enabled) ...[
+          const Divider(),
           SettingTile(
             question: 'Should agents also rate?',
             description: settings.agentsAlsoRate
@@ -43,12 +40,12 @@ class AgentSection extends StatelessWidget {
           ),
           SettingTile(
             question: 'How many agents?',
-            description: '${settings.agentCount} agents will participate',
+            description: '${settings.agentCount} ${settings.agentCount == 1 ? 'agent' : 'agents'} will participate',
             trailing: NumberInput(
               label: '',
               value: settings.agentCount,
               onChanged: (v) => onChanged(settings.withCount(v)),
-              min: 2,
+              min: 1,
               max: 5,
             ),
           ),

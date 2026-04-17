@@ -1,10 +1,12 @@
 import '../models/chat_dashboard_info.dart';
 
-/// Sort dashboard chats by urgency:
-/// 1. Active + timed — soonest phaseEndsAt first
-/// 2. Active + no timer (manual mode) — by lastActivityAt DESC
-/// 3. Paused — by lastActivityAt DESC
-/// 4. Idle (no active round) — by lastActivityAt DESC
+/// Sort dashboard chats like a conveyor belt — what needs attention next rises to top:
+/// 1. Not participated + active + timed — soonest phaseEndsAt first
+/// 2. Not participated + active + no timer — by lastActivityAt DESC
+/// 3. Participated + active + timed — soonest phaseEndsAt first
+/// 4. Participated + active + no timer — by lastActivityAt DESC
+/// 5. Paused — by lastActivityAt DESC
+/// 6. Idle (no active round) — by lastActivityAt DESC
 List<ChatDashboardInfo> sortByUrgency(List<ChatDashboardInfo> chats) {
   final sorted = List<ChatDashboardInfo>.from(chats);
   sorted.sort((a, b) {
@@ -13,8 +15,8 @@ List<ChatDashboardInfo> sortByUrgency(List<ChatDashboardInfo> chats) {
 
     if (aGroup != bGroup) return aGroup.compareTo(bGroup);
 
-    // Within group 0 (active + timed): sort by soonest timer
-    if (aGroup == 0) {
+    // Within timed groups (0, 2): sort by soonest timer
+    if (aGroup == 0 || aGroup == 2) {
       return a.phaseEndsAt!.compareTo(b.phaseEndsAt!);
     }
 
@@ -27,13 +29,20 @@ List<ChatDashboardInfo> sortByUrgency(List<ChatDashboardInfo> chats) {
 }
 
 /// Returns urgency group (lower = more urgent):
-/// 0 = active + timed
-/// 1 = active + no timer
-/// 2 = paused
-/// 3 = idle
+/// 0 = not participated + active + timed (needs attention NOW)
+/// 1 = not participated + active + no timer
+/// 2 = participated + active + timed (done, but still running)
+/// 3 = participated + active + no timer
+/// 4 = paused
+/// 5 = idle
 int _urgencyGroup(ChatDashboardInfo info) {
-  if (info.isPaused) return 2;
-  if (!info.hasActiveRound) return 3;
-  if (info.hasActiveTimer) return 0;
-  return 1; // active, no timer
+  if (info.isPaused) return 4;
+  if (!info.hasActiveRound) return 5;
+
+  final participated = info.hasParticipated;
+
+  if (info.hasActiveTimer) {
+    return participated ? 2 : 0;
+  }
+  return participated ? 3 : 1;
 }

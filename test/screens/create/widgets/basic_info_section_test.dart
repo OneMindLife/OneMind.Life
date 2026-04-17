@@ -32,6 +32,12 @@ void main() {
     );
   }
 
+  /// Toggle the "Set the first message" switch on
+  Future<void> enableMessageToggle(WidgetTester tester) async {
+    await tester.tap(find.byType(SwitchListTile));
+    await tester.pumpAndSettle();
+  }
+
   group('BasicInfoSection', () {
     testWidgets('displays section header', (tester) async {
       await tester.pumpApp(Scaffold(body: createTestWidget()));
@@ -43,14 +49,22 @@ void main() {
       await tester.pumpApp(Scaffold(body: createTestWidget()));
 
       expect(find.text('Chat Name *'), findsOneWidget);
-      expect(find.text('e.g., Team Lunch Friday'), findsOneWidget);
+      expect(find.text('e.g., Saturday Plans'), findsOneWidget);
     });
 
-    testWidgets('displays initial message field', (tester) async {
+    testWidgets('initial message field hidden by default', (tester) async {
       await tester.pumpApp(Scaffold(body: createTestWidget()));
 
-      expect(find.text('Initial Message *'), findsOneWidget);
-      expect(find.text('The opening topic or question'), findsOneWidget);
+      expect(find.text('Initial Message (Optional)'), findsNothing);
+      expect(find.text('Set initial message'), findsOneWidget);
+    });
+
+    testWidgets('displays initial message field after toggle', (tester) async {
+      await tester.pumpApp(Scaffold(body: createTestWidget()));
+      await enableMessageToggle(tester);
+
+      expect(find.text('Initial Message (Optional)'), findsOneWidget);
+      expect(find.text("e.g., What's the best way to spend a free Saturday?"), findsOneWidget);
     });
 
     testWidgets('allows entering chat name', (tester) async {
@@ -64,11 +78,12 @@ void main() {
       expect(nameController.text, 'Test Chat');
     });
 
-    testWidgets('allows entering initial message', (tester) async {
+    testWidgets('allows entering initial message after toggle', (tester) async {
       await tester.pumpApp(Scaffold(body: createTestWidget()));
+      await enableMessageToggle(tester);
 
       await tester.enterText(
-        find.widgetWithText(TextFormField, 'Initial Message *'),
+        find.widgetWithText(TextFormField, 'Initial Message (Optional)'),
         'What should we discuss?',
       );
 
@@ -100,42 +115,28 @@ void main() {
       await tester.tap(find.text('Validate'));
       await tester.pump();
 
-      expect(find.text('Required'), findsWidgets);
-    });
-
-    testWidgets('validates empty initial message', (tester) async {
-      nameController.text = 'Valid Name';
-      final formKey = GlobalKey<FormState>();
-
-      await tester.pumpApp(
-        Scaffold(
-          body: Form(
-            key: formKey,
-            child: Column(
-              children: [
-                BasicInfoSection(
-                  nameController: nameController,
-                  messageController: messageController,
-                ),
-                ElevatedButton(
-                  onPressed: () => formKey.currentState!.validate(),
-                  child: const Text('Validate'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Validate'));
-      await tester.pump();
-
       expect(find.text('Required'), findsOneWidget);
     });
 
-    testWidgets('passes validation with valid inputs', (tester) async {
+    testWidgets('toggle off clears message controller', (tester) async {
+      await tester.pumpApp(Scaffold(body: createTestWidget()));
+      await enableMessageToggle(tester);
+
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Initial Message (Optional)'),
+        'Some message',
+      );
+      expect(messageController.text, 'Some message');
+
+      // Toggle off
+      await tester.tap(find.byType(SwitchListTile));
+      await tester.pumpAndSettle();
+
+      expect(messageController.text, isEmpty);
+    });
+
+    testWidgets('passes validation with only chat name', (tester) async {
       nameController.text = 'Valid Name';
-      messageController.text = 'Valid Message';
 
       bool isValid = false;
       final formKey = GlobalKey<FormState>();
@@ -173,9 +174,6 @@ void main() {
 
       // Verify the constant is set to expected value
       expect(_testMaxLength, 50);
-
-      // The maxLength is enforced via the TextField inside TextFormField
-      // We verify this through behavior tests below
     });
 
     testWidgets('chat name is limited to max length characters', (tester) async {

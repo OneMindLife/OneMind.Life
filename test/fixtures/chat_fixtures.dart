@@ -41,6 +41,9 @@ class ChatFixtures {
     bool visibleOutsideSchedule = true,
     bool schedulePaused = false,
     bool hostPaused = false,
+    // Skip settings
+    bool allowSkipProposing = true,
+    bool allowSkipRating = true,
     // Translation toggle fields
     bool translationsEnabled = false,
     List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
@@ -88,6 +91,8 @@ class ChatFixtures {
       'visible_outside_schedule': visibleOutsideSchedule,
       'schedule_paused': schedulePaused,
       'host_paused': hostPaused,
+      'allow_skip_proposing': allowSkipProposing,
+      'allow_skip_rating': allowSkipRating,
       'translations_enabled': translationsEnabled,
       'translation_languages': translationLanguages,
       'name_translated': nameTranslated,
@@ -335,6 +340,15 @@ class ChatFixtures {
         inviteCode: 'CODE${i + 1}'.padRight(6, '0').substring(0, 6),
       ),
     );
+  }
+
+  /// Chat with skipping disabled for both phases
+  static Chat noSkip({int id = 1}) {
+    return Chat.fromJson(json(
+      id: id,
+      allowSkipProposing: false,
+      allowSkipRating: false,
+    ));
   }
 
   /// Chat with translations enabled

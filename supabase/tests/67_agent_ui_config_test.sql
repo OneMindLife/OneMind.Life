@@ -65,8 +65,8 @@ SELECT has_function('public', 'auto_join_agents_on_chat_create', '{}',
 -- Test 13: Auto-join trigger exists on chats
 -- =============================================================================
 
-SELECT has_trigger('public', 'chats', 'trg_auto_join_agents',
-  'trg_auto_join_agents trigger should exist on chats');
+SELECT has_trigger('public', 'chats', 'trg_chat_insert_join_agents',
+  'trg_chat_insert_join_agents trigger should exist on chats');
 
 -- =============================================================================
 -- Test 14: AI proposer trigger is dropped

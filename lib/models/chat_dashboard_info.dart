@@ -13,6 +13,7 @@ class ChatDashboardInfo extends Equatable {
   final DateTime? phaseStartedAt;
   final int? currentCycleId;
   final String? viewingLanguageCode;
+  final bool hasParticipated;
 
   const ChatDashboardInfo({
     required this.chat,
@@ -23,6 +24,7 @@ class ChatDashboardInfo extends Equatable {
     this.phaseStartedAt,
     this.currentCycleId,
     this.viewingLanguageCode,
+    this.hasParticipated = true,
   });
 
   bool get hasActiveTimer => phaseEndsAt != null && currentRoundPhase != null;
@@ -51,6 +53,7 @@ class ChatDashboardInfo extends Equatable {
           : null,
       currentCycleId: (json['current_cycle_id'] as num?)?.toInt(),
       viewingLanguageCode: json['viewing_language_code'] as String?,
+      hasParticipated: json['has_participated'] as bool? ?? true,
     );
   }
 
@@ -77,5 +80,6 @@ class ChatDashboardInfo extends Equatable {
         phaseStartedAt,
         currentCycleId,
         viewingLanguageCode,
+        hasParticipated,
       ];
 }

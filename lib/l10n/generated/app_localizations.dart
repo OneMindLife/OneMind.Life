@@ -749,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @failedToSaveRankings.
   ///
   /// In en, this message translates to:
-  /// **'Failed to save rankings'**
+  /// **'Failed to save ratings'**
   String get failedToSaveRankings;
 
   /// No description provided for @chatPausedByHost.
@@ -794,6 +794,12 @@ abstract class AppLocalizations {
   /// **'Rating Results'**
   String get roundResults;
 
+  /// No description provided for @convergenceHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Convergence {number} History'**
+  String convergenceHistory(int number);
+
   /// No description provided for @noPropositionsToDisplay.
   ///
   /// In en, this message translates to:
@@ -803,7 +809,7 @@ abstract class AppLocalizations {
   /// No description provided for @noPreviousWinner.
   ///
   /// In en, this message translates to:
-  /// **'No emergence yet'**
+  /// **'No top candidate yet'**
   String get noPreviousWinner;
 
   /// No description provided for @roundWinner.
@@ -1025,7 +1031,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousWinner.
   ///
   /// In en, this message translates to:
-  /// **'Emergence'**
+  /// **'Current Top Candidate'**
   String get previousWinner;
 
   /// No description provided for @yourProposition.
@@ -1589,7 +1595,7 @@ abstract class AppLocalizations {
   /// No description provided for @previousWinnerLabel.
   ///
   /// In en, this message translates to:
-  /// **'(Emergence)'**
+  /// **'(Current Top Candidate)'**
   String get previousWinnerLabel;
 
   /// No description provided for @cannotBeUndone.
@@ -1607,7 +1613,7 @@ abstract class AppLocalizations {
   /// No description provided for @leaveChatConfirmation.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to leave \"{chatName}\"?\n\nYou will no longer see this chat in your list.'**
+  /// **'Are you sure you want to leave \"{chatName}\"?'**
   String leaveChatConfirmation(String chatName);
 
   /// No description provided for @kickParticipantConfirmation.
@@ -1739,7 +1745,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatNameHint.
   ///
   /// In en, this message translates to:
-  /// **'e.g., Team Lunch Friday'**
+  /// **'e.g., Saturday Plans'**
   String get chatNameHint;
 
   /// No description provided for @required.
@@ -1760,10 +1766,22 @@ abstract class AppLocalizations {
   /// **'Initial Message (Optional)'**
   String get initialMessageOptional;
 
+  /// No description provided for @initialMessageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Initial Message'**
+  String get initialMessageLabel;
+
+  /// No description provided for @setFirstMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Set initial message'**
+  String get setFirstMessage;
+
   /// No description provided for @initialMessageHint.
   ///
   /// In en, this message translates to:
-  /// **'The opening topic or question'**
+  /// **'e.g., What\'s the best way to spend a free Saturday?'**
   String get initialMessageHint;
 
   /// No description provided for @initialMessageHelperText.
@@ -2361,7 +2379,7 @@ abstract class AppLocalizations {
   /// No description provided for @scheduleWindowsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Define when the chat is active. Supports overnight windows (e.g., 11pm to 1am next day).'**
+  /// **'Define when the chat is active each week.'**
   String get scheduleWindowsDesc;
 
   /// No description provided for @windowNumber.
@@ -2853,7 +2871,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatName.
   ///
   /// In en, this message translates to:
-  /// **'Name'**
+  /// **'Chat Name'**
   String get chatName;
 
   /// No description provided for @chatDescription.
@@ -3018,77 +3036,17 @@ abstract class AppLocalizations {
   /// **'or scan'**
   String get orScan;
 
-  /// No description provided for @tutorialTemplateCommunity.
+  /// No description provided for @tutorialTemplateSaturday.
   ///
   /// In en, this message translates to:
-  /// **'Community Decision'**
-  String get tutorialTemplateCommunity;
+  /// **'Saturday Plans'**
+  String get tutorialTemplateSaturday;
 
-  /// No description provided for @tutorialTemplateCommunityDesc.
+  /// No description provided for @tutorialTemplateSaturdayDesc.
   ///
   /// In en, this message translates to:
-  /// **'What should our neighborhood do together?'**
-  String get tutorialTemplateCommunityDesc;
-
-  /// No description provided for @tutorialTemplateWorkplace.
-  ///
-  /// In en, this message translates to:
-  /// **'Workplace Culture'**
-  String get tutorialTemplateWorkplace;
-
-  /// No description provided for @tutorialTemplateWorkplaceDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'What should our team focus on?'**
-  String get tutorialTemplateWorkplaceDesc;
-
-  /// No description provided for @tutorialTemplateWorld.
-  ///
-  /// In en, this message translates to:
-  /// **'Global Issues'**
-  String get tutorialTemplateWorld;
-
-  /// No description provided for @tutorialTemplateWorldDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'What global issue matters most?'**
-  String get tutorialTemplateWorldDesc;
-
-  /// No description provided for @tutorialTemplateFamily.
-  ///
-  /// In en, this message translates to:
-  /// **'Family'**
-  String get tutorialTemplateFamily;
-
-  /// No description provided for @tutorialTemplateFamilyDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Where should we go on vacation?'**
-  String get tutorialTemplateFamilyDesc;
-
-  /// No description provided for @tutorialTemplatePersonal.
-  ///
-  /// In en, this message translates to:
-  /// **'Personal Decision'**
-  String get tutorialTemplatePersonal;
-
-  /// No description provided for @tutorialTemplatePersonalDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'What should I do after graduation?'**
-  String get tutorialTemplatePersonalDesc;
-
-  /// No description provided for @tutorialTemplateGovernment.
-  ///
-  /// In en, this message translates to:
-  /// **'City Budget'**
-  String get tutorialTemplateGovernment;
-
-  /// No description provided for @tutorialTemplateGovernmentDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'How should we spend the city budget?'**
-  String get tutorialTemplateGovernmentDesc;
+  /// **'What\'s the best way to spend a free Saturday?'**
+  String get tutorialTemplateSaturdayDesc;
 
   /// No description provided for @tutorialTemplateCustom.
   ///
@@ -3129,13 +3087,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialWelcomeDescription.
   ///
   /// In en, this message translates to:
-  /// **'Bring people together to share ideas anonymously, rate independently, and reach results everyone can trust.'**
+  /// **'Anonymous groupchats where many minds think as one.'**
   String get tutorialWelcomeDescription;
 
   /// No description provided for @tutorialWelcomeSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose a topic to practice with'**
+  /// **'See how it works'**
   String get tutorialWelcomeSubtitle;
 
   /// No description provided for @tutorialTheQuestion.
@@ -3147,7 +3105,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialQuestion.
   ///
   /// In en, this message translates to:
-  /// **'What do we value?'**
+  /// **'What\'s the best way to spend a free Saturday?'**
   String get tutorialQuestion;
 
   /// No description provided for @tutorialStartButton.
@@ -3171,8 +3129,128 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialWonTwoRounds.
   ///
   /// In en, this message translates to:
-  /// **'\"{proposition}\" won 2 rounds in a row, so it gets added permanently to the chat.'**
-  String tutorialWonTwoRounds(String proposition);
+  /// **'Your idea won again, so it is added permanently to the chat.'**
+  String get tutorialWonTwoRounds;
+
+  /// No description provided for @tutorialConvergenceExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap it to continue.'**
+  String get tutorialConvergenceExplain;
+
+  /// No description provided for @tutorialCycleHistoryExplainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Winners'**
+  String get tutorialCycleHistoryExplainTitle;
+
+  /// No description provided for @tutorialCycleHistoryExplainDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'See how the same idea won Round 2 and Round 3? That\'s called convergence — the group has converged on an idea.'**
+  String get tutorialCycleHistoryExplainDesc;
+
+  /// No description provided for @tutorialCycleHistoryBackDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Press [back] to continue.'**
+  String get tutorialCycleHistoryBackDesc;
+
+  /// No description provided for @tutorialPressBackToContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Press [back] to continue.'**
+  String get tutorialPressBackToContinue;
+
+  /// No description provided for @tutorialR1LeaderboardTapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap [leaderboard] to continue.'**
+  String get tutorialR1LeaderboardTapDesc;
+
+  /// No description provided for @tutorialR1LeaderboardUpdatedDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The leaderboard has been updated.'**
+  String get tutorialR1LeaderboardUpdatedDesc;
+
+  /// No description provided for @tutorialR1LeaderboardDoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Press the X to continue.'**
+  String get tutorialR1LeaderboardDoneDesc;
+
+  /// No description provided for @tutorialR1ResultWinnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round 1 Winner'**
+  String get tutorialR1ResultWinnerTitle;
+
+  /// No description provided for @tutorialR1ResultWinnerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone has rated. \"Movie Night\" won! It is now the new placeholder.'**
+  String get tutorialR1ResultWinnerDesc;
+
+  /// No description provided for @tutorialR1ResultTapTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Winners'**
+  String get tutorialR1ResultTapTitle;
+
+  /// No description provided for @tutorialR1ResultTapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap it to continue.'**
+  String get tutorialR1ResultTapDesc;
+
+  /// No description provided for @tutorialR1CycleExplainTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Winners'**
+  String get tutorialR1CycleExplainTitle;
+
+  /// No description provided for @tutorialR1CycleExplainDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This shows all completed round winners. Only 1 round has been completed so far.'**
+  String get tutorialR1CycleExplainDesc;
+
+  /// No description provided for @tutorialR2CycleExplainDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Now there are 2 completed rounds.'**
+  String get tutorialR2CycleExplainDesc;
+
+  /// No description provided for @tutorialR2ResultsExplainDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Movie Night\" lost this round, so it was replaced by the new winner — your idea.'**
+  String get tutorialR2ResultsExplainDesc;
+
+  /// No description provided for @tutorialR1CycleTapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap it to view the full rating results.'**
+  String get tutorialR1CycleTapDesc;
+
+  /// No description provided for @tutorialR2CycleTapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the Round 2 winner to view the full rating results.'**
+  String get tutorialR2CycleTapDesc;
+
+  /// No description provided for @tutorialCarriedWinnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous Winner'**
+  String get tutorialCarriedWinnerTitle;
+
+  /// No description provided for @tutorialCarriedWinnerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Movie Night\" is the previous round\'s winner. If it also wins this round, it gets placed permanently in the chat.'**
+  String get tutorialCarriedWinnerDesc;
 
   /// No description provided for @tutorialProcessContinuesTitle.
   ///
@@ -3201,7 +3279,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound1Result.
   ///
   /// In en, this message translates to:
-  /// **'\'Success\' won Round 1!'**
+  /// **'\'Movie Night\' won Round 1!'**
   String get tutorialRound1Result;
 
   /// No description provided for @tutorialProposingHint.
@@ -3225,14 +3303,50 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingHint.
   ///
   /// In en, this message translates to:
-  /// **'Now rate everyone\'s ideas. The highest-rated idea wins the round.'**
+  /// **'Now rate everyone\'s responses. The highest-rated response wins the round.'**
   String get tutorialRatingHint;
 
   /// No description provided for @tutorialRatingPhaseExplanation.
   ///
   /// In en, this message translates to:
-  /// **'Everyone has submitted. Now rate their ideas to pick a winner before the timer runs out!'**
+  /// **'Everyone has submitted. Now rate their responses to pick a winner before the timer runs out!'**
   String get tutorialRatingPhaseExplanation;
+
+  /// No description provided for @tutorialRatingPhaseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Phase'**
+  String get tutorialRatingPhaseTitle;
+
+  /// No description provided for @tutorialRatingPhaseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Now that everyone has submitted their ideas, the rating phase begins.'**
+  String get tutorialRatingPhaseHint;
+
+  /// No description provided for @tutorialRatingButtonHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Click Start Rating below to start rating everyone\'s ideas.'**
+  String get tutorialRatingButtonHint;
+
+  /// No description provided for @tutorialRatingButtonHintRich.
+  ///
+  /// In en, this message translates to:
+  /// **'Click [startRating] below to start rating everyone\'s ideas.'**
+  String get tutorialRatingButtonHintRich;
+
+  /// No description provided for @tutorialRatingIntroHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the rating screen. You won\'t rate your own idea — only other people\'s.'**
+  String get tutorialRatingIntroHint;
+
+  /// No description provided for @tutorialRatingRankHint.
+  ///
+  /// In en, this message translates to:
+  /// **'The closer your ratings match the group\'s, the higher you rank.'**
+  String get tutorialRatingRankHint;
 
   /// No description provided for @tutorialRatingTimeRemaining.
   ///
@@ -3243,13 +3357,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRatingBinaryHint.
   ///
   /// In en, this message translates to:
-  /// **'The top idea scores higher. Tap [swap] to put your preferred idea on top, then [check] to confirm.'**
+  /// **'The top idea scores higher. Tap [swap] to put your preferred idea on top, then tap [check] to lock it in.'**
   String get tutorialRatingBinaryHint;
 
   /// No description provided for @tutorialRatingPositioningHint.
   ///
   /// In en, this message translates to:
-  /// **'Place each idea on the scale. Use [up] [down] to move, then [check] to confirm.'**
+  /// **'Place each idea on the scale. Use [up] [down] to move, then tap [check] to lock it in. Press [undo] to redo your previous placement.'**
   String get tutorialRatingPositioningHint;
 
   /// No description provided for @tutorialRound2Result.
@@ -3279,13 +3393,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound2PromptSimplified.
   ///
   /// In en, this message translates to:
-  /// **'The winner will compete again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
+  /// **'The winner competes again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
   String get tutorialRound2PromptSimplified;
 
   /// No description provided for @tutorialRound2PromptSimplifiedTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' will compete again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
+  /// **'\'{winner}\' competes again this round. If it wins again, that\'s convergence — the group\'s answer. Can you beat it?'**
   String tutorialRound2PromptSimplifiedTemplate(String winner);
 
   /// No description provided for @tutorialRound3Prompt.
@@ -3297,13 +3411,13 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialRound3PromptTemplate.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' replaced \'{previousWinner}\'. One more win means convergence!'**
+  /// **'\'{winner}\' replaced \'{previousWinner}\'. If it wins again next round, the group places it permanently in the chat.'**
   String tutorialRound3PromptTemplate(String winner, String previousWinner);
 
   /// No description provided for @tutorialR2ResultsHint.
   ///
   /// In en, this message translates to:
-  /// **'Your idea won! Press the back arrow to continue.'**
+  /// **'Your idea won! It is now the new placeholder.'**
   String get tutorialR2ResultsHint;
 
   /// No description provided for @tutorialRound3ConvergenceHint.
@@ -3330,11 +3444,83 @@ abstract class AppLocalizations {
   /// **'Rating Results'**
   String get tutorialHintRoundResults;
 
+  /// No description provided for @tutorialHintR1Winner.
+  ///
+  /// In en, this message translates to:
+  /// **'New Placeholder'**
+  String get tutorialHintR1Winner;
+
+  /// No description provided for @tutorialHintR1WinnerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'\"{winner}\" won Round 1, so it replaced the previous placeholder. Now it is the new placeholder.'**
+  String tutorialHintR1WinnerDesc(String winner);
+
+  /// No description provided for @tutorialHintConvergenceExplain.
+  ///
+  /// In en, this message translates to:
+  /// **'Convergence'**
+  String get tutorialHintConvergenceExplain;
+
+  /// No description provided for @tutorialHintConvergenceExplainDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'If the placeholder wins 2 rounds in a row, it becomes a permanent part of the chat. This is called convergence.'**
+  String get tutorialHintConvergenceExplainDesc;
+
+  /// No description provided for @tutorialHintNewRound.
+  ///
+  /// In en, this message translates to:
+  /// **'New Round'**
+  String get tutorialHintNewRound;
+
+  /// No description provided for @tutorialHintNewRoundDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Round 2 begins now.'**
+  String get tutorialHintNewRoundDesc;
+
   /// No description provided for @tutorialHintRound2.
   ///
   /// In en, this message translates to:
   /// **'Round 2'**
   String get tutorialHintRound2;
+
+  /// No description provided for @tutorialHintReplaceWinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Can You Beat It?'**
+  String get tutorialHintReplaceWinner;
+
+  /// No description provided for @tutorialHintReplaceWinnerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Try to replace \"Movie Night\". Send your best idea!'**
+  String get tutorialHintReplaceWinnerDesc;
+
+  /// No description provided for @tutorialHintNewRound3.
+  ///
+  /// In en, this message translates to:
+  /// **'New Round'**
+  String get tutorialHintNewRound3;
+
+  /// No description provided for @tutorialHintNewRound3Desc.
+  ///
+  /// In en, this message translates to:
+  /// **'Now time for Round 3.'**
+  String get tutorialHintNewRound3Desc;
+
+  /// No description provided for @tutorialHintR3Replace.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Chance!'**
+  String get tutorialHintR3Replace;
+
+  /// No description provided for @tutorialHintR3ReplaceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Can you think of something better? Type your best idea and submit it! If you can\'t think of anything, tap [skip] to skip.'**
+  String get tutorialHintR3ReplaceDesc;
 
   /// No description provided for @tutorialHintYouWon.
   ///
@@ -3359,6 +3545,54 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Carry Forward'**
   String get tutorialHintCarryForward;
+
+  /// No description provided for @tutorialPropMovieNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Movie Night'**
+  String get tutorialPropMovieNight;
+
+  /// No description provided for @tutorialPropCookOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Cook-off'**
+  String get tutorialPropCookOff;
+
+  /// No description provided for @tutorialPropBoardGames.
+  ///
+  /// In en, this message translates to:
+  /// **'Board Games'**
+  String get tutorialPropBoardGames;
+
+  /// No description provided for @tutorialPropKaraoke.
+  ///
+  /// In en, this message translates to:
+  /// **'Karaoke'**
+  String get tutorialPropKaraoke;
+
+  /// No description provided for @tutorialPropPotluckDinner.
+  ///
+  /// In en, this message translates to:
+  /// **'Potluck Dinner'**
+  String get tutorialPropPotluckDinner;
+
+  /// No description provided for @tutorialPropDiyCraftNight.
+  ///
+  /// In en, this message translates to:
+  /// **'DIY Craft Night'**
+  String get tutorialPropDiyCraftNight;
+
+  /// No description provided for @tutorialPropTriviaNight.
+  ///
+  /// In en, this message translates to:
+  /// **'Trivia Night'**
+  String get tutorialPropTriviaNight;
+
+  /// No description provided for @tutorialPropVideoGameTournament.
+  ///
+  /// In en, this message translates to:
+  /// **'Video Game Tournament'**
+  String get tutorialPropVideoGameTournament;
 
   /// No description provided for @tutorialPropSuccess.
   ///
@@ -3408,294 +3642,6 @@ abstract class AppLocalizations {
   /// **'Stability'**
   String get tutorialPropStability;
 
-  /// No description provided for @tutorialPropTravelAbroad.
-  ///
-  /// In en, this message translates to:
-  /// **'Travel Abroad'**
-  String get tutorialPropTravelAbroad;
-
-  /// No description provided for @tutorialPropStartABusiness.
-  ///
-  /// In en, this message translates to:
-  /// **'Start a Business'**
-  String get tutorialPropStartABusiness;
-
-  /// No description provided for @tutorialPropGraduateSchool.
-  ///
-  /// In en, this message translates to:
-  /// **'Graduate School'**
-  String get tutorialPropGraduateSchool;
-
-  /// No description provided for @tutorialPropGetAJobFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Get a Job First'**
-  String get tutorialPropGetAJobFirst;
-
-  /// No description provided for @tutorialPropTakeAGapYear.
-  ///
-  /// In en, this message translates to:
-  /// **'Take a Gap Year'**
-  String get tutorialPropTakeAGapYear;
-
-  /// No description provided for @tutorialPropFreelance.
-  ///
-  /// In en, this message translates to:
-  /// **'Freelance'**
-  String get tutorialPropFreelance;
-
-  /// No description provided for @tutorialPropMoveToANewCity.
-  ///
-  /// In en, this message translates to:
-  /// **'Move to a New City'**
-  String get tutorialPropMoveToANewCity;
-
-  /// No description provided for @tutorialPropVolunteerProgram.
-  ///
-  /// In en, this message translates to:
-  /// **'Volunteer Program'**
-  String get tutorialPropVolunteerProgram;
-
-  /// No description provided for @tutorialPropBeachResort.
-  ///
-  /// In en, this message translates to:
-  /// **'Beach Resort'**
-  String get tutorialPropBeachResort;
-
-  /// No description provided for @tutorialPropMountainCabin.
-  ///
-  /// In en, this message translates to:
-  /// **'Mountain Cabin'**
-  String get tutorialPropMountainCabin;
-
-  /// No description provided for @tutorialPropCityTrip.
-  ///
-  /// In en, this message translates to:
-  /// **'City Trip'**
-  String get tutorialPropCityTrip;
-
-  /// No description provided for @tutorialPropRoadTrip.
-  ///
-  /// In en, this message translates to:
-  /// **'Road Trip'**
-  String get tutorialPropRoadTrip;
-
-  /// No description provided for @tutorialPropCampingAdventure.
-  ///
-  /// In en, this message translates to:
-  /// **'Camping Adventure'**
-  String get tutorialPropCampingAdventure;
-
-  /// No description provided for @tutorialPropCruise.
-  ///
-  /// In en, this message translates to:
-  /// **'Cruise'**
-  String get tutorialPropCruise;
-
-  /// No description provided for @tutorialPropThemePark.
-  ///
-  /// In en, this message translates to:
-  /// **'Theme Park'**
-  String get tutorialPropThemePark;
-
-  /// No description provided for @tutorialPropCulturalExchange.
-  ///
-  /// In en, this message translates to:
-  /// **'Cultural Exchange'**
-  String get tutorialPropCulturalExchange;
-
-  /// No description provided for @tutorialPropBlockParty.
-  ///
-  /// In en, this message translates to:
-  /// **'Block Party'**
-  String get tutorialPropBlockParty;
-
-  /// No description provided for @tutorialPropCommunityGarden.
-  ///
-  /// In en, this message translates to:
-  /// **'Community Garden'**
-  String get tutorialPropCommunityGarden;
-
-  /// No description provided for @tutorialPropNeighborhoodWatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Neighborhood Watch'**
-  String get tutorialPropNeighborhoodWatch;
-
-  /// No description provided for @tutorialPropToolLibrary.
-  ///
-  /// In en, this message translates to:
-  /// **'Tool Library'**
-  String get tutorialPropToolLibrary;
-
-  /// No description provided for @tutorialPropMutualAidFund.
-  ///
-  /// In en, this message translates to:
-  /// **'Mutual Aid Fund'**
-  String get tutorialPropMutualAidFund;
-
-  /// No description provided for @tutorialPropFreeLittleLibrary.
-  ///
-  /// In en, this message translates to:
-  /// **'Free Little Library'**
-  String get tutorialPropFreeLittleLibrary;
-
-  /// No description provided for @tutorialPropStreetMural.
-  ///
-  /// In en, this message translates to:
-  /// **'Street Mural'**
-  String get tutorialPropStreetMural;
-
-  /// No description provided for @tutorialPropSkillShareNight.
-  ///
-  /// In en, this message translates to:
-  /// **'Skill-Share Night'**
-  String get tutorialPropSkillShareNight;
-
-  /// No description provided for @tutorialPropFlexibleHours.
-  ///
-  /// In en, this message translates to:
-  /// **'Flexible Hours'**
-  String get tutorialPropFlexibleHours;
-
-  /// No description provided for @tutorialPropMentalHealthSupport.
-  ///
-  /// In en, this message translates to:
-  /// **'Mental Health Support'**
-  String get tutorialPropMentalHealthSupport;
-
-  /// No description provided for @tutorialPropTeamBuilding.
-  ///
-  /// In en, this message translates to:
-  /// **'Team Building'**
-  String get tutorialPropTeamBuilding;
-
-  /// No description provided for @tutorialPropSkillsTraining.
-  ///
-  /// In en, this message translates to:
-  /// **'Skills Training'**
-  String get tutorialPropSkillsTraining;
-
-  /// No description provided for @tutorialPropOpenCommunication.
-  ///
-  /// In en, this message translates to:
-  /// **'Open Communication'**
-  String get tutorialPropOpenCommunication;
-
-  /// No description provided for @tutorialPropFairCompensation.
-  ///
-  /// In en, this message translates to:
-  /// **'Fair Compensation'**
-  String get tutorialPropFairCompensation;
-
-  /// No description provided for @tutorialPropWorkLifeBalance.
-  ///
-  /// In en, this message translates to:
-  /// **'Work-Life Balance'**
-  String get tutorialPropWorkLifeBalance;
-
-  /// No description provided for @tutorialPropInnovationTime.
-  ///
-  /// In en, this message translates to:
-  /// **'Innovation Time'**
-  String get tutorialPropInnovationTime;
-
-  /// No description provided for @tutorialPropPublicTransportation.
-  ///
-  /// In en, this message translates to:
-  /// **'Public Transportation'**
-  String get tutorialPropPublicTransportation;
-
-  /// No description provided for @tutorialPropSchoolFunding.
-  ///
-  /// In en, this message translates to:
-  /// **'School Funding'**
-  String get tutorialPropSchoolFunding;
-
-  /// No description provided for @tutorialPropEmergencyServices.
-  ///
-  /// In en, this message translates to:
-  /// **'Emergency Services'**
-  String get tutorialPropEmergencyServices;
-
-  /// No description provided for @tutorialPropRoadRepairs.
-  ///
-  /// In en, this message translates to:
-  /// **'Road Repairs'**
-  String get tutorialPropRoadRepairs;
-
-  /// No description provided for @tutorialPropPublicHealth.
-  ///
-  /// In en, this message translates to:
-  /// **'Public Health'**
-  String get tutorialPropPublicHealth;
-
-  /// No description provided for @tutorialPropAffordableHousing.
-  ///
-  /// In en, this message translates to:
-  /// **'Affordable Housing'**
-  String get tutorialPropAffordableHousing;
-
-  /// No description provided for @tutorialPropSmallBusinessGrants.
-  ///
-  /// In en, this message translates to:
-  /// **'Small Business Grants'**
-  String get tutorialPropSmallBusinessGrants;
-
-  /// No description provided for @tutorialPropParksAndRecreation.
-  ///
-  /// In en, this message translates to:
-  /// **'Parks & Recreation'**
-  String get tutorialPropParksAndRecreation;
-
-  /// No description provided for @tutorialPropClimateChange.
-  ///
-  /// In en, this message translates to:
-  /// **'Climate Change'**
-  String get tutorialPropClimateChange;
-
-  /// No description provided for @tutorialPropGlobalPoverty.
-  ///
-  /// In en, this message translates to:
-  /// **'Global Poverty'**
-  String get tutorialPropGlobalPoverty;
-
-  /// No description provided for @tutorialPropAiGovernance.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Governance'**
-  String get tutorialPropAiGovernance;
-
-  /// No description provided for @tutorialPropPandemicPreparedness.
-  ///
-  /// In en, this message translates to:
-  /// **'Pandemic Preparedness'**
-  String get tutorialPropPandemicPreparedness;
-
-  /// No description provided for @tutorialPropNuclearDisarmament.
-  ///
-  /// In en, this message translates to:
-  /// **'Nuclear Disarmament'**
-  String get tutorialPropNuclearDisarmament;
-
-  /// No description provided for @tutorialPropOceanConservation.
-  ///
-  /// In en, this message translates to:
-  /// **'Ocean Conservation'**
-  String get tutorialPropOceanConservation;
-
-  /// No description provided for @tutorialPropDigitalRights.
-  ///
-  /// In en, this message translates to:
-  /// **'Digital Rights'**
-  String get tutorialPropDigitalRights;
-
-  /// No description provided for @tutorialPropSpaceCooperation.
-  ///
-  /// In en, this message translates to:
-  /// **'Space Cooperation'**
-  String get tutorialPropSpaceCooperation;
-
   /// No description provided for @tutorialDuplicateProposition.
   ///
   /// In en, this message translates to:
@@ -3711,8 +3657,20 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialShareExplanation.
   ///
   /// In en, this message translates to:
-  /// **'To invite others to join your chat, tap the share button at the top of your screen.'**
+  /// **'Share this link, QR code, or invite code for others to join your chat.'**
   String get tutorialShareExplanation;
+
+  /// No description provided for @tutorialShareTapDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the share button to continue.'**
+  String get tutorialShareTapDesc;
+
+  /// No description provided for @tutorialShareCloseDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Press the X to continue.'**
+  String get tutorialShareCloseDesc;
 
   /// No description provided for @tutorialShareTryIt.
   ///
@@ -3777,7 +3735,7 @@ abstract class AppLocalizations {
   /// No description provided for @tutorialTransitionDesc.
   ///
   /// In en, this message translates to:
-  /// **'Now let\'s take a quick look at the home screen, where you\'ll find all your chats.'**
+  /// **'Now for a quick look at the home screen, where all your chats live.'**
   String get tutorialTransitionDesc;
 
   /// No description provided for @tutorialRateIdeas.
@@ -3786,11 +3744,23 @@ abstract class AppLocalizations {
   /// **'Rate Ideas'**
   String get tutorialRateIdeas;
 
+  /// No description provided for @tutorialResultsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating Results'**
+  String get tutorialResultsTitle;
+
+  /// No description provided for @tutorialResultsWinnerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'These are the group\'s combined rating results.'**
+  String get tutorialResultsWinnerHint;
+
   /// No description provided for @tutorialResultsBackHint.
   ///
   /// In en, this message translates to:
-  /// **'\'{winner}\' won! Press the back arrow to continue.'**
-  String tutorialResultsBackHint(String winner);
+  /// **'When done viewing the results, press [back] to continue.'**
+  String get tutorialResultsBackHint;
 
   /// No description provided for @deleteConsensusTitle.
   ///
@@ -3891,13 +3861,13 @@ abstract class AppLocalizations {
   /// No description provided for @wizardStep1Subtitle.
   ///
   /// In en, this message translates to:
-  /// **'This is the heart of your chat'**
+  /// **'Give your chat a name'**
   String get wizardStep1Subtitle;
 
   /// No description provided for @wizardStep2Title.
   ///
   /// In en, this message translates to:
-  /// **'Set the pace'**
+  /// **'How fast?'**
   String get wizardStep2Title;
 
   /// No description provided for @wizardStep2Subtitle.
@@ -4107,7 +4077,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourPendingRequestDesc.
   ///
   /// In en, this message translates to:
-  /// **'When you request to join a chat, the host reviews your request. You\'ll see it here with a \'Pending\' badge until they approve.'**
+  /// **'These are chats you\'re waiting to be accepted into.'**
   String get homeTourPendingRequestDesc;
 
   /// No description provided for @homeTourYourChatsTitle.
@@ -4119,19 +4089,19 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourYourChatsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Your active chats appear here. Each card shows the current phase, participant count, and languages.'**
+  /// **'These are the chats that you are in.'**
   String get homeTourYourChatsDesc;
 
   /// No description provided for @homeTourCreateFabTitle.
   ///
   /// In en, this message translates to:
-  /// **'Create a Chat'**
+  /// **'Quick Actions'**
   String get homeTourCreateFabTitle;
 
   /// No description provided for @homeTourCreateFabDesc.
   ///
   /// In en, this message translates to:
-  /// **'Tap + to create your own chat. You choose the topic, invite friends, and build consensus together.'**
+  /// **'Tap to create a chat, join an existing one, or discover public chats.'**
   String get homeTourCreateFabDesc;
 
   /// No description provided for @homeTourDemoTitle.
@@ -4170,6 +4140,18 @@ abstract class AppLocalizations {
   /// **'View the Privacy Policy and Terms of Service here.'**
   String get homeTourLegalDocsDesc;
 
+  /// No description provided for @homeTourTutorialButtonTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How It Works'**
+  String get homeTourTutorialButtonTitle;
+
+  /// No description provided for @homeTourTutorialButtonDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Replay the tutorial to learn how OneMind works.'**
+  String get homeTourTutorialButtonDesc;
+
   /// No description provided for @homeTourMenuTitle.
   ///
   /// In en, this message translates to:
@@ -4179,7 +4161,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourMenuDesc.
   ///
   /// In en, this message translates to:
-  /// **'Replay the tutorial, contact us, view the source code, or read the legal documents.'**
+  /// **'Contact us, view the source code, or read the legal documents.'**
   String get homeTourMenuDesc;
 
   /// No description provided for @searchOrJoinWithCode.
@@ -4191,7 +4173,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchYourChatsOrJoinWithCode.
   ///
   /// In en, this message translates to:
-  /// **'Search your chats or enter invite code...'**
+  /// **'Search your chats...'**
   String get searchYourChatsOrJoinWithCode;
 
   /// No description provided for @noMatchingChats.
@@ -4272,6 +4254,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get codeStatusActive;
 
+  /// No description provided for @codeStatusReserved.
+  ///
+  /// In en, this message translates to:
+  /// **'Reserved'**
+  String get codeStatusReserved;
+
   /// No description provided for @codeStatusUsed.
   ///
   /// In en, this message translates to:
@@ -4329,7 +4317,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourSearchBarDesc.
   ///
   /// In en, this message translates to:
-  /// **'Filter your chats by name, or enter a 6-character invite code to join a private chat.'**
+  /// **'Filter your chats by name.'**
   String get homeTourSearchBarDesc;
 
   /// No description provided for @homeTourExploreButtonTitle.
@@ -4353,7 +4341,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourLanguageSelectorDesc.
   ///
   /// In en, this message translates to:
-  /// **'Tap here to switch the app language. OneMind is available in English, Spanish, Portuguese, French, and German.'**
+  /// **'Tap here to switch the app language.'**
   String get homeTourLanguageSelectorDesc;
 
   /// No description provided for @homeTourSkip.
@@ -4383,7 +4371,7 @@ abstract class AppLocalizations {
   /// No description provided for @wizardTranslationsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Languages'**
+  /// **'What languages?'**
   String get wizardTranslationsTitle;
 
   /// No description provided for @wizardTranslationsSubtitle.
@@ -4452,6 +4440,168 @@ abstract class AppLocalizations {
   /// **'Auto-translated'**
   String get chatAutoTranslated;
 
+  /// No description provided for @scanQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get scanQrCode;
+
+  /// No description provided for @pointCameraAtQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Point your camera at an invite QR code'**
+  String get pointCameraAtQrCode;
+
+  /// No description provided for @invalidQrCode.
+  ///
+  /// In en, this message translates to:
+  /// **'This QR code doesn\'t contain a valid invite link'**
+  String get invalidQrCode;
+
+  /// No description provided for @cameraPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera permission is required to scan QR codes'**
+  String get cameraPermissionDenied;
+
+  /// No description provided for @actionPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What would you like to do?'**
+  String get actionPickerTitle;
+
+  /// No description provided for @actionPickerCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a Chat'**
+  String get actionPickerCreateTitle;
+
+  /// No description provided for @actionPickerCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a new conversation on any topic'**
+  String get actionPickerCreateDesc;
+
+  /// No description provided for @actionPickerJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Join a Chat'**
+  String get actionPickerJoinTitle;
+
+  /// No description provided for @actionPickerJoinDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter an invite code or scan a QR code'**
+  String get actionPickerJoinDesc;
+
+  /// No description provided for @actionPickerDiscoverTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover Chats'**
+  String get actionPickerDiscoverTitle;
+
+  /// No description provided for @actionPickerDiscoverDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse public chats and join the conversation'**
+  String get actionPickerDiscoverDesc;
+
+  /// No description provided for @joinMethodTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to join?'**
+  String get joinMethodTitle;
+
+  /// No description provided for @joinMethodCodeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter Code'**
+  String get joinMethodCodeTitle;
+
+  /// No description provided for @joinMethodCodeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Type a 6-character invite code'**
+  String get joinMethodCodeDesc;
+
+  /// No description provided for @joinMethodScanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan QR Code'**
+  String get joinMethodScanTitle;
+
+  /// No description provided for @joinMethodScanDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your camera to scan an invite QR code'**
+  String get joinMethodScanDesc;
+
+  /// No description provided for @wizardScheduleTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a schedule?'**
+  String get wizardScheduleTitle;
+
+  /// No description provided for @wizardScheduleAlwaysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Always Active'**
+  String get wizardScheduleAlwaysTitle;
+
+  /// No description provided for @wizardScheduleAlwaysDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat runs 24/7, no time restrictions'**
+  String get wizardScheduleAlwaysDesc;
+
+  /// No description provided for @wizardScheduleOnceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Starts at a specific time'**
+  String get wizardScheduleOnceTitle;
+
+  /// No description provided for @wizardScheduleOnceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat begins at a date and time you choose'**
+  String get wizardScheduleOnceDesc;
+
+  /// No description provided for @wizardScheduleRecurringTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly schedule'**
+  String get wizardScheduleRecurringTitle;
+
+  /// No description provided for @wizardScheduleRecurringDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat is active during set time windows each week'**
+  String get wizardScheduleRecurringDesc;
+
+  /// No description provided for @scheduleEndTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End Date & Time (optional)'**
+  String get scheduleEndTimeLabel;
+
+  /// No description provided for @scheduleEndTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave empty to keep the chat active indefinitely after start'**
+  String get scheduleEndTimeHint;
+
+  /// No description provided for @scheduleSetEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Set an end time'**
+  String get scheduleSetEndTime;
+
+  /// No description provided for @scheduleClearEndTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove end time'**
+  String get scheduleClearEndTime;
+
   /// No description provided for @welcomeName.
   ///
   /// In en, this message translates to:
@@ -4491,8 +4641,20 @@ abstract class AppLocalizations {
   /// No description provided for @homeTourWelcomeNameDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is your display name. Tap the pencil icon to change it anytime!'**
+  /// **'This is your display name.'**
   String get homeTourWelcomeNameDesc;
+
+  /// No description provided for @chatTourIntroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome'**
+  String get chatTourIntroTitle;
+
+  /// No description provided for @chatTourIntroDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is a OneMind chat. You\'ll see how ideas compete until the group reaches a decision. Let\'s walk through how it works.'**
+  String get chatTourIntroDesc;
 
   /// No description provided for @chatTourTitleTitle.
   ///
@@ -4503,7 +4665,7 @@ abstract class AppLocalizations {
   /// No description provided for @chatTourTitleDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is the chat name. Each chat has a topic everyone discusses together.'**
+  /// **'This is the chat name.'**
   String get chatTourTitleDesc;
 
   /// No description provided for @chatTourMessageTitle.
@@ -4515,32 +4677,188 @@ abstract class AppLocalizations {
   /// No description provided for @chatTourMessageDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is the question being discussed. Everyone submits ideas in response.'**
+  /// **'This is the discussion topic. Everyone submits their idea in response.'**
   String get chatTourMessageDesc;
 
-  /// No description provided for @chatTourProposingTitle.
+  /// No description provided for @currentLeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Leader'**
+  String get currentLeader;
+
+  /// No description provided for @chatTourPlaceholderTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Placeholder'**
+  String get chatTourPlaceholderTitle;
+
+  /// No description provided for @chatTourPlaceholderDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is where the chosen idea will go.'**
+  String get chatTourPlaceholderDesc;
+
+  /// No description provided for @chatTourPlaceholderDesc2.
+  ///
+  /// In en, this message translates to:
+  /// **'The chat hasn\'t started yet, so it\'s empty for now.'**
+  String get chatTourPlaceholderDesc2;
+
+  /// No description provided for @chatTourRoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Number'**
+  String get chatTourRoundTitle;
+
+  /// No description provided for @chatTourRoundDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This shows which round the chat is in. The group goes through multiple rounds to choose the winning idea.'**
+  String get chatTourRoundDesc;
+
+  /// No description provided for @chatTourPhasesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Round Phases'**
+  String get chatTourPhasesTitle;
+
+  /// No description provided for @chatTourPhasesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Each round has two phases: [proposing] and [rating].'**
+  String get chatTourPhasesDesc;
+
+  /// No description provided for @chatTourPhasesDesc2.
+  ///
+  /// In en, this message translates to:
+  /// **'Each round starts in the [proposing] phase.'**
+  String get chatTourPhasesDesc2;
+
+  /// No description provided for @chatTourProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participation'**
+  String get chatTourProgressTitle;
+
+  /// No description provided for @chatTourProgressDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the participation bar. It tracks the group\'s progress in the current phase.'**
+  String get chatTourProgressDesc;
+
+  /// No description provided for @chatTourProgressDesc2.
+  ///
+  /// In en, this message translates to:
+  /// **'Once it reaches 100%, the chat moves on to the next phase.'**
+  String get chatTourProgressDesc2;
+
+  /// No description provided for @chatTourTimerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Phase Timer'**
+  String get chatTourTimerTitle;
+
+  /// No description provided for @chatTourTimerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Each phase has a time limit — when it runs out, the chat moves on.'**
+  String get chatTourTimerDesc;
+
+  /// No description provided for @chatTourSubmitTitle.
   ///
   /// In en, this message translates to:
   /// **'Submit Ideas'**
-  String get chatTourProposingTitle;
+  String get chatTourSubmitTitle;
 
-  /// No description provided for @chatTourProposingDesc.
+  /// No description provided for @chatTourSubmitDesc.
   ///
   /// In en, this message translates to:
-  /// **'This is where you submit ideas before the timer runs out. Each round, everyone proposes and then rates.'**
-  String get chatTourProposingDesc;
+  /// **'Type your best idea here to replace the placeholder above.'**
+  String get chatTourSubmitDesc;
+
+  /// No description provided for @chatTourSubmitDesc2.
+  ///
+  /// In en, this message translates to:
+  /// **'Alex, Sam, and Jordan have already submitted their ideas for this [proposing] phase.'**
+  String get chatTourSubmitDesc2;
+
+  /// No description provided for @chatTourSubmitDesc3.
+  ///
+  /// In en, this message translates to:
+  /// **'The better the idea, the higher the rank.'**
+  String get chatTourSubmitDesc3;
+
+  /// No description provided for @tutorialR1ProposingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Propose your idea! Type it below and submit.'**
+  String get tutorialR1ProposingHint;
 
   /// No description provided for @chatTourParticipantsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Participants'**
+  /// **'Leaderboard'**
   String get chatTourParticipantsTitle;
 
   /// No description provided for @chatTourParticipantsDesc.
   ///
   /// In en, this message translates to:
-  /// **'Meet your tutorial participants: Alice, Bob, and Carol. Tap here to see who\'s in the chat.'**
+  /// **'Tap [leaderboard] to see the leaderboard.'**
   String get chatTourParticipantsDesc;
+
+  /// No description provided for @chatTourParticipantsDoneTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participation Status'**
+  String get chatTourParticipantsDoneTitle;
+
+  /// No description provided for @chatTourParticipantsDoneDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'\"Done\" means the participant has contributed to the current phase. Once everyone is done, the chat moves on.'**
+  String get chatTourParticipantsDoneDesc;
+
+  /// No description provided for @chatTourLeaderboardParticipants.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants'**
+  String get chatTourLeaderboardParticipants;
+
+  /// No description provided for @chatTourLeaderboardParticipantsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'These are the participants in the chat. You, Alex, Sam, and Jordan.'**
+  String get chatTourLeaderboardParticipantsDesc;
+
+  /// No description provided for @chatTourLeaderboardRankings.
+  ///
+  /// In en, this message translates to:
+  /// **'Rankings'**
+  String get chatTourLeaderboardRankings;
+
+  /// No description provided for @chatTourLeaderboardRankingsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'These are the user rankings. Everyone is ranked based on their performance in the [proposing] and [rating] phases across all rounds.'**
+  String get chatTourLeaderboardRankingsDesc;
+
+  /// No description provided for @chatTourLeaderboardRankingsDesc2.
+  ///
+  /// In en, this message translates to:
+  /// **'No rounds have been completed yet, so everyone starts unranked.'**
+  String get chatTourLeaderboardRankingsDesc2;
+
+  /// No description provided for @chatTourClosePanel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close Leaderboard'**
+  String get chatTourClosePanel;
+
+  /// No description provided for @chatTourClosePanelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the X to close the leaderboard.'**
+  String get chatTourClosePanelDesc;
 
   /// No description provided for @chatTourShareTitle.
   ///
@@ -4559,6 +4877,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tap the Continue button to continue the tutorial.'**
   String get tutorialShareContinueHint;
+
+  /// No description provided for @myLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'My language'**
+  String get myLanguage;
+
+  /// No description provided for @notJoined.
+  ///
+  /// In en, this message translates to:
+  /// **'Not joined'**
+  String get notJoined;
+
+  /// No description provided for @noChatsMatchFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'No chats match your filters'**
+  String get noChatsMatchFilters;
+
+  /// No description provided for @tryAdjustingFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Try adjusting your language or join filters.'**
+  String get tryAdjustingFilters;
+
+  /// No description provided for @tryDifferentSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different search term.'**
+  String get tryDifferentSearch;
+
+  /// No description provided for @viewOtherPropositions.
+  ///
+  /// In en, this message translates to:
+  /// **'View propositions'**
+  String get viewOtherPropositions;
+
+  /// No description provided for @otherPropositionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Propositions'**
+  String get otherPropositionsTitle;
+
+  /// No description provided for @noOtherPropositionsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No propositions yet'**
+  String get noOtherPropositionsYet;
+
+  /// No description provided for @donate.
+  ///
+  /// In en, this message translates to:
+  /// **'Donate'**
+  String get donate;
 }
 
 class _AppLocalizationsDelegate

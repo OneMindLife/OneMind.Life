@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../config/app_colors.dart';
-import '../../config/router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -10,7 +8,6 @@ import '../../providers/chat_providers.dart';
 import '../../services/invite_service.dart';
 import '../../utils/language_utils.dart';
 import '../../widgets/error_view.dart';
-import '../chat/chat_screen.dart';
 
 /// Screen that handles joining via invite token or code from URL
 class InviteJoinScreen extends ConsumerStatefulWidget {
@@ -73,7 +70,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
     try {
       final inviteService = ref.read(inviteServiceProvider);
       final participantService = ref.read(participantServiceProvider);
-      final chatService = ref.read(chatServiceProvider);
       final result = await inviteService.validateInviteToken(widget.token!);
 
       if (result == null || !result.isValid) {
@@ -91,18 +87,9 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       final existingParticipant = await participantService.getMyParticipant(result.chatId);
 
       if (existingParticipant != null && existingParticipant.status == ParticipantStatus.active) {
-        // User is already in this chat - redirect to home then push chat
-        final chat = await chatService.getChatById(result.chatId);
-        if (mounted && chat != null) {
-          // Go to home first, then push chat on top (so back button works)
+        // User is already in this chat - go to home
+        if (mounted) {
           context.go('/');
-          // Wait for home to mount, then push chat
-          await Future.delayed(const Duration(milliseconds: 100));
-          rootNavigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(chat: chat),
-            ),
-          );
         }
         return;
       }
@@ -144,17 +131,9 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       final existingParticipant = await participantService.getMyParticipant(chat.id);
 
       if (existingParticipant != null && existingParticipant.status == ParticipantStatus.active) {
-        // User is already in this chat - redirect to home then push chat
+        // User is already in this chat - go to home
         if (mounted) {
-          // Go to home first, then push chat on top (so back button works)
           context.go('/');
-          // Wait for home to mount, then push chat
-          await Future.delayed(const Duration(milliseconds: 100));
-          rootNavigatorKey.currentState?.push(
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(chat: chat),
-            ),
-          );
         }
         return;
       }
@@ -210,7 +189,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
       final authService = ref.read(authServiceProvider);
       final participantService = ref.read(participantServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
-      final chatService = ref.read(chatServiceProvider);
       final name = authService.displayName!;
 
       // Get chat ID
@@ -243,17 +221,14 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           joinMethod: 'personal_code',
         );
 
-        // Get full chat for navigation
-        final chat = _foundChat ?? await chatService.getChatById(result['chat_id'] as int);
+        // Skip tutorial for invite flow — go straight to home
+        final tutorialService = ref.read(tutorialServiceProvider);
+        tutorialService.markTutorialComplete();
+        tutorialService.markHomeTourComplete();
+        ref.invalidate(hasCompletedTutorialProvider);
+        ref.invalidate(hasCompletedHomeTourProvider);
 
-        if (mounted && chat != null) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(chat: chat),
-            ),
-          );
-        } else if (mounted) {
+        if (mounted) {
           context.go('/');
         }
         return;
@@ -269,9 +244,12 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           displayName: name,
         );
 
-        // Track that user requested to join this chat
-        // Used to navigate directly to chat after tutorial if approved
-        ref.read(pendingJoinChatIdProvider.notifier).state = chatId;
+        // Skip tutorial for invite flow — go straight to home
+        final tutorialService = ref.read(tutorialServiceProvider);
+        tutorialService.markTutorialComplete();
+        tutorialService.markHomeTourComplete();
+        ref.invalidate(hasCompletedTutorialProvider);
+        ref.invalidate(hasCompletedHomeTourProvider);
 
         if (mounted) {
           context.showInfoSnackBar(l10n.joinRequestSent);
@@ -303,19 +281,14 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           joinMethod: joinMethod,
         );
 
-        // Get full chat object for navigation
-        final chat = _foundChat ?? await chatService.getChatById(chatId);
+        // Skip tutorial for invite flow — go straight to home
+        final tutorialService = ref.read(tutorialServiceProvider);
+        tutorialService.markTutorialComplete();
+        tutorialService.markHomeTourComplete();
+        ref.invalidate(hasCompletedTutorialProvider);
+        ref.invalidate(hasCompletedHomeTourProvider);
 
-        if (mounted && chat != null) {
-          // Navigate to chat
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatScreen(chat: chat),
-            ),
-          );
-        } else if (mounted) {
-          // Fallback: go home
+        if (mounted) {
           context.go('/');
         }
       }
@@ -373,7 +346,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             Text(
               _error ?? l10n.invalidInviteDefault,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: AppColors.textSecondary,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
               textAlign: TextAlign.center,
             ),
@@ -491,7 +464,7 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
                     Text(
                       chatMessage,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: AppColors.textSecondary,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
                     ),
                   ],
@@ -505,18 +478,18 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: Theme.of(context).colorScheme.tertiaryContainer,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: Theme.of(context).colorScheme.tertiary),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.info_outline, color: Colors.orange.shade700),
+                  Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onTertiaryContainer),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       l10n.requiresApprovalNotice,
-                      style: TextStyle(color: Colors.orange.shade800),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onTertiaryContainer),
                     ),
                   ),
                 ],

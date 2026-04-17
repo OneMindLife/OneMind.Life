@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../widgets/countdown_timer.dart';
-import '../../../widgets/proposition_content_card.dart';
+import '../../../widgets/round_phase_bar.dart';
 
 /// Panel displayed when waiting for more participants to join.
 /// The phase starts automatically when enough participants join.
@@ -270,6 +269,7 @@ class ProposingStatePanel extends StatelessWidget {
   final bool isHost;
   final VoidCallback? onAdvancePhase;
   final VoidCallback? onViewAllPropositions;
+  final VoidCallback? onViewOtherPropositions;
   final bool isPaused;
   final bool isSubmitting; // Prevent double-clicks
   // Skip feature
@@ -282,6 +282,12 @@ class ProposingStatePanel extends StatelessWidget {
   final bool isFunded;
   // Task result mode (simplified UI)
   final bool isTaskResultMode;
+  final bool showPhaseBar;
+  final FocusNode? focusNode;
+
+  /// Participation percentage for the phase bar (0-100).
+  final int? participationPercent;
+  final bool animateProgress;
 
   const ProposingStatePanel({
     super.key,
@@ -291,11 +297,13 @@ class ProposingStatePanel extends StatelessWidget {
     this.allPropositionsCount = 0,
     required this.propositionController,
     required this.onSubmit,
+    this.focusNode,
     this.phaseEndsAt,
     this.onPhaseExpired,
     this.isHost = false,
     this.onAdvancePhase,
     this.onViewAllPropositions,
+    this.onViewOtherPropositions,
     this.isPaused = false,
     this.isSubmitting = false,
     this.onSkip,
@@ -305,6 +313,9 @@ class ProposingStatePanel extends StatelessWidget {
     this.hasSkipped = false,
     this.isFunded = true,
     this.isTaskResultMode = false,
+    this.showPhaseBar = true,
+    this.participationPercent,
+    this.animateProgress = false,
   });
 
   @override
@@ -319,7 +330,7 @@ class ProposingStatePanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SpectatorBanner(phaseEndsAt: phaseEndsAt, onPhaseExpired: onPhaseExpired),
+            _SpectatorBanner(),
           ],
         ),
       );
@@ -330,13 +341,27 @@ class ProposingStatePanel extends StatelessWidget {
     final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
     final canSubmitMore = newSubmissions < propositionsPerUser;
 
-    return Container(
+    return Column(
       key: const Key('proposing-state-panel'),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Round + phase status bar (flush, no parent padding)
+        if (showPhaseBar)
+          RoundPhaseBar(
+            roundNumber: roundCustomId,
+            isProposing: true,
+            phaseEndsAt: phaseEndsAt,
+            onPhaseExpired: onPhaseExpired,
+            participationPercent: participationPercent,
+            animateProgress: animateProgress,
+          ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
           // Submission count (for multi-proposition mode)
           if (propositionsPerUser > 1) ...[
             Row(
@@ -379,38 +404,6 @@ class ProposingStatePanel extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.waitingForRatingPhase,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                if (phaseEndsAt != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '(',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  CountdownTimer(
-                    endsAt: phaseEndsAt!,
-                    onExpired: onPhaseExpired,
-                    showIcon: false,
-                  ),
-                  Text(
-                    ')',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ],
-            ),
           ]
           // Show input if can submit more (for everyone including host)
           else if (canSubmitMore) ...[
@@ -425,6 +418,7 @@ class ProposingStatePanel extends StatelessWidget {
                       return TextField(
                         key: const Key('proposition-input'),
                         controller: propositionController,
+                        focusNode: focusNode,
                         enabled: !isPaused && !hasSkipped,
                         decoration: InputDecoration(
                           hintText: isPaused
@@ -512,71 +506,15 @@ class ProposingStatePanel extends StatelessWidget {
                 ),
               ],
             ),
-            // Timer at the bottom with divider
-            if (phaseEndsAt != null) ...[
-              const SizedBox(height: 8),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, size: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    CountdownTimer(
-                      endsAt: phaseEndsAt!,
-                      onExpired: onPhaseExpired,
-                      showIcon: false,
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ] else if (newSubmissions > 0) ...[
-            // Regular user after submitting: show their submissions
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxHeight: 150),
-              child: ListView.builder(
-                shrinkWrap: true,
-                itemCount: myPropositions.where((p) => !p.isCarriedForward).length,
-                itemBuilder: (context, index) {
-                  final props = myPropositions.where((p) => !p.isCarriedForward).toList();
-                  return _buildPropositionCard(context, props[index], index, isMine: true);
-                },
+            // Regular user after submitting: button to view others' submissions
+            Center(
+              child: FilledButton.tonalIcon(
+                key: const Key('view-other-propositions-button'),
+                onPressed: onViewOtherPropositions,
+                icon: const Icon(Icons.list_alt, size: 20),
+                label: Text(l10n.viewOtherPropositions),
               ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.waitingForRatingPhase,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                if (phaseEndsAt != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '(',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  CountdownTimer(
-                    endsAt: phaseEndsAt!,
-                    onExpired: onPhaseExpired,
-                    showIcon: false,
-                  ),
-                  Text(
-                    ')',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ],
             ),
           ],
 
@@ -592,50 +530,10 @@ class ProposingStatePanel extends StatelessWidget {
           //     label: Text(l10n.endProposingStartRating),
           //   ),
           // ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPropositionCard(
-    BuildContext context,
-    Proposition prop,
-    int index, {
-    bool isMine = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (propositionsPerUser > 1)
-            Container(
-              width: 24,
-              height: 24,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(
-                  '${index + 1}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
-                ),
-              ),
-            ),
-          Expanded(
-            child: PropositionContentCard(
-              content: prop.displayContent,
-              maxHeight: 100,
-            ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -771,6 +669,14 @@ class RatingStatePanel extends StatelessWidget {
   final bool isSkipping;
   // Credit/funding
   final bool isFunded;
+  // Tutorial: hide button until hint appears
+  final bool showButton;
+  // Participation percentage for the phase bar (0-100).
+  final int? participationPercent;
+  final bool animateProgress;
+  final bool showInactivePhase;
+  final bool frozenTimer;
+  final Duration? frozenTimerDuration;
 
   const RatingStatePanel({
     super.key,
@@ -791,6 +697,12 @@ class RatingStatePanel extends StatelessWidget {
     this.hasSkippedRating = false,
     this.isSkipping = false,
     this.isFunded = true,
+    this.showButton = true,
+    this.participationPercent,
+    this.animateProgress = false,
+    this.showInactivePhase = false,
+    this.frozenTimer = false,
+    this.frozenTimerDuration,
   });
 
   @override
@@ -805,19 +717,35 @@ class RatingStatePanel extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _SpectatorBanner(phaseEndsAt: phaseEndsAt, onPhaseExpired: onPhaseExpired),
+            _SpectatorBanner(),
           ],
         ),
       );
     }
 
-    return Container(
+    return Column(
       key: const Key('rating-state-panel'),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Round + phase status bar (flush, no parent padding)
+        RoundPhaseBar(
+          roundNumber: roundCustomId,
+          isProposing: false,
+          phaseEndsAt: phaseEndsAt,
+          onPhaseExpired: onPhaseExpired,
+          participationPercent: participationPercent,
+          animateProgress: animateProgress,
+          showInactivePhase: showInactivePhase,
+          frozenTimer: frozenTimer,
+          frozenTimerDuration: frozenTimerDuration,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
           if (hasRated)
             Container(
               key: const Key('rating-complete-indicator'),
@@ -827,6 +755,7 @@ class RatingStatePanel extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.check_circle_outline,
@@ -834,22 +763,12 @@ class RatingStatePanel extends StatelessWidget {
                     size: 20,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      l10n.waitingForRatingPhaseEnd,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                    ),
+                  Text(
+                    l10n.done,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                   ),
-                  if (phaseEndsAt != null) ...[
-                    const SizedBox(width: 8),
-                    CountdownTimer(
-                      endsAt: phaseEndsAt!,
-                      onExpired: onPhaseExpired,
-                      showIcon: false,
-                    ),
-                  ],
                 ],
               ),
             )
@@ -863,6 +782,7 @@ class RatingStatePanel extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.skip_next,
@@ -879,46 +799,20 @@ class RatingStatePanel extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  l10n.waitingForRatingPhaseEnd,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                ),
-                if (phaseEndsAt != null) ...[
-                  const SizedBox(width: 4),
-                  Text(
-                    '(',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                  CountdownTimer(
-                    endsAt: phaseEndsAt!,
-                    onExpired: onPhaseExpired,
-                    showIcon: false,
-                  ),
-                  Text(
-                    ')',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                  ),
-                ],
-              ],
-            ),
           ]
           else ...[
-            Center(
-              child: FilledButton.icon(
-                key: const Key('start-rating-button'),
-                onPressed: isPaused ? null : onStartRating,
-                icon: const Icon(Icons.how_to_vote_outlined, size: 20),
+            Visibility(
+              visible: showButton,
+              maintainSize: true,
+              maintainAnimation: true,
+              maintainState: true,
+              child: Center(
+                child: FilledButton.icon(
+                  key: const Key('start-rating-button'),
+                  onPressed: showButton && !isPaused ? onStartRating : null,
+                  icon: const Icon(Icons.how_to_vote_outlined, size: 20),
                 label: Text(hasStartedRating ? l10n.continueRating : l10n.startRating),
+              ),
               ),
             ),
             // Show skip button if user can skip and hasn't started rating
@@ -930,27 +824,6 @@ class RatingStatePanel extends StatelessWidget {
                   child: Text(l10n.skip),
                 ),
               ),
-            // Timer at the bottom with divider
-            if (phaseEndsAt != null) ...[
-              const SizedBox(height: 8),
-              const Divider(height: 1),
-              const SizedBox(height: 8),
-              Center(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.timer_outlined, size: 16,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    const SizedBox(width: 4),
-                    CountdownTimer(
-                      endsAt: phaseEndsAt!,
-                      onExpired: onPhaseExpired,
-                      showIcon: false,
-                    ),
-                  ],
-                ),
-              ),
-            ],
           ],
 
           // Host advance button - hidden for MVP
@@ -965,8 +838,10 @@ class RatingStatePanel extends StatelessWidget {
           //     label: Text(l10n.endRatingStartNextRound),
           //   ),
           // ],
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1032,10 +907,7 @@ class HostPausedBanner extends StatelessWidget {
 
 /// Banner shown to unfunded participants who are spectating a round.
 class _SpectatorBanner extends StatelessWidget {
-  final DateTime? phaseEndsAt;
-  final VoidCallback? onPhaseExpired;
-
-  const _SpectatorBanner({this.phaseEndsAt, this.onPhaseExpired});
+  const _SpectatorBanner();
 
   @override
   Widget build(BuildContext context) {
@@ -1055,6 +927,7 @@ class _SpectatorBanner extends StatelessWidget {
             ),
           ),
           child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.visibility,
@@ -1062,24 +935,18 @@ class _SpectatorBanner extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Expanded(
+              Flexible(
                 child: Text(
                   l10n.spectatingInsufficientCredits,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ],
           ),
         ),
-        if (phaseEndsAt != null) ...[
-          const SizedBox(height: 8),
-          CountdownTimer(
-            endsAt: phaseEndsAt!,
-            onExpired: onPhaseExpired,
-          ),
-        ],
       ],
     );
   }

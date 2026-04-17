@@ -1,13 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../models/models.dart';
+import '../../../services/analytics_service.dart';
 import '../models/tutorial_state.dart';
 import '../tutorial_data.dart';
 
 /// Notifier for managing tutorial chat state (mirrors ChatDetailState behavior)
 class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
-  TutorialChatNotifier()
-      : super(TutorialChatState(
+  final AnalyticsService? _analytics;
+
+  TutorialChatNotifier({AnalyticsService? analytics})
+      : _analytics = analytics,
+        super(TutorialChatState(
           chat: TutorialData.tutorialChat,
           myParticipant: TutorialData.tutorialParticipant,
           participants: TutorialData.allParticipants,
@@ -32,25 +36,33 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     );
   }
 
+  /// Set the current winner index (for cycling tied winners)
+  void setWinnerIndex(int index) {
+    state = state.copyWith(currentWinnerIndex: index);
+  }
+
   /// Select a template and advance to chat tour
   void selectTemplate(String templateKey, {String? customQuestion}) {
+    _analytics?.logTutorialStarted(templateKey: templateKey);
     state = state.copyWith(
       selectedTemplate: templateKey,
       customQuestion: customQuestion,
-      currentStep: TutorialStep.chatTourTitle,
+      currentStep: TutorialStep.chatTourIntro,
     );
+    _logStep(TutorialStep.chatTourIntro);
   }
 
   /// Advance to the next chat tour step.
   /// On the last tour step, transitions to round 1.
   void nextChatTourStep() {
-    if (state.currentStep == TutorialStep.chatTourProposing) {
+    if (state.currentStep == TutorialStep.chatTourSubmit) {
       // Last tour step → begin round 1
       beginRound1();
       return;
     }
     final nextStep = TutorialStep.values[state.currentStep.index + 1];
     state = state.copyWith(currentStep: nextStep);
+    _logStep(nextStep);
   }
 
   /// Skip the chat tour and jump to round 1
@@ -62,6 +74,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       hasRated: false,
       hasStartedRating: false,
     );
+    _logStep(TutorialStep.round1Proposing);
   }
 
   // === ROUND 1 ===
@@ -75,6 +88,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       hasRated: false,
       hasStartedRating: false,
     );
+    _logStep(TutorialStep.round1Proposing);
   }
 
   /// Submit proposition for round 1
@@ -98,6 +112,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         userProposition: content,
       ),
     );
+    _logStep(TutorialStep.round1Rating);
   }
 
   /// Complete round 1 rating - template's R1 winner wins
@@ -116,6 +131,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       consecutiveSoleWins: 0, // User didn't win
       round1Results: round1Results,
     );
+    _logStep(TutorialStep.round1Result);
   }
 
   /// Move to round 2 - show prompt message and proposing input
@@ -127,6 +143,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       hasRated: false,
       hasStartedRating: false,
     );
+    _logStep(TutorialStep.round2Prompt);
   }
 
   // === ROUND 2 ===
@@ -151,14 +168,16 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       currentStep: TutorialStep.round2Rating,
       currentRound: TutorialData.round2(phase: RoundPhase.rating),
       myPropositions: [userProp],
+      hasStartedRating: false,
       propositions: TutorialData.createPropositions(
         TutorialData.round2Props(state.selectedTemplate),
         roundId: -2,
         userProposition: content,
-        carriedPropIndex: TutorialData.round2Props(state.selectedTemplate).length - 1,
+        carriedPropIndex: 2, // Movie Night at index 2 = 3rd card in binary comparison
         carriedFromId: -100, // reference to R1 winner
       ),
     );
+    _logStep(TutorialStep.round2Rating);
   }
 
   /// Complete round 2 rating - user's proposition wins!
@@ -168,10 +187,12 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       currentStep: TutorialStep.round2Result,
       hasRated: true,
       previousRoundWinners: [TutorialData.round2Winner(userProp)],
+      currentWinnerIndex: 0,
       isSoleWinner: true,
       consecutiveSoleWins: 1, // First win for user
       round2Results: TutorialData.round2ResultsWithRatings(userProp, templateKey: state.selectedTemplate),
     );
+    _logStep(TutorialStep.round2Result);
   }
 
   /// Move to round 3 - go directly to proposing phase
@@ -183,6 +204,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       hasRated: false,
       hasStartedRating: false,
     );
+    _logStep(TutorialStep.round3Proposing);
   }
 
   // === ROUND 3 ===
@@ -202,6 +224,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     state = state.copyWith(
       currentStep: TutorialStep.round3Rating,
       currentRound: TutorialData.round3(phase: RoundPhase.rating),
+      hasStartedRating: false,
       myPropositions: [carriedProp],
       propositions: [
         carriedProp,
@@ -240,6 +263,8 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     state = state.copyWith(
       currentStep: TutorialStep.round3Rating,
       currentRound: TutorialData.round3(phase: RoundPhase.rating),
+      hasStartedRating: false,
+      userProposition3: content,
       // User has both: carried prop + new prop
       myPropositions: [carriedProp, newProp],
       propositions: [
@@ -252,6 +277,7 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         ),
       ],
     );
+    _logStep(TutorialStep.round3Rating);
   }
 
   /// Complete round 3 rating - CONSENSUS!
@@ -261,11 +287,13 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
       currentStep: TutorialStep.round3Consensus,
       hasRated: true,
       previousRoundWinners: [TutorialData.round3Winner(userProp)],
+      currentWinnerIndex: 0,
       isSoleWinner: true,
-      round3Results: TutorialData.round3ResultsWithRatings(userProp, templateKey: state.selectedTemplate),
+      round3Results: TutorialData.round3ResultsWithRatings(userProp, templateKey: state.selectedTemplate, userR3Proposition: state.userProposition3),
       consecutiveSoleWins: 2, // Second consecutive win = CONSENSUS!
       consensusItems: [TutorialData.consensusProposition(userProp)],
     );
+    _logStep(TutorialStep.round3Consensus);
   }
 
   // === COMPLETION ===
@@ -273,7 +301,6 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
   /// Move to convergence continue (explains process continues)
   /// Sets round to a new proposing phase so the bottom area shows a text field.
   void continueToConvergenceContinue() {
-    print('[TUTORIAL] continueToConvergenceContinue() called, current step: ${state.currentStep}');
     state = state.copyWith(
       currentStep: TutorialStep.convergenceContinue,
       currentRound: Round(
@@ -286,17 +313,17 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
         createdAt: DateTime.now(),
       ),
       myPropositions: [],
+      previousRoundWinners: [], // New cycle — no winner yet
     );
-    print('[TUTORIAL] step is now: ${state.currentStep}');
+    _logStep(TutorialStep.convergenceContinue);
   }
 
   /// Move to share demo
   void continueToShareDemo() {
-    print('[TUTORIAL] continueToShareDemo() called, current step: ${state.currentStep}');
     state = state.copyWith(
       currentStep: TutorialStep.shareDemo,
     );
-    print('[TUTORIAL] step is now: ${state.currentStep}');
+    _logStep(TutorialStep.shareDemo);
   }
 
   /// Complete the tutorial
@@ -304,10 +331,16 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     state = state.copyWith(
       currentStep: TutorialStep.complete,
     );
+    _analytics?.logTutorialCompleted(
+      templateKey: state.selectedTemplate ?? 'unknown',
+    );
   }
 
   /// Skip the tutorial
   void skipTutorial() {
+    _analytics?.logTutorialSkipped(
+      fromStep: state.currentStep.name,
+    );
     state = state.copyWith(
       currentStep: TutorialStep.complete,
     );
@@ -318,13 +351,24 @@ class TutorialChatNotifier extends StateNotifier<TutorialChatState> {
     state = state.copyWith(hasStartedRating: true);
   }
 
+  /// Log a tutorial step progression to analytics
+  void _logStep(TutorialStep step) {
+    _analytics?.logTutorialStepCompleted(
+      stepName: step.name,
+      stepIndex: step.index,
+    );
+  }
+
   /// Generic next step handler
   void nextStep() {
-    print('[TUTORIAL] nextStep() called, current step: ${state.currentStep}');
     switch (state.currentStep) {
       case TutorialStep.chatTourTitle:
       case TutorialStep.chatTourMessage:
-      case TutorialStep.chatTourProposing:
+      case TutorialStep.chatTourPlaceholder:
+      case TutorialStep.chatTourRound:
+      case TutorialStep.chatTourPhases:
+      case TutorialStep.chatTourTimer:
+      case TutorialStep.chatTourSubmit:
       case TutorialStep.chatTourParticipants:
         nextChatTourStep();
         break;
@@ -467,7 +511,11 @@ class TutorialNotifier extends StateNotifier<TutorialState> {
       case TutorialStep.intro:
       case TutorialStep.chatTourTitle:
       case TutorialStep.chatTourMessage:
-      case TutorialStep.chatTourProposing:
+      case TutorialStep.chatTourPlaceholder:
+      case TutorialStep.chatTourRound:
+      case TutorialStep.chatTourPhases:
+      case TutorialStep.chatTourTimer:
+      case TutorialStep.chatTourSubmit:
       case TutorialStep.chatTourParticipants:
         beginRound1();
         break;

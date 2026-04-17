@@ -187,7 +187,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      // Tap the AppBar back button (not the inline hint icon)
+      await tester.tap(find.byType(BackButton));
       await tester.pumpAndSettle();
 
       expect(popped, true);

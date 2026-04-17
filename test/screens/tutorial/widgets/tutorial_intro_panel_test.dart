@@ -6,7 +6,7 @@ import '../../../helpers/pump_app.dart';
 
 void main() {
   group('TutorialIntroPanel', () {
-    testWidgets('displays welcome title', (tester) async {
+    testWidgets('displays play button', (tester) async {
       await tester.pumpApp(
         TutorialIntroPanel(
           onSelect: (_) {},
@@ -14,27 +14,11 @@ void main() {
         ),
       );
 
-      expect(find.text('Welcome to OneMind!'), findsOneWidget);
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+      expect(find.text('See how it works'), findsOneWidget);
     });
 
-    testWidgets('displays all 6 template cards with correct names',
-        (tester) async {
-      await tester.pumpApp(
-        TutorialIntroPanel(
-          onSelect: (_) {},
-          onSkip: () {},
-        ),
-      );
-
-      expect(find.text('Personal Decision'), findsOneWidget);
-      expect(find.text('Family'), findsOneWidget);
-      expect(find.text('Community Decision'), findsOneWidget);
-      expect(find.text('Workplace Culture'), findsOneWidget);
-      expect(find.text('City Budget'), findsOneWidget);
-      expect(find.text('Global Issues'), findsOneWidget);
-    });
-
-    testWidgets('calls onSelect with correct key when template card tapped',
+    testWidgets('calls onSelect with saturday key when play tapped',
         (tester) async {
       String? selectedKey;
 
@@ -45,28 +29,10 @@ void main() {
         ),
       );
 
-      await tester.tap(find.text('Community Decision'));
+      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
       await tester.pumpAndSettle();
 
-      expect(selectedKey, 'community');
-    });
-
-    testWidgets('calls onSelect with workplace key', (tester) async {
-      String? selectedKey;
-
-      await tester.pumpApp(
-        TutorialIntroPanel(
-          onSelect: (key) => selectedKey = key,
-          onSkip: () {},
-        ),
-      );
-
-      await tester.ensureVisible(find.text('Workplace Culture'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Workplace Culture'));
-      await tester.pumpAndSettle();
-
-      expect(selectedKey, 'workplace');
+      expect(selectedKey, 'saturday');
     });
 
     testWidgets('displays skip button', (tester) async {
@@ -77,7 +43,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Skip tutorial'), findsOneWidget);
+      expect(find.text('Skip'), findsOneWidget);
     });
 
     testWidgets('calls onSkip when skip button tapped', (tester) async {
@@ -90,9 +56,7 @@ void main() {
         ),
       );
 
-      await tester.ensureVisible(find.text('Skip tutorial'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Skip tutorial'));
+      await tester.tap(find.text('Skip'));
       await tester.pumpAndSettle();
 
       expect(skipCalled, isTrue);

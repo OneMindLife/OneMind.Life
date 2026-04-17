@@ -24,7 +24,6 @@ SELECT cron.unschedule('process-timers');
 SELECT cron.unschedule('process-auto-refills');
 SELECT cron.unschedule('cleanup-inactive-chats');
 
-
 -- =============================================================================
 -- STEP 3: Recreate cron jobs for local development
 -- =============================================================================
@@ -68,8 +67,6 @@ SELECT cron.schedule(
     ) AS request_id;
     $$
 );
-
-
 
 -- =============================================================================
 -- STEP 4: Verify setup

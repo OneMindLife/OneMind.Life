@@ -5,6 +5,7 @@ import '../screens/home_tour/models/home_tour_state.dart';
 import '../screens/home_tour/notifiers/home_tour_notifier.dart';
 import '../services/services.dart';
 import '../services/analytics_service.dart';
+import '../services/ab_test_service.dart';
 import '../services/tutorial_service.dart';
 
 // =============================================================================
@@ -89,6 +90,12 @@ final billingServiceProvider = Provider<BillingService>((ref) {
   return BillingService(client);
 });
 
+/// Push notification service provider
+final pushNotificationServiceProvider = Provider<PushNotificationService>((ref) {
+  final client = ref.watch(supabaseProvider);
+  return PushNotificationService(client);
+});
+
 // =============================================================================
 // TUTORIAL SERVICE
 // =============================================================================
@@ -116,8 +123,18 @@ final hasCompletedHomeTourProvider = Provider<bool>((ref) {
 /// Home tour step notifier — auto-disposed after tour completes
 final homeTourNotifierProvider =
     StateNotifierProvider.autoDispose<HomeTourNotifier, HomeTourState>(
-  (ref) => HomeTourNotifier(),
+  (ref) => HomeTourNotifier(analytics: ref.watch(analyticsServiceProvider)),
 );
+
+// =============================================================================
+// A/B TEST SERVICE
+// =============================================================================
+
+/// A/B test service provider — assigns and persists landing page variants
+final abTestServiceProvider = Provider<AbTestService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return AbTestService(prefs);
+});
 
 // =============================================================================
 // JOIN FLOW TRACKING

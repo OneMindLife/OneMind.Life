@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:equatable/equatable.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/l10n/language_service.dart';
@@ -39,6 +38,14 @@ class ChatDetailState extends Equatable {
   // Skip rating state
   final int ratingSkipCount;
   final bool hasSkippedRating;
+  // Participants who have submitted ratings in the current round
+  final Set<int> participantsWhoRated;
+  // Participants who have skipped proposing in the current round
+  final Set<int> participantsWhoSkippedProposing;
+  // Participants who have skipped rating in the current round
+  final Set<int> participantsWhoSkippedRating;
+  // Minimum rating count across all propositions (for per-proposition progress bar)
+  final int minRatingsPerProp;
   // Credit state
   final ChatCredits? chatCredits;
   final bool isMyParticipantFunded;
@@ -79,6 +86,10 @@ class ChatDetailState extends Equatable {
     this.hasSkipped = false,
     this.ratingSkipCount = 0,
     this.hasSkippedRating = false,
+    this.participantsWhoRated = const {},
+    this.participantsWhoSkippedProposing = const {},
+    this.participantsWhoSkippedRating = const {},
+    this.minRatingsPerProp = 0,
     this.chatCredits,
     this.isMyParticipantFunded = true,
     this.allowedCategories = const [],
@@ -98,10 +109,12 @@ class ChatDetailState extends Equatable {
   }
 
   /// Whether the current user can skip proposing
+  /// - Chat must allow skipping proposing
   /// - Must not have already submitted a proposition
   /// - Must not have already skipped
   /// - Skip quota must not be exceeded
   bool get canSkip {
+    if (chat?.allowSkipProposing != true) return false;
     // Don't count carried forward propositions as submissions
     final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
     return !hasSkipped && newSubmissions == 0 && skipCount < maxSkips;
@@ -113,11 +126,30 @@ class ChatDetailState extends Equatable {
     return (activeParticipantCount - minimum).clamp(0, activeParticipantCount);
   }
 
+  /// Per-proposition advance threshold for rating phase.
+  /// min(10, max(active_raters - 1, 1)) where active_raters excludes skippers.
+  int get ratingAdvanceThreshold {
+    final activeRaters = activeParticipantCount - ratingSkipCount;
+    if (activeRaters <= 0) return 1;
+    final raw = activeRaters - 1;
+    return raw < 1 ? 1 : (raw > 10 ? 10 : raw);
+  }
+
+  /// Rating progress percentage (0-100) based on per-proposition coverage.
+  /// min(ratings per prop) / threshold × 100.
+  int get ratingProgressPercent {
+    final threshold = ratingAdvanceThreshold;
+    if (threshold <= 0) return 100;
+    return ((minRatingsPerProp / threshold) * 100).round().clamp(0, 100);
+  }
+
   /// Whether the current user can skip rating
+  /// - Chat must allow skipping rating
   /// - Must not have already rated (fully completed)
   /// - Must not have already skipped rating
   /// - Rating skip quota must not be exceeded
   bool get canSkipRating {
+    if (chat?.allowSkipRating != true) return false;
     return !hasSkippedRating &&
         !hasRated &&
         ratingSkipCount < maxRatingSkips;
@@ -145,6 +177,10 @@ class ChatDetailState extends Equatable {
     bool? hasSkipped,
     int? ratingSkipCount,
     bool? hasSkippedRating,
+    Set<int>? participantsWhoRated,
+    Set<int>? participantsWhoSkippedProposing,
+    Set<int>? participantsWhoSkippedRating,
+    int? minRatingsPerProp,
     ChatCredits? chatCredits,
     bool? isMyParticipantFunded,
     List<String>? allowedCategories,
@@ -174,6 +210,10 @@ class ChatDetailState extends Equatable {
       hasSkipped: hasSkipped ?? this.hasSkipped,
       ratingSkipCount: ratingSkipCount ?? this.ratingSkipCount,
       hasSkippedRating: hasSkippedRating ?? this.hasSkippedRating,
+      participantsWhoRated: participantsWhoRated ?? this.participantsWhoRated,
+      participantsWhoSkippedProposing: participantsWhoSkippedProposing ?? this.participantsWhoSkippedProposing,
+      participantsWhoSkippedRating: participantsWhoSkippedRating ?? this.participantsWhoSkippedRating,
+      minRatingsPerProp: minRatingsPerProp ?? this.minRatingsPerProp,
       chatCredits: chatCredits ?? this.chatCredits,
       isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
       allowedCategories: allowedCategories ?? this.allowedCategories,
@@ -206,6 +246,10 @@ class ChatDetailState extends Equatable {
         hasSkipped,
         ratingSkipCount,
         hasSkippedRating,
+        participantsWhoRated,
+        participantsWhoSkippedProposing,
+        participantsWhoSkippedRating,
+        minRatingsPerProp,
         chatCredits,
         isMyParticipantFunded,
         allowedCategories,
@@ -258,6 +302,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   RealtimeChannel? _joinRequestChannel;
   RealtimeChannel? _skipChannel;
   RealtimeChannel? _ratingSkipChannel;
+  RealtimeChannel? _gridRankingChannel;
   RealtimeChannel? _creditChannel;
 
   // Debounce timers
@@ -398,6 +443,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _joinRequestChannel?.unsubscribe();
     _skipChannel?.unsubscribe();
     _ratingSkipChannel?.unsubscribe();
+    _gridRankingChannel?.unsubscribe();
     _creditChannel?.unsubscribe();
   }
 
@@ -464,6 +510,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       bool hasSkipped = false;
       int ratingSkipCount = 0;
       bool hasSkippedRating = false;
+      Set<int> participantsWhoRated = {};
+      Set<int> participantsWhoSkippedProposing = {};
+      Set<int> participantsWhoSkippedRating = {};
+      int minRatingsPerProp = 0;
       bool isMyParticipantFunded = true;
       List<String> allowedCategories = [];
 
@@ -510,6 +560,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
             _propositionService.hasSkipped(currentRound.id, myParticipant.id),
             _propositionService.getRatingSkipCount(currentRound.id),
             _propositionService.hasSkippedRating(currentRound.id, myParticipant.id),
+            _propositionService.getParticipantsWhoRated(currentRound.id),
+            _propositionService.getParticipantsWhoSkippedProposing(currentRound.id),
+            _propositionService.getParticipantsWhoSkippedRating(currentRound.id),
+            _propositionService.getMinRatingsPerProposition(currentRound.id),
           ]);
 
           propositions = roundResults[0] as List<Proposition>;
@@ -521,6 +575,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           hasSkipped = roundResults[4] as bool;
           ratingSkipCount = roundResults[5] as int;
           hasSkippedRating = roundResults[6] as bool;
+          participantsWhoRated = roundResults[7] as Set<int>;
+          participantsWhoSkippedProposing = roundResults[8] as Set<int>;
+          participantsWhoSkippedRating = roundResults[9] as Set<int>;
+          minRatingsPerProp = roundResults[10] as int;
 
           // Check if my participant is funded for this round
           try {
@@ -599,6 +657,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         hasSkipped: hasSkipped,
         ratingSkipCount: ratingSkipCount,
         hasSkippedRating: hasSkippedRating,
+        participantsWhoRated: participantsWhoRated,
+        participantsWhoSkippedProposing: participantsWhoSkippedProposing,
+        participantsWhoSkippedRating: participantsWhoSkippedRating,
+        minRatingsPerProp: minRatingsPerProp,
         chatCredits: chatCredits,
         isMyParticipantFunded: isMyParticipantFunded,
         allowedCategories: allowedCategories,
@@ -763,6 +825,15 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         currentState.currentRound!.id,
         () {
           _scheduleRatingSkipRefresh();
+        },
+      );
+
+      // Update grid ranking subscription for rating participation tracking
+      _gridRankingChannel?.unsubscribe();
+      _gridRankingChannel = _propositionService.subscribeToGridRankings(
+        currentState.currentRound!.id,
+        () {
+          _scheduleRefresh();
         },
       );
     } else {
@@ -975,14 +1046,17 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           currentState.currentRound!.id,
           currentState.myParticipant!.id,
         ),
+        _propositionService.getParticipantsWhoSkippedProposing(currentState.currentRound!.id),
       ]);
 
       final skipCount = results[0] as int;
       final hasSkipped = results[1] as bool;
+      final participantsWhoSkippedProposing = results[2] as Set<int>;
 
       final updatedState = currentState.copyWith(
         skipCount: skipCount,
         hasSkipped: hasSkipped,
+        participantsWhoSkippedProposing: participantsWhoSkippedProposing,
       );
       state = AsyncData(updatedState);
       _cachedState = updatedState;
@@ -1027,14 +1101,17 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           currentState.currentRound!.id,
           currentState.myParticipant!.id,
         ),
+        _propositionService.getParticipantsWhoSkippedRating(currentState.currentRound!.id),
       ]);
 
       final ratingSkipCount = results[0] as int;
       final hasSkippedRating = results[1] as bool;
+      final participantsWhoSkippedRating = results[2] as Set<int>;
 
       final updatedState = currentState.copyWith(
         ratingSkipCount: ratingSkipCount,
         hasSkippedRating: hasSkippedRating,
+        participantsWhoSkippedRating: participantsWhoSkippedRating,
       );
       state = AsyncData(updatedState);
       _cachedState = updatedState;
@@ -1073,7 +1150,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   /// Submit a new proposition
   Future<void> submitProposition(String content) async {
-    final sw = Stopwatch()..start();
     final currentState = state.valueOrNull;
     if (currentState?.currentRound == null ||
         currentState?.myParticipant == null) {
@@ -1085,11 +1161,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       participantId: currentState.myParticipant!.id,
       content: content,
     );
-    debugPrint('[submitProposition] edge function call: ${sw.elapsedMilliseconds}ms');
 
     // Immediately refresh to show own submission (don't wait for debounced realtime)
     await _refreshPropositions();
-    debugPrint('[submitProposition] total (incl refresh): ${sw.elapsedMilliseconds}ms');
   }
 
   /// Skip proposing for the current round

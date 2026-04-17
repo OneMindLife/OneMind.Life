@@ -8,10 +8,12 @@ class ChatDashboardInfoFixtures {
     int id = 1,
     String name = 'Idle Chat',
     int participantCount = 3,
+    bool hasParticipated = true,
   }) {
     return ChatDashboardInfo(
       chat: ChatFixtures.model(id: id, name: name),
       participantCount: participantCount,
+      hasParticipated: hasParticipated,
     );
   }
 
@@ -21,6 +23,7 @@ class ChatDashboardInfoFixtures {
     String name = 'Proposing Chat',
     int participantCount = 5,
     Duration timerRemaining = const Duration(minutes: 3, seconds: 42),
+    bool hasParticipated = true,
   }) {
     return ChatDashboardInfo(
       chat: ChatFixtures.model(id: id, name: name),
@@ -30,6 +33,7 @@ class ChatDashboardInfoFixtures {
       phaseEndsAt: DateTime.now().add(timerRemaining),
       phaseStartedAt: DateTime.now().subtract(const Duration(minutes: 1)),
       currentCycleId: 100,
+      hasParticipated: hasParticipated,
     );
   }
 
@@ -39,6 +43,7 @@ class ChatDashboardInfoFixtures {
     String name = 'Rating Chat',
     int participantCount = 4,
     Duration timerRemaining = const Duration(minutes: 10),
+    bool hasParticipated = true,
   }) {
     return ChatDashboardInfo(
       chat: ChatFixtures.model(id: id, name: name),
@@ -48,6 +53,7 @@ class ChatDashboardInfoFixtures {
       phaseEndsAt: DateTime.now().add(timerRemaining),
       phaseStartedAt: DateTime.now().subtract(const Duration(minutes: 5)),
       currentCycleId: 101,
+      hasParticipated: hasParticipated,
     );
   }
 
@@ -56,6 +62,7 @@ class ChatDashboardInfoFixtures {
     int id = 4,
     String name = 'Manual Proposing Chat',
     int participantCount = 3,
+    bool hasParticipated = true,
   }) {
     return ChatDashboardInfo(
       chat: ChatFixtures.model(id: id, name: name),
@@ -64,6 +71,7 @@ class ChatDashboardInfoFixtures {
       currentRoundNumber: 1,
       phaseStartedAt: DateTime.now().subtract(const Duration(minutes: 10)),
       currentCycleId: 102,
+      hasParticipated: hasParticipated,
     );
   }
 
@@ -72,6 +80,7 @@ class ChatDashboardInfoFixtures {
     int id = 5,
     String name = 'Paused Chat',
     int participantCount = 6,
+    bool hasParticipated = true,
   }) {
     return ChatDashboardInfo(
       chat: ChatFixtures.model(id: id, name: name, hostPaused: true),
@@ -80,6 +89,7 @@ class ChatDashboardInfoFixtures {
       currentRoundNumber: 1,
       phaseStartedAt: DateTime.now().subtract(const Duration(hours: 1)),
       currentCycleId: 103,
+      hasParticipated: hasParticipated,
     );
   }
 
@@ -109,6 +119,7 @@ class ChatDashboardInfoFixtures {
     DateTime? currentRoundPhaseEndsAt,
     DateTime? currentRoundPhaseStartedAt,
     int? currentCycleId,
+    bool hasParticipated = true,
   }) {
     return {
       ...ChatFixtures.json(id: id, name: name),
@@ -120,6 +131,7 @@ class ChatDashboardInfoFixtures {
       'current_round_phase_started_at':
           currentRoundPhaseStartedAt?.toIso8601String(),
       'current_cycle_id': currentCycleId,
+      'has_participated': hasParticipated,
     };
   }
 

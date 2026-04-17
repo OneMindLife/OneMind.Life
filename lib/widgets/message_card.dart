@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import '../config/app_colors.dart';
+import 'proposition_content_card.dart';
 
 /// A styled card for displaying labeled content (initial messages, convergence items, etc.).
 ///
-/// Used in both the real chat screen and tutorial to ensure consistent styling.
+/// Uses PropositionContentCard internally for consistent styling with rating screens.
+/// Shrinks to content width. Label above content, inside the border.
 class MessageCard extends StatelessWidget {
   final String label;
   final String content;
@@ -20,46 +21,27 @@ class MessageCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Color accentColor;
-    final Color backgroundColor;
-    if (isConsensus) {
-      accentColor = AppColors.consensus;
-      backgroundColor = AppColors.consensus.withValues(alpha: 0.08);
-    } else if (isPrimary) {
-      accentColor = Theme.of(context).colorScheme.primary;
-      backgroundColor =
-          Theme.of(context).colorScheme.primary.withValues(alpha: 0.08);
+    final theme = Theme.of(context);
+
+    // Both consensus and primary use the primary (blue) border
+    final Color? borderColor;
+    if (isConsensus || isPrimary) {
+      borderColor = theme.colorScheme.primary;
     } else {
-      accentColor = Theme.of(context).colorScheme.outline;
-      backgroundColor = Theme.of(context).colorScheme.surfaceContainerHighest;
+      borderColor = null; // PropositionContentCard default
     }
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: accentColor.withValues(alpha: 0.3),
+    return UnconstrainedBox(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width - 64,
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            content,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-        ],
+        child: PropositionContentCard(
+          content: content,
+          label: label,
+          borderColor: borderColor,
+          glowColor: borderColor,
+        ),
       ),
     );
   }

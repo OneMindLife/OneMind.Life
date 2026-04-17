@@ -13,6 +13,7 @@ import 'package:onemind_app/providers/providers.dart';
 import 'package:onemind_app/providers/chat_providers.dart';
 import 'package:onemind_app/providers/notifiers/my_chats_notifier.dart';
 import 'package:onemind_app/screens/discover/discover_screen.dart';
+import 'package:onemind_app/widgets/chat_dashboard_card.dart';
 import 'package:onemind_app/services/chat_service.dart';
 import 'package:onemind_app/services/participant_service.dart';
 import 'package:onemind_app/services/auth_service.dart';
@@ -335,7 +336,8 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Join'), findsNWidgets(2));
+        // No Join buttons — tapping card triggers join directly
+        expect(find.byType(ChatDashboardCard), findsNWidgets(2));
       });
 
       testWidgets('displays participant badge for each chat', (tester) async {
@@ -353,8 +355,7 @@ void main() {
         expect(find.byIcon(Icons.person_outline), findsOneWidget);
       });
 
-      testWidgets('displays Joined chip for chats user has already joined', (tester) async {
-        // User has joined chat with id=1
+      testWidgets('hides chats user has already joined', (tester) async {
         final joinedChat = ChatFixtures.model(id: 1, name: 'My Joined Chat');
         final publicChats = [
           PublicChatSummaryFixtures.model(id: 1, name: 'My Joined Chat'),
@@ -370,40 +371,9 @@ void main() {
         await tester.pumpWidget(createTestWidget(myChats: [joinedChat]));
         await tester.pumpAndSettle();
 
-        // Chat 1 should show "Joined" chip, Chat 2 should show "Join" button
-        expect(find.text('Joined'), findsOneWidget);
-        expect(find.text('Join'), findsOneWidget);
-      });
-
-      testWidgets('tapping joined chat opens it directly without join dialog', (tester) async {
-        // User has joined chat with id=1
-        final joinedChat = ChatFixtures.model(id: 1, name: 'My Joined Chat');
-        final publicChats = [
-          PublicChatSummaryFixtures.model(id: 1, name: 'My Joined Chat'),
-        ];
-
-        when(() => mockChatService.getPublicChats(
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => publicChats);
-
-        await tester.pumpWidget(createTestWidget(myChats: [joinedChat]));
-        await tester.pumpAndSettle();
-
-        // Tap the Joined chip/card
-        await tester.tap(find.text('Joined'));
-        await tester.pump(const Duration(milliseconds: 500));
-
-        // Should NOT show join dialog or name prompt
-        expect(find.text('Enter Your Name'), findsNothing);
-
-        // Should NOT call joinChat since user already joined
-        verifyNever(() => mockParticipantService.joinChat(
-              chatId: any(named: 'chatId'),
-              displayName: any(named: 'displayName'),
-              isHost: any(named: 'isHost'),
-            ));
+        // Only non-joined chat should be visible
+        expect(find.text('Other Chat'), findsOneWidget);
+        expect(find.text('My Joined Chat'), findsNothing);
       });
     });
 
@@ -578,8 +548,11 @@ void main() {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
 
-        // Pull down to refresh
-        await tester.drag(find.byType(ListView), const Offset(0, 300));
+        // Pull down to refresh (target vertical ListView, not horizontal filter chips)
+        final verticalList = find.byWidgetPredicate(
+          (w) => w is ListView && w.scrollDirection == Axis.vertical,
+        );
+        await tester.drag(verticalList, const Offset(0, 300));
         await tester.pumpAndSettle();
 
         // Verify getPublicChats was called at least once (initial load + possible refresh)
@@ -668,9 +641,8 @@ void main() {
         await tester.pumpWidget(createJoinTestWidget());
         await tester.pumpAndSettle();
 
-        // Tap Join button
-        await tester.tap(find.text('Join'));
-        // Use pump() with duration to allow async operations without waiting for navigation
+        // Tap the chat card to join
+        await tester.tap(find.text('Test Public Chat'));
         await tester.pump(const Duration(milliseconds: 500));
 
         // Verify joinChat was called with stored name, no prompt dialog
@@ -711,8 +683,8 @@ void main() {
         await tester.pumpWidget(createJoinTestWidget());
         await tester.pumpAndSettle();
 
-        // Tap Join button
-        await tester.tap(find.text('Join'));
+        // Tap the chat card to join
+        await tester.tap(find.text('Community Chat'));
         await tester.pump(const Duration(milliseconds: 500));
 
         // Verify joinChat was called with display name, no prompt dialog shown

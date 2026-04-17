@@ -1,6 +1,8 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 
+import 'analytics_web_stub.dart' if (dart.library.html) 'analytics_web.dart';
+
 /// Analytics service for tracking user events and behavior.
 ///
 /// Wraps Firebase Analytics with typed methods for OneMind-specific events.
@@ -18,8 +20,7 @@ class AnalyticsService {
     try {
       _analytics = analytics ?? FirebaseAnalytics.instance;
       _isAvailable = true;
-    } catch (e) {
-      debugPrint('Firebase Analytics not available: $e');
+    } catch (_) {
       _isAvailable = false;
     }
   }
@@ -226,6 +227,106 @@ class AnalyticsService {
   }
 
   // ============================================================
+  // Landing Page Events
+  // ============================================================
+
+  /// Landing page was viewed (A/B test)
+  Future<void> logLandingViewed({required String variant}) async {
+    await _logEvent('landing_viewed', {'variant': variant});
+  }
+
+  /// Landing page CTA was clicked (A/B test)
+  Future<void> logLandingCtaClicked({required String variant}) async {
+    await _logEvent('landing_cta_clicked', {'variant': variant});
+  }
+
+  /// A landing page section scrolled into view
+  Future<void> logLandingSectionViewed({
+    required String section,
+    required String variant,
+  }) async {
+    await _logEvent('landing_section_viewed', {
+      'section': section,
+      'variant': variant,
+    });
+  }
+
+  /// User scrolled to a depth threshold (25/50/75/100)
+  Future<void> logLandingScrollDepth({
+    required int percent,
+    required String variant,
+  }) async {
+    await _logEvent('landing_scroll_depth', {
+      'percent': percent,
+      'variant': variant,
+    });
+  }
+
+  // ============================================================
+  // Tutorial Events
+  // ============================================================
+
+  /// Play screen was shown to user
+  Future<void> logPlayScreenViewed() async {
+    await _logEvent('play_screen_viewed', {});
+  }
+
+  /// User tapped the play button
+  Future<void> logPlayButtonTapped() async {
+    await _logEvent('play_button_tapped', {});
+  }
+
+  /// User started the tutorial (selected a template)
+  Future<void> logTutorialStarted({required String templateKey}) async {
+    await _logEvent('tutorial_started', {
+      'template': templateKey,
+    });
+  }
+
+  /// User progressed to a new tutorial step
+  Future<void> logTutorialStepCompleted({
+    required String stepName,
+    required int stepIndex,
+  }) async {
+    await _logEvent('tutorial_step_completed', {
+      'step_name': stepName,
+      'step_index': stepIndex,
+    });
+  }
+
+  /// User completed the full tutorial
+  Future<void> logTutorialCompleted({required String templateKey}) async {
+    if (!_isAvailable || _analytics == null) return;
+    await _analytics!.logTutorialComplete();
+    await _logEvent('tutorial_completed', {
+      'template': templateKey,
+    });
+  }
+
+  /// User skipped the tutorial
+  Future<void> logTutorialSkipped({required String fromStep}) async {
+    await _logEvent('tutorial_skipped', {
+      'from_step': fromStep,
+    });
+  }
+
+  /// Home tour step progressed
+  Future<void> logHomeTourStepCompleted({
+    required String stepName,
+    required int stepIndex,
+  }) async {
+    await _logEvent('home_tour_step_completed', {
+      'step_name': stepName,
+      'step_index': stepIndex,
+    });
+  }
+
+  /// Home tour completed
+  Future<void> logHomeTourCompleted() async {
+    await _logEvent('home_tour_completed', {});
+  }
+
+  // ============================================================
   // Error Events
   // ============================================================
 
@@ -249,7 +350,10 @@ class AnalyticsService {
   // Screen Tracking
   // ============================================================
 
-  /// Log screen view
+  /// Log screen view and send a gtag page_view for GA4 web engagement tracking.
+  ///
+  /// Firebase Analytics sends screen_view events, but GA4 web streams count
+  /// page_view events for the "2+ page views" engaged session criterion.
   Future<void> logScreenView({
     required String screenName,
     String? screenClass,
@@ -259,6 +363,10 @@ class AnalyticsService {
       screenName: screenName,
       screenClass: screenClass,
     );
+    // Send a gtag page_view so GA4 counts route changes toward engagement
+    if (kIsWeb) {
+      sendWebPageView('/$screenName', screenName);
+    }
   }
 
   // ============================================================

@@ -8,14 +8,12 @@ import '../../../models/models.dart';
 class WizardStepVisibility extends StatelessWidget {
   final AccessMethod accessMethod;
   final ValueChanged<AccessMethod> onAccessMethodChanged;
-  final VoidCallback onBack;
   final VoidCallback onContinue;
 
   const WizardStepVisibility({
     super.key,
     required this.accessMethod,
     required this.onAccessMethodChanged,
-    required this.onBack,
     required this.onContinue,
   });
 
@@ -43,14 +41,6 @@ class WizardStepVisibility extends StatelessWidget {
                     l10n.wizardVisibilityTitle,
                     style: theme.textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.wizardVisibilitySubtitle,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -83,36 +73,19 @@ class WizardStepVisibility extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: onBack,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.arrow_back, size: 18),
-                      const SizedBox(width: 8),
-                      Text(l10n.back),
-                    ],
-                  ),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: onContinue,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(l10n.continue_),
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward, size: 18),
+                ],
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: onContinue,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(l10n.continue_),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
         ],
       ),

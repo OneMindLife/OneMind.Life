@@ -12,7 +12,7 @@ class DemoScreen extends StatefulWidget {
 
 class _DemoScreenState extends State<DemoScreen> {
   final _controller = YoutubePlayerController.fromVideoId(
-    videoId: 'zzq2TPhuVSg',
+    videoId: 'YKqNCg3Oj9k',
     autoPlay: true,
     params: const YoutubePlayerParams(
       showFullscreenButton: true,

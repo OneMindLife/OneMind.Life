@@ -7,6 +7,10 @@ class CountdownTimer extends StatefulWidget {
   final VoidCallback? onExpired;
   final TextStyle? style;
   final bool showIcon;
+  /// When true, display a fixed duration without counting down.
+  final bool frozen;
+  /// Exact duration to display when frozen. If null, computes from endsAt.
+  final Duration? frozenDuration;
 
   const CountdownTimer({
     super.key,
@@ -14,6 +18,8 @@ class CountdownTimer extends StatefulWidget {
     this.onExpired,
     this.style,
     this.showIcon = true,
+    this.frozen = false,
+    this.frozenDuration,
   });
 
   @override
@@ -27,15 +33,32 @@ class _CountdownTimerState extends State<CountdownTimer> {
   @override
   void initState() {
     super.initState();
-    _updateRemaining();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+    if (widget.frozen && widget.frozenDuration != null) {
+      _remaining = widget.frozenDuration!;
+    } else {
+      _updateRemaining();
+    }
+    if (!widget.frozen) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+    }
   }
 
   @override
   void didUpdateWidget(CountdownTimer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.endsAt != widget.endsAt) {
+    // When frozen with a fixed duration, don't recalculate
+    if (widget.frozen && widget.frozenDuration != null) {
+      _remaining = widget.frozenDuration!;
+    } else if (oldWidget.endsAt != widget.endsAt) {
       _updateRemaining();
+    }
+    // Start/stop timer when frozen state changes
+    if (oldWidget.frozen != widget.frozen) {
+      _timer?.cancel();
+      if (!widget.frozen) {
+        _updateRemaining();
+        _timer = Timer.periodic(const Duration(seconds: 1), (_) => _updateRemaining());
+      }
     }
   }
 

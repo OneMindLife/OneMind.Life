@@ -15,7 +15,7 @@ class PhaseBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, color, textColor) = _phaseStyle();
+    final (label, color, textColor) = _phaseStyle(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
@@ -32,7 +32,7 @@ class PhaseBadge extends StatelessWidget {
     );
   }
 
-  (String, Color, Color) _phaseStyle() {
+  (String, Color, Color) _phaseStyle(BuildContext context) {
     if (isPaused) return ('Paused', AppColors.waiting, AppColors.waiting);
     switch (phase) {
       case RoundPhase.proposing:
@@ -40,9 +40,9 @@ class PhaseBadge extends StatelessWidget {
       case RoundPhase.rating:
         return ('Rating', AppColors.rating, AppColors.rating);
       case RoundPhase.waiting:
-        return ('Waiting', AppColors.consensus, const Color(0xFF92400E));
+        return ('Waiting', AppColors.consensus, Theme.of(context).colorScheme.onTertiaryContainer);
       case null:
-        return ('Idle', AppColors.waiting, AppColors.textMuted);
+        return ('Idle', AppColors.waiting, Theme.of(context).colorScheme.outline);
     }
   }
 }

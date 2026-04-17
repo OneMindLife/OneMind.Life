@@ -16,7 +16,11 @@ class JoinDialog extends ConsumerStatefulWidget {
   /// If provided, skip Stage 1 (code entry) and open directly at Stage 2.
   final Chat? preloadedChat;
 
-  const JoinDialog({super.key, required this.onJoined, this.preloadedChat});
+  /// The invite code used to look up the chat. If the user dismisses the
+  /// dialog without joining, the personal code reservation is released.
+  final String? inviteCode;
+
+  const JoinDialog({super.key, required this.onJoined, this.preloadedChat, this.inviteCode});
 
   @override
   ConsumerState<JoinDialog> createState() => _JoinDialogState();
@@ -30,6 +34,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
   Chat? _foundChat;
   bool _isInviteOnly = false;
   String? _validatedInviteToken;
+  bool _joined = false;
 
   @override
   void initState() {
@@ -56,6 +61,15 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
 
   @override
   void dispose() {
+    // Release personal code reservation if user didn't join
+    final code = widget.inviteCode ?? _codeController.text.trim();
+    if (!_joined && code.length == 6) {
+      try {
+        ref.read(personalCodeServiceProvider).releaseReservation(code);
+      } catch (_) {
+        // Provider may not be available in tests
+      }
+    }
     _codeController.dispose();
     _emailController.dispose();
     super.dispose();
@@ -198,6 +212,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
           chatId: _foundChat!.id,
           displayName: name,
         );
+        _joined = true;
 
         if (mounted) {
           // Pop with the chat so callers can do an optimistic update
@@ -211,6 +226,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
           displayName: name,
           isHost: false,
         );
+        _joined = true;
 
         // For invite-only chats, mark the invite as accepted
         if (_isInviteOnly && _validatedInviteToken != null) {

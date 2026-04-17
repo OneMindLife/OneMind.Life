@@ -17,6 +17,9 @@ import '../../widgets/proposition_content_card.dart';
 import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../rating/rating_screen.dart';
+import '../rating/read_only_results_screen.dart';
+import 'cycle_history_screen.dart';
+import 'other_propositions_screen.dart';
 import 'widgets/personal_code_sheet.dart';
 import 'widgets/previous_round_display.dart';
 import 'widgets/phase_panels.dart';
@@ -37,6 +40,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   // UI toggle states (not data - stay in widget)
   int _currentWinnerIndex = 0;
   int? _lastAutoNavigatedRoundId; // Track to auto-navigate to rating screen once per round
+  bool _isChatScreenTopmost = true; // Only auto-open rating if chat screen is visible
   bool _initialPhaseRecorded = false; // Whether we've recorded the phase on first load
   RoundPhase? _phaseOnOpen; // The phase when user first opened this screen
 
@@ -154,7 +158,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(l10n.duplicateProposition),
-            backgroundColor: Colors.orange,
+            backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
           ),
         );
       }
@@ -202,11 +206,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// Push a screen and track that the chat screen is no longer topmost.
+  /// This prevents auto-navigation to rating while viewing sub-screens.
+  Future<T?> _pushScreen<T>(Route<T> route) {
+    _isChatScreenTopmost = false;
+    return Navigator.push<T>(context, route).then((result) {
+      _isChatScreenTopmost = true;
+      return result;
+    });
+  }
+
   void _openRatingScreen(ChatDetailState state) {
     if (state.currentRound == null || state.myParticipant == null) return;
 
-    Navigator.push<bool>(
-      context,
+    _pushScreen<bool>(
       MaterialPageRoute(
         builder: (context) => RatingScreen(
           roundId: state.currentRound!.id,
@@ -605,13 +618,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
 
     // Auto-navigate to rating screen only when phase transitions to rating
-    // while user is already viewing this chat (once per round)
+    // while user is viewing the chat screen (not cycle history, results, etc.)
     if (currentRound != null &&
         currentRound.phase == RoundPhase.rating &&
         state != null &&
         !state.hasRated &&
         !state.hasStartedRating &&
         !state.hasSkippedRating &&
+        _isChatScreenTopmost &&
         _lastAutoNavigatedRoundId != currentRound.id) {
       _lastAutoNavigatedRoundId = currentRound.id;
       // Use post-frame callback to avoid navigation during build
@@ -696,6 +710,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     onLanguageChanged: (code) =>
                         ref.read(chatDetailProvider(_params).notifier).setViewingLanguage(code),
                   ),
+                  // People button — always visible, badge for host with pending requests
+                  IconButton(
+                    icon: Badge(
+                      label: Text('$pendingRequestCount'),
+                      isLabelVisible: isHost && widget.chat.requireApproval && pendingRequestCount > 0,
+                      child: const Icon(Icons.leaderboard),
+                    ),
+                    tooltip: AppLocalizations.of(context).leaderboard,
+                    onPressed: () => _showParticipantsSheet(state),
+                  ),
                   // Share button — visible when chat has invite code (not for personal_code)
                   if (hasInviteCode)
                     IconButton(
@@ -719,16 +743,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       tooltip: AppLocalizations.of(context).chatDescription,
                       onPressed: () => _showDescription(state),
                     ),
-                  // People button — always visible, badge for host with pending requests
-                  IconButton(
-                    icon: Badge(
-                      label: Text('$pendingRequestCount'),
-                      isLabelVisible: isHost && widget.chat.requireApproval && pendingRequestCount > 0,
-                      child: const Icon(Icons.people),
-                    ),
-                    tooltip: AppLocalizations.of(context).participants,
-                    onPressed: () => _showParticipantsSheet(state),
-                  ),
                   // Non-host: Leave button (not for official chats)
                   if (!isHost && !widget.chat.isOfficial)
                     IconButton(
@@ -809,9 +823,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
                   final isHost = state.myParticipant?.isHost == true;
 
-                  return ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
+                  final messageChildren = [
                       // Always show initial message as the opening prompt
                       if (hasInitialMessage) ...[
                         _buildInitialMessageCard(l10n, initialMessage, isHost),
@@ -825,11 +837,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         final label = item.isHostOverride
                             ? (state.chat?.hostDisplayName ?? 'Host')
                             : l10n.consensusNumber(entry.key + 1);
-                        final card = MessageCard(
-                          label: label,
-                          content: item.displayContent,
-                          isPrimary: true,
-                          isConsensus: !item.isHostOverride,
+                        final card = GestureDetector(
+                          onTap: () => _pushScreen(
+                            MaterialPageRoute(
+                              builder: (_) => CycleHistoryScreen(
+                                cycleId: item.cycleId,
+                                convergenceContent: item.displayContent,
+                                convergenceNumber: entry.key + 1,
+                              ),
+                            ),
+                          ),
+                          child: MessageCard(
+                            label: label,
+                            content: item.displayContent,
+                            isPrimary: true,
+                            isConsensus: !item.isHostOverride,
+                          ),
                         );
 
                         final List<Widget> widgets = [];
@@ -901,7 +924,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
                         return widgets;
                       }),
-                    ],
+
+                      // Inline Current Leader (rating phase), Previous Winner, or placeholder
+                      _buildLeaderOrWinnerOrPlaceholder(state),
+                  ];
+
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: SingleChildScrollView(
+                      reverse: true,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: messageChildren,
+                      ),
+                    ),
                   );
                 },
               ),
@@ -1187,50 +1223,163 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildBottomArea(ChatDetailState state) {
-    final hasPreviousWinner = state.previousRoundWinners.isNotEmpty;
-    final isRatingPhase = state.currentRound?.phase == RoundPhase.rating;
+    return _buildCurrentPhasePanel(state);
+  }
 
-    // Show emergence card inline above the phase panel (not during rating)
-    final showEmergence = hasPreviousWinner && !isRatingPhase;
+  int _clampedWinnerIndex(ChatDetailState state) {
+    return state.previousRoundWinners.isEmpty
+        ? 0
+        : _currentWinnerIndex.clamp(0, state.previousRoundWinners.length - 1);
+  }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          top: BorderSide(color: Theme.of(context).dividerColor),
+  /// Inline Previous Winner card shown in the scrollable message list,
+  /// below the last convergence item. Shares winner index state with
+  /// the bottom panel version.
+  Widget _buildTopCandidatePlaceholder({int? currentCycleId, int roundNumber = 1, int convergenceNumber = 1}) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: currentCycleId != null
+            ? () => _pushScreen(
+                  MaterialPageRoute(
+                    builder: (_) => CycleHistoryScreen(
+                      cycleId: currentCycleId,
+                      convergenceContent: '...',
+                      convergenceNumber: convergenceNumber,
+                      showOngoingPlaceholder: false,
+                    ),
+                  ),
+                )
+            : null,
+        child: UnconstrainedBox(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width - 64,
+            ),
+            child: PropositionContentCard(
+              content: '...',
+              label: l10n.chatTourPlaceholderTitle,
+              borderColor: AppColors.consensus,
+              glowColor: AppColors.consensus,
+            ),
+          ),
         ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (showEmergence) _buildPreviousWinnerPanel(state),
-          _buildCurrentPhasePanel(state),
-        ],
       ),
     );
   }
 
-  Widget _buildPreviousWinnerPanel(ChatDetailState state) {
-    // Clamp index to valid range (handles case where winners count decreased)
-    final clampedIndex = state.previousRoundWinners.isEmpty
-        ? 0
-        : _currentWinnerIndex.clamp(0, state.previousRoundWinners.length - 1);
+  /// Shows current leader during rating, previous winner if exists, or placeholder.
+  Widget _buildLeaderOrWinnerOrPlaceholder(ChatDetailState state) {
+    // During rating phase: hide entirely if user hasn't rated,
+    // show current leader if they have
+    if (state.currentRound?.phase == RoundPhase.rating) {
+      if (!state.hasRated) {
+        return const SizedBox.shrink();
+      }
+      final scored = state.propositions
+          .where((p) => p.finalRating != null)
+          .toList()
+        ..sort((a, b) => (b.finalRating ?? 0).compareTo(a.finalRating ?? 0));
+      if (scored.isNotEmpty) {
+        return _buildCurrentLeader(scored.first, state);
+      }
+      // Scores not available yet — fall back to previous winner
+      if (state.previousRoundWinners.isNotEmpty) {
+        return _buildInlinePreviousWinner(state);
+      }
+      return const SizedBox.shrink();
+    }
 
-    // Always use PreviousWinnerPanel. When showPreviousResults is enabled,
-    // show the "See All Results" button that opens the grid view.
-    return PreviousWinnerPanel(
-      previousRoundWinners: state.previousRoundWinners,
-      currentWinnerIndex: clampedIndex,
-      isSoleWinner: state.isSoleWinner,
-      consecutiveSoleWins: state.consecutiveSoleWins,
-      confirmationRoundsRequired: widget.chat.confirmationRoundsRequired,
-      currentRoundCustomId: state.currentRound?.customId,
-      onWinnerIndexChanged: (index) =>
-          setState(() => _currentWinnerIndex = index),
-      showResultsButton: widget.chat.showPreviousResults,
-      previousRoundResults: state.previousRoundResults,
-      myParticipantId: state.myParticipant?.id,
-      previousRoundId: state.previousRoundId,
+    // Proposing phase: show previous winner or placeholder
+    if (state.previousRoundWinners.isNotEmpty) {
+      return _buildInlinePreviousWinner(state);
+    }
+    return _buildTopCandidatePlaceholder();
+  }
+
+  Widget _buildCurrentLeader(Proposition leader, ChatDetailState state) {
+    final l10n = AppLocalizations.of(context)!;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: state.currentCycle != null
+            ? () {
+                final scored = state.propositions
+                    .where((p) => p.finalRating != null)
+                    .toList()
+                  ..sort((a, b) =>
+                      (b.finalRating ?? 0).compareTo(a.finalRating ?? 0));
+                _pushScreen(
+                  MaterialPageRoute(
+                    builder: (_) => CycleHistoryScreen(
+                      cycleId: state.currentCycle!.id,
+                      convergenceContent: leader.displayContent,
+                      convergenceNumber: state.consensusItems.length + 1,
+                      currentLeader: scored.isNotEmpty ? scored.first : null,
+                      currentRoundNumber: state.currentRound?.customId,
+                      currentRoundId: state.currentRound?.id,
+                      currentRoundPropositions: scored,
+                    ),
+                  ),
+                );
+              }
+            : null,
+        child: UnconstrainedBox(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width - 64,
+            ),
+            child: PropositionContentCard(
+              content: leader.displayContent,
+              label: l10n.currentLeader,
+              borderColor: Theme.of(context).colorScheme.primary,
+              glowColor: Theme.of(context).colorScheme.primary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInlinePreviousWinner(ChatDetailState state) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: PreviousWinnerPanel(
+        previousRoundWinners: state.previousRoundWinners,
+        currentWinnerIndex: _clampedWinnerIndex(state),
+        roundNumber: (state.currentRound?.customId ?? 2) - 1,
+        onWinnerIndexChanged: (index) =>
+            setState(() => _currentWinnerIndex = index),
+        onTap: state.currentCycle != null
+            ? () {
+                final scored = state.currentRound?.phase == RoundPhase.rating
+                    ? (state.propositions
+                        .where((p) => p.finalRating != null)
+                        .toList()
+                      ..sort((a, b) =>
+                          (b.finalRating ?? 0).compareTo(a.finalRating ?? 0)))
+                    : null;
+                _pushScreen(
+                  MaterialPageRoute(
+                    builder: (_) => CycleHistoryScreen(
+                      cycleId: state.currentCycle!.id,
+                      convergenceContent: state.previousRoundWinners.first
+                              .displayContent ??
+                          '',
+                      convergenceNumber: state.consensusItems.length + 1,
+                      currentLeader: scored != null && scored.isNotEmpty
+                          ? scored.first
+                          : null,
+                      currentRoundNumber: state.currentRound?.customId,
+                      currentRoundId: state.currentRound?.id,
+                      currentRoundPropositions: scored,
+                    ),
+                  ),
+                );
+              }
+            : null,
+      ),
     );
   }
 
@@ -1319,6 +1468,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       case RoundPhase.proposing:
         final isTaskResultMode = state.isTaskResultMode;
+        // Participation %: (proposers + skippers) / total participants
+        final proposingSubmitters = state.propositions
+            .where((p) => p.participantId != null && !p.isCarriedForward)
+            .map((p) => p.participantId)
+            .toSet()
+            .length;
+        final proposingDone = proposingSubmitters + state.participantsWhoSkippedProposing.length;
+        final proposingPercent = state.participants.isNotEmpty
+            ? (proposingDone * 100 / state.participants.length).round()
+            : 0;
         return ProposingStatePanel(
           roundCustomId: state.currentRound!.customId,
           propositionsPerUser: widget.chat.propositionsPerUser,
@@ -1333,16 +1492,21 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           isHost: isHost,
           onAdvancePhase: () => _advanceToRating(),
           onViewAllPropositions: isHost ? () => _showAllPropositionsSheet(state) : null,
+          onViewOtherPropositions: () => _pushScreen(
+            MaterialPageRoute(
+              builder: (_) => OtherPropositionsScreen(params: _params),
+            ),
+          ),
           isPaused: chat.isPaused,
           isSubmitting: _isSubmitting || _isSkipping,
-          // Skip feature - always pass callback; panel controls enabled state via canSkip
-          onSkip: _skipProposing,
+          onSkip: chat.allowSkipProposing ? _skipProposing : null,
           canSkip: state.canSkip,
           skipCount: state.skipCount,
           maxSkips: state.maxSkips,
           hasSkipped: state.hasSkipped,
           isFunded: state.isMyParticipantFunded,
           isTaskResultMode: isTaskResultMode,
+          participationPercent: proposingPercent,
         );
       case RoundPhase.rating:
         return RatingStatePanel(
@@ -1356,7 +1520,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           isHost: isHost,
           onAdvancePhase: isHost ? () => _advanceFromRating() : null,
           isPaused: chat.isPaused,
-          // Skip rating feature
           onSkipRating: state.canSkipRating ? _skipRating : null,
           canSkipRating: state.canSkipRating,
           ratingSkipCount: state.ratingSkipCount,
@@ -1364,6 +1527,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           hasSkippedRating: state.hasSkippedRating,
           isSkipping: _isSkipping,
           isFunded: state.isMyParticipantFunded,
+          participationPercent: state.ratingProgressPercent,
         );
     }
   }
@@ -1511,6 +1675,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   /// Merged participants + join requests bottom sheet.
   void _showParticipantsSheet(ChatDetailState state) {
+    final leaderboardFuture = ref.read(chatServiceProvider).getChatLeaderboard(widget.chat.id);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1524,89 +1689,162 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final l10n = AppLocalizations.of(consumerContext);
             final theme = Theme.of(consumerContext);
             final stateAsync = consumerRef.watch(chatDetailProvider(_params));
-            final participants = stateAsync.valueOrNull?.participants ?? [];
-            final isHost = stateAsync.valueOrNull?.myParticipant?.isHost == true;
-            final requests = stateAsync.valueOrNull?.pendingJoinRequests ?? [];
+            final currentState = stateAsync.valueOrNull;
+            final participants = currentState?.participants ?? [];
+            final isHost = currentState?.myParticipant?.isHost == true;
+            final requests = currentState?.pendingJoinRequests ?? [];
             final showRequests = isHost && widget.chat.requireApproval && requests.isNotEmpty;
 
-            return Column(
-              children: [
-                // Handle bar
-                Container(
-                  margin: const EdgeInsets.only(top: 8),
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Text(
-                        '${l10n.participants} (${participants.length})',
-                        style: theme.textTheme.titleMedium,
+            // Track which participants have acted in the current round
+            final participantsWhoProposed = <int>{};
+            if (currentState != null) {
+              for (final prop in currentState.propositions) {
+                if (prop.participantId != null && !prop.isCarriedForward) {
+                  participantsWhoProposed.add(prop.participantId!);
+                }
+              }
+              // Include participants who skipped proposing
+              participantsWhoProposed.addAll(currentState.participantsWhoSkippedProposing);
+            }
+            // Include participants who rated OR skipped rating
+            final participantsWhoRated = {
+              ...(currentState?.participantsWhoRated ?? {}),
+              ...(currentState?.participantsWhoSkippedRating ?? {}),
+            };
+            // Show checkmark based on current phase
+            final isRatingPhase = currentState?.currentRound?.phase == RoundPhase.rating;
+            final participantsWhoActed = isRatingPhase
+                ? participantsWhoRated
+                : participantsWhoProposed;
+            final isInPhase = currentState?.currentRound?.phase == RoundPhase.proposing ||
+                currentState?.currentRound?.phase == RoundPhase.rating;
+
+            return FutureBuilder<List<Map<String, dynamic>>>(
+              future: leaderboardFuture,
+              builder: (fbContext, snapshot) {
+                // Build ranking map: participant_id -> position (1-based)
+                final rankings = <int, int>{};
+                if (snapshot.hasData) {
+                  final ranked = snapshot.data!
+                      .where((e) => e['avg_rank'] != null)
+                      .toList()
+                    ..sort((a, b) => (b['avg_rank'] as num).compareTo(a['avg_rank'] as num));
+                  for (var i = 0; i < ranked.length; i++) {
+                    rankings[ranked[i]['participant_id'] as int] = i + 1;
+                  }
+                }
+
+                // Sort participants: ranked first (by position), then unranked
+                final sortedParticipants = List<Participant>.from(participants)
+                  ..sort((a, b) {
+                    final ra = rankings[a.id];
+                    final rb = rankings[b.id];
+                    if (ra != null && rb != null) return ra.compareTo(rb);
+                    if (ra != null) return -1;
+                    if (rb != null) return 1;
+                    return 0;
+                  });
+
+                return Column(
+                  children: [
+                    // Handle bar
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.4),
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(sheetContext),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                // Join requests section (host only)
-                if (showRequests) ...[
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                    child: Row(
-                      children: [
-                        Icon(Icons.group_add, size: 18, color: theme.colorScheme.primary),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${l10n.joinRequests} (${requests.length})',
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            color: theme.colorScheme.primary,
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                  ...requests.map((req) => _buildRequestCard(req)),
-                  const Divider(height: 1),
-                ],
-                // Participants list
-                Expanded(
-                  child: ListView.builder(
-                    controller: scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    itemCount: participants.length,
-                    itemBuilder: (context, index) {
-                      final p = participants[index];
-                      return ListTile(
-                        leading: CircleAvatar(child: Text(p.displayName[0])),
-                        title: Text(p.displayName),
-                        trailing: p.isHost
-                            ? Chip(label: Text(l10n.host))
-                            : isHost
-                                ? IconButton(
-                                    icon: const Icon(Icons.person_remove),
-                                    tooltip: l10n.kickParticipant,
-                                    onPressed: () {
-                                      Navigator.pop(modalContext);
-                                      _confirmKickParticipant(p);
-                                    },
-                                  )
-                                : null,
-                      );
-                    },
-                  ),
-                ),
-              ],
+                    // Header
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(Icons.leaderboard, size: 20, color: theme.colorScheme.primary),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${l10n.leaderboard} (${sortedParticipants.length})',
+                                style: theme.textTheme.titleMedium,
+                              ),
+                            ],
+                          ),
+                          const Spacer(),
+                          IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () => Navigator.pop(sheetContext),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Divider(height: 1),
+                    // Join requests section (host only)
+                    if (showRequests) ...[
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                        child: Row(
+                          children: [
+                            Icon(Icons.group_add, size: 18, color: theme.colorScheme.primary),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${l10n.joinRequests} (${requests.length})',
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      ...requests.map((req) => _buildRequestCard(req)),
+                      const Divider(height: 1),
+                    ],
+                    // Participants list
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: sortedParticipants.length,
+                        itemBuilder: (context, index) {
+                          final p = sortedParticipants[index];
+                          final hasActed = participantsWhoActed.contains(p.id);
+                          final position = rankings[p.id];
+                          final rankText = position != null ? '#$position' : '—';
+                          return Opacity(
+                            opacity: hasActed || !isInPhase ? 1.0 : 0.5,
+                            child: ListTile(
+                              leading: CircleAvatar(child: Text(rankText)),
+                              title: Text(p.displayName),
+                              subtitle: hasActed
+                                  ? Text(
+                                      l10n.done,
+                                      style: theme.textTheme.labelSmall?.copyWith(
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                    )
+                                  : null,
+                              trailing: p.isHost
+                                  ? Chip(label: Text(l10n.host))
+                                  : isHost
+                                      ? IconButton(
+                                          icon: const Icon(Icons.person_remove),
+                                          tooltip: l10n.kickParticipant,
+                                          onPressed: () {
+                                            Navigator.pop(modalContext);
+                                            _confirmKickParticipant(p);
+                                          },
+                                        )
+                                      : null,
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -1835,8 +2073,8 @@ class _CreditBalanceChip extends StatelessWidget {
       chipColor = theme.colorScheme.errorContainer;
       iconColor = theme.colorScheme.error;
     } else if (balance < participantCount) {
-      chipColor = Colors.amber.shade100;
-      iconColor = Colors.amber.shade800;
+      chipColor = theme.colorScheme.tertiaryContainer;
+      iconColor = theme.colorScheme.onTertiaryContainer;
     } else {
       chipColor = theme.colorScheme.surfaceContainerHighest;
       iconColor = theme.colorScheme.onSurfaceVariant;

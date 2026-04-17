@@ -9,6 +9,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { shouldAutoAdvance, shouldAutoAdvanceRating } from "../_shared/auto-advance.ts";
+import { notifyPhaseChange } from "../_shared/fcm.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -22,6 +23,7 @@ if (!CRON_SECRET) {
 
 interface Chat {
   id: number;
+  name: string;
   proposing_duration_seconds: number;
   rating_duration_seconds: number;
   proposing_minimum: number;
@@ -38,6 +40,13 @@ interface Chat {
   adaptive_adjustment_percent: number;
   min_phase_duration_seconds: number;
   max_phase_duration_seconds: number;
+  // Pause state — process-timers must skip paused chats
+  host_paused: boolean;
+  schedule_paused: boolean;
+}
+
+function isChatPaused(chat: Chat): boolean {
+  return chat.host_paused || chat.schedule_paused;
 }
 
 interface Round {
@@ -213,6 +222,7 @@ async function processExpiredTimers(
         chat_id,
         chats!inner (
           id,
+          name,
           start_mode,
           rating_start_mode,
           proposing_duration_seconds,
@@ -222,7 +232,9 @@ async function processExpiredTimers(
           adaptive_duration_enabled,
           adaptive_adjustment_percent,
           min_phase_duration_seconds,
-          max_phase_duration_seconds
+          max_phase_duration_seconds,
+          host_paused,
+          schedule_paused
         )
       )
     `
@@ -246,6 +258,12 @@ async function processExpiredTimers(
   for (const round of expiredRounds) {
     try {
       const chat = (round as any).cycles.chats as Chat;
+
+      // Skip paused chats — auto-pause safety prevents runaway agent rounds
+      if (isChatPaused(chat)) {
+        console.log(`Round ${round.id}: skipping expired timer — chat ${chat.id} is paused`);
+        continue;
+      }
 
       // Skip auto-advance for manual mode - host controls everything
       if (chat.start_mode === "manual") {
@@ -370,6 +388,9 @@ async function advancePhase(
       .eq("id", round.id);
 
     if (error) throw error;
+
+    // Notify participants of phase change
+    await notifyPhaseChange(supabase, chat.id, chat.name, "rating");
   } else if (round.phase === "rating") {
     // Calculate winner and complete round
     await calculateWinnerAndComplete(supabase, round);
@@ -496,6 +517,20 @@ async function calculateWinnerAndComplete(
 
   // Apply adaptive duration adjustment for next round
   await applyAdaptiveDuration(supabase, round.id);
+
+  // Notify participants that a new proposing phase has started
+  // (the DB trigger on_round_winner_set creates the next round)
+  const chatId = (round as any).cycles?.chat_id;
+  if (chatId) {
+    const { data: chatData } = await supabase
+      .from("chats")
+      .select("name")
+      .eq("id", chatId)
+      .single();
+    if (chatData) {
+      await notifyPhaseChange(supabase, chatId, chatData.name, "proposing");
+    }
+  }
 }
 
 // =============================================================================
@@ -590,6 +625,7 @@ async function processAutoAdvance(
         chat_id,
         chats!inner (
           id,
+          name,
           proposing_minimum,
           rating_minimum,
           proposing_threshold_percent,
@@ -597,7 +633,9 @@ async function processAutoAdvance(
           rating_threshold_percent,
           rating_threshold_count,
           rating_duration_seconds,
-          rating_start_mode
+          rating_start_mode,
+          host_paused,
+          schedule_paused
         )
       )
     `
@@ -618,6 +656,12 @@ async function processAutoAdvance(
   for (const round of activeRounds) {
     try {
       const chat = (round as any).cycles.chats as Chat;
+
+      // Skip paused chats — auto-pause safety prevents runaway agent rounds
+      if (isChatPaused(chat)) {
+        continue;
+      }
+
       const isProposing = round.phase === "proposing";
 
       // Check if auto-advance thresholds are configured
@@ -777,11 +821,19 @@ async function checkThresholdsMet(
 
     participatedCount = new Set(ratings?.map((r) => r.participant_id)).size;
 
+    // Use rating-eligible count (excludes agents when rating_agent_count = 0)
+    const { data: eligibleCount, error: eligibleError } = await supabase
+      .rpc("get_rating_eligible_count", { p_chat_id: chatId });
+
+    const ratingParticipantCount = (eligibleError || !eligibleCount)
+      ? participantCount  // fallback to total if RPC fails
+      : eligibleCount;
+
     // Use rating-specific helper that caps threshold to (participants - 1)
     // since users can't rate their own propositions
     return shouldAutoAdvanceRating(
       { thresholdPercent, thresholdCount },
-      { totalParticipants: participantCount, participatedCount }
+      { totalParticipants: ratingParticipantCount, participatedCount }
     );
   }
 }
@@ -807,7 +859,9 @@ async function processAutoStart(
           id,
           start_mode,
           auto_start_participant_count,
-          proposing_duration_seconds
+          proposing_duration_seconds,
+          host_paused,
+          schedule_paused
         )
       )
     `
@@ -827,6 +881,11 @@ async function processAutoStart(
   for (const round of waitingRounds) {
     try {
       const chat = (round as any).cycles.chats as Chat;
+
+      // Skip paused chats
+      if (isChatPaused(chat)) {
+        continue;
+      }
 
       // Skip if not auto-start mode
       if (chat.start_mode !== "auto") {

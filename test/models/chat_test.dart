@@ -171,6 +171,19 @@ void main() {
         expect(chat.accessMethod, AccessMethod.inviteOnly);
       });
 
+      test('parses access_method personal_code', () {
+        final json = {
+          'id': 1,
+          'name': 'Test',
+          'initial_message': 'Test',
+          'access_method': 'personal_code',
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+
+        final chat = Chat.fromJson(json);
+        expect(chat.accessMethod, AccessMethod.personalCode);
+      });
+
       test('defaults access_method to public when null or unknown', () {
         final json = {
           'id': 1,

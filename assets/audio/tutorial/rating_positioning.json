@@ -1,0 +1,127 @@
+[
+  {
+    "word": "Place",
+    "start": 0.0,
+    "end": 0.372
+  },
+  {
+    "word": "each",
+    "start": 0.406,
+    "end": 0.569
+  },
+  {
+    "word": "idea",
+    "start": 0.615,
+    "end": 0.952
+  },
+  {
+    "word": "on",
+    "start": 1.033,
+    "end": 1.103
+  },
+  {
+    "word": "the",
+    "start": 1.138,
+    "end": 1.207
+  },
+  {
+    "word": "scale.",
+    "start": 1.242,
+    "end": 1.776
+  },
+  {
+    "word": "Use",
+    "start": 2.043,
+    "end": 2.276
+  },
+  {
+    "word": "up",
+    "start": 2.31,
+    "end": 2.403
+  },
+  {
+    "word": "down",
+    "start": 2.45,
+    "end": 2.67
+  },
+  {
+    "word": "to",
+    "start": 2.74,
+    "end": 2.798
+  },
+  {
+    "word": "move,",
+    "start": 2.891,
+    "end": 3.286
+  },
+  {
+    "word": "then",
+    "start": 3.413,
+    "end": 3.599
+  },
+  {
+    "word": "tap",
+    "start": 3.669,
+    "end": 3.947
+  },
+  {
+    "word": "confirm",
+    "start": 4.029,
+    "end": 4.505
+  },
+  {
+    "word": "to",
+    "start": 4.586,
+    "end": 4.632
+  },
+  {
+    "word": "lock",
+    "start": 4.714,
+    "end": 4.911
+  },
+  {
+    "word": "it",
+    "start": 4.981,
+    "end": 5.039
+  },
+  {
+    "word": "in.",
+    "start": 5.108,
+    "end": 5.387
+  },
+  {
+    "word": "Press",
+    "start": 5.875,
+    "end": 6.2
+  },
+  {
+    "word": "undo",
+    "start": 6.269,
+    "end": 6.629
+  },
+  {
+    "word": "to",
+    "start": 6.757,
+    "end": 6.861
+  },
+  {
+    "word": "redo",
+    "start": 6.954,
+    "end": 7.268
+  },
+  {
+    "word": "your",
+    "start": 7.349,
+    "end": 7.465
+  },
+  {
+    "word": "previous",
+    "start": 7.512,
+    "end": 7.895
+  },
+  {
+    "word": "placement.",
+    "start": 7.941,
+    "end": 8.824
+  }
+]

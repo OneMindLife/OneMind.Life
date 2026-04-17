@@ -251,6 +251,8 @@ class ChatService {
   /// Get chat by invite code
   /// If [languageCode] is provided, returns translated fields.
   Future<Chat?> getChatByCode(String code, {String? languageCode}) async {
+    Chat? chat;
+
     // Use translated version if language code is provided
     if (languageCode != null) {
       final response = await _client.rpc(
@@ -263,18 +265,28 @@ class ChatService {
 
       final list = response as List;
       if (list.isEmpty) return null;
-      return Chat.fromJson(list.first);
+      chat = Chat.fromJson(list.first);
+    } else {
+      // Default: use RPC to bypass restrictive SELECT policy on non-public chats
+      final response = await _client.rpc(
+        'get_chat_by_code',
+        params: {'p_invite_code': code.toUpperCase()},
+      );
+
+      final list = response as List;
+      if (list.isEmpty) return null;
+      chat = Chat.fromJson(list.first);
     }
 
-    // Default: use RPC to bypass restrictive SELECT policy on non-public chats
-    final response = await _client.rpc(
-      'get_chat_by_code',
-      params: {'p_invite_code': code.toUpperCase()},
-    );
+    // Auto-reserve personal codes on lookup (best-effort, non-blocking)
+    if (chat.accessMethod == AccessMethod.personalCode) {
+      _client.rpc(
+        'reserve_personal_code',
+        params: {'p_code': code.toUpperCase()},
+      ).catchError((_) => null); // Fire-and-forget
+    }
 
-    final list = response as List;
-    if (list.isEmpty) return null;
-    return Chat.fromJson(list.first);
+    return chat;
   }
 
   /// Get chat by ID
@@ -349,8 +361,12 @@ class ChatService {
     ScheduleType? scheduleType,
     String? scheduleTimezone,
     DateTime? scheduledStartAt,
+    DateTime? scheduledEndAt,
     List<ScheduleWindow>? scheduleWindows,
     bool visibleOutsideSchedule = true,
+    // Skip settings
+    bool allowSkipProposing = true,
+    bool allowSkipRating = true,
     // Translation settings (set at creation, not editable after)
     bool translationsEnabled = false,
     List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
@@ -419,6 +435,8 @@ class ChatService {
       'adaptive_adjustment_percent': adaptiveAdjustmentPercent,
       'min_phase_duration_seconds': minPhaseDurationSeconds,
       'max_phase_duration_seconds': maxPhaseDurationSeconds,
+      'allow_skip_proposing': allowSkipProposing,
+      'allow_skip_rating': allowSkipRating,
       'translations_enabled': translationsEnabled,
       'translation_languages': translationLanguages,
     };
@@ -436,6 +454,9 @@ class ChatService {
 
       if (scheduleType == ScheduleType.once && scheduledStartAt != null) {
         insertData['scheduled_start_at'] = scheduledStartAt.toUtc().toIso8601String();
+        if (scheduledEndAt != null) {
+          insertData['scheduled_end_at'] = scheduledEndAt.toUtc().toIso8601String();
+        }
       } else if (scheduleType == ScheduleType.recurring && scheduleWindows != null && scheduleWindows.isNotEmpty) {
         insertData['schedule_windows'] = scheduleWindows.map((w) => w.toJson()).toList();
       }
@@ -950,6 +971,82 @@ class ChatService {
     };
   }
 
+  /// Get all completed rounds with their rank-1 winners for a cycle.
+  /// Returns a list of maps: {round: Round, winners: List<RoundWinner>}
+  /// sorted by round number ascending.
+  Future<List<Map<String, dynamic>>> getRoundWinnersForCycle(
+    int cycleId, {
+    String? languageCode,
+  }) async {
+    // Get all completed rounds for this cycle
+    final roundsResponse = await _client
+        .from('rounds')
+        .select()
+        .eq('cycle_id', cycleId)
+        .not('winning_proposition_id', 'is', null)
+        .order('custom_id');
+
+    final rounds = (roundsResponse as List)
+        .map((json) => Round.fromJson(json))
+        .toList();
+
+    if (rounds.isEmpty) return [];
+
+    // Get all rank-1 winners for these rounds in one query
+    final roundIds = rounds.map((r) => r.id).toList();
+    final winnersResponse = await _client
+        .from('round_winners')
+        .select('''
+          id, round_id, proposition_id, rank, global_score, created_at,
+          propositions!inner(content)
+        ''')
+        .inFilter('round_id', roundIds)
+        .eq('rank', 1)
+        .order('global_score', ascending: false);
+
+    var allWinners = (winnersResponse as List)
+        .map((json) => RoundWinner.fromJson(json))
+        .toList();
+
+    // Apply translations
+    if (languageCode != null && allWinners.isNotEmpty) {
+      final propositionIds = allWinners.map((w) => w.propositionId).toList();
+      final translationsResponse = await _client
+          .from('translations')
+          .select('proposition_id, translated_text')
+          .inFilter('proposition_id', propositionIds)
+          .eq('field_name', 'content')
+          .eq('language_code', languageCode);
+
+      final translationMap = <int, String>{};
+      for (final t in translationsResponse as List) {
+        translationMap[t['proposition_id'] as int] = t['translated_text'] as String;
+      }
+
+      allWinners = allWinners.map((w) {
+        final translated = translationMap[w.propositionId];
+        if (translated != null) {
+          return w.copyWith(
+            contentTranslated: translated,
+            translationLanguage: languageCode,
+          );
+        }
+        return w;
+      }).toList();
+    }
+
+    // Group winners by round
+    final winnersByRound = <int, List<RoundWinner>>{};
+    for (final w in allWinners) {
+      winnersByRound.putIfAbsent(w.roundId, () => []).add(w);
+    }
+
+    return rounds.map((round) => {
+      'round': round,
+      'winners': winnersByRound[round.id] ?? <RoundWinner>[],
+    }).toList();
+  }
+
   /// Count consecutive SOLE wins for a proposition in a cycle.
   /// Uses root proposition IDs to track the same proposition across rounds.
   Future<int> _countConsecutiveSoleWins(int cycleId, int propositionId) async {
@@ -1055,5 +1152,14 @@ class ChatService {
   Future<Map<String, dynamic>> deleteInitialMessage(int chatId) async {
     final response = await _client.rpc('delete_initial_message', params: {'p_chat_id': chatId});
     return response as Map<String, dynamic>;
+  }
+
+  /// Get per-chat leaderboard rankings (avg rank across all rounds).
+  Future<List<Map<String, dynamic>>> getChatLeaderboard(int chatId) async {
+    final response = await _client.rpc(
+      'get_chat_leaderboard',
+      params: {'p_chat_id': chatId},
+    );
+    return (response as List).cast<Map<String, dynamic>>();
   }
 }

@@ -23,7 +23,7 @@ void main() {
         ),
       ));
 
-      expect(find.text('Start with AI agents?'), findsOneWidget);
+      expect(find.text('No'), findsOneWidget);
     });
 
     testWidgets('displays enable toggle', (tester) async {
@@ -34,7 +34,7 @@ void main() {
         ),
       ));
 
-      expect(find.text('Start with AI agents?'), findsOneWidget);
+      expect(find.text('No'), findsOneWidget);
       expect(find.byType(Switch), findsOneWidget);
     });
 
@@ -112,10 +112,9 @@ void main() {
         ),
       ));
 
-      // Should show per-agent name and personality fields (2 agents default)
+      // Should show per-agent name and personality fields (1 agent default)
       expect(find.text('Agent 1 name'), findsOneWidget);
-      expect(find.text('Agent 2 name'), findsOneWidget);
-      expect(find.text('Personality (optional)'), findsNWidgets(2));
+      expect(find.text('Personality (optional)'), findsNWidgets(1));
 
       // Should NOT show shared instructions field
       expect(
@@ -156,8 +155,8 @@ void main() {
       await tester.pump();
 
       expect(updated, isNotNull);
-      expect(updated!.agentCount, 3);
-      expect(updated!.agents.length, 3);
+      expect(updated!.agentCount, 2);
+      expect(updated!.agents.length, 2);
     });
 
     testWidgets('calls onChanged when decrementing agent count',
@@ -224,7 +223,7 @@ void main() {
       expect(switches, findsNWidgets(3));
 
       // Verify question texts exist in correct order
-      expect(find.text('Start with AI agents?'), findsOneWidget);
+      expect(find.text('Yes'), findsOneWidget);
       expect(find.text('Should agents also rate?'), findsOneWidget);
       expect(find.text('Customize agents?'), findsOneWidget);
     });

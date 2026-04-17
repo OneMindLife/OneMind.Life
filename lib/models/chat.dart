@@ -134,10 +134,15 @@ class Chat extends Equatable {
   final ScheduleType? scheduleType;
   final String scheduleTimezone;
   final DateTime? scheduledStartAt; // For one-time schedule
+  final DateTime? scheduledEndAt; // For one-time schedule (optional end)
   final List<ScheduleWindow> scheduleWindows; // For recurring schedules
   final bool visibleOutsideSchedule;
   final bool schedulePaused;
   final bool hostPaused;
+
+  // Per-chat skip settings
+  final bool allowSkipProposing;
+  final bool allowSkipRating;
 
   // Per-chat translation settings (set at creation, not editable after)
   final bool translationsEnabled;
@@ -189,10 +194,13 @@ class Chat extends Equatable {
     this.scheduleType,
     this.scheduleTimezone = 'UTC',
     this.scheduledStartAt,
+    this.scheduledEndAt,
     this.scheduleWindows = const [],
     this.visibleOutsideSchedule = true,
     this.schedulePaused = false,
     this.hostPaused = false,
+    this.allowSkipProposing = true,
+    this.allowSkipRating = true,
     this.translationsEnabled = false,
     this.translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
     this.nameTranslated,
@@ -249,6 +257,9 @@ class Chat extends Equatable {
       scheduledStartAt: json['scheduled_start_at'] != null
           ? DateTime.parse(json['scheduled_start_at'] as String)
           : null,
+      scheduledEndAt: json['scheduled_end_at'] != null
+          ? DateTime.parse(json['scheduled_end_at'] as String)
+          : null,
       scheduleWindows: (json['schedule_windows'] as List<dynamic>?)
               ?.map((e) => ScheduleWindow.fromJson(e as Map<String, dynamic>))
               .toList() ??
@@ -256,6 +267,8 @@ class Chat extends Equatable {
       visibleOutsideSchedule: json['visible_outside_schedule'] as bool? ?? true,
       schedulePaused: json['schedule_paused'] as bool? ?? false,
       hostPaused: json['host_paused'] as bool? ?? false,
+      allowSkipProposing: json['allow_skip_proposing'] as bool? ?? true,
+      allowSkipRating: json['allow_skip_rating'] as bool? ?? true,
       translationsEnabled: json['translations_enabled'] as bool? ?? false,
       translationLanguages: (json['translation_languages'] as List<dynamic>?)
               ?.map((e) => e as String)
@@ -358,6 +371,7 @@ class Chat extends Equatable {
       'schedule_type': scheduleType?.name,
       'schedule_timezone': scheduleTimezone,
       'scheduled_start_at': scheduledStartAt?.toIso8601String(),
+      'scheduled_end_at': scheduledEndAt?.toIso8601String(),
       'schedule_windows': scheduleWindows.isNotEmpty
           ? scheduleWindows.map((w) => w.toJson()).toList()
           : null,
@@ -446,10 +460,13 @@ class Chat extends Equatable {
         scheduleType,
         scheduleTimezone,
         scheduledStartAt,
+        scheduledEndAt,
         scheduleWindows,
         visibleOutsideSchedule,
         schedulePaused,
         hostPaused,
+        allowSkipProposing,
+        allowSkipRating,
         translationsEnabled,
         translationLanguages,
         nameTranslated,

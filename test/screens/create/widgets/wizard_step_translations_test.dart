@@ -17,7 +17,6 @@ void main() {
         body: WizardStepTranslations(
           translationSettings: settings,
           onTranslationSettingsChanged: onChanged,
-          onBack: () {},
           onContinue: () {},
         ),
       ),
@@ -25,7 +24,7 @@ void main() {
   }
 
   group('WizardStepTranslations', () {
-    testWidgets('displays title and subtitle', (tester) async {
+    testWidgets('displays title', (tester) async {
       await tester.pumpWidget(
         buildWidget(
           settings: TranslationSettings.defaults(),
@@ -33,11 +32,7 @@ void main() {
         ),
       );
 
-      expect(find.text('Languages'), findsOneWidget);
-      expect(
-        find.text('Choose what languages this chat supports'),
-        findsOneWidget,
-      );
+      expect(find.text('What languages?'), findsOneWidget);
     });
 
     testWidgets('displays language icon', (tester) async {
@@ -152,7 +147,7 @@ void main() {
       expect(captured?.languages, {'en', 'es'});
     });
 
-    testWidgets('displays back and continue buttons', (tester) async {
+    testWidgets('displays continue button', (tester) async {
       await tester.pumpWidget(
         buildWidget(
           settings: TranslationSettings.defaults(),
@@ -160,7 +155,6 @@ void main() {
         ),
       );
 
-      expect(find.byIcon(Icons.arrow_back), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward), findsOneWidget);
     });
 

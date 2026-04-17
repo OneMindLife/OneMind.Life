@@ -430,6 +430,117 @@ class PropositionService {
     return (response as List).isNotEmpty;
   }
 
+  /// Cap for rating "done" — matches the DB trigger constant.
+  static const int ratingDoneCap = 10;
+
+  /// Get all participant IDs who have completed rating for a round.
+  ///
+  /// A participant is "done" when they have rated min(10, non-self props)
+  /// propositions (matching the DB early advance trigger logic).
+  Future<Set<int>> getParticipantsWhoRated(int roundId) async {
+    // Get all propositions for this round with their participant_id (author)
+    final propositions = await _client
+        .from('propositions')
+        .select('id, participant_id')
+        .eq('round_id', roundId);
+    final propList = propositions as List;
+    final totalProps = propList.length;
+
+    // Build map: participant_id -> count of propositions they authored
+    final authoredCount = <int, int>{};
+    for (final p in propList) {
+      final pid = p['participant_id'];
+      if (pid != null) {
+        authoredCount[pid as int] = (authoredCount[pid as int] ?? 0) + 1;
+      }
+    }
+
+    // Get all grid rankings for this round
+    final rankings = await _client
+        .from('grid_rankings')
+        .select('participant_id')
+        .eq('round_id', roundId)
+        .not('participant_id', 'is', null);
+
+    // Count grid_rankings per participant
+    final ratedCount = <int, int>{};
+    for (final r in rankings as List) {
+      final pid = r['participant_id'] as int;
+      ratedCount[pid] = (ratedCount[pid] ?? 0) + 1;
+    }
+
+    // A participant is done when rated count >= min(cap, non-self props)
+    final done = <int>{};
+    for (final entry in ratedCount.entries) {
+      final pid = entry.key;
+      final rated = entry.value;
+      final ownProps = authoredCount[pid] ?? 0;
+      final nonSelfProps = totalProps - ownProps;
+      final required = nonSelfProps < ratingDoneCap ? nonSelfProps : ratingDoneCap;
+      if (required > 0 && rated >= required) {
+        done.add(pid);
+      }
+    }
+    return done;
+  }
+
+  /// Get the minimum rating count across all propositions in a round.
+  /// Used for the per-proposition progress bar: min_ratings / threshold × 100.
+  Future<int> getMinRatingsPerProposition(int roundId) async {
+    // Get all propositions for this round
+    final propositions = await _client
+        .from('propositions')
+        .select('id')
+        .eq('round_id', roundId);
+    final propIds = (propositions as List).map((p) => p['id'] as int).toList();
+
+    if (propIds.isEmpty) return 0;
+
+    // Get all grid rankings for this round
+    final rankings = await _client
+        .from('grid_rankings')
+        .select('proposition_id')
+        .eq('round_id', roundId);
+
+    // Count per proposition
+    final counts = <int, int>{};
+    for (final id in propIds) {
+      counts[id] = 0;
+    }
+    for (final r in rankings as List) {
+      final pid = r['proposition_id'] as int;
+      if (counts.containsKey(pid)) {
+        counts[pid] = counts[pid]! + 1;
+      }
+    }
+
+    return counts.values.reduce((a, b) => a < b ? a : b);
+  }
+
+  /// Get all participant IDs who have skipped proposing for a round.
+  Future<Set<int>> getParticipantsWhoSkippedProposing(int roundId) async {
+    final response = await _client
+        .from('round_skips')
+        .select('participant_id')
+        .eq('round_id', roundId);
+
+    return (response as List)
+        .map((r) => r['participant_id'] as int)
+        .toSet();
+  }
+
+  /// Get all participant IDs who have skipped rating for a round.
+  Future<Set<int>> getParticipantsWhoSkippedRating(int roundId) async {
+    final response = await _client
+        .from('rating_skips')
+        .select('participant_id')
+        .eq('round_id', roundId);
+
+    return (response as List)
+        .map((r) => r['participant_id'] as int)
+        .toSet();
+  }
+
   /// Get user's existing grid rankings for resuming a session
   /// Returns a map of proposition_id -> grid_position
   Future<Map<int, double>> getMyGridRankings(
@@ -534,8 +645,9 @@ class PropositionService {
     );
   }
 
-  /// Get initial 2 random propositions for grid ranking (lazy loading)
-  /// Excludes user's own propositions and any already fetched
+  /// Get initial 2 least-rated propositions for grid ranking (lazy loading).
+  /// Selects propositions with the fewest ratings first to ensure even coverage.
+  /// Excludes user's own propositions and any already fetched.
   /// If [languageCode] is provided, returns translated content.
   Future<List<Proposition>> getInitialPropositionsForGridRanking({
     required int roundId,
@@ -543,55 +655,31 @@ class PropositionService {
     List<int> excludeIds = const [],
     String? languageCode,
   }) async {
-    // Use translated version if language code is provided
-    if (languageCode != null) {
-      final response = await _client.rpc(
-        'get_propositions_with_translations',
-        params: {
-          'p_round_id': roundId,
-          'p_language_code': languageCode,
-        },
-      );
+    final response = await _client.rpc(
+      'get_least_rated_propositions',
+      params: {
+        'p_round_id': roundId,
+        'p_participant_id': participantId,
+        'p_count': 2,
+        'p_exclude_ids': excludeIds,
+      },
+    );
 
-      var propositions = (response as List)
-          .map((json) => Proposition.fromJson(json))
-          .where((p) => p.participantId != participantId)
-          .where((p) => !excludeIds.contains(p.id))
-          .toList();
-
-      // Shuffle and return first 2
-      propositions.shuffle();
-      return propositions.take(2).toList();
-    }
-
-    // Default: no translations
-    var query = _client
-        .from('propositions')
-        .select()
-        .eq('round_id', roundId)
-        .neq('participant_id', participantId);
-
-    if (excludeIds.isNotEmpty) {
-      // Exclude already fetched propositions
-      for (final id in excludeIds) {
-        query = query.neq('id', id);
-      }
-    }
-
-    // Get all matching, then shuffle and take 2
-    final response = await query;
-    final propositions = (response as List)
+    var propositions = (response as List)
         .map((json) => Proposition.fromJson(json))
         .toList();
 
-    // Shuffle and return first 2
-    propositions.shuffle();
-    return propositions.take(2).toList();
+    // If translations needed, fetch them separately
+    if (languageCode != null && propositions.isNotEmpty) {
+      propositions = await _applyTranslations(propositions, roundId, languageCode);
+    }
+
+    return propositions;
   }
 
-  /// Get next random proposition for grid ranking (lazy loading)
-  /// Excludes user's own propositions and any already fetched
-  /// Returns null if no more propositions to rank
+  /// Get next least-rated proposition for grid ranking (lazy loading).
+  /// Picks the proposition with the fewest ratings that the user hasn't
+  /// rated yet. Returns null if no more propositions to rank.
   /// If [languageCode] is provided, returns translated content.
   Future<Proposition?> getNextPropositionForGridRanking({
     required int roundId,
@@ -599,55 +687,56 @@ class PropositionService {
     required List<int> excludeIds,
     String? languageCode,
   }) async {
-    // Use translated version if language code is provided
+    final response = await _client.rpc(
+      'get_least_rated_proposition',
+      params: {
+        'p_round_id': roundId,
+        'p_participant_id': participantId,
+        'p_exclude_ids': excludeIds,
+      },
+    );
+
+    final results = response as List;
+    if (results.isEmpty) {
+      return null;
+    }
+
+    var proposition = Proposition.fromJson(results.first);
+
     if (languageCode != null) {
-      final response = await _client.rpc(
-        'get_propositions_with_translations',
-        params: {
-          'p_round_id': roundId,
-          'p_language_code': languageCode,
-        },
-      );
+      final translated = await _applyTranslations([proposition], roundId, languageCode);
+      proposition = translated.first;
+    }
 
-      final propositions = (response as List)
-          .map((json) => Proposition.fromJson(json))
-          .where((p) => p.participantId != participantId)
-          .where((p) => !excludeIds.contains(p.id))
-          .toList();
+    return proposition;
+  }
 
-      if (propositions.isEmpty) {
-        return null; // No more propositions to rank
+  /// Apply translations to a list of propositions using the translations RPC.
+  Future<List<Proposition>> _applyTranslations(
+    List<Proposition> propositions,
+    int roundId,
+    String languageCode,
+  ) async {
+    final translationResponse = await _client.rpc(
+      'get_propositions_with_translations',
+      params: {
+        'p_round_id': roundId,
+        'p_language_code': languageCode,
+      },
+    );
+
+    final translationMap = <int, Map<String, dynamic>>{};
+    for (final t in translationResponse as List) {
+      translationMap[t['id'] as int] = t;
+    }
+
+    return propositions.map((p) {
+      final t = translationMap[p.id];
+      if (t != null) {
+        return Proposition.fromJson(t);
       }
-
-      // Shuffle and return first one
-      propositions.shuffle();
-      return propositions.first;
-    }
-
-    // Default: no translations
-    var query = _client
-        .from('propositions')
-        .select()
-        .eq('round_id', roundId)
-        .neq('participant_id', participantId);
-
-    // Exclude already fetched propositions
-    for (final id in excludeIds) {
-      query = query.neq('id', id);
-    }
-
-    final response = await query.limit(10); // Fetch a few for randomness
-    final propositions = (response as List)
-        .map((json) => Proposition.fromJson(json))
-        .toList();
-
-    if (propositions.isEmpty) {
-      return null; // No more propositions to rank
-    }
-
-    // Shuffle and return first one
-    propositions.shuffle();
-    return propositions.first;
+      return p;
+    }).toList();
   }
 
   /// Get count of remaining propositions to rank
@@ -831,6 +920,27 @@ class PropositionService {
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'rating_skips',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'round_id',
+            value: roundId,
+          ),
+          callback: (_) => onUpdate(),
+        )
+        .subscribe();
+  }
+
+  /// Subscribe to grid ranking changes for a round (rating participation updates).
+  RealtimeChannel subscribeToGridRankings(
+    int roundId,
+    void Function() onUpdate,
+  ) {
+    return _client
+        .channel('grid_rankings:$roundId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'grid_rankings',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
             column: 'round_id',

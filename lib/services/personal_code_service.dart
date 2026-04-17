@@ -42,6 +42,33 @@ class PersonalCodeService {
     );
   }
 
+  /// Reserve a personal code for the current user.
+  /// Called automatically when looking up a personal_code chat.
+  /// Best-effort: failures are silently ignored.
+  Future<void> reserveCode(String code) async {
+    try {
+      await _client.rpc(
+        'reserve_personal_code',
+        params: {'p_code': code.toUpperCase()},
+      );
+    } catch (_) {
+      // Best-effort — don't block the join flow
+    }
+  }
+
+  /// Release a personal code reservation.
+  /// Called when the user backs out of the join dialog without joining.
+  Future<void> releaseReservation(String code) async {
+    try {
+      await _client.rpc(
+        'release_personal_code_reservation',
+        params: {'p_code': code.toUpperCase()},
+      );
+    } catch (_) {
+      // Best-effort
+    }
+  }
+
   /// Redeem a personal code to join a chat.
   /// Returns a map with participant and chat info.
   Future<Map<String, dynamic>> redeemCode({

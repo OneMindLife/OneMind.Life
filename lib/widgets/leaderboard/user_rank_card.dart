@@ -32,7 +32,7 @@ class UserRankCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: isWinner
-            ? BorderSide(color: Colors.amber.shade600, width: 2)
+            ? BorderSide(color: colorScheme.tertiary, width: 2)
             : BorderSide.none,
       ),
       child: Padding(
@@ -44,7 +44,7 @@ class UserRankCard extends StatelessWidget {
             if (isWinner) ...[
               Icon(
                 Icons.emoji_events,
-                color: Colors.amber.shade700,
+                color: colorScheme.tertiary,
                 size: 20,
               ),
               const SizedBox(width: 6),

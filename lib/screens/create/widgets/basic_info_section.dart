@@ -6,8 +6,8 @@ import 'form_inputs.dart';
 /// This ensures titles display fully without truncation across all screens.
 const int kChatNameMaxLength = 50;
 
-/// Basic info section for chat name and initial message
-class BasicInfoSection extends StatelessWidget {
+/// Basic info section for chat name and optional initial message
+class BasicInfoSection extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController messageController;
 
@@ -18,6 +18,13 @@ class BasicInfoSection extends StatelessWidget {
   });
 
   @override
+  State<BasicInfoSection> createState() => _BasicInfoSectionState();
+}
+
+class _BasicInfoSectionState extends State<BasicInfoSection> {
+  bool _showMessage = false;
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     return Column(
@@ -26,7 +33,7 @@ class BasicInfoSection extends StatelessWidget {
         SectionHeader(l10n.basicInfo),
         const SizedBox(height: 16),
         TextFormField(
-          controller: nameController,
+          controller: widget.nameController,
           maxLength: kChatNameMaxLength,
           decoration: InputDecoration(
             labelText: l10n.chatNameRequired,
@@ -34,17 +41,28 @@ class BasicInfoSection extends StatelessWidget {
           ),
           validator: (v) => v == null || v.trim().isEmpty ? l10n.required : null,
         ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: messageController,
-          decoration: InputDecoration(
-            labelText: l10n.initialMessageRequired,
-            hintText: l10n.initialMessageHint,
-            helperText: l10n.initialMessageHelperText,
-          ),
-          maxLines: 3,
-          validator: (v) => v == null || v.trim().isEmpty ? l10n.required : null,
+        const SizedBox(height: 8),
+        SwitchListTile(
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.setFirstMessage),
+          value: _showMessage,
+          onChanged: (v) {
+            setState(() => _showMessage = v);
+            if (!v) widget.messageController.clear();
+          },
         ),
+        if (_showMessage) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: widget.messageController,
+            decoration: InputDecoration(
+              labelText: l10n.initialMessageOptional,
+              hintText: l10n.initialMessageHint,
+              helperText: l10n.initialMessageHelperText,
+            ),
+            maxLines: 3,
+          ),
+        ],
       ],
     );
   }

@@ -2,7 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/l10n/language_service.dart';
+import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../utils/language_utils.dart';
 import '../../widgets/error_view.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
@@ -22,10 +25,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _scrollController = ScrollController();
   Timer? _searchDebounce;
   Timer? _tickTimer;
+  late Set<String> _selectedLanguages;
 
   @override
   void initState() {
     super.initState();
+    final currentLang = ref.read(localeProvider).languageCode;
+    _selectedLanguages = {currentLang};
     _scrollController.addListener(_onScroll);
     // 1-second tick for countdown timer refresh
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -91,27 +97,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }
   }
 
-  /// Navigate to a chat the user has already joined.
-  void _openChat(Chat chat) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ChatScreen(chat: chat),
-      ),
-    );
-    ref.read(myChatsProvider.notifier).refresh();
-  }
-
   @override
   Widget build(BuildContext context) {
     final publicChatsAsync = ref.watch(publicChatsProvider);
     final myChatsAsync = ref.watch(myChatsProvider);
     final joinedChatIds = myChatsAsync.whenData(
       (state) => {for (final c in state.chats) c.id},
-    );
-    // Build a map of chat id → Chat for quick lookup
-    final joinedChatsMap = myChatsAsync.whenData(
-      (state) => {for (final c in state.chats) c.id: c},
     );
     final l10n = AppLocalizations.of(context);
 
@@ -172,13 +163,41 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
           ),
 
+          // Language filter chips
+          SizedBox(
+            height: 40,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: LanguageService.supportedLanguageCodes.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (context, index) {
+                final code = LanguageService.supportedLanguageCodes[index];
+                final selected = _selectedLanguages.contains(code);
+                return FilterChip(
+                  label: Text(LanguageUtils.displayName(code)),
+                  selected: selected,
+                  onSelected: (value) {
+                    setState(() {
+                      if (value) {
+                        _selectedLanguages.add(code);
+                      } else if (_selectedLanguages.length > 1) {
+                        _selectedLanguages.remove(code);
+                      }
+                    });
+                  },
+                );
+              },
+            ),
+          ),
+          const SizedBox(height: 4),
+
           // Content
           Expanded(
             child: publicChatsAsync.when(
               data: (publicChatsState) => _buildChatList(
                 publicChatsState,
                 joinedChatIds.valueOrNull ?? {},
-                joinedChatsMap.valueOrNull ?? {},
               ),
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => _buildError(error.toString()),
@@ -192,35 +211,59 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   Widget _buildChatList(
     PublicChatsState publicChatsState,
     Set<int> joinedChatIds,
-    Map<int, Chat> joinedChatsMap,
   ) {
     final l10n = AppLocalizations.of(context);
-    final chats = publicChatsState.chats;
+    final chats = publicChatsState.chats
+        .where((c) => c.translationLanguages.any(_selectedLanguages.contains))
+        .where((c) => !joinedChatIds.contains(c.id))
+        .toList();
 
     if (chats.isEmpty) {
+      // Determine why the list is empty
+      final hasSearch = _searchController.text.isNotEmpty;
+      final hasUnfilteredChats = publicChatsState.chats.isNotEmpty;
+      final isFiltered = hasUnfilteredChats && !hasSearch;
+
+      final String title;
+      final String subtitle;
+      final IconData icon;
+
+      if (hasSearch) {
+        title = l10n.noChatsFoundFor(_searchController.text);
+        subtitle = l10n.tryDifferentSearch;
+        icon = Icons.search_off;
+      } else if (isFiltered) {
+        title = l10n.noChatsMatchFilters;
+        subtitle = l10n.tryAdjustingFilters;
+        icon = Icons.filter_list_off;
+      } else {
+        title = l10n.noPublicChatsAvailable;
+        subtitle = l10n.beFirstToCreate;
+        icon = Icons.public_off;
+      }
+
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.public_off,
+              icon,
               size: 48,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             const SizedBox(height: 16),
             Text(
-              _searchController.text.isNotEmpty
-                  ? l10n.noChatsFoundFor(_searchController.text)
-                  : l10n.noPublicChatsAvailable,
+              title,
               style: Theme.of(context).textTheme.titleMedium,
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.beFirstToCreate,
+              subtitle,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -248,10 +291,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           }
 
           final chat = chats[index];
-          final isJoined = joinedChatIds.contains(chat.id);
-          final onTap = isJoined
-              ? () => _openChat(joinedChatsMap[chat.id]!)
-              : () => _joinChat(chat);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -259,22 +298,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               key: Key('public-chat-card-${chat.id}'),
               name: chat.displayName,
               initialMessage: chat.displayInitialMessage,
-              onTap: onTap,
+              onTap: () => _joinChat(chat),
               participantCount: chat.participantCount,
               phase: chat.currentPhase,
               isPaused: chat.isPaused,
               timeRemaining: chat.timeRemaining,
               translationLanguages: chat.translationLanguages,
-              trailing: isJoined
-                  ? Chip(
-                      label: Text(l10n.joined),
-                      avatar: const Icon(Icons.check, size: 16),
-                      visualDensity: VisualDensity.compact,
-                    )
-                  : FilledButton(
-                      onPressed: onTap,
-                      child: Text(l10n.join),
-                    ),
             ),
           );
         },

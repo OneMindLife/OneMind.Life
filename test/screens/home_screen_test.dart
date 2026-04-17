@@ -186,14 +186,6 @@ void main() {
         expect(find.text('OneMind'), findsOneWidget);
       });
 
-      testWidgets('displays Explore button', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('explore-button')), findsOneWidget);
-        expect(find.byIcon(Icons.explore), findsOneWidget);
-      });
-
       testWidgets('displays overflow menu with all items', (tester) async {
         await tester.pumpWidget(createTestWidget());
         await tester.pumpAndSettle();
@@ -206,8 +198,7 @@ void main() {
         await tester.tap(find.byKey(const Key('overflow-menu')));
         await tester.pumpAndSettle();
 
-        // All menu items should be visible
-        expect(find.text('How it works'), findsOneWidget);
+        // All menu items should be visible (tutorial moved to AppBar)
         expect(find.text('Contact'), findsOneWidget);
         expect(find.text('Source Code'), findsOneWidget);
         expect(find.text('Legal'), findsOneWidget);
@@ -332,34 +323,9 @@ void main() {
         expect(find.text('No matching chats'), findsOneWidget);
       });
 
-      testWidgets('typing 6-char code triggers invite code lookup', (tester) async {
-        // Mock getChatByCode to return null (code not found)
-        when(() => mockChatService.getChatByCode(
-              any(),
-              languageCode: any(named: 'languageCode'),
-            )).thenAnswer((_) async => null);
-
-        await tester.pumpWidget(createTestWidget(chats: []));
-        await tester.pumpAndSettle();
-
-        // Type a 6-character alphanumeric code (NOT 'ABC123' which is the
-        // tutorial demo invite code and triggers a different UI path)
-        await tester.enterText(find.byType(TextField), 'XYZ789');
-        await tester.pumpAndSettle();
-
-        // Should show "Chat not found" error after auto-lookup
-        expect(find.text('Chat not found'), findsOneWidget);
-        expect(find.byIcon(Icons.error_outline), findsOneWidget);
-      });
+      // Invite code lookup removed — joining now via action picker
     });
 
-    group('Accessibility', () {
-      testWidgets('Explore button has tooltip', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.byTooltip('Discover Chats'), findsOneWidget);
-      });
-    });
+    // Explore button removed from app bar — now in FAB action sheet
   });
 }
