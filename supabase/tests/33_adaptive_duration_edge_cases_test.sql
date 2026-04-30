@@ -497,17 +497,25 @@ SELECT is(
 -- When a phase has no threshold, that phase should not adjust
 -- =============================================================================
 
+-- Edge case 6 explicitly tests "no rating threshold configured" — but
+-- since 20260430160000_align_chat_db_defaults.sql, the DB default for
+-- rating_threshold_percent is 100 (was NULL). So we need to clear BOTH
+-- the count AND the percent to reproduce the "no threshold" state.
+-- Same applies to proposing_threshold_percent — we want only the count
+-- threshold for proposing in this test.
 INSERT INTO chats (
     name, initial_message, creator_session_token,
     adaptive_duration_enabled, adaptive_adjustment_percent,
     min_phase_duration_seconds, max_phase_duration_seconds,
     proposing_duration_seconds, rating_duration_seconds,
-    proposing_threshold_count, rating_threshold_count  -- Explicitly set rating to NULL
+    proposing_threshold_count, rating_threshold_count,
+    proposing_threshold_percent, rating_threshold_percent
 )
 VALUES (
     'Partial Threshold Chat', 'Testing partial', gen_random_uuid(),
     TRUE, 10, 60, 86400, 300, 300,
-    3, NULL  -- Only proposing threshold, rating explicitly NULL
+    3, NULL,
+    NULL, NULL  -- Override the new 100 default; preserve "no threshold" intent
 );
 
 DO $$

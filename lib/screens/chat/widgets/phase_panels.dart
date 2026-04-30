@@ -136,122 +136,122 @@ class ScheduledWaitingPanel extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final tzDisplay = _formatTimezoneDisplay(scheduleTimezone);
 
+    final onContainer = theme.colorScheme.onTertiaryContainer;
+    final onContainerMuted = onContainer.withValues(alpha: 0.85);
+
     return Container(
       padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.schedule,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                l10n.scheduled,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  color: theme.colorScheme.primary,
-                ),
-              ),
-            ],
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.tertiary.withValues(alpha: 0.4),
           ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withAlpha(50),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.primary.withAlpha(50),
-              ),
-            ),
-            child: Column(
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (isRecurring) ...[
-                  Text(
-                    l10n.chatOutsideSchedule,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  if (nextWindowStart != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      l10n.nextWindowStarts(_formatDateTime(nextWindowStart!)),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                  if (scheduleWindows.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      l10n.scheduleWindows,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ...scheduleWindows.map((w) => Padding(
-                      padding: const EdgeInsets.only(bottom: 2),
-                      child: Text(
-                        _formatWindow(w),
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                Icon(
+                  Icons.schedule,
+                  color: onContainer,
+                  size: 28,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        l10n.scheduled,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: onContainer,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    )),
-                  ],
-                ] else if (scheduledStartAt != null) ...[
-                  Text(
-                    l10n.scheduledToStart,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _formatDateTime(scheduledStartAt!),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.public,
-                      size: 14,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      tzDisplay,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 4),
+                      Text(
+                        isRecurring
+                            ? l10n.chatOutsideSchedule
+                            : l10n.scheduledToStart,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: onContainerMuted,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            l10n.chatWillAutoStart,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 12),
+            if (isRecurring && nextWindowStart != null)
+              Text(
+                l10n.nextWindowStarts(_formatDateTime(nextWindowStart!)),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: onContainer,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            else if (!isRecurring && scheduledStartAt != null)
+              Text(
+                _formatDateTime(scheduledStartAt!),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: onContainer,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            if (isRecurring && scheduleWindows.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                l10n.scheduleWindows,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: onContainerMuted,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              ...scheduleWindows.map((w) => Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      _formatWindow(w),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: onContainerMuted,
+                      ),
+                    ),
+                  )),
+            ],
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.public,
+                  size: 14,
+                  color: onContainerMuted,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  tzDisplay,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: onContainerMuted,
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              l10n.chatWillAutoStart,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: onContainerMuted,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
