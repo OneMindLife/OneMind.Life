@@ -39,6 +39,52 @@
   "pending": "PENDING",
   "pendingRequests": "Pending Requests",
   "yourChats": "Your Chats",
+  "nextUp": "Next up",
+  "nextUpWithCount": "Next up ({count})",
+  "@nextUpWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "wrappingUp": "Wrapping up",
+  "wrappingUpWithCount": "Wrapping up ({count})",
+  "@wrappingUpWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "inactive": "Inactive",
+  "inactiveWithCount": "Inactive ({count})",
+  "@inactiveWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "allChats": "All chats",
+  "allChatsWithCount": "All chats ({count})",
+  "@allChatsWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noChatsHere": "Nothing here — you're all caught up.",
+  "enableNotificationsTitle": "Get notified when it's your turn",
+  "enableNotificationsBody": "We'll ping you when a round needs you.",
+  "enableNotificationsCta": "Enable",
+  "notificationsBlockedTitle": "Notifications are blocked",
+  "notificationsBlockedBody": "Unblock them in your browser's site settings to get notified.",
+  "gotIt": "Got it",
+  "notNow": "Not now",
+  "installOneMindTitle": "Install OneMind",
+  "installOneMindBody": "Add to your home screen for the best experience.",
+  "installOneMindIosBody": "Tap Share then \"Add to Home Screen\".",
+  "installCta": "Install",
+  "lookingForMore": "Join one to keep going",
+  "lookingForMoreDescription": "Public chats with the most activity right now.",
+  "discoverPublicChatsCta": "Discover public chats",
+  "seeAllPublicChats": "See all public chats",
+  "nothingToJoinTitle": "Nothing new to join right now",
+  "nothingToJoinDescription": "Start your own chat and invite others.",
 
   "cancelRequest": "Cancel Request",
   "cancelRequestQuestion": "Cancel your request to join \"{chatName}\"?",
@@ -215,6 +261,12 @@
       "number": {"type": "int"}
     }
   },
+  "convergenceNumber": "Convergence #{number}",
+  "@convergenceNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
   "@roundResults": {},
   "noPropositionsToDisplay": "No propositions to display",
   "noPreviousWinner": "No top candidate yet",
@@ -308,6 +360,8 @@
   "joinRequests": "Join Requests",
   "resumeChat": "Resume Chat",
   "pauseChat": "Pause Chat",
+  "turnMusicOn": "Turn music on",
+  "turnMusicOff": "Turn music off",
   "leaveChat": "Leave Chat",
   "deleteChat": "Delete Chat",
   "host": "Host",
@@ -1380,5 +1434,8 @@
   "viewOtherPropositions": "View propositions",
   "otherPropositionsTitle": "Propositions",
   "noOtherPropositionsYet": "No propositions yet",
-  "donate": "Donate"
+  "donate": "Donate",
+  "supportOneMindTitle": "Support OneMind",
+  "supportOneMindBody": "OneMind is free and runs on donations. If this group just helped you reach a real decision together, would you consider chipping in to keep it going?",
+  "maybeLater": "Maybe later"
 }

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/models/round_winner.dart';
 import 'package:onemind_app/screens/chat/widgets/previous_round_display.dart';
+import 'package:onemind_app/screens/chat/widgets/convergence_video_card.dart';
+import 'package:onemind_app/widgets/tts_button.dart';
 
 void main() {
   final testDate = DateTime(2024, 1, 1);
@@ -32,7 +34,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Winning proposition'), findsOneWidget);
-      expect(find.text('Current Top Candidate'), findsOneWidget);
     });
 
     testWidgets('shows chevron arrows for multiple winners', (tester) async {
@@ -138,65 +139,79 @@ void main() {
       expect(find.text('No top candidate yet'), findsOneWidget);
     });
 
-    testWidgets('labelOverride replaces default label', (tester) async {
+    testWidgets('renders TtsButton with audioUrl when single winner', (tester) async {
       await tester.pumpWidget(createTestWidget(
         PreviousWinnerPanel(
           previousRoundWinners: [
-            RoundWinner(id: 1, roundId: 1, propositionId: 1,
-                content: 'Winner', globalScore: 90.0,
-                rank: 1, createdAt: testDate),
+            RoundWinner(
+              id: 1, roundId: 1, propositionId: 1,
+              content: 'Winner', rank: 1, createdAt: testDate,
+              audioUrl: 'https://example.com/round.mp3',
+            ),
           ],
           currentWinnerIndex: 0,
-          roundNumber: 3,
-          labelOverride: 'Placeholder',
           onWinnerIndexChanged: (_) {},
         ),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('Placeholder'), findsOneWidget);
-      expect(find.text('Round 3 Winner'), findsNothing);
+      expect(find.byType(TtsButton), findsOneWidget);
     });
 
-    testWidgets('shows roundWinner label when no labelOverride', (tester) async {
+    testWidgets('renders inline ConvergenceVideoCard when videoUrl is present', (tester) async {
       await tester.pumpWidget(createTestWidget(
         PreviousWinnerPanel(
           previousRoundWinners: [
-            RoundWinner(id: 1, roundId: 1, propositionId: 1,
-                content: 'Winner', globalScore: 90.0,
-                rank: 1, createdAt: testDate),
+            RoundWinner(
+              id: 1, roundId: 1, propositionId: 1,
+              content: 'Winner', rank: 1, createdAt: testDate,
+              videoUrl: 'https://example.com/round.mp4',
+            ),
           ],
           currentWinnerIndex: 0,
-          roundNumber: 2,
           onWinnerIndexChanged: (_) {},
         ),
       ));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      expect(find.text('Round 2 Winner'), findsOneWidget);
+      expect(find.byType(ConvergenceVideoCard), findsOneWidget);
     });
 
-    testWidgets('labelOverride works with multiple winners', (tester) async {
+    testWidgets('hides ConvergenceVideoCard when videoUrl is null', (tester) async {
       await tester.pumpWidget(createTestWidget(
         PreviousWinnerPanel(
           previousRoundWinners: [
-            RoundWinner(id: 1, roundId: 1, propositionId: 1,
-                content: 'Winner 1', globalScore: 80.0,
-                rank: 1, createdAt: testDate),
-            RoundWinner(id: 2, roundId: 1, propositionId: 2,
-                content: 'Winner 2', globalScore: 80.0,
-                rank: 1, createdAt: testDate),
+            RoundWinner(
+              id: 1, roundId: 1, propositionId: 1,
+              content: 'Winner', rank: 1, createdAt: testDate,
+            ),
           ],
           currentWinnerIndex: 0,
-          roundNumber: 1,
-          labelOverride: 'Placeholder',
           onWinnerIndexChanged: (_) {},
         ),
       ));
       await tester.pumpAndSettle();
 
-      expect(find.text('Placeholder'), findsOneWidget);
-      expect(find.text('Round 1 Winner'), findsNothing);
+      expect(find.byType(ConvergenceVideoCard), findsNothing);
+    });
+
+    testWidgets('TtsButton present even when audioUrl is null (falls back to device TTS)',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        PreviousWinnerPanel(
+          previousRoundWinners: [
+            RoundWinner(
+              id: 1, roundId: 1, propositionId: 1,
+              content: 'Winner', rank: 1, createdAt: testDate,
+            ),
+          ],
+          currentWinnerIndex: 0,
+          onWinnerIndexChanged: (_) {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TtsButton), findsOneWidget);
     });
   });
 

@@ -508,6 +508,19 @@ async function calculateWinnerAndComplete(
 
   if (error) throw error;
 
+  // Persist per-user voting/proposing/combined ranks for the leaderboard.
+  // The SQL `complete_round_with_winner` function calls this too; the
+  // early-advance trigger takes that path, but this timer path bypassed it
+  // for months — leaving rounds that ended on-time with no rank rows.
+  // store_round_ranks is idempotent (ON CONFLICT DO UPDATE).
+  const { error: ranksError } = await supabase.rpc("store_round_ranks", {
+    p_round_id: round.id,
+  });
+  if (ranksError) {
+    // Don't block completion — log and move on. Ranks can be backfilled.
+    console.error(`store_round_ranks failed for round ${round.id}: ${ranksError.message}`);
+  }
+
   console.log(
     `Round ${round.id} complete. ` +
     `Winner(s): ${tiedWinners.length}, ` +

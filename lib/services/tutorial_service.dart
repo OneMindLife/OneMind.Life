@@ -43,4 +43,37 @@ class TutorialService {
   Future<void> resetHomeTour() async {
     await _prefs.remove(_homeTourCompletedKey);
   }
+
+  // =========================================================================
+  // OFFICIAL-CHAT AUTO-JOIN
+  // =========================================================================
+
+  static const String _officialAutoJoinedKey = 'official_chat_auto_joined';
+
+  /// Whether we've already attempted to auto-join the user into the
+  /// official OneMind chat. Set on first visit to the home screen so we
+  /// never silently re-add a user who has explicitly left.
+  bool get hasAutoJoinedOfficial {
+    return _prefs.getBool(_officialAutoJoinedKey) ?? false;
+  }
+
+  Future<void> markOfficialAutoJoined() async {
+    await _prefs.setBool(_officialAutoJoinedKey, true);
+  }
+
+  // =========================================================================
+  // PUSH NOTIFICATION PROMPT
+  // =========================================================================
+
+  static const String _pushPromptDismissedKey = 'push_prompt_dismissed';
+
+  /// Whether the user has dismissed the "Enable notifications" banner on the
+  /// home screen. Once dismissed we don't show it again.
+  bool get hasDismissedPushPrompt {
+    return _prefs.getBool(_pushPromptDismissedKey) ?? false;
+  }
+
+  Future<void> markPushPromptDismissed() async {
+    await _prefs.setBool(_pushPromptDismissedKey, true);
+  }
 }

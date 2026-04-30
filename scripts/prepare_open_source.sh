@@ -278,6 +278,18 @@ if [ -f "$DEST_DIR/lib/config/supabase_config.dart" ]; then
     echo -e "  ${GREEN}✓${NC} lib/config/supabase_config.dart"
 fi
 
+# Firebase web service worker — scrub hardcoded apiKey/appId/etc.
+if [ -f "$DEST_DIR/web/firebase-messaging-sw.js" ]; then
+    sed -i "s|apiKey: 'AIzaSy[^']*'|apiKey: 'YOUR_API_KEY'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|appId: '[^']*'|appId: 'YOUR_APP_ID'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|messagingSenderId: '[^']*'|messagingSenderId: 'YOUR_SENDER_ID'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|projectId: '[^']*'|projectId: 'YOUR_PROJECT_ID'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|authDomain: '[^']*'|authDomain: 'YOUR_PROJECT_ID.firebaseapp.com'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|storageBucket: '[^']*'|storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    sed -i "s|measurementId: '[^']*'|measurementId: 'YOUR_MEASUREMENT_ID'|g" "$DEST_DIR/web/firebase-messaging-sw.js"
+    echo -e "  ${GREEN}✓${NC} web/firebase-messaging-sw.js"
+fi
+
 # Replace Supabase project ref in all SQL and TypeScript files
 find "$DEST_DIR" -type f \( -name "*.sql" -o -name "*.ts" \) -exec sed -i 's/ccyuxrtrklgpkzcryzpj/YOUR_PROJECT_REF/g' {} \;
 echo -e "  ${GREEN}✓${NC} Supabase project refs in migrations/functions"

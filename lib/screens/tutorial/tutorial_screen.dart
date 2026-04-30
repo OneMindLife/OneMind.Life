@@ -24,7 +24,8 @@ import 'models/tutorial_state.dart';
 import 'notifiers/tutorial_notifier.dart';
 import 'tutorial_data.dart';
 import '../home_tour/widgets/spotlight_overlay.dart';
-import 'widgets/tutorial_intro_panel.dart';
+import '../../utils/web_timing_stub.dart'
+    if (dart.library.html) '../../utils/web_timing.dart';
 
 /// Calculate finger animation start position: 80px from target toward screen center.
 Offset fingerStartPos(Offset target, Size screenSize) {
@@ -309,6 +310,37 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
           }
         }
       });
+
+      // Bridge the HTML play/skip buttons (web/index.html) to Flutter.
+      // The HTML overlay covers the Flutter tutorial screen until the user
+      // taps play or skip. When skipping, Flutter must mark tutorial complete
+      // and navigate home — updating localStorage alone doesn't refresh the
+      // already-loaded SharedPreferences cache or Riverpod providers.
+      ref.read(analyticsServiceProvider).logPlayScreenViewed();
+
+      if (wasHtmlPlayTapped()) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _startIntroToChatTourTransition('saturday', skipFadeOut: true);
+        });
+      } else {
+        registerHtmlPlayCallback(() {
+          if (mounted) _startIntroToChatTourTransition('saturday', skipFadeOut: true);
+        });
+      }
+
+      if (wasHtmlSkipTapped()) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _handleHtmlSkip();
+        });
+      } else {
+        registerHtmlSkipCallback(() {
+          if (mounted) _handleHtmlSkip();
+        });
+      }
+
+      registerHtmlLegalCallback((page) {
+        if (mounted) context.go('/$page');
+      });
     }
 
     // Skip the intro/play button — select template immediately so
@@ -344,6 +376,9 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
 
   @override
   void dispose() {
+    unregisterHtmlPlayCallback();
+    unregisterHtmlSkipCallback();
+    unregisterHtmlLegalCallback();
     TutorialTts.stop('line248');
     _transitionController.dispose();
     _participantsFingerController.dispose();
@@ -524,6 +559,16 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
 
   void _handleSkip() {
     _showSkipConfirmation();
+  }
+
+  /// Handle skip tap from the HTML play overlay — no confirmation dialog
+  /// (the user already tapped Skip in HTML). Fires onSkip so the router
+  /// marks tutorial complete + invalidates providers, then navigates home.
+  void _handleHtmlSkip() {
+    if (widget.onSkip != null) {
+      widget.onSkip!();
+    }
+    if (mounted) context.go('/');
   }
 
   /// Show skip confirmation dialog in any context. Returns true if confirmed.
@@ -3881,22 +3926,10 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
     }
   }
 
-  /// Build tutorial-specific panel (intro only)
+  /// Build tutorial-specific panel (no-op — the Flutter play screen was
+  /// removed; the HTML overlay (web/index.html) handles the welcome/play UI,
+  /// and the intro step is just an invisible gate while we wait for it).
   Widget _buildTutorialPanel(TutorialChatState state) {
-    final notifier = ref.read(tutorialChatNotifierProvider.notifier);
-
-    if (state.currentStep == TutorialStep.intro) {
-      return TutorialIntroPanel(
-        onSelect: (templateKey) {
-          _startIntroToChatTourTransition(templateKey);
-        },
-        onHtmlPlay: (templateKey) {
-          _startIntroToChatTourTransition(templateKey, skipFadeOut: true);
-        },
-        onSkip: _handleSkip,
-      );
-    }
-
     return const SizedBox.shrink();
   }
 }

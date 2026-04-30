@@ -3,6 +3,7 @@ import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/round_phase_bar.dart';
+import '../../../widgets/proposition_content_card.dart';
 
 /// Panel displayed when waiting for more participants to join.
 /// The phase starts automatically when enough participants join.
@@ -507,13 +508,19 @@ class ProposingStatePanel extends StatelessWidget {
               ],
             ),
           ] else if (newSubmissions > 0) ...[
-            // Regular user after submitting: button to view others' submissions
+            // Regular user after submitting: show their own submissions centered
             Center(
-              child: FilledButton.tonalIcon(
-                key: const Key('view-other-propositions-button'),
-                onPressed: onViewOtherPropositions,
-                icon: const Icon(Icons.list_alt, size: 20),
-                label: Text(l10n.viewOtherPropositions),
+              child: IntrinsicWidth(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: myPropositions
+                      .where((p) => !p.isCarriedForward)
+                      .toList()
+                      .asMap()
+                      .entries
+                      .map((e) => _buildPropositionCard(context, e.value, e.key, isMine: true))
+                      .toList(),
+                ),
               ),
             ),
           ],
@@ -537,6 +544,48 @@ class ProposingStatePanel extends StatelessWidget {
     );
   }
 
+  Widget _buildPropositionCard(
+    BuildContext context,
+    Proposition prop,
+    int index, {
+    bool isMine = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (propositionsPerUser > 1)
+            Container(
+              width: 24,
+              height: 24,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: Text(
+                  '${index + 1}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              ),
+            ),
+          Flexible(
+            child: PropositionContentCard(
+              content: prop.displayContent,
+              maxHeight: 100,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Panel displayed when waiting for the host to start the rating phase.
@@ -846,8 +895,12 @@ class RatingStatePanel extends StatelessWidget {
   }
 }
 
-/// Banner displayed when the chat is paused by the host.
-/// This should be shown at the top of the chat screen body.
+/// Panel shown in the bottom-panel slot when the chat is paused by the host.
+/// Replaces whatever phase panel would otherwise be there (Waiting/Proposing/
+/// Rating/etc.) so the user has a single clear "no actions available" state.
+///
+/// Themed with colorScheme.tertiaryContainer to match the app surface
+/// language (vs. raw Material orange).
 class HostPausedBanner extends StatelessWidget {
   final bool isHost;
   final VoidCallback? onResume;
@@ -865,41 +918,69 @@ class HostPausedBanner extends StatelessWidget {
 
     return Container(
       key: const Key('host-paused-banner'),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: Colors.orange.shade100,
-      child: Row(
-        children: [
-          Icon(
-            Icons.pause_circle,
-            color: Colors.orange.shade800,
-            size: 24,
+      padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.tertiaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: theme.colorScheme.tertiary.withValues(alpha: 0.4),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  isHost ? l10n.chatPaused : l10n.chatPausedByHostTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: Colors.orange.shade900,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Icon(
+                  Icons.pause_circle_outline,
+                  color: theme.colorScheme.onTertiaryContainer,
+                  size: 28,
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  isHost
-                      ? l10n.timerStoppedTapResume
-                      : l10n.hostPausedPleaseWait,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: Colors.orange.shade800,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isHost ? l10n.chatPaused : l10n.chatPausedByHostTitle,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        isHost
+                            ? l10n.timerStoppedTapResume
+                            : l10n.hostPausedPleaseWait,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onTertiaryContainer
+                              .withValues(alpha: 0.85),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-        ],
+            if (isHost && onResume != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('host-paused-resume-button'),
+                  onPressed: onResume,
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text(l10n.resume),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

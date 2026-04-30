@@ -33,6 +33,52 @@
   "pending": "PENDENTE",
   "pendingRequests": "Solicitacoes Pendentes",
   "yourChats": "Seus Chats",
+  "nextUp": "A seguir",
+  "nextUpWithCount": "A seguir ({count})",
+  "@nextUpWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "wrappingUp": "Finalizando",
+  "wrappingUpWithCount": "Finalizando ({count})",
+  "@wrappingUpWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "inactive": "Inativo",
+  "inactiveWithCount": "Inativo ({count})",
+  "@inactiveWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "allChats": "Todos os chats",
+  "allChatsWithCount": "Todos os chats ({count})",
+  "@allChatsWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "noChatsHere": "Nada por aqui — está tudo em dia.",
+  "enableNotificationsTitle": "Seja avisado quando for sua vez",
+  "enableNotificationsBody": "Te avisamos quando uma rodada precisar de você.",
+  "enableNotificationsCta": "Ativar",
+  "notificationsBlockedTitle": "As notificações estão bloqueadas",
+  "notificationsBlockedBody": "Desbloqueie nas configurações do site do seu navegador para receber.",
+  "gotIt": "Entendi",
+  "notNow": "Agora não",
+  "installOneMindTitle": "Instalar OneMind",
+  "installOneMindBody": "Adicione à tela inicial para a melhor experiência.",
+  "installOneMindIosBody": "Toque em Compartilhar e depois em \"Adicionar à Tela de Início\".",
+  "installCta": "Instalar",
+  "lookingForMore": "Entre em um para continuar",
+  "lookingForMoreDescription": "Chats publicos com mais atividade agora.",
+  "discoverPublicChatsCta": "Descobrir chats publicos",
+  "seeAllPublicChats": "Ver todos os chats publicos",
+  "nothingToJoinTitle": "Nada de novo para entrar agora",
+  "nothingToJoinDescription": "Inicie seu proprio chat e convide outros.",
   "cancelRequest": "Cancelar Solicitacao",
   "cancelRequestQuestion": "Cancelar sua solicitacao para entrar em \"{chatName}\"?",
   "@cancelRequestQuestion": {
@@ -305,6 +351,8 @@
   "joinRequests": "Solicitacoes de Entrada",
   "resumeChat": "Retomar Chat",
   "pauseChat": "Pausar Chat",
+  "turnMusicOn": "Ativar música",
+  "turnMusicOff": "Desativar música",
   "leaveChat": "Sair do Chat",
   "deleteChat": "Excluir Chat",
   "host": "Anfitriao",
@@ -1352,5 +1400,8 @@
   "viewOtherPropositions": "Ver propostas",
   "otherPropositionsTitle": "Propostas",
   "noOtherPropositionsYet": "Ainda não há propostas",
-  "donate": "Doar"
+  "donate": "Doar",
+  "supportOneMindTitle": "Apoie o OneMind",
+  "supportOneMindBody": "O OneMind é gratuito e funciona com doações. Se este grupo acabou de te ajudar a chegar a uma decisão real em conjunto, considerarias contribuir para mantê-lo no ar?",
+  "maybeLater": "Talvez depois"
 }

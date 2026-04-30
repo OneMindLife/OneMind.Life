@@ -493,6 +493,177 @@ void main() {
         // Participants option is now in the popup menu
         expect(find.byIcon(Icons.more_vert), findsOneWidget);
       });
+
+      group('Overflow menu contents', () {
+        testWidgets(
+            'non-host with single language: overflow has Leave only (no Language row)',
+            (tester) async {
+          final chat = ChatFixtures.model(
+            translationsEnabled: true,
+            translationLanguages: const ['en'],
+          );
+          final regularParticipant = ParticipantFixtures.model(isHost: false);
+          final state = createTestState(
+            chat: chat,
+            myParticipant: regularParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          expect(find.byKey(const Key('chat-more-menu')), findsOneWidget);
+          await tester.tap(find.byKey(const Key('chat-more-menu')));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Language'), findsNothing);
+          expect(find.text('Leave Chat'), findsOneWidget);
+          expect(find.text('Pause Chat'), findsNothing);
+          expect(find.text('Delete Chat'), findsNothing);
+        });
+
+        testWidgets(
+            'non-host with multiple languages: overflow has Language row + Leave',
+            (tester) async {
+          final chat = ChatFixtures.model(
+            translationsEnabled: true,
+            translationLanguages: const ['en', 'es', 'fr'],
+          );
+          final regularParticipant = ParticipantFixtures.model(isHost: false);
+          final state = createTestState(
+            chat: chat,
+            myParticipant: regularParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('chat-more-menu')));
+          await tester.pumpAndSettle();
+
+          // Single Language row, current language displayed inline,
+          // individual languages NOT inlined into the menu.
+          expect(find.text('Language'), findsOneWidget);
+          expect(find.text('English'), findsOneWidget); // shown as current
+          expect(find.text('Español'), findsNothing);
+          expect(find.text('Français'), findsNothing);
+          expect(find.text('Leave Chat'), findsOneWidget);
+        });
+
+        testWidgets('tapping Language row opens picker dialog', (tester) async {
+          final chat = ChatFixtures.model(
+            translationsEnabled: true,
+            translationLanguages: const ['en', 'es', 'fr'],
+          );
+          final regularParticipant = ParticipantFixtures.model(isHost: false);
+          final state = createTestState(
+            chat: chat,
+            myParticipant: regularParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('chat-more-menu')));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Language'));
+          await tester.pumpAndSettle();
+
+          // Picker now shows all three languages.
+          expect(find.byKey(const Key('chat-language-option-en')), findsOneWidget);
+          expect(find.byKey(const Key('chat-language-option-es')), findsOneWidget);
+          expect(find.byKey(const Key('chat-language-option-fr')), findsOneWidget);
+        });
+
+        testWidgets(
+            'host with single language: overflow has Pause + Delete, no Language row, no Leave',
+            (tester) async {
+          final chat = ChatFixtures.model(
+            translationsEnabled: true,
+            translationLanguages: const ['en'],
+          );
+          final hostParticipant = ParticipantFixtures.host();
+          final state = createTestState(
+            chat: chat,
+            myParticipant: hostParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('chat-more-menu')));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Language'), findsNothing);
+          expect(find.text('Leave Chat'), findsNothing);
+          expect(find.text('Pause Chat'), findsOneWidget);
+          expect(find.text('Delete Chat'), findsOneWidget);
+        });
+
+        testWidgets(
+            'host with multiple languages: overflow has Language row + Pause + Delete',
+            (tester) async {
+          final chat = ChatFixtures.model(
+            translationsEnabled: true,
+            translationLanguages: const ['en', 'es'],
+          );
+          final hostParticipant = ParticipantFixtures.host();
+          final state = createTestState(
+            chat: chat,
+            myParticipant: hostParticipant,
+          );
+
+          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+          await tester.pumpAndSettle();
+
+          await tester.tap(find.byKey(const Key('chat-more-menu')));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Language'), findsOneWidget);
+          // Individual languages live in the picker dialog now, not inline.
+          expect(find.text('Español'), findsNothing);
+          expect(find.text('Pause Chat'), findsOneWidget);
+          expect(find.text('Delete Chat'), findsOneWidget);
+        });
+
+        group('Music toggle', () {
+          // The toggle only appears when the chat opts into background audio
+          // via `background_audio_url`. BackgroundAudioService defaults to
+          // ON, so the menu label should read "Turn music off" on first open.
+
+          testWidgets('hidden when chat has no backgroundAudioUrl', (tester) async {
+            final chat = ChatFixtures.model();
+            final state = createTestState(chat: chat);
+
+            await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byKey(const Key('chat-more-menu')));
+            await tester.pumpAndSettle();
+
+            expect(find.byKey(const Key('chat-menu-music-toggle')), findsNothing);
+            expect(find.text('Turn music off'), findsNothing);
+            expect(find.text('Turn music on'), findsNothing);
+          });
+
+          testWidgets('visible when chat has a backgroundAudioUrl', (tester) async {
+            final chat = ChatFixtures.model(
+              backgroundAudioUrl:
+                  'https://example.supabase.co/storage/v1/object/public/chat-audio/1/loop.mp3',
+            );
+            final state = createTestState(chat: chat);
+
+            await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+            await tester.pumpAndSettle();
+
+            await tester.tap(find.byKey(const Key('chat-more-menu')));
+            await tester.pumpAndSettle();
+
+            expect(find.byKey(const Key('chat-menu-music-toggle')), findsOneWidget);
+            // Default preference is ON, so the label offers to turn it off.
+            expect(find.text('Turn music off'), findsOneWidget);
+          });
+        });
+      });
     });
 
     group('Initial Message', () {
@@ -1042,7 +1213,7 @@ void main() {
           expect(find.text('Done'), findsNWidgets(2));
         });
 
-        testWidgets('dims participants who have not acted during active phase', (tester) async {
+        testWidgets('keeps all participants fully visible regardless of acted state', (tester) async {
           final chat = ChatFixtures.model();
           final hostParticipant = ParticipantFixtures.host(); // id 1
           final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
@@ -1067,12 +1238,14 @@ void main() {
           await tester.tap(find.byIcon(Icons.leaderboard));
           await tester.pumpAndSettle();
 
-          // Find Opacity widgets wrapping ListTiles
+          // No Opacity widget should dim any participant
           final opacities = tester.widgetList<Opacity>(find.byType(Opacity)).toList();
-          // Host (acted) should be 1.0, Alice (not acted) should be 0.5
-          final opacityValues = opacities.map((o) => o.opacity).toList();
-          expect(opacityValues, contains(1.0));
-          expect(opacityValues, contains(0.5));
+          for (final o in opacities) {
+            expect(o.opacity, 1.0, reason: 'Participant tiles must render at full opacity');
+          }
+
+          // Done tag is the sole indicator of acted state
+          expect(find.text('Done'), findsOneWidget);
         });
 
         testWidgets('mixed: some propose, some skip, rest not acted in proposing phase', (tester) async {
@@ -1191,7 +1364,11 @@ void main() {
     });
 
     group('Leave Chat Button', () {
-      testWidgets('non-host in official chat does not see leave button', (tester) async {
+      testWidgets('non-host in official chat sees leave option in overflow menu',
+          (tester) async {
+        // Auto-join into the official chat is now opt-out (gated by a
+        // SharedPreferences flag set on first home visit), so the leave
+        // option is shown so users can opt out.
         final chat = ChatFixtures.official();
         final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
 
@@ -1204,11 +1381,13 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Non-host in official chat should NOT see leave button
-        expect(find.byIcon(Icons.exit_to_app), findsNothing);
+        await tester.tap(find.byKey(const Key('chat-more-menu')));
+        await tester.pumpAndSettle();
+        expect(find.text('Leave Chat'), findsOneWidget);
       });
 
-      testWidgets('non-host in regular chat sees leave button', (tester) async {
+      testWidgets('non-host in regular chat sees leave option in overflow menu',
+          (tester) async {
         final chat = ChatFixtures.model();
         final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
 
@@ -1221,8 +1400,9 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Non-host in regular chat should see leave button in app bar
-        expect(find.byIcon(Icons.exit_to_app), findsOneWidget);
+        await tester.tap(find.byKey(const Key('chat-more-menu')));
+        await tester.pumpAndSettle();
+        expect(find.text('Leave Chat'), findsOneWidget);
       });
     });
 
@@ -1749,12 +1929,11 @@ void main() {
         expect(find.text('Pause Chat'), findsNothing);
       });
 
-      testWidgets('non-host does not see popup menu at all',
+      testWidgets('non-host sees overflow menu but not Pause/Resume/Delete',
           (tester) async {
         final chat = ChatFixtures.model(hostPaused: false);
         final regularParticipant = ParticipantFixtures.model(isHost: false);
 
-        // Best practice: use pre-loaded state
         final state = createTestState(
           chat: chat,
           myParticipant: regularParticipant,
@@ -1763,8 +1942,15 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Non-host should NOT see the host overflow menu at all
-        expect(find.byKey(const Key('chat-more-menu')), findsNothing);
+        // Overflow menu now hosts the non-host Leave option too, so it's
+        // always present — but none of the host-only items should be there.
+        expect(find.byKey(const Key('chat-more-menu')), findsOneWidget);
+
+        await tester.tap(find.byKey(const Key('chat-more-menu')));
+        await tester.pumpAndSettle();
+        expect(find.text('Pause Chat'), findsNothing);
+        expect(find.text('Resume Chat'), findsNothing);
+        expect(find.text('Delete Chat'), findsNothing);
       });
 
       testWidgets('shows HostPausedBanner when chat is paused',
@@ -1781,9 +1967,9 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show the paused banner
+        // Should show the paused banner (now in the bottom panel slot)
         expect(find.text('Chat Paused by Host'), findsOneWidget);
-        expect(find.byIcon(Icons.pause_circle), findsOneWidget);
+        expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
       });
 
       testWidgets('does not show HostPausedBanner when chat is not paused',
@@ -2064,44 +2250,8 @@ void main() {
       });
     });
 
-    group('Host Force Consensus', () {
-      testWidgets('host-overridden consensus shows host name instead of Consensus #N', (tester) async {
-        final chat = ChatFixtures.model();
-        final participant = ParticipantFixtures.model();
-
-        final consensusItems = [
-          ConsensusItem(
-            cycleId: 1,
-            proposition: PropositionFixtures.winner(id: 1, content: 'Normal consensus'),
-            isHostOverride: false,
-          ),
-          ConsensusItem(
-            cycleId: 2,
-            proposition: PropositionFixtures.winner(id: 2, content: 'Host forced this'),
-            isHostOverride: true,
-          ),
-        ];
-
-        final state = createTestState(
-          chat: chat,
-          myParticipant: participant,
-          consensusItems: consensusItems,
-        );
-
-        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-        await tester.pumpAndSettle();
-
-        // Normal consensus shows "Convergence #1"
-        expect(find.text('Convergence #1'), findsOneWidget);
-
-        // Host-overridden shows "Host" (since hostDisplayName is null in fixture)
-        expect(find.text('Host'), findsOneWidget);
-
-        // Should NOT show "Convergence #2" for the overridden one
-        expect(find.text('Convergence #2'), findsNothing);
-      });
-
-      testWidgets('regular consensus still shows Convergence #N', (tester) async {
+    group('Consensus Items', () {
+      testWidgets('renders consensus items by content', (tester) async {
         final chat = ChatFixtures.model();
         final participant = ParticipantFixtures.model();
 
@@ -2127,8 +2277,8 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        expect(find.text('Convergence #1'), findsOneWidget);
-        expect(find.text('Convergence #2'), findsOneWidget);
+        expect(find.text('First idea'), findsOneWidget);
+        expect(find.text('Second idea'), findsOneWidget);
       });
     });
 

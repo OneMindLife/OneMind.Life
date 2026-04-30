@@ -25,7 +25,10 @@ class WizardStepQuestion extends StatefulWidget {
 }
 
 class _WizardStepQuestionState extends State<WizardStepQuestion> {
-  late bool _showMessage = widget.messageController.text.isNotEmpty;
+  // Default the initial-message toggle on. Showing the field by default
+  // nudges hosts to actually frame a question — chats with a clear prompt
+  // pull stronger participation than ones that drop people in cold.
+  bool _showMessage = true;
 
   bool _validate() {
     return widget.formKey.currentState?.validate() ?? false;

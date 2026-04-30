@@ -46,6 +46,10 @@ class ChatDetailState extends Equatable {
   final Set<int> participantsWhoSkippedRating;
   // Minimum rating count across all propositions (for per-proposition progress bar)
   final int minRatingsPerProp;
+  // Number of grid_rankings rows the current user has in the current round.
+  // Used to gate the "Skip Rating" UI — skip is only available when this is 0.
+  // Kept fresh by the existing grid_rankings realtime subscription.
+  final int myCurrentRoundRatingCount;
   // Credit state
   final ChatCredits? chatCredits;
   final bool isMyParticipantFunded;
@@ -90,6 +94,7 @@ class ChatDetailState extends Equatable {
     this.participantsWhoSkippedProposing = const {},
     this.participantsWhoSkippedRating = const {},
     this.minRatingsPerProp = 0,
+    this.myCurrentRoundRatingCount = 0,
     this.chatCredits,
     this.isMyParticipantFunded = true,
     this.allowedCategories = const [],
@@ -148,11 +153,16 @@ class ChatDetailState extends Equatable {
   /// - Must not have already rated (fully completed)
   /// - Must not have already skipped rating
   /// - Rating skip quota must not be exceeded
+  /// - Must not have placed any ratings yet — the rating_skips RLS policy
+  ///   refuses to insert if any grid_rankings rows already exist for the
+  ///   participant in this round. Undoing all placements (which deletes the
+  ///   rows server-side) re-enables skip.
   bool get canSkipRating {
     if (chat?.allowSkipRating != true) return false;
     return !hasSkippedRating &&
         !hasRated &&
-        ratingSkipCount < maxRatingSkips;
+        ratingSkipCount < maxRatingSkips &&
+        myCurrentRoundRatingCount == 0;
   }
 
   ChatDetailState copyWith({
@@ -181,6 +191,7 @@ class ChatDetailState extends Equatable {
     Set<int>? participantsWhoSkippedProposing,
     Set<int>? participantsWhoSkippedRating,
     int? minRatingsPerProp,
+    int? myCurrentRoundRatingCount,
     ChatCredits? chatCredits,
     bool? isMyParticipantFunded,
     List<String>? allowedCategories,
@@ -214,6 +225,8 @@ class ChatDetailState extends Equatable {
       participantsWhoSkippedProposing: participantsWhoSkippedProposing ?? this.participantsWhoSkippedProposing,
       participantsWhoSkippedRating: participantsWhoSkippedRating ?? this.participantsWhoSkippedRating,
       minRatingsPerProp: minRatingsPerProp ?? this.minRatingsPerProp,
+      myCurrentRoundRatingCount:
+          myCurrentRoundRatingCount ?? this.myCurrentRoundRatingCount,
       chatCredits: chatCredits ?? this.chatCredits,
       isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
       allowedCategories: allowedCategories ?? this.allowedCategories,
@@ -250,6 +263,7 @@ class ChatDetailState extends Equatable {
         participantsWhoSkippedProposing,
         participantsWhoSkippedRating,
         minRatingsPerProp,
+        myCurrentRoundRatingCount,
         chatCredits,
         isMyParticipantFunded,
         allowedCategories,
@@ -463,16 +477,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       var participants = results[3] as List<Participant>;
       var myParticipant = results[4] as Participant?;
 
-      // Auto-join official chat if user is not a participant
-      if (myParticipant == null && chat?.isOfficial == true) {
-        try {
-          myParticipant = await _participantService.joinPublicChat(chatId: chatId);
-          // Refetch participants to include self
-          participants = await _participantService.getParticipants(chatId);
-        } catch (e) {
-          // Continue without participant - user can view but not participate
-        }
-      }
+      // (Auto-join into the official chat now lives on the Home screen,
+      // gated by the official_chat_auto_joined flag in TutorialService.
+      // We deliberately do NOT silently re-add the user here, so an
+      // explicit "Leave Chat" sticks.)
 
       // Fetch pending join requests if user is host
       List<Map<String, dynamic>> pendingJoinRequests = [];
@@ -514,6 +522,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       Set<int> participantsWhoSkippedProposing = {};
       Set<int> participantsWhoSkippedRating = {};
       int minRatingsPerProp = 0;
+      int myCurrentRoundRatingCount = 0;
       bool isMyParticipantFunded = true;
       List<String> allowedCategories = [];
 
@@ -564,6 +573,10 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
             _propositionService.getParticipantsWhoSkippedProposing(currentRound.id),
             _propositionService.getParticipantsWhoSkippedRating(currentRound.id),
             _propositionService.getMinRatingsPerProposition(currentRound.id),
+            _propositionService.getMyRatingCount(
+              roundId: currentRound.id,
+              participantId: myParticipant.id,
+            ),
           ]);
 
           propositions = roundResults[0] as List<Proposition>;
@@ -579,6 +592,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           participantsWhoSkippedProposing = roundResults[8] as Set<int>;
           participantsWhoSkippedRating = roundResults[9] as Set<int>;
           minRatingsPerProp = roundResults[10] as int;
+          myCurrentRoundRatingCount = roundResults[11] as int;
 
           // Check if my participant is funded for this round
           try {
@@ -661,6 +675,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         participantsWhoSkippedProposing: participantsWhoSkippedProposing,
         participantsWhoSkippedRating: participantsWhoSkippedRating,
         minRatingsPerProp: minRatingsPerProp,
+        myCurrentRoundRatingCount: myCurrentRoundRatingCount,
         chatCredits: chatCredits,
         isMyParticipantFunded: isMyParticipantFunded,
         allowedCategories: allowedCategories,

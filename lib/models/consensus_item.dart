@@ -8,12 +8,16 @@ class ConsensusItem extends Equatable {
   final Proposition proposition;
   final String? taskResult;
   final bool isHostOverride;
+  final String? videoUrl;
+  final String? audioUrl;
 
   const ConsensusItem({
     required this.cycleId,
     required this.proposition,
     this.taskResult,
     this.isHostOverride = false,
+    this.videoUrl,
+    this.audioUrl,
   });
 
   int get id => proposition.id;
@@ -24,15 +28,20 @@ class ConsensusItem extends Equatable {
     Proposition? proposition,
     String? Function()? taskResult,
     bool? isHostOverride,
+    String? Function()? videoUrl,
+    String? Function()? audioUrl,
   }) {
     return ConsensusItem(
       cycleId: cycleId ?? this.cycleId,
       proposition: proposition ?? this.proposition,
       taskResult: taskResult != null ? taskResult() : this.taskResult,
       isHostOverride: isHostOverride ?? this.isHostOverride,
+      videoUrl: videoUrl != null ? videoUrl() : this.videoUrl,
+      audioUrl: audioUrl != null ? audioUrl() : this.audioUrl,
     );
   }
 
   @override
-  List<Object?> get props => [cycleId, proposition, taskResult, isHostOverride];
+  List<Object?> get props =>
+      [cycleId, proposition, taskResult, isHostOverride, videoUrl, audioUrl];
 }

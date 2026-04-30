@@ -7,40 +7,24 @@ import 'package:onemind_app/screens/tutorial/tutorial_screen.dart';
 
 import '../../helpers/pump_app.dart';
 
-/// Helper to navigate from intro to proposing by tapping the play button
-/// then skipping the chat tour via the notifier (the tooltip requires
-/// post-frame measurement to render, which can be flaky in widget tests).
+/// Helper to navigate from intro to proposing via the notifier.
+/// The Flutter intro panel was removed (web/index.html handles the play UI);
+/// in tests we just drive the state machine directly.
 Future<void> _navigateToProposing(WidgetTester tester) async {
-  // Tap play button to start with saturday template
-  await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-  await tester.pumpAndSettle();
-
-  // Skip the chat tour using the notifier directly
   final container = ProviderScope.containerOf(
     tester.element(find.byType(TutorialScreen)),
   );
+  container
+      .read(tutorialChatNotifierProvider.notifier)
+      .selectTemplate('saturday');
+  await tester.pumpAndSettle();
   container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
   await tester.pumpAndSettle();
 }
 
 void main() {
   group('TutorialScreen', () {
-    testWidgets('displays intro panel with play button on start', (tester) async {
-      var completed = false;
-
-      await tester.pumpApp(
-        TutorialScreen(
-          onComplete: () => completed = true,
-        ),
-      );
-
-      // Wait for post-frame callback to start tutorial
-      await tester.pumpAndSettle();
-
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-    });
-
-    testWidgets('shows app bar with tutorial title on intro and after play tap', (tester) async {
+    testWidgets('shows app bar with tutorial title during chat tour', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -48,24 +32,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // App bar visible on intro with title
+      // App bar visible with title
       expect(find.byType(AppBar), findsOneWidget);
       expect(find.text('OneMind Tutorial'), findsOneWidget);
 
-      // Tap play button
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.pumpAndSettle();
-      // Pump through all intro delays and animations (may fire multiple timers)
-      for (var i = 0; i < 5; i++) {
-        await tester.pump(const Duration(seconds: 1));
-      }
-      await tester.pumpAndSettle();
+      await _navigateToProposing(tester);
 
-      // App bar still visible with 3-dot menu after play tap
+      // App bar still visible after navigating into the chat tour
       expect(find.byType(AppBar), findsOneWidget);
     });
 
-    testWidgets('navigates to round 1 proposing after tapping play',
+    testWidgets('navigates to round 1 proposing',
         (tester) async {
       await tester.pumpApp(
         TutorialScreen(
@@ -107,79 +84,7 @@ void main() {
       expect(find.text('Start Rating'), findsOneWidget);
     });
 
-    testWidgets('skip button shows confirmation dialog', (tester) async {
-      await tester.pumpApp(
-        TutorialScreen(
-          onComplete: () {},
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Skip button in intro panel (may be off-screen in test viewport)
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      // Confirmation dialog should appear
-      expect(find.text('Skip Tutorial?'), findsOneWidget);
-      expect(find.text('Yes, Skip'), findsOneWidget);
-      expect(find.text('Continue Tutorial'), findsOneWidget);
-    });
-
-    testWidgets('skip confirmation completes tutorial when confirmed', (tester) async {
-      var completed = false;
-
-      await tester.pumpApp(
-        TutorialScreen(
-          onComplete: () => completed = true,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Skip button in intro panel (may be off-screen in test viewport)
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      // Confirm skip
-      await tester.tap(find.text('Yes, Skip'));
-      await tester.pumpAndSettle();
-
-      expect(completed, isTrue);
-    });
-
-    testWidgets('skip confirmation does not complete tutorial when cancelled', (tester) async {
-      var completed = false;
-
-      await tester.pumpApp(
-        TutorialScreen(
-          onComplete: () => completed = true,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Skip button in intro panel (may be off-screen in test viewport)
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      // Cancel skip
-      await tester.tap(find.text('Continue Tutorial'));
-      await tester.pumpAndSettle();
-
-      // Should still be on intro, not completed
-      expect(completed, isFalse);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-    });
-
-
-    testWidgets('navigates to proposing state after tapping play', (tester) async {
+    testWidgets('navigates to proposing state', (tester) async {
       await tester.pumpApp(
         TutorialScreen(
           onComplete: () {},
@@ -213,18 +118,6 @@ void main() {
     });
 
     group('Tutorial panel widgets', () {
-      testWidgets('intro panel has play button and skip button', (tester) async {
-        await tester.pumpApp(
-          TutorialScreen(
-            onComplete: () {},
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-        expect(find.text('Skip'), findsOneWidget);
-      });
-
       testWidgets('proposing state shows text field', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
@@ -267,42 +160,7 @@ void main() {
     });
 
     group('Localization', () {
-      testWidgets('displays localized welcome text', (tester) async {
-        await tester.pumpApp(
-          TutorialScreen(
-            onComplete: () {},
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-        expect(find.text('See how it works'), findsOneWidget);
-      });
-
-      testWidgets('displays play button', (tester) async {
-        await tester.pumpApp(
-          TutorialScreen(
-            onComplete: () {},
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-        expect(find.text('See how it works'), findsOneWidget);
-      });
-
-      testWidgets('displays localized button labels', (tester) async {
-        await tester.pumpApp(
-          TutorialScreen(
-            onComplete: () {},
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.text('Skip'), findsOneWidget);
-      });
-
-      testWidgets('displays saturday initial message after tapping play', (tester) async {
+      testWidgets('displays saturday initial message', (tester) async {
         await tester.pumpApp(
           TutorialScreen(
             onComplete: () {},

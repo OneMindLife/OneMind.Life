@@ -833,5 +833,63 @@ void main() {
         expect(chat1, isNot(equals(chat2)));
       });
     });
+
+    group('background audio', () {
+      test('fromJson parses background_audio_url', () {
+        final json = {
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+          'background_audio_url':
+              'https://ccyuxrtrklgpkzcryzpj.supabase.co/storage/v1/object/public/chat-audio/1/track.mp3',
+        };
+        final chat = Chat.fromJson(json);
+        expect(
+          chat.backgroundAudioUrl,
+          'https://ccyuxrtrklgpkzcryzpj.supabase.co/storage/v1/object/public/chat-audio/1/track.mp3',
+        );
+      });
+
+      test('fromJson defaults background_audio_url to null when absent', () {
+        final json = {
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+        };
+        final chat = Chat.fromJson(json);
+        expect(chat.backgroundAudioUrl, isNull);
+      });
+
+      test('toJson includes background_audio_url', () {
+        final chat = Chat.fromJson({
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+          'background_audio_url':
+              'https://host/storage/v1/object/public/chat-audio/1/x.mp3',
+        });
+        final json = chat.toJson();
+        expect(
+          json['background_audio_url'],
+          'https://host/storage/v1/object/public/chat-audio/1/x.mp3',
+        );
+      });
+
+      test('equatable distinguishes by background_audio_url', () {
+        final a = Chat.fromJson({
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+        });
+        final b = Chat.fromJson({
+          'id': 1,
+          'name': 'Test',
+          'created_at': '2024-01-01T00:00:00Z',
+          'background_audio_url':
+              'https://host/storage/v1/object/public/chat-audio/1/x.mp3',
+        });
+        expect(a, isNot(equals(b)));
+      });
+    });
   });
 }

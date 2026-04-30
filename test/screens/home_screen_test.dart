@@ -32,12 +32,27 @@ class MockSharedPreferences extends Mock implements SharedPreferences {}
 
 class MockLanguageService extends Mock implements LanguageService {}
 
-/// A mock notifier that immediately provides data without async loading
+/// A mock notifier that immediately provides data without async loading.
+///
+/// Chats are wrapped as "next up" dashboard info (active proposing round,
+/// user has not yet participated) so they render in the Home "Next up"
+/// section rather than getting hidden behind the All-chats link.
 class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     implements MyChatsNotifier {
   MockMyChatsNotifier(List<Chat> chats, {List<JoinRequest> pendingRequests = const []})
       : super(AsyncData(MyChatsState(
-          dashboardChats: ChatDashboardInfoFixtures.fromChats(chats),
+          dashboardChats: chats
+              .map((c) => ChatDashboardInfo(
+                    chat: c,
+                    participantCount: 1,
+                    currentRoundPhase: RoundPhase.proposing,
+                    currentRoundNumber: 1,
+                    phaseStartedAt:
+                        DateTime.now().subtract(const Duration(minutes: 1)),
+                    currentCycleId: 100 + c.id,
+                    hasParticipated: false,
+                  ))
+              .toList(),
           pendingRequests: pendingRequests,
         )));
 
@@ -151,6 +166,7 @@ void main() {
     List<Chat> chats = const [],
     List<JoinRequest> pendingRequests = const [],
     Chat? officialChat,
+    List<PublicChatSummary>? topPublicSuggestions,
   }) {
     return ProviderScope(
       overrides: [
@@ -167,6 +183,11 @@ void main() {
         ),
         // Override officialChatProvider with immediate value
         officialChatProvider.overrideWith((ref) async => officialChat),
+        // Optionally seed the "Looking for more" suggestions so we can
+        // exercise both the has-suggestions and the nothing-to-join branches.
+        if (topPublicSuggestions != null)
+          topPublicChatSuggestionsProvider
+              .overrideWithValue(topPublicSuggestions),
       ],
       child: MaterialApp(
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -215,23 +236,89 @@ void main() {
 
     });
 
+    // The redesigned empty state replaces the old "Looking for more" card
+    // with a focused "Your queue is clear" panel — single hero icon +
+    // title, then either suggestions+browse-all+or-divider+create or just
+    // create when nothing is joinable. Both branches keep the create CTA
+    // (same widget/key) so users always have a clear next action.
     group('Empty State', () {
-      testWidgets('displays empty state when no chats', (tester) async {
+      testWidgets(
+          'shows the empty-state panel when the user has no chats',
+          (tester) async {
         await tester.pumpWidget(createTestWidget(chats: []));
         await tester.pumpAndSettle();
 
-        expect(find.text('No chats yet'), findsOneWidget);
-        expect(find.byIcon(Icons.chat_bubble_outline), findsAtLeastNWidgets(1));
-      });
-
-      testWidgets('empty state shows correct description', (tester) async {
-        await tester.pumpWidget(createTestWidget(chats: []));
-        await tester.pumpAndSettle();
-
+        expect(find.byKey(const Key('empty-state-panel')), findsOneWidget);
+        expect(find.text('No chats yet'), findsNothing);
+        // The previous design surfaced a "NEXT UP" header even when the
+        // queue was empty; the new empty-state panel is the focal point
+        // and that header is intentionally suppressed in the empty state.
+        expect(find.text('NEXT UP'), findsNothing);
+        // Create CTA is always present (in both branches) so users have
+        // a clear next action regardless of suggestion availability.
         expect(
-          find.text('Search for public chats above, or tap + to create your own.'),
+          find.byKey(const Key('empty-state-create-chat')),
           findsOneWidget,
         );
+      });
+
+      testWidgets(
+          'nothing-to-join branch: only the Create CTA shows (no Browse all)',
+          (tester) async {
+        await tester.pumpWidget(createTestWidget(
+          chats: [],
+          topPublicSuggestions: const [],
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('empty-state-panel')), findsOneWidget);
+        expect(
+          find.byKey(const Key('empty-state-create-chat')),
+          findsOneWidget,
+        );
+        expect(
+          find.byKey(const Key('empty-state-browse-all')),
+          findsNothing,
+        );
+        // Existing localized "nothing-to-join" copy reused.
+        expect(find.text('Nothing new to join right now'), findsOneWidget);
+        // Old Discover button text must not leak in.
+        expect(find.text('Discover public chats'), findsNothing);
+      });
+
+      testWidgets(
+          'has-suggestions branch: header reads "Your queue is clear" and '
+          'the footer offers Browse all → Discover plus a Create CTA',
+          (tester) async {
+        await tester.pumpWidget(createTestWidget(
+          chats: [],
+          topPublicSuggestions: [
+            PublicChatSummary(
+              id: 42,
+              name: 'Busy Chat',
+              initialMessage: 'Q',
+              participantCount: 3,
+              createdAt: DateTime(2026, 1, 1),
+              currentRoundPhase: 'proposing',
+            ),
+          ],
+        ));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('empty-state-panel')), findsOneWidget);
+        expect(
+          find.byKey(const Key('empty-state-browse-all')),
+          findsOneWidget,
+        );
+        // New design keeps the Create CTA as a secondary action below
+        // the suggestions, after an "or" divider — so it co-exists with
+        // Browse all rather than being mutually exclusive.
+        expect(
+          find.byKey(const Key('empty-state-create-chat')),
+          findsOneWidget,
+        );
+        expect(find.text('Your queue is clear'), findsOneWidget);
+        expect(find.byKey(const Key('suggested-chat-card-42')), findsOneWidget);
       });
     });
 
@@ -286,45 +373,10 @@ void main() {
       });
     });
 
-    group('Search', () {
-      testWidgets('search bar filters chats by name', (tester) async {
-        final chat1 = ChatFixtures.model(id: 1, name: 'Alpha Chat');
-        final chat2 = ChatFixtures.model(id: 2, name: 'Beta Chat');
-        final chat3 = ChatFixtures.model(id: 3, name: 'Alpha Group');
-
-        await tester.pumpWidget(createTestWidget(chats: [chat1, chat2, chat3]));
-        await tester.pumpAndSettle();
-
-        // All chats visible initially
-        expect(find.text('Alpha Chat'), findsOneWidget);
-        expect(find.text('Beta Chat'), findsOneWidget);
-        expect(find.text('Alpha Group'), findsOneWidget);
-
-        // Type search query
-        await tester.enterText(find.byType(TextField), 'Alpha');
-        await tester.pumpAndSettle();
-
-        // Only matching chats visible
-        expect(find.text('Alpha Chat'), findsOneWidget);
-        expect(find.text('Alpha Group'), findsOneWidget);
-        expect(find.text('Beta Chat'), findsNothing);
-      });
-
-      testWidgets('search shows no results message when no match', (tester) async {
-        final chat1 = ChatFixtures.model(id: 1, name: 'Alpha Chat');
-
-        await tester.pumpWidget(createTestWidget(chats: [chat1]));
-        await tester.pumpAndSettle();
-
-        // Search for something that doesn't match
-        await tester.enterText(find.byType(TextField), 'Nonexistent');
-        await tester.pumpAndSettle();
-
-        expect(find.text('No matching chats'), findsOneWidget);
-      });
-
-      // Invite code lookup removed — joining now via action picker
-    });
+    // Search bar removed from Home in the redesign — search now lives on
+    // AllChatsScreen, where there's always content to filter (Home may
+    // have zero chats, in which case "search your chats" is meaningless).
+    // See AllChatsScreen tests for the search behavior.
 
     // Explore button removed from app bar — now in FAB action sheet
   });

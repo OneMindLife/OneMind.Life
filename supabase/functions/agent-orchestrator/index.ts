@@ -4,7 +4,7 @@
 // DISPATCHER MODE (no persona_name): Called by DB trigger. Fires 5 independent
 //   worker calls (one per persona), waits for all, retries failures once (~30-60s).
 // WORKER MODE (persona_name present): Processes a single persona —
-//   DeepSeek V3.2 reasoning, API call. Each worker has its own 150s gateway window.
+//   Claude Opus 4.7 reasoning, API call. Each worker has its own 150s gateway window.
 //
 // Receives: { round_id, chat_id, cycle_id, phase, persona_name? }
 //
@@ -12,7 +12,20 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+// Anthropic SDK's optional Zod helper is eagerly resolved by Deno's npm
+// bundler. Pull in Zod explicitly so the Supabase Edge Runtime can load it.
+import "npm:zod@3.25.76";
+import Anthropic from "npm:@anthropic-ai/sdk@0.72.0";
 import OpenAI from "npm:openai@4.77.0";
+import {
+  activeModel,
+  buildAnthropicBody,
+  DEFAULT_MODEL,
+  isClaudeModel,
+  type LLMCallParams,
+  type LLMCallResponse,
+  requestContext,
+} from "./llm_routing.ts";
 import {
   handleCorsPreFlight,
   corsJsonResponse,
@@ -28,16 +41,83 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 const tavilyApiKey = Deno.env.get("TAVILY_API_KEY") ?? "";
 
+const anthropic = new Anthropic({
+  apiKey: Deno.env.get("ANTHROPIC_API_KEY") ?? "",
+});
+
 const openai = new OpenAI({
   apiKey: Deno.env.get("DEEPSEEK_API_KEY") ?? "",
   baseURL: "https://api.deepseek.com",
 });
 
+// OpenAI-shape wrapper. Call sites pass `{messages, max_tokens, ...}` and read
+// `.choices[0].message.content`. The wrapper chooses the backend based on the
+// per-request model (from `requestContext`) or an explicit `params.model`
+// override: `claude-*` → Anthropic Messages API; anything else → OpenAI-
+// compatible API pointed at DeepSeek. Call sites don't need to know which
+// backend is active.
+//
+// Claude branch handles Opus 4.7 constraints automatically:
+// - Folds `role: "system"` messages into Anthropic's top-level `system` param.
+// - Strips `temperature` / `response_format` (would 400 on 4.7 / no direct equivalent).
+// - Opts into adaptive thinking when `max_tokens >= 1024`.
+// - Streams + collects via `.finalMessage()` when `max_tokens >= 2048` to dodge
+//   edge-function HTTP timeouts on long outputs.
+// DeepSeek branch passes every param straight through — behaviour matches the
+// original code before the migration.
+async function callLLM(
+  params: LLMCallParams,
+  requestOptions: { signal?: AbortSignal } = {},
+): Promise<LLMCallResponse> {
+  const model = activeModel(params.model);
+
+  if (isClaudeModel(model)) {
+    if (params.messages.every((m) => m.role === "system")) {
+      throw new Error("callLLM: at least one user/assistant message required");
+    }
+    const { body, shouldStream } = buildAnthropicBody(params);
+    // deno-lint-ignore no-explicit-any
+    let message: any;
+    if (shouldStream) {
+      const stream = anthropic.messages.stream(
+        // deno-lint-ignore no-explicit-any
+        body as any,
+        { signal: requestOptions.signal },
+      );
+      message = await stream.finalMessage();
+    } else {
+      message = await anthropic.messages.create(
+        // deno-lint-ignore no-explicit-any
+        body as any,
+        { signal: requestOptions.signal },
+      );
+    }
+    const text = (message.content as Array<{ type: string; text?: string }>)
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("");
+    return { choices: [{ message: { content: text } }] };
+  }
+
+  // DeepSeek (OpenAI-compatible) — behaviour-preserving passthrough.
+  // deno-lint-ignore no-explicit-any
+  const openaiParams: any = {
+    model,
+    messages: params.messages,
+  };
+  if (params.max_tokens !== undefined) openaiParams.max_tokens = params.max_tokens;
+  if (params.temperature !== undefined) openaiParams.temperature = params.temperature;
+  if (params.response_format !== undefined) openaiParams.response_format = params.response_format;
+  const response = await openai.chat.completions.create(openaiParams, requestOptions);
+  const content = response.choices?.[0]?.message?.content ?? "";
+  return { choices: [{ message: { content } }] };
+}
+
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const MAX_CONTENT_LENGTH = 200;
 const LOG_PREFIX = "[AGENT-ORCHESTRATOR]";
-const LLM_TIMEOUT_MS = 60_000;      // 60s per DeepSeek call — typically responds in 5-30s
+const LLM_TIMEOUT_MS = 60_000;      // 60s per Claude call — typically responds in 5-30s
 const TAVILY_TIMEOUT_MS = 15_000;   // 15s for Tavily search (raw results, no synthesis)
 const TAVILY_MAX_RESULTS = 10;      // Max search results per Tavily call
 const WORKER_WAIT_MS = 60_000;      // 60s max to wait for all workers (LLM ~5-15s)
@@ -109,6 +189,7 @@ interface ChatContext {
   agent_instructions: string | null;
   agent_configs: Array<{ name: string; personality: string }> | null;
   translation_languages: string[];
+  agent_model: string;
 }
 
 // Default archetype templates assigned round-robin when personality is empty.
@@ -161,9 +242,8 @@ Respond with ONLY valid JSON in this exact format, no other text:
 
   try {
     const startMs = Date.now();
-    const response = await openai.chat.completions.create(
+    const response = await callLLM(
       {
-        model: "deepseek-chat",
         messages: [{ role: "user", content: generationPrompt }],
         temperature: 1.0,
       },
@@ -357,9 +437,8 @@ type ConsensusClassification = "RESEARCH_TASK" | "HUMAN_TASK" | "THOUGHT";
 async function classifyConsensus(content: string, logContext?: { chat_id?: number; cycle_id?: number }): Promise<ConsensusClassification> {
   const startMs = Date.now();
   try {
-    const response = await openai.chat.completions.create(
+    const response = await callLLM(
       {
-        model: "deepseek-chat",
         max_tokens: 50,
         messages: [
           {
@@ -485,9 +564,8 @@ async function synthesizeFromSources(
 
   const startMs = Date.now();
   try {
-    const response = await openai.chat.completions.create(
+    const response = await callLLM(
       {
-        model: "deepseek-chat",
         max_tokens: 4096,
         messages: [
           {
@@ -555,9 +633,8 @@ async function evaluateCompleteness(
   refinementQuery: string | null;
 }> {
   try {
-    const response = await openai.chat.completions.create(
+    const response = await callLLM(
       {
-        model: "deepseek-chat",
         max_tokens: 512,
         response_format: { type: "json_object" },
         messages: [
@@ -571,7 +648,9 @@ async function evaluateCompleteness(
   "is_complete": <true if score >= ${RESEARCH_COMPLETENESS_THRESHOLD} OR items_delivered >= items_requested>,
   "refinement_query": <a DIFFERENT search query to find missing info, or null if complete>
 }
-Be strict: only count concrete, named, verifiable items. Generic advice doesn't count.`,
+Be strict: only count concrete, named, verifiable items. Generic advice doesn't count.
+
+Output ONLY the JSON object — no prose, no markdown fences, no commentary.`,
           },
           {
             role: "user",
@@ -614,9 +693,8 @@ async function buildSearchQuery(brief: ResearchBrief): Promise<string> {
   const context = parts.join("\n");
 
   try {
-    const response = await openai.chat.completions.create(
+    const response = await callLLM(
       {
-        model: "deepseek-chat",
         max_tokens: 200,
         messages: [
           {
@@ -873,7 +951,7 @@ async function fetchPreviousConsensus(
 async function fetchChatContext(chatId: number): Promise<ChatContext> {
   const { data, error } = await supabase
     .from("chats")
-    .select("name, initial_message, description, confirmation_rounds_required, enable_agents, proposing_agent_count, rating_agent_count, agent_instructions, agent_configs, translation_languages")
+    .select("name, initial_message, description, confirmation_rounds_required, enable_agents, proposing_agent_count, rating_agent_count, agent_instructions, agent_configs, translation_languages, agent_model")
     .eq("id", chatId)
     .single();
 
@@ -1220,14 +1298,21 @@ This is a multi-round consensus process. A proposition must win ${confirmRounds}
   }
 
   if (carriedPropositions.length > 0) {
-    contextBlock += `\n\nCURRENT FRONT-RUNNER (won the previous round — reaches consensus if it wins again):`;
+    contextBlock += `\n\nPREVIOUS ROUND WINNER (currently leading this cycle — reaches consensus if it wins again):`;
     for (const p of carriedPropositions) {
       contextBlock += `\n> "${p.content}"`;
     }
-    contextBlock += `\nNOTE: Your proposition must make sense as a standalone entry in the consensus chain. The front-runner may or may not reach consensus, so do not reference it directly — a reader of the final conversation won't see it unless it wins.`;
   }
 
   const formatInstruction = `GOAL: Submit the proposition you think the group will most agree with. The winning proposition is the one that resonates with everyone, not just you.`;
+
+  const refinementClause = carriedPropositions.length > 0
+    ? `Your proposition must do TWO things at once:
+  1) NATURAL FOLLOW-UP: Naturally advance the CONVERSATION HISTORY above — read the consensus chain top to bottom like a chain of thought, then propose the logical next step.
+  2) REFINEMENT OF THE PREVIOUS ROUND WINNER: Take the winner above and re-render it through YOUR lens — preserve its core idea AND add what your criterion contributes. Formula: winner + your lens = your proposition.
+
+CRITICAL: Phrase the proposition as a complete standalone idea. A reader of the final consensus chain won't see the previous round's proposition unless it wins, so don't say "the foundation idea" or "this proposal" — restate the substance and weave your criterion into it directly. Don't repeat the same identity-driven proposition you'd write regardless of context; the previous winner's content MUST visibly shape your wording this round.`
+    : `Your proposition must naturally advance the CONVERSATION HISTORY above — read the consensus chain top to bottom like a chain of thought, then propose the logical next step. Your proposition must score highest on YOUR criterion.`;
 
   const userPrompt = `${contextBlock}
 
@@ -1235,7 +1320,7 @@ ${formatInstruction}
 
 ACCURACY RULE: Do NOT invent facts, statistics, or claims. Base your proposition only on what you know to be true, the conversation history, and any research results shown above. Never claim OneMind has features it doesn't have.
 
-TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that naturally advances the CONVERSATION HISTORY above. Read the consensus chain from top to bottom like a chain of thought, then propose the logical next step. Your proposition must score highest on YOUR criterion. Ignore the front-runner — just follow where the conversation chain leads. Output ONLY the proposition text, nothing else.`;
+TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars). ${refinementClause} Output ONLY the proposition text, nothing else.`;
 
   const MAX_RETRIES = 3;
   let content: string | null = null;
@@ -1247,9 +1332,8 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
           ? `\n\n⚠️ STRICT: Your previous attempt was ${content?.length ?? "?"} chars. MUST be under ${MAX_CONTENT_LENGTH} chars. Aim for ~150 chars.`
           : "";
 
-      const response = await openai.chat.completions.create(
+      const response = await callLLM(
         {
-          model: "deepseek-chat",
           max_tokens: 8192,
           messages: [
             { role: "system", content: fullProposingSystemPrompt },
@@ -1317,9 +1401,8 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars) that natu
       content = null;
       for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
         try {
-          const response = await openai.chat.completions.create(
+          const response = await callLLM(
             {
-              model: "deepseek-chat",
               max_tokens: 8192,
               messages: [
                 { role: "system", content: fullProposingSystemPrompt },
@@ -1506,15 +1589,16 @@ TASK: Rate each proposition 0-100 based ONLY on your criterion. Consider how wel
 0 = completely fails your criterion
 100 = perfectly satisfies your criterion
 
-Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposition_id": "brief reason (10 words max)", ...}}`;
+Output JSON: {"ratings": {"proposition_id": score, ...}, "reasoning": {"proposition_id": "brief reason (10 words max)", ...}}
+
+Output ONLY the JSON object — no prose, no markdown fences, no commentary.`;
 
   const MAX_RETRIES = 3;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      const response = await openai.chat.completions.create(
+      const response = await callLLM(
         {
-          model: "deepseek-chat",
           max_tokens: 8192,
           response_format: { type: "json_object" },
           messages: [
@@ -1696,6 +1780,16 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Resolve which LLM backend serves this chat — stored per-chat on
+    // `chats.agent_model`. Everything downstream reads it via requestContext.
+    const { data: modelRow } = await supabase
+      .from("chats")
+      .select("agent_model")
+      .eq("id", chat_id)
+      .single();
+    const activeChatModel = (modelRow?.agent_model as string | undefined) ?? DEFAULT_MODEL;
+
+    return await requestContext.run({ model: activeChatModel }, async () => {
     // =========================================================================
     // DISPATCHER MODE — no persona_name: fire independent worker calls
     // =========================================================================
@@ -2011,6 +2105,7 @@ Deno.serve(async (req: Request) => {
       phase,
       persona_name,
     }, req);
+    }); // close requestContext.run
   } catch (error) {
     console.error(`${LOG_PREFIX} Error:`, error);
     await logAgent({

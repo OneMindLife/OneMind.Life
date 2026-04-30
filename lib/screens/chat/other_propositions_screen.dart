@@ -60,7 +60,6 @@ class OtherPropositionsScreen extends ConsumerWidget {
               final prop = others[index];
               return PropositionContentCard(
                 content: prop.displayContent,
-                maxHeight: 200,
                 borderColor: AppColors.consensus,
                 glowColor: AppColors.consensus,
               );

@@ -109,6 +109,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get yourChats => 'Your Chats';
 
   @override
+  String get nextUp => 'Next up';
+
+  @override
+  String nextUpWithCount(int count) {
+    return 'Next up ($count)';
+  }
+
+  @override
+  String get wrappingUp => 'Wrapping up';
+
+  @override
+  String wrappingUpWithCount(int count) {
+    return 'Wrapping up ($count)';
+  }
+
+  @override
+  String get inactive => 'Inactive';
+
+  @override
+  String inactiveWithCount(int count) {
+    return 'Inactive ($count)';
+  }
+
+  @override
+  String get allChats => 'All chats';
+
+  @override
+  String allChatsWithCount(int count) {
+    return 'All chats ($count)';
+  }
+
+  @override
+  String get noChatsHere => 'Nothing here — you\'re all caught up.';
+
+  @override
+  String get enableNotificationsTitle => 'Get notified when it\'s your turn';
+
+  @override
+  String get enableNotificationsBody =>
+      'We\'ll ping you when a round needs you.';
+
+  @override
+  String get enableNotificationsCta => 'Enable';
+
+  @override
+  String get notificationsBlockedTitle => 'Notifications are blocked';
+
+  @override
+  String get notificationsBlockedBody =>
+      'Unblock them in your browser\'s site settings to get notified.';
+
+  @override
+  String get gotIt => 'Got it';
+
+  @override
+  String get notNow => 'Not now';
+
+  @override
+  String get installOneMindTitle => 'Install OneMind';
+
+  @override
+  String get installOneMindBody =>
+      'Add to your home screen for the best experience.';
+
+  @override
+  String get installOneMindIosBody => 'Tap Share then \"Add to Home Screen\".';
+
+  @override
+  String get installCta => 'Install';
+
+  @override
+  String get lookingForMore => 'Join one to keep going';
+
+  @override
+  String get lookingForMoreDescription =>
+      'Public chats with the most activity right now.';
+
+  @override
+  String get discoverPublicChatsCta => 'Discover public chats';
+
+  @override
+  String get seeAllPublicChats => 'See all public chats';
+
+  @override
+  String get nothingToJoinTitle => 'Nothing new to join right now';
+
+  @override
+  String get nothingToJoinDescription =>
+      'Start your own chat and invite others.';
+
+  @override
   String get cancelRequest => 'Cancel Request';
 
   @override
@@ -393,6 +484,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String convergenceNumber(int number) {
+    return 'Convergence #$number';
+  }
+
+  @override
   String get noPropositionsToDisplay => 'No propositions to display';
 
   @override
@@ -556,6 +652,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pauseChat => 'Pause Chat';
+
+  @override
+  String get turnMusicOn => 'Turn music on';
+
+  @override
+  String get turnMusicOff => 'Turn music off';
 
   @override
   String get leaveChat => 'Leave Chat';
@@ -2751,4 +2853,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get donate => 'Donate';
+
+  @override
+  String get supportOneMindTitle => 'Support OneMind';
+
+  @override
+  String get supportOneMindBody =>
+      'OneMind is free and runs on donations. If this group just helped you reach a real decision together, would you consider chipping in to keep it going?';
+
+  @override
+  String get maybeLater => 'Maybe later';
 }

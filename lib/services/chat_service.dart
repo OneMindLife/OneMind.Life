@@ -514,6 +514,8 @@ class ChatService {
           winning_proposition_id,
           task_result,
           host_override,
+          video_url,
+          audio_url,
           propositions:winning_proposition_id(*)
         ''')
         .eq('chat_id', chatId)
@@ -528,6 +530,8 @@ class ChatService {
           proposition: Proposition.fromJson(cycle['propositions']),
           taskResult: cycle['task_result'] as String?,
           isHostOverride: cycle['host_override'] as bool? ?? false,
+          videoUrl: cycle['video_url'] as String?,
+          audioUrl: cycle['audio_url'] as String?,
         ));
       }
     }
@@ -573,6 +577,8 @@ class ChatService {
           ),
           taskResult: item.taskResult,
           isHostOverride: item.isHostOverride,
+          videoUrl: item.videoUrl,
+          audioUrl: item.audioUrl,
         );
       }
       return item;
@@ -919,7 +925,8 @@ class ChatService {
         .from('round_winners')
         .select('''
           id, round_id, proposition_id, rank, global_score, created_at,
-          propositions!inner(content)
+          propositions!inner(content),
+          rounds!inner(audio_url, video_url)
         ''')
         .eq('round_id', previousRoundId)
         .eq('rank', 1)
@@ -998,7 +1005,8 @@ class ChatService {
         .from('round_winners')
         .select('''
           id, round_id, proposition_id, rank, global_score, created_at,
-          propositions!inner(content)
+          propositions!inner(content),
+          rounds!inner(audio_url, video_url)
         ''')
         .inFilter('round_id', roundIds)
         .eq('rank', 1)

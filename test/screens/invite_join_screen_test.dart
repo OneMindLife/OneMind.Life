@@ -102,6 +102,10 @@ class MockMyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 /// Key used to identify the home page in navigation tests
 const _homePageKey = Key('home-page-placeholder');
 
+/// Key prefix used to identify the chat_id query param surfaced by the home
+/// placeholder, e.g. `Key('home-chat-id-1')` when navigated to `/?chat_id=1`.
+String _homeChatIdKeyValue(int chatId) => 'home-chat-id-$chatId';
+
 void main() {
   late MockAuthService mockAuthService;
   late MockChatService mockChatService;
@@ -182,11 +186,24 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const Scaffold(
-            body: Center(
-              child: Text('Home Page', key: _homePageKey),
-            ),
-          ),
+          builder: (context, state) {
+            final chatIdParam = state.uri.queryParameters['chat_id'];
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Home Page', key: _homePageKey),
+                    if (chatIdParam != null)
+                      Text(
+                        'open chat $chatIdParam',
+                        key: Key('home-chat-id-$chatIdParam'),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/join/invite',
@@ -556,7 +573,7 @@ void main() {
     });
 
     group('post-join navigation to home', () {
-      testWidgets('direct join navigates to home (not ChatScreen)',
+      testWidgets('direct join navigates to home with chat_id auto-open intent',
           (tester) async {
         final chat = _createTestChat(
           id: 1,
@@ -602,16 +619,13 @@ void main() {
         await tester.tap(find.widgetWithText(FilledButton, 'Join Chat'));
         await tester.pumpAndSettle();
 
-        // Should navigate to home
+        // Should navigate to home with the auto-open chat_id query param so
+        // HomeScreen._handleReturnToChat opens the chat the user just joined.
         expect(find.byKey(_homePageKey), findsOneWidget);
-        expect(find.text('Home Page'), findsOneWidget);
-
-        // Verify tutorial was marked complete
-        verify(() => mockTutorialService.markTutorialComplete()).called(1);
-        verify(() => mockTutorialService.markHomeTourComplete()).called(1);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1))), findsOneWidget);
       });
 
-      testWidgets('request-to-join (approval required) navigates to home',
+      testWidgets('request-to-join (approval required) navigates to home without chat_id',
           (tester) async {
         final joinRequest = JoinRequest(
           id: 1,
@@ -654,16 +668,14 @@ void main() {
         await tester.tap(find.widgetWithText(FilledButton, 'Request to Join'));
         await tester.pumpAndSettle();
 
-        // Should navigate to home
+        // Approval-required path: user is NOT yet a participant (only a
+        // pending request). Must NOT auto-open the chat — they should land
+        // on Home where they can see the pending request status.
         expect(find.byKey(_homePageKey), findsOneWidget);
-        expect(find.text('Home Page'), findsOneWidget);
-
-        // Verify tutorial was marked complete
-        verify(() => mockTutorialService.markTutorialComplete()).called(1);
-        verify(() => mockTutorialService.markHomeTourComplete()).called(1);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1))), findsNothing);
       });
 
-      testWidgets('personal code join navigates to home (not ChatScreen)',
+      testWidgets('personal code join navigates to home with chat_id auto-open intent',
           (tester) async {
         final chat = _createTestChat(
           id: 1,
@@ -696,13 +708,9 @@ void main() {
         await tester.tap(find.widgetWithText(FilledButton, 'Join Chat'));
         await tester.pumpAndSettle();
 
-        // Should navigate to home
+        // Should navigate to home with the auto-open chat_id query param.
         expect(find.byKey(_homePageKey), findsOneWidget);
-        expect(find.text('Home Page'), findsOneWidget);
-
-        // Verify tutorial was marked complete
-        verify(() => mockTutorialService.markTutorialComplete()).called(1);
-        verify(() => mockTutorialService.markHomeTourComplete()).called(1);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1))), findsOneWidget);
 
         // Verify analytics logged with personal_code method
         verify(() => mockAnalyticsService.logChatJoined(
@@ -711,7 +719,7 @@ void main() {
             )).called(1);
       });
 
-      testWidgets('token-based direct join navigates to home',
+      testWidgets('token-based direct join navigates to home with chat_id auto-open intent',
           (tester) async {
         final participant = Participant(
           id: 10,
@@ -759,9 +767,9 @@ void main() {
         await tester.tap(find.widgetWithText(FilledButton, 'Join Chat'));
         await tester.pumpAndSettle();
 
-        // Should navigate to home
+        // Should navigate to home with the auto-open chat_id query param.
         expect(find.byKey(_homePageKey), findsOneWidget);
-        expect(find.text('Home Page'), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1))), findsOneWidget);
 
         // Verify invite was accepted
         verify(() => mockInviteService.acceptInvite(
@@ -769,9 +777,6 @@ void main() {
               participantId: 10,
             )).called(1);
 
-        // Verify tutorial was marked complete
-        verify(() => mockTutorialService.markTutorialComplete()).called(1);
-        verify(() => mockTutorialService.markHomeTourComplete()).called(1);
 
         // Verify analytics logged with deep_link method
         verify(() => mockAnalyticsService.logChatJoined(

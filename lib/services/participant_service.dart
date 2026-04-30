@@ -1,261 +1,163 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/errors/app_exception.dart';
 import '../models/models.dart';
+import 'participant_repository.dart';
+import 'supabase_participant_repository.dart';
 
-/// Service for participant-related database operations
+/// Backward-compatible facade over [ParticipantRepository]. New code should
+/// depend on the repository directly so it can dispatch on [JoinResult] (and
+/// be tested against [InMemoryParticipantRepository]). This service exists
+/// to keep existing callers working without a flag-day rewrite — it
+/// translates JoinResult outcomes back into the historical
+/// `Participant` / `throw AppException` API.
 class ParticipantService {
-  final SupabaseClient _client;
+  final ParticipantRepository _repository;
 
-  ParticipantService(this._client);
+  /// Convenience constructor for production: wires the Supabase-backed repo.
+  ParticipantService(SupabaseClient client)
+      : _repository = SupabaseParticipantRepository(client);
+
+  /// Constructor used by tests / DI to inject a custom repository
+  /// (e.g. [InMemoryParticipantRepository]).
+  ParticipantService.withRepository(this._repository);
+
+  /// The underlying repository — exposed so newer call sites can dispatch
+  /// on [JoinResult] without going through this back-compat translation.
+  ParticipantRepository get repository => _repository;
 
   /// Get participants for a chat
-  Future<List<Participant>> getParticipants(int chatId) async {
-    final response = await _client
-        .from('participants')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('status', 'active')
-        .order('display_name');
-
-    return (response as List).map((json) => Participant.fromJson(json)).toList();
-  }
+  Future<List<Participant>> getParticipants(int chatId) =>
+      _repository.getParticipants(chatId);
 
   /// Get my participant record for a chat
-  /// Uses auth.uid() via RLS to identify the current user
-  Future<Participant?> getMyParticipant(int chatId) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return null;
+  Future<Participant?> getMyParticipant(int chatId) =>
+      _repository.getMyParticipant(chatId);
 
-    final response = await _client
-        .from('participants')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    return response != null ? Participant.fromJson(response) : null;
-  }
-
-  /// Join a chat
-  /// If user was previously kicked, reactivates their existing record
-  /// Uses auth.uid() for user identification
+  /// Join a chat. Translates [JoinResult] back to the legacy API:
+  ///   - Joined / Reactivated / AlreadyIn / PendingApproval → returns Participant
+  ///   - CannotJoin → throws AppException with a category-appropriate message
+  ///
+  /// [isHost] is honored only on first-time join (chat creation flow). For
+  /// every other case the underlying repository handles it: kicked users
+  /// can't silently re-host, etc.
   Future<Participant> joinChat({
     required int chatId,
     required String displayName,
     required bool isHost,
   }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) {
-      throw AppException.authRequired(
-        message: 'User must be signed in to join a chat',
-      );
+    if (isHost) {
+      return _repository.addHost(chatId: chatId, displayName: displayName);
     }
+    final result = await _repository.joinChat(
+      chatId: chatId,
+      displayName: displayName,
+    );
+    return _unwrap(result);
+  }
 
-    // Check if user has an existing kicked record
-    final existing = await _client
-        .from('participants')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('user_id', userId)
-        .eq('status', 'kicked')
-        .maybeSingle();
+  /// Join a public chat using auth-metadata display name fallback.
+  /// Same single-source-of-truth path as [joinChat] under the hood.
+  Future<Participant> joinPublicChat({
+    required int chatId,
+    String? displayName,
+  }) async {
+    final name = displayName ?? _resolveAuthDisplayName();
+    final result = await _repository.joinChat(
+      chatId: chatId,
+      displayName: name,
+    );
+    return _unwrap(result);
+  }
 
-    if (existing != null) {
-      // Reactivate the kicked participant
-      final response = await _client
-          .from('participants')
-          .update({
-            'status': 'active',
-            'display_name': displayName,
-          })
-          .eq('id', existing['id'])
-          .select()
-          .single();
-      return Participant.fromJson(response);
+  /// Read display name from Supabase auth metadata as a last-resort fallback
+  /// (matches old joinPublicChat behavior).
+  String _resolveAuthDisplayName() {
+    final repo = _repository;
+    if (repo is SupabaseParticipantRepository) {
+      final metadata = Supabase.instance.client.auth.currentUser?.userMetadata;
+      return (metadata?['display_name'] as String?) ?? 'Anonymous';
     }
+    return 'Anonymous';
+  }
 
-    // No existing record, insert new participant
-    final response = await _client.from('participants').insert({
-      'chat_id': chatId,
-      'display_name': displayName,
-      'user_id': userId,
-      'is_host': isHost,
-      'is_authenticated': true,
-      'status': 'active',
-    }).select().single();
+  /// Translate [JoinResult] to legacy contract.
+  Participant _unwrap(JoinResult result) {
+    switch (result) {
+      case JoinedFresh(:final participant):
+      case Reactivated(:final participant):
+      case AlreadyIn(:final participant):
+      case PendingApproval(:final participant):
+        return participant;
+      case CannotJoin(:final reason):
+        throw _exceptionFor(reason);
+    }
+  }
 
-    return Participant.fromJson(response);
+  AppException _exceptionFor(CannotJoinReason reason) {
+    switch (reason) {
+      case CannotJoinReason.authRequired:
+        return AppException.authRequired(
+          message: 'User must be signed in to join a chat',
+        );
+      case CannotJoinReason.kicked:
+        return AppException.forbidden(
+          message: 'You were removed from this chat. Request to rejoin.',
+        );
+      case CannotJoinReason.chatNotFound:
+        return AppException.chatNotFound();
+      case CannotJoinReason.chatNotActive:
+        return AppException.forbidden(message: 'Chat is not active');
+      case CannotJoinReason.chatRequiresApproval:
+        return AppException.forbidden(
+          message: 'Chat requires approval to join',
+        );
+    }
   }
 
   /// Request to join a chat (for require_approval chats)
-  /// Uses auth.uid() for user identification
   Future<void> requestToJoin({
     required int chatId,
     required String displayName,
-  }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) {
-      throw AppException.authRequired(
-        message: 'User must be signed in to request to join',
-      );
-    }
-
-    await _client.from('join_requests').insert({
-      'chat_id': chatId,
-      'display_name': displayName,
-      'user_id': userId,
-      'is_authenticated': true,
-      'status': 'pending',
-    });
-  }
+  }) =>
+      _repository.requestToJoin(chatId: chatId, displayName: displayName);
 
   /// Get pending join requests (for hosts)
-  Future<List<Map<String, dynamic>>> getPendingRequests(int chatId) async {
-    final response = await _client
-        .from('join_requests')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('status', 'pending')
-        .order('created_at');
-
-    return List<Map<String, dynamic>>.from(response as List);
-  }
+  Future<List<Map<String, dynamic>>> getPendingRequests(int chatId) =>
+      _repository.getPendingRequests(chatId);
 
   /// Approve a join request (host only)
-  /// Uses RPC to bypass RLS (host creates participant for requester)
-  Future<void> approveRequest(int requestId) async {
-    await _client.rpc('approve_join_request', params: {'p_request_id': requestId});
-  }
+  Future<void> approveRequest(int requestId) =>
+      _repository.approveRequest(requestId);
 
   /// Deny a join request (host only)
-  Future<void> denyRequest(int requestId) async {
-    await _client
-        .from('join_requests')
-        .update({'status': 'denied', 'resolved_at': DateTime.now().toIso8601String()})
-        .eq('id', requestId);
-  }
+  Future<void> denyRequest(int requestId) =>
+      _repository.denyRequest(requestId);
 
   /// Kick a participant (host only)
-  Future<void> kickParticipant(int participantId) async {
-    await _client
-        .from('participants')
-        .update({'status': 'kicked'})
-        .eq('id', participantId);
-  }
+  Future<void> kickParticipant(int participantId) =>
+      _repository.kickParticipant(participantId);
 
-  /// Leave a chat (participant removes themselves)
-  /// Deletes the participant record entirely so they can rejoin cleanly
-  Future<void> leaveChat(int participantId) async {
-    await _client
-        .from('participants')
-        .delete()
-        .eq('id', participantId);
-  }
+  /// Leave a chat (soft-delete: status='left'). Preserves all the user's
+  /// input for clean rejoin via [joinChat].
+  Future<void> leaveChat(int participantId) =>
+      _repository.leaveChat(participantId);
 
   /// Subscribe to participant changes
   RealtimeChannel subscribeToParticipants(
     int chatId,
     void Function(List<Participant>) onUpdate,
-  ) {
-    return _client
-        .channel('participants:$chatId')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'participants',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'chat_id',
-            value: chatId,
-          ),
-          callback: (payload) async {
-            // Refetch all participants on any change
-            final participants = await getParticipants(chatId);
-            onUpdate(participants);
-          },
-        )
-        .subscribe();
-  }
+  ) =>
+      _repository.subscribeToParticipants(chatId, onUpdate);
 
   /// Get my pending join requests (for requester's chat list)
-  /// Uses auth.uid() for user identification
-  Future<List<JoinRequest>> getMyPendingRequests() async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return [];
+  Future<List<JoinRequest>> getMyPendingRequests() =>
+      _repository.getMyPendingRequests();
 
-    final response = await _client
-        .from('join_requests')
-        .select('''
-          *,
-          chats(name, initial_message)
-        ''')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .order('created_at', ascending: false);
-
-    return (response as List)
-        .map((json) => JoinRequest.fromJson(json))
-        .toList();
-  }
-
-  /// Update the per-chat viewing language for the current user's participant row
-  Future<void> updateViewingLanguage(int chatId, String languageCode) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) return;
-
-    await _client
-        .from('participants')
-        .update({'viewing_language_code': languageCode})
-        .eq('chat_id', chatId)
-        .eq('user_id', userId);
-  }
+  /// Update the per-chat viewing language for the current user
+  Future<void> updateViewingLanguage(int chatId, String languageCode) =>
+      _repository.updateViewingLanguage(chatId, languageCode);
 
   /// Cancel a pending join request (requester only)
-  Future<void> cancelJoinRequest(int requestId) async {
-    await _client.rpc('cancel_join_request', params: {'p_request_id': requestId});
-  }
-
-  /// Join a public chat using the display name from auth metadata.
-  /// For official/public chats where users can join without approval.
-  Future<Participant> joinPublicChat({
-    required int chatId,
-    String? displayName,
-  }) async {
-    final userId = _client.auth.currentUser?.id;
-    if (userId == null) {
-      throw AppException.authRequired(
-        message: 'User must be signed in to join a chat',
-      );
-    }
-
-    // Check if already a participant (any status)
-    final existing = await _client
-        .from('participants')
-        .select()
-        .eq('chat_id', chatId)
-        .eq('user_id', userId)
-        .maybeSingle();
-
-    if (existing != null) {
-      // Already joined - return existing record
-      return Participant.fromJson(existing);
-    }
-
-    // Use provided name or fall back to auth metadata display name
-    final name = displayName ??
-        _client.auth.currentUser?.userMetadata?['display_name'] as String? ??
-        'Anonymous';
-
-    // Join with display name (column is NOT NULL)
-    final response = await _client.from('participants').insert({
-      'chat_id': chatId,
-      'user_id': userId,
-      'display_name': name,
-      'is_host': false,
-      'is_authenticated': true,
-      'status': 'active',
-    }).select().single();
-
-    return Participant.fromJson(response);
-  }
+  Future<void> cancelJoinRequest(int requestId) =>
+      _repository.cancelJoinRequest(requestId);
 }

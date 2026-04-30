@@ -8,14 +8,16 @@ import 'package:onemind_app/screens/tutorial/tutorial_screen.dart';
 
 import '../../helpers/pump_app.dart';
 
-/// Navigate to round 1 proposing via play button + skip chat tour
+/// Navigate to round 1 proposing via notifier (Flutter intro panel was
+/// removed; web/index.html handles the play UI in production).
 Future<void> _navigateToProposing(WidgetTester tester) async {
-  await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-  await tester.pumpAndSettle();
-
   final container = ProviderScope.containerOf(
     tester.element(find.byType(TutorialScreen)),
   );
+  container
+      .read(tutorialChatNotifierProvider.notifier)
+      .selectTemplate('saturday');
+  await tester.pumpAndSettle();
   container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
   await tester.pumpAndSettle();
 }

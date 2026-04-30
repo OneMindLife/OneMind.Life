@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/l10n/language_service.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -11,7 +12,6 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
 import '../../widgets/chat_dashboard_card.dart';
-import '../chat/chat_screen.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -81,14 +81,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         isHost: false,
       );
 
-      // Navigate to the chat
+      // Reset the nav stack to Home with ?chat_id=N — HomeScreen auto-opens
+      // the chat on top of Home, so the back arrow lands the user on Home
+      // (not back on Discover, which would feel like a dead end).
       if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ChatScreen(chat: chat),
-          ),
-        );
+        context.go('/?chat_id=${chat.id}');
       }
     } catch (e) {
       if (mounted) {

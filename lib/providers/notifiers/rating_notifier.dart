@@ -256,6 +256,24 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
     ));
   }
 
+  /// Delete this user's grid_ranking row for [propositionId] in the current
+  /// round. Called by the rating screen after [removeFromFetched] when the
+  /// user undoes a placement so the row is removed from the database too —
+  /// otherwise the rating_skips RLS policy would still see leftover ratings
+  /// and refuse to insert a skip when the user undoes back to zero.
+  /// Silent-fail: realtime will reconcile if the delete races a refetch.
+  Future<void> deleteGridRanking(int propositionId) async {
+    try {
+      await _propositionService.deleteGridRanking(
+        roundId: _roundId,
+        propositionId: propositionId,
+        participantId: _participantId,
+      );
+    } catch (_) {
+      // Don't surface — undo should never fail the user's flow.
+    }
+  }
+
   /// Save intermediate rankings (called after each placement)
   /// If allPositionsChanged is true, updates all rankings; otherwise just upserts
   Future<void> saveIntermediateRankings(

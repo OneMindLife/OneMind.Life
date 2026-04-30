@@ -13,6 +13,7 @@ import '../screens/landing/seo_landing_page.dart';
 import '../screens/landing/seo_pages.dart';
 import '../screens/join/invite_join_screen.dart';
 import '../screens/legal/legal_document_screen.dart';
+import '../screens/action_picker/action_picker_screen.dart';
 import '../screens/demo/demo_screen.dart';
 import '../screens/home_tour/home_tour_screen.dart';
 import '../screens/tutorial/tutorial_screen.dart';
@@ -28,7 +29,6 @@ bool _tutorialCompletionInProgress = false;
 final routerProvider = Provider<GoRouter>((ref) {
   final analyticsService = ref.watch(analyticsServiceProvider);
   final observer = analyticsService.observer;
-  final hasCompletedTutorial = ref.watch(hasCompletedTutorialProvider);
   final hasCompletedHomeTour = ref.watch(hasCompletedHomeTourProvider);
 
   late final GoRouter router;
@@ -76,11 +76,6 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
       if (isHomeTourRoute) return null;
 
-      // New users landing on home: redirect to tutorial (play button)
-      if (!hasCompletedTutorial && state.matchedLocation == '/') {
-        return '/tutorial';
-      }
-
       return null;
     },
     routes: [
@@ -113,19 +108,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                 await ref.read(tutorialServiceProvider).resetHomeTour();
               }
 
-              // First-time user: auto-join official chat silently
-              if (isFirstTime) {
-                try {
-                  final chatService = ref.read(chatServiceProvider);
-                  final participantService =
-                      ref.read(participantServiceProvider);
-                  final officialChat = await chatService.getOfficialChat();
-                  if (officialChat != null) {
-                    await participantService.joinPublicChat(
-                        chatId: officialChat.id);
-                  }
-                } catch (_) {}
-              }
+              // Auto-join into the official chat now happens on first
+              // visit to the Home screen (see _ensureJoinedOfficialChat
+              // in home_screen.dart) so users who later leave are not
+              // forcibly re-added on every tutorial revisit.
 
               // Invalidate providers so the router rebuilds with fresh
               // values (homeTour=false), then navigate on the next frame
@@ -164,6 +150,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           final returnToChatId = chatIdParam != null ? int.tryParse(chatIdParam) : null;
           return HomeScreen(returnToChatId: returnToChatId);
         },
+      ),
+      // Action picker (FAB) — must be a go_router route, not Navigator.push,
+      // so context.go() from a child route (e.g. Discover after joining)
+      // clears it from the stack instead of leaving it stranded on top.
+      GoRoute(
+        path: '/actions',
+        name: 'actions',
+        builder: (context, state) => const ActionPickerScreen(),
       ),
       // Discover route
       GoRoute(

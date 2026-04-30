@@ -94,6 +94,9 @@ class Chat extends Equatable {
   final int id;
   final String name;
   final String? initialMessage;
+  final String? initialMessageAudioUrl;
+  final String? initialMessageVideoUrl;
+  final String? backgroundAudioUrl;
   final String? description;
   final String? inviteCode;
   final AccessMethod accessMethod;
@@ -158,6 +161,9 @@ class Chat extends Equatable {
     required this.id,
     required this.name,
     this.initialMessage,
+    this.initialMessageAudioUrl,
+    this.initialMessageVideoUrl,
+    this.backgroundAudioUrl,
     this.description,
     this.inviteCode,
     required this.accessMethod,
@@ -214,6 +220,9 @@ class Chat extends Equatable {
       id: json['id'] as int,
       name: json['name'] as String,
       initialMessage: json['initial_message'] as String?,
+      initialMessageAudioUrl: json['initial_message_audio_url'] as String?,
+      initialMessageVideoUrl: json['initial_message_video_url'] as String?,
+      backgroundAudioUrl: json['background_audio_url'] as String?,
       description: json['description'] as String?,
       inviteCode: json['invite_code'] as String?,
       accessMethod: _parseAccessMethod(json['access_method'] as String?),
@@ -341,6 +350,9 @@ class Chat extends Equatable {
     return {
       'name': name,
       'initial_message': initialMessage,
+      'initial_message_audio_url': initialMessageAudioUrl,
+      'initial_message_video_url': initialMessageVideoUrl,
+      'background_audio_url': backgroundAudioUrl,
       'description': description,
       'access_method': _accessMethodToString(accessMethod),
       'require_auth': requireAuth,
@@ -424,6 +436,9 @@ class Chat extends Equatable {
         id,
         name,
         initialMessage,
+        initialMessageAudioUrl,
+        initialMessageVideoUrl,
+        backgroundAudioUrl,
         description,
         inviteCode,
         accessMethod,

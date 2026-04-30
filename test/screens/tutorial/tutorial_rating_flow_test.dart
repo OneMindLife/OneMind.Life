@@ -212,13 +212,14 @@ void main() {
       await tester.pumpApp(TutorialScreen(onComplete: () {}));
       await tester.pumpAndSettle();
 
-      // Navigate to proposing
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.pumpAndSettle();
-
+      // Navigate to proposing via notifier (Flutter intro panel was removed)
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TutorialScreen)),
       );
+      container
+          .read(tutorialChatNotifierProvider.notifier)
+          .selectTemplate('saturday');
+      await tester.pumpAndSettle();
       container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
       await tester.pumpAndSettle();
 
@@ -244,13 +245,12 @@ void main() {
       await tester.pumpApp(TutorialScreen(onComplete: () {}));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.pumpAndSettle();
-
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TutorialScreen)),
       );
       final notifier = container.read(tutorialChatNotifierProvider.notifier);
+      notifier.selectTemplate('saturday');
+      await tester.pumpAndSettle();
       notifier.skipChatTour();
       await tester.pumpAndSettle();
 

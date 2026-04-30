@@ -10,73 +10,20 @@ import '../../helpers/pump_app.dart';
 
 void main() {
   group('Tutorial completion flow', () {
-    testWidgets('skip from intro shows confirmation dialog', (tester) async {
-      await tester.pumpApp(TutorialScreen(onComplete: () {}));
-      await tester.pumpAndSettle();
-
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      expect(find.text('Skip Tutorial?'), findsOneWidget);
-      expect(find.text('Yes, Skip'), findsOneWidget);
-      expect(find.text('Continue Tutorial'), findsOneWidget);
-    });
-
-    testWidgets('confirming skip calls onComplete', (tester) async {
-      var completed = false;
-      await tester.pumpApp(
-        TutorialScreen(onComplete: () => completed = true),
-      );
-      await tester.pumpAndSettle();
-
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Yes, Skip'));
-      await tester.pumpAndSettle();
-
-      expect(completed, true);
-    });
-
-    testWidgets('cancelling skip returns to current step', (tester) async {
-      var completed = false;
-      await tester.pumpApp(
-        TutorialScreen(onComplete: () => completed = true),
-      );
-      await tester.pumpAndSettle();
-
-      final skipFinder = find.text('Skip');
-      await tester.ensureVisible(skipFinder);
-      await tester.pumpAndSettle();
-      await tester.tap(skipFinder);
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Continue Tutorial'));
-      await tester.pumpAndSettle();
-
-      expect(completed, false);
-      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-    });
-
     testWidgets('exit button during proposing shows skip confirmation',
         (tester) async {
       await tester.pumpApp(TutorialScreen(onComplete: () {}));
       await tester.pumpAndSettle();
 
-      // Navigate to proposing
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.pumpAndSettle();
-
-      // Skip chat tour via notifier
+      // Navigate to proposing via notifier (Flutter intro panel was removed;
+      // web/index.html handles the play UI in production)
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TutorialScreen)),
       );
+      container
+          .read(tutorialChatNotifierProvider.notifier)
+          .selectTemplate('saturday');
+      await tester.pumpAndSettle();
       container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
       await tester.pumpAndSettle();
 

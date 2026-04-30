@@ -246,9 +246,15 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             onRankingComplete: _handleRankingComplete,
             onPlacementConfirmed: _onPlacementConfirmed,
             onUndo: (removedId) {
-              // Remove from fetchedIds so it can be re-fetched
-              ref.read(ratingProvider(_params).notifier)
-                  .removeFromFetched(int.parse(removedId));
+              final propId = int.parse(removedId);
+              final notifier = ref.read(ratingProvider(_params).notifier);
+              // Remove from fetchedIds so it can be re-fetched.
+              notifier.removeFromFetched(propId);
+              // Also delete the grid_ranking row so undoing all the way
+              // back to zero placements re-enables Skip Rating (the
+              // rating_skips RLS policy refuses inserts when any
+              // grid_rankings rows exist for this user/round).
+              notifier.deleteGridRanking(propId);
             },
             onSaveRankings: (rankings, allPositionsChanged) {
               // Save rankings to database after each placement

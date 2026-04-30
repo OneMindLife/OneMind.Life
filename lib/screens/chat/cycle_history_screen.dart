@@ -11,23 +11,16 @@ import '../rating/read_only_results_screen.dart';
 
 /// Screen showing round-by-round winners for a given cycle (convergence).
 /// Tapping a round navigates to that round's full rating results.
+///
+/// This screen shows COMPLETED rounds only. We deliberately never show
+/// in-progress data for the current round (current leader, scored
+/// propositions, etc.) — exposing it would let a user who finished rating
+/// share their screen with a user who hasn't, which is a cheating vector.
 class CycleHistoryScreen extends ConsumerStatefulWidget {
   final int cycleId;
   final String convergenceContent;
   final int convergenceNumber;
   final bool showOngoingPlaceholder;
-
-  /// Current leader proposition to show at the bottom during rating phase.
-  final Proposition? currentLeader;
-
-  /// Current round number (for the current leader label).
-  final int? currentRoundNumber;
-
-  /// Current round ID (for navigating to live results).
-  final int? currentRoundId;
-
-  /// All scored propositions for the current round (for results screen).
-  final List<Proposition>? currentRoundPropositions;
 
   const CycleHistoryScreen({
     super.key,
@@ -35,10 +28,6 @@ class CycleHistoryScreen extends ConsumerStatefulWidget {
     required this.convergenceContent,
     required this.convergenceNumber,
     this.showOngoingPlaceholder = false,
-    this.currentLeader,
-    this.currentRoundNumber,
-    this.currentRoundId,
-    this.currentRoundPropositions,
   });
 
   @override
@@ -84,11 +73,15 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
   Future<void> _openRoundResults(Round round) async {
     final propositionService = ref.read(propositionServiceProvider);
     final languageCode = ref.read(localeProvider).languageCode;
-    final propositions =
-        await propositionService.getPropositionsWithRatings(
-          round.id,
-          languageCode: languageCode,
-        );
+    final results = await Future.wait([
+      propositionService.getPropositionsWithRatings(
+        round.id,
+        languageCode: languageCode,
+      ),
+      propositionService.getRaterCount(round.id),
+    ]);
+    final propositions = results[0] as List<Proposition>;
+    final raterCount = results[1] as int;
     if (!mounted) return;
     Navigator.push(
       context,
@@ -97,6 +90,7 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
           propositions: propositions,
           roundNumber: round.customId,
           roundId: round.id,
+          raterCount: raterCount,
         ),
       ),
     );
@@ -123,7 +117,7 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
     // Ascending order: oldest at top, newest at bottom
     final rounds = List<Map<String, dynamic>>.from(_roundData!)
       ..sort((a, b) => (a['round'] as Round).customId.compareTo((b['round'] as Round).customId));
-    if (rounds.isEmpty && widget.currentLeader == null) {
+    if (rounds.isEmpty && !widget.showOngoingPlaceholder) {
       return Center(child: Text(l10n.noPropositionsToDisplay));
     }
 
@@ -159,38 +153,7 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
       ));
     }
 
-    if (widget.currentLeader != null) {
-      items.add(const SizedBox(height: 12));
-      items.add(GestureDetector(
-        onTap: widget.currentRoundId != null
-            ? () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReadOnlyResultsScreen(
-                      propositions: widget.currentRoundPropositions ?? [],
-                      roundNumber: widget.currentRoundNumber ?? 0,
-                      roundId: widget.currentRoundId,
-                    ),
-                  ),
-                );
-              }
-            : null,
-        child: UnconstrainedBox(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width - 64,
-            ),
-            child: PropositionContentCard(
-              content: widget.currentLeader!.displayContent,
-              label: l10n.currentLeader,
-              borderColor: theme.colorScheme.primary,
-              glowColor: theme.colorScheme.primary,
-            ),
-          ),
-        ),
-      ));
-    } else if (widget.showOngoingPlaceholder) {
+    if (widget.showOngoingPlaceholder) {
       items.add(const SizedBox(height: 12));
       items.add(UnconstrainedBox(
         child: ConstrainedBox(

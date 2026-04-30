@@ -10,6 +10,21 @@ googlekey.json
 supabase/.env.local
 .secrets.env
 
+# Per-machine Supabase CLI state (version pin + local project link)
+supabase/.temp/
+
+# Claude Code session state
+.claude/scheduled_tasks.lock
+
+# Large convergence video sources (stored on Supabase Storage, not git).
+# Final MP3 + JSON + prompts are tracked; intermediate MP4s are not.
+marketing/convergence_videos/**/Video*.mp4
+marketing/convergence_videos/**/crossfaded.mp4
+marketing/convergence_videos/**/final_*.mp4
+marketing/convergence_videos/**/onemind_convergence_*.mp4
+marketing/convergence_videos/**/video.mp4
+marketing/convergence_videos/**/concat_list.txt
+
 # Firebase platform config (contains API keys)
 lib/firebase_options.dart
 android/app/google-services.json

@@ -6,17 +6,25 @@ import 'proposition_content_card.dart';
 /// Uses PropositionContentCard internally for consistent styling with rating screens.
 /// Shrinks to content width. Label above content, inside the border.
 class MessageCard extends StatelessWidget {
-  final String label;
+  final String? label;
   final String content;
   final bool isPrimary;
   final bool isConsensus;
+  final Widget? mediaAbove;
+  final Widget? mediaBelow;
+  final Widget? trailing;
+  final bool inlineTrailing;
 
   const MessageCard({
     super.key,
-    required this.label,
+    this.label,
     required this.content,
     this.isPrimary = false,
     this.isConsensus = false,
+    this.mediaAbove,
+    this.mediaBelow,
+    this.trailing,
+    this.inlineTrailing = false,
   });
 
   @override
@@ -41,6 +49,10 @@ class MessageCard extends StatelessWidget {
           label: label,
           borderColor: borderColor,
           glowColor: borderColor,
+          mediaAbove: mediaAbove,
+          mediaBelow: mediaBelow,
+          trailing: trailing,
+          inlineTrailing: inlineTrailing,
         ),
       ),
     );

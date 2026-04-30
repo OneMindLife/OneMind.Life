@@ -86,12 +86,10 @@ void main() {
   });
 
   group('Chat tour widget rendering', () {
-    testWidgets('chat tour starts after tapping play button', (tester) async {
-      await tester.pumpApp(TutorialScreen(onComplete: () {}));
-      await tester.pumpAndSettle();
-
-      // Tap play button to select saturday template
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+    testWidgets('chat tour starts with skipIntro=true', (tester) async {
+      await tester.pumpApp(
+        TutorialScreen(skipIntro: true, onComplete: () {}),
+      );
       await tester.pumpAndSettle();
 
       // Pump through all intro delays and animations (may fire multiple timers)
@@ -111,11 +109,11 @@ void main() {
 
     testWidgets('app bar shows tutorial title during chat tour',
         (tester) async {
-      await tester.pumpApp(TutorialScreen(onComplete: () {}));
+      await tester.pumpApp(
+        TutorialScreen(skipIntro: true, onComplete: () {}),
+      );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
-      await tester.pumpAndSettle();
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(seconds: 1));
       }
@@ -126,10 +124,9 @@ void main() {
 
     testWidgets('text field visible after skipping to proposing',
         (tester) async {
-      await tester.pumpApp(TutorialScreen(onComplete: () {}));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+      await tester.pumpApp(
+        TutorialScreen(skipIntro: true, onComplete: () {}),
+      );
       await tester.pumpAndSettle();
 
       // Skip chat tour via notifier
@@ -143,10 +140,9 @@ void main() {
     });
 
     testWidgets('leaderboard icon visible during tour', (tester) async {
-      await tester.pumpApp(TutorialScreen(onComplete: () {}));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.play_arrow_rounded));
+      await tester.pumpApp(
+        TutorialScreen(skipIntro: true, onComplete: () {}),
+      );
       await tester.pumpAndSettle();
 
       // Skip to proposing to check icon

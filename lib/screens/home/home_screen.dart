@@ -4,19 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../widgets/error_view.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
+import '../../config/router.dart';
 import '../../providers/providers.dart';
+import '../../services/active_audio.dart';
 import '../../utils/dashboard_sort.dart';
 import '../chat/chat_screen.dart';
 import '../create/create_chat_wizard.dart';
+import 'all_chats_screen.dart';
 import '../legal/legal_documents_dialog.dart';
 import '../../widgets/chat_dashboard_card.dart';
 import '../../widgets/language_selector.dart';
-import '../action_picker/action_picker_screen.dart';
-import '../../widgets/pwa_install_banner.dart';
+import '../../widgets/home_banner_carousel.dart';
 import '../../widgets/welcome_header.dart';
 
 const String _donateUrl = 'https://buy.stripe.com/aFa6oHbXedYZg1xap4b3q01';
@@ -34,17 +37,21 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   StreamSubscription<Chat>? _approvedChatSubscription;
-  final _searchController = TextEditingController();
-  bool _isSearching = false;
   bool _hasPlayedEntrance = false;
+  bool _olderChatsExpanded = false;
   Timer? _tickTimer;
+
+  /// True while the first-time auto-join into the official OneMind chat is
+  /// in flight. Used to suppress the "Looking for more chats" discovery
+  /// empty state so new users don't see it flash for a beat before their
+  /// auto-joined OneMind chat appears.
+  bool _isAutoJoiningOfficial = false;
 
   // Invite code state removed — joining now handled via action picker
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(_onSearchChanged);
     // 1-second tick for countdown refresh + re-sort
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
@@ -53,13 +60,76 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _setupApprovedChatListener();
       _handleReturnToChat();
-      ref.read(pushNotificationServiceProvider).initialize();
+      _ensureJoinedOfficialChat();
+      ref.read(pushNotificationServiceProvider).initialize(
+        onTapChatId: (chatId) {
+          // A push notification was tapped for a specific chat. Use
+          // go_router to reset the stack to Home with ?chat_id=X —
+          // HomeScreen picks that up in initState and auto-opens the
+          // chat, popping any chat that was on top.
+          if (!mounted) return;
+          ref.read(routerProvider).go('/?chat_id=$chatId');
+        },
+      );
     });
   }
 
-  void _onSearchChanged() {
-    final query = _searchController.text.trim();
-    setState(() => _isSearching = query.isNotEmpty);
+  /// First-time-only auto-join into the official OneMind chat.
+  /// Gated by a SharedPreferences flag so users who later leave the
+  /// chat are not forcibly re-added on subsequent home visits.
+  Future<void> _ensureJoinedOfficialChat() async {
+    final tutorialService = ref.read(tutorialServiceProvider);
+    final analytics = ref.read(analyticsServiceProvider);
+    final isFirstVisit = !tutorialService.hasAutoJoinedOfficial;
+    analytics.logHomeScreenViewed(isFirstVisit: isFirstVisit);
+    if (!isFirstVisit) return;
+    // Suppress the discover-more-chats empty state while the join is in
+    // flight — otherwise a fresh user sees it flash for ~1s before the
+    // OneMind chat card replaces it.
+    if (mounted) setState(() => _isAutoJoiningOfficial = true);
+    Chat? officialChat;
+    var joinSucceeded = false;
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      officialChat = await chatService.getOfficialChat();
+      if (officialChat != null) {
+        await ref
+            .read(participantServiceProvider)
+            .joinPublicChat(chatId: officialChat.id);
+        joinSucceeded = true;
+      }
+      await tutorialService.markOfficialAutoJoined();
+      // Refresh the chat list so the official chat appears immediately.
+      // Awaited so _isAutoJoiningOfficial stays true until the refreshed
+      // list is on screen — otherwise the user briefly sees the empty
+      // "Looking for more chats" state between join and list update.
+      if (mounted) {
+        await ref.read(myChatsProvider.notifier).refresh();
+      }
+      // First-time visitors land directly inside the official chat instead
+      // of staring at a single-card list. Skip when the user already has
+      // another joined chat — they arrived here from a /join/CODE flow and
+      // auto-redirecting to the official chat would hijack them away from
+      // the one they actually wanted to join.
+      if (mounted && officialChat != null && widget.returnToChatId == null) {
+        final chatsState = ref.read(myChatsProvider).valueOrNull;
+        final hasOtherChats = chatsState?.chats
+                .any((c) => c.id != officialChat!.id) ??
+            false;
+        if (!hasOtherChats) {
+          analytics.logOfficialChatAutoOpened(chatId: officialChat.id.toString());
+          _navigateToChat(context, ref, officialChat);
+        }
+      }
+    } catch (_) {
+      // Best-effort: the user can still join the official chat manually.
+    } finally {
+      analytics.logOfficialChatAutoJoined(
+        succeeded: joinSucceeded,
+        chatId: officialChat?.id.toString(),
+      );
+      if (mounted) setState(() => _isAutoJoiningOfficial = false);
+    }
   }
 
   void _setupApprovedChatListener() {
@@ -72,10 +142,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
   }
 
-  /// Auto-navigate to a chat after returning from Stripe checkout
+  /// Auto-navigate to a chat after returning from Stripe checkout OR
+  /// after a push-notification tap routed the user to /?chat_id=N.
+  ///
+  /// Pops any existing pushed routes first (so a notification tap while
+  /// chat A is open replaces chat A with chat B rather than stacking
+  /// chat B on top).
   void _handleReturnToChat() async {
     final chatId = widget.returnToChatId;
     if (chatId == null) return;
+
+    // Clear any imperatively-pushed ChatScreen on top so the new chat
+    // replaces (not stacks on top of) whatever was previously open.
+    final navigator = Navigator.of(context);
+    while (navigator.canPop()) {
+      navigator.pop();
+    }
 
     // Wait for chat list to load, then navigate
     final chatService = ref.read(chatServiceProvider);
@@ -90,28 +172,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Push-notification taps update the URL to /?chat_id=N which
+    // rebuilds HomeScreen with a new returnToChatId. initState only
+    // ever runs once, so we re-run the handler from didUpdateWidget
+    // when the id changes.
+    if (widget.returnToChatId != null &&
+        widget.returnToChatId != oldWidget.returnToChatId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _handleReturnToChat();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _approvedChatSubscription?.cancel();
-    _searchController.dispose();
     _tickTimer?.cancel();
     super.dispose();
   }
 
   void _openActionPicker(BuildContext context, WidgetRef ref) async {
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ActionPickerScreen()),
-    );
+    // Use go_router so context.go() from a nested screen (e.g. Discover
+    // after joining a chat) clears the action picker from the stack.
+    // Navigator.push would leave it stranded on the root navigator above
+    // go_router's reach, dropping the user back on "What would you like
+    // to do?" instead of the joined chat.
+    await context.push('/actions');
     // Refresh chat list in case they created/joined a chat
     if (mounted) {
       ref.read(myChatsProvider.notifier).refresh();
     }
   }
 
-  void _openCreateChat(BuildContext context, WidgetRef ref) async {
+  /// Direct path into the Create flow — used by the "Nothing to join" state
+  /// of the Looking-for-more card, where the one-tap CTA is to start your
+  /// own chat rather than browse Discover (which would be empty).
+  Future<void> _openCreateChat(BuildContext context, WidgetRef ref) async {
     final result = await Navigator.push<Chat>(
       context,
-      MaterialPageRoute(builder: (ctx) => const CreateChatWizard()),
+      MaterialPageRoute(builder: (_) => const CreateChatWizard()),
     );
     if (result != null) {
       ref.read(myChatsProvider.notifier).refresh();
@@ -128,6 +229,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         builder: (ctx) => ChatScreen(chat: chat, showShareDialog: showShareDialog),
       ),
     );
+    // ChatScreen.dispose doesn't reliably fire on web (browser back changes
+    // the URL without popping the inner Navigator), so explicitly silence
+    // any chat-scoped audio here when the push returns.
+    ActiveAudio.stopForeground();
+    ref.read(backgroundAudioServiceProvider).leaveChat();
     // Refresh chat list when returning from chat screen
     ref.read(myChatsProvider.notifier).refresh();
   }
@@ -179,10 +285,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             key: const Key('donate-button'),
             icon: const Icon(Icons.favorite_outline),
             tooltip: l10n.donate,
-            onPressed: () => launchUrl(
-              Uri.parse(_donateUrl),
-              mode: LaunchMode.externalApplication,
-            ),
+            onPressed: () {
+              ref
+                  .read(analyticsServiceProvider)
+                  .logDonateClicked(source: 'home_app_bar');
+              launchUrl(
+                Uri.parse(
+                  '$_donateUrl?utm_source=app&utm_medium=donate_button&utm_campaign=home',
+                ),
+                mode: LaunchMode.externalApplication,
+              );
+            },
           ),
           IconButton(
             key: const Key('tutorial-button'),
@@ -253,39 +366,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         children: [
           // Welcome header with editable display name
           const WelcomeHeader(),
-          // PWA install prompt (mobile only, once per session)
-          const PwaInstallBanner(),
-          // Persistent search bar (outside RefreshIndicator)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: l10n.searchYourChatsOrJoinWithCode,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                contentPadding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Main content area
+          // Rotating banner: "Install OneMind" and/or "Enable notifications".
+          // Self-hides when nothing relevant to show.
+          const HomeBannerCarousel(),
+          // Main content area — single focused queue (no top search bar;
+          // search lives on AllChatsScreen where there's actually content
+          // to filter, not on a screen that may have zero chats).
           Expanded(
-            child: _isSearching
-                ? _buildSearchResults(myChatsStateAsync, l10n)
-                : _buildIdleContent(myChatsStateAsync, l10n),
+            child: _buildIdleContent(myChatsStateAsync, l10n),
           ),
         ],
       ),
@@ -297,77 +385,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  /// Build the search results view (when user is typing in search bar)
-  Widget _buildSearchResults(
-    AsyncValue<MyChatsState> myChatsStateAsync,
-    AppLocalizations l10n,
-  ) {
-    final query = _searchController.text.trim().toLowerCase();
-
-    return myChatsStateAsync.when(
-      data: (myChatsState) {
-        final filtered = myChatsState.dashboardChats
-            .where((d) => d.chat.displayName.toLowerCase().contains(query))
-            .toList();
-
-        return ListView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-          children: [
-            // Filtered own chats
-            if (filtered.isEmpty)
-              Padding(
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.search_off,
-                      size: 48,
-                      color: Theme.of(context).colorScheme.outline,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      l10n.noMatchingChats,
-                      style: Theme.of(context).textTheme.titleMedium,
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...filtered.map(
-                (dashInfo) {
-                  final chat = dashInfo.chat;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: ChatDashboardCard(
-                      name: chat.displayName,
-                      initialMessage: chat.displayInitialMessage,
-                      onTap: () => _navigateToChat(context, ref, chat),
-                      participantCount: dashInfo.participantCount,
-                      phase: dashInfo.currentRoundPhase,
-                      isPaused: dashInfo.isPaused,
-                      timeRemaining: dashInfo.timeRemaining,
-                      translationLanguages: chat.translationLanguages,
-                      viewingLanguageCode: dashInfo.viewingLanguageCode,
-                      phaseBarColorOverride: chat.isOfficial
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                    ),
-                  );
-                },
-              ),
-          ],
-        );
-      },
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(
-        child: Text(l10n.failedToLoadChats),
-      ),
-    );
-  }
-
-  /// Build the idle content (when search bar is empty)
+  /// Build the home content — single focused queue.
   Widget _buildIdleContent(
     AsyncValue<MyChatsState> myChatsStateAsync,
     AppLocalizations l10n,
@@ -378,90 +396,151 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         duration: const Duration(milliseconds: 200),
         child: RefreshIndicator(
           onRefresh: () async {
-            ref.read(myChatsProvider.notifier).refresh();
+            // Refresh both sources Home reads from: the user's own chats
+            // and the public-chat discovery list that feeds "Looking for
+            // more" suggestions. Otherwise a deleted / newly-created
+            // public chat can linger in suggestions indefinitely when the
+            // realtime channel has missed its event.
+            await Future.wait([
+              ref.read(myChatsProvider.notifier).refresh(),
+              ref.read(publicChatsProvider.notifier).refresh(),
+            ]);
           },
-          child: ListView(
-            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            children: [
-              // My Chats
-              _buildSectionHeader(context, l10n.yourChats),
-              const SizedBox(height: 8),
-              Builder(
-                builder: (context) {
-                  final sorted = sortByUrgency(myChatsState.dashboardChats);
-                  if (sorted.isEmpty &&
-                      myChatsState.pendingRequests.isEmpty) {
-                    return _buildEmptyState(context, ref);
-                  }
-                  if (sorted.isEmpty) {
-                    return _buildNoChatsYet(context);
-                  }
-                  // Mark entrance animation as played
-                  final shouldAnimate = !_hasPlayedEntrance;
-                  if (shouldAnimate) {
-                    _hasPlayedEntrance = true;
-                  }
-                  return Column(
-                    children: sorted
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) {
-                            final index = entry.key;
-                            final dashInfo = entry.value;
-                            final chat = dashInfo.chat;
-                            final semanticLabel = chat.isOfficial
-                                ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
-                                : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';
-                            final child = Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: ChatDashboardCard(
-                                key: Key('chat-card-${chat.id}'),
-                                name: chat.displayName,
-                                initialMessage: chat.displayInitialMessage,
-                                onTap: () =>
-                                    _navigateToChat(context, ref, chat),
-                                participantCount: dashInfo.participantCount,
-                                phase: dashInfo.currentRoundPhase,
-                                isPaused: dashInfo.isPaused,
-                                timeRemaining: dashInfo.timeRemaining,
-                                translationLanguages: chat.translationLanguages,
-                                viewingLanguageCode: dashInfo.viewingLanguageCode,
-                                phaseBarColorOverride: chat.isOfficial
-                                    ? Theme.of(context).colorScheme.primary
-                                    : null,
-                                semanticLabel: semanticLabel,
-                              ),
-                            );
-                            if (!shouldAnimate) return child;
-                            return _StaggeredFadeIn(
-                              index: index,
-                              child: child,
-                            );
-                          },
-                        )
-                        .toList(),
-                  );
-                },
-              ),
+          child: Builder(
+            builder: (context) {
+              final sorted = sortByUrgency(myChatsState.dashboardChats);
+              final partition = partitionByAttention(sorted);
+              final nextUp = partition.nextUp;
+              // "Coming up" — chats where you've already done your part
+              // for the active round and are just waiting for it to
+              // advance. The next time you'll need to act, this chat is
+              // where it'll happen. Forward-leaning — earns the slot.
+              //
+              // Inactive chats (paused, between rounds) are intentionally
+              // dropped from home entirely — they can sit indefinitely so
+              // surfacing them on the focused queue is misleading. They
+              // remain reachable via "View all my chats" → AllChatsScreen.
+              final comingUp = partition.wrappingUp;
 
-              // Pending Join Requests Section (below chats)
-              if (myChatsState.pendingRequests.isNotEmpty) ...[
-                const SizedBox(height: 24),
-                _buildSectionHeader(context, l10n.pendingRequests),
-                const SizedBox(height: 8),
-                ...myChatsState.pendingRequests.map(
-                  (request) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _PendingRequestCard(
-                      request: request,
-                      onCancel: () => _cancelRequest(context, ref, request),
-                    ),
+              final shouldAnimate = !_hasPlayedEntrance;
+              if (shouldAnimate) _hasPlayedEntrance = true;
+
+              // Empty state: no actionable chats. Show a focused
+              // "queue is clear" panel with featured public chats so the
+              // user has something to do. Suppress while the official-chat
+              // auto-join is in flight to avoid a flash.
+              if (nextUp.isEmpty) {
+                if (_isAutoJoiningOfficial) {
+                  return ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 32, 16, 80),
+                    children: const [
+                      Center(
+                        child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+                return ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  children: [
+                    _buildEmptyStatePanel(context, l10n),
+                    // The user's queue is clear, but they may still have
+                    // older chats hanging around (paused / completed /
+                    // wrapping up). Surface them inline below the empty
+                    // state so they're discoverable without forcing the
+                    // user to navigate elsewhere.
+                    if (comingUp.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      _buildComingUpSection(context, l10n, comingUp),
+                    ],
+                    if (myChatsState.pendingRequests.isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      _buildSectionHeader(context, l10n.pendingRequests),
+                      const SizedBox(height: 8),
+                      ...myChatsState.pendingRequests.map(
+                        (request) => Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: _PendingRequestCard(
+                            request: request,
+                            onCancel: () =>
+                                _cancelRequest(context, ref, request),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                );
+              }
+
+              // Has chats: hero (first) + compact rows (rest) +
+              // collapsible older + pending.
+              final hero = nextUp.first;
+              final alsoActive = nextUp.skip(1).toList();
+
+              return ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                children: [
+                  // ── Hero "Next up" ──────────────────────────────
+                  _buildSectionHeader(context, l10n.nextUp),
+                  const SizedBox(height: 8),
+                  _HeroChatCard(
+                    dashInfo: hero,
+                    onTap: () =>
+                        _navigateToChat(context, ref, hero.chat),
                   ),
-                ),
-              ],
-            ],
+
+                  // ── Also active ─────────────────────────────────
+                  if (alsoActive.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionHeader(
+                      context,
+                      'Also active (${alsoActive.length})',
+                    ),
+                    const SizedBox(height: 8),
+                    ...alsoActive.asMap().entries.map((entry) {
+                      return _buildChatCardEntry(
+                        context: context,
+                        l10n: l10n,
+                        index: entry.key,
+                        dashInfo: entry.value,
+                        shouldAnimate: shouldAnimate,
+                      );
+                    }),
+                  ],
+
+                  // ── Older chats (collapsible inline) ────────────
+                  if (comingUp.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildComingUpSection(context, l10n, comingUp),
+                  ],
+
+                  // ── Pending Join Requests ──────────────────────
+                  if (myChatsState.pendingRequests.isNotEmpty) ...[
+                    const SizedBox(height: 24),
+                    _buildSectionHeader(context, l10n.pendingRequests),
+                    const SizedBox(height: 8),
+                    ...myChatsState.pendingRequests.map(
+                      (request) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: _PendingRequestCard(
+                          request: request,
+                          onCancel: () =>
+                              _cancelRequest(context, ref, request),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -488,68 +567,293 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildEmptyState(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.noChatsYet,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              l10n.discoverPublicChatsJoinOrCreate,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: () => _openCreateChat(context, ref),
-              icon: const Icon(Icons.add),
-              label: Text(l10n.createChat),
-            ),
-          ],
-        ),
+  Widget _buildChatCardEntry({
+    required BuildContext context,
+    required AppLocalizations l10n,
+    required int index,
+    required ChatDashboardInfo dashInfo,
+    required bool shouldAnimate,
+  }) {
+    final chat = dashInfo.chat;
+    final semanticLabel = chat.isOfficial
+        ? '${l10n.official} chat: ${chat.displayName}. ${chat.displayInitialMessage}'
+        : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}';
+    final child = Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: ChatDashboardCard(
+        key: Key('chat-card-${chat.id}'),
+        name: chat.displayName,
+        initialMessage: chat.displayInitialMessage,
+        onTap: () => _navigateToChat(context, ref, chat),
+        participantCount: dashInfo.participantCount,
+        phase: dashInfo.currentRoundPhase,
+        isPaused: dashInfo.isPaused,
+        timeRemaining: dashInfo.timeRemaining,
+        translationLanguages: chat.translationLanguages,
+        viewingLanguageCode: dashInfo.viewingLanguageCode,
+        phaseBarColorOverride:
+            chat.isOfficial ? Theme.of(context).colorScheme.primary : null,
+        semanticLabel: semanticLabel,
       ),
+    );
+    if (!shouldAnimate) return child;
+    return _StaggeredFadeIn(index: index, child: child);
+  }
+
+  /// Empty state — shown when the user has zero actionable chats. Frames
+  /// the moment as accomplishment ("Your queue is clear") rather than as
+  /// a void, then surfaces concrete next actions: featured public chats
+  /// they can join right now, or starting their own.
+  ///
+  /// Two shapes (same outer frame, different center):
+  /// - Suggestions available → 3 featured public chats + "Browse all" link
+  /// - No suggestions → just the create-your-own CTA
+  Widget _buildEmptyStatePanel(
+    BuildContext context,
+    AppLocalizations l10n,
+  ) {
+    final theme = Theme.of(context);
+    final suggestions = ref.watch(topPublicChatSuggestionsProvider);
+    final hasSuggestions = suggestions.isNotEmpty;
+
+    return Column(
+      key: const Key('empty-state-panel'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Hero "queue clear" header.
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+          child: Column(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  hasSuggestions ? Icons.explore_outlined : Icons.bolt,
+                  size: 32,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                hasSuggestions
+                    ? 'Your queue is clear'
+                    : l10n.nothingToJoinTitle,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                hasSuggestions
+                    ? 'Jump into a live conversation:'
+                    : l10n.nothingToJoinDescription,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        // Featured public chats — same ChatDashboardCard the user's own
+        // chats use so timer/phase/participant info reads identically.
+        ...suggestions.map((summary) {
+          final phaseEndsAt = summary.phaseEndsAt;
+          final timeRemaining = phaseEndsAt != null
+              ? () {
+                  final remaining = phaseEndsAt.difference(DateTime.now());
+                  return remaining.isNegative ? Duration.zero : remaining;
+                }()
+              : null;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: ChatDashboardCard(
+              key: Key('suggested-chat-card-${summary.id}'),
+              name: summary.displayName,
+              initialMessage: summary.displayInitialMessage,
+              onTap: () => _joinSuggestedChat(summary),
+              participantCount: summary.participantCount,
+              phase: summary.currentPhase,
+              isPaused: summary.schedulePaused || summary.hostPaused,
+              timeRemaining: timeRemaining,
+              translationLanguages: summary.translationLanguages,
+              viewingLanguageCode: summary.translationLanguage,
+            ),
+          );
+        }),
+        if (hasSuggestions) ...[
+          const SizedBox(height: 4),
+          Center(
+            child: TextButton.icon(
+              key: const Key('empty-state-browse-all'),
+              onPressed: () => context.push('/discover'),
+              icon: const Icon(Icons.arrow_forward, size: 18),
+              label: Text(l10n.seeAllPublicChats),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(child: Divider(color: theme.dividerColor)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'or',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: theme.dividerColor)),
+            ],
+          ),
+          const SizedBox(height: 16),
+        ],
+        Center(
+          child: FilledButton.icon(
+            key: const Key('empty-state-create-chat'),
+            onPressed: () => _openCreateChat(context, ref),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.createChat),
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildNoChatsYet(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              color: Theme.of(context).colorScheme.outline,
+  /// Inline expandable "Coming up" section. Shows chats where you've
+  /// already done your part for the active round and are waiting for it
+  /// to advance — the next round will land you back in nextUp here, so
+  /// "Coming up" reads accurately as "you'll be back here soon."
+  ///
+  /// Inactive chats (paused / no active round) are intentionally NOT
+  /// shown here — they could sit indefinitely, and surfacing them on
+  /// the focused queue would misrepresent them as actionable. They
+  /// remain reachable via "View all my chats" → AllChatsScreen.
+  ///
+  /// Click the header to expand (up to 5 cards inline). "View all my
+  /// chats" link always shows when expanded — drills into the full
+  /// searchable AllChatsScreen which lists everything (including next-up
+  /// and inactive).
+  Widget _buildComingUpSection(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<ChatDashboardInfo> comingUp,
+  ) {
+    final theme = Theme.of(context);
+    final preview = comingUp.take(5).toList();
+
+    return Column(
+      key: const Key('coming-up-section'),
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Tappable header — toggles expansion.
+        InkWell(
+          onTap: () => setState(() => _olderChatsExpanded = !_olderChatsExpanded),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            child: Row(
+              children: [
+                Icon(
+                  _olderChatsExpanded
+                      ? Icons.expand_less
+                      : Icons.expand_more,
+                  size: 18,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Coming up (${comingUp.length})',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                l10n.noActiveChatsYet,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (_olderChatsExpanded) ...[
+          const SizedBox(height: 8),
+          ...preview.map((dashInfo) {
+            final chat = dashInfo.chat;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ChatDashboardCard(
+                key: Key('coming-up-chat-card-${chat.id}'),
+                name: chat.displayName,
+                initialMessage: chat.displayInitialMessage,
+                onTap: () => _navigateToChat(context, ref, chat),
+                participantCount: dashInfo.participantCount,
+                phase: dashInfo.currentRoundPhase,
+                isPaused: dashInfo.isPaused,
+                timeRemaining: dashInfo.timeRemaining,
+                translationLanguages: chat.translationLanguages,
+                viewingLanguageCode: dashInfo.viewingLanguageCode,
+                phaseBarColorOverride:
+                    chat.isOfficial ? theme.colorScheme.primary : null,
+              ),
+            );
+          }),
+          // Always show "View all my chats" — drills into AllChatsScreen
+          // which lists everything (next-up + coming-up + inactive) with
+          // full search.
+          Center(
+            child: TextButton.icon(
+              key: const Key('coming-up-view-all'),
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const AllChatsScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.arrow_forward, size: 18),
+              label: const Text('View all my chats'),
+            ),
+          ),
+        ],
+      ],
     );
   }
+
+  /// Join a suggested public chat and open it — mirrors DiscoverScreen's
+  /// tap handler so the UX is identical whether the chat was picked here
+  /// or on the discover page.
+  Future<void> _joinSuggestedChat(PublicChatSummary summary) async {
+    final l10n = AppLocalizations.of(context);
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      final participantService = ref.read(participantServiceProvider);
+      final authService = ref.read(authServiceProvider);
+
+      final chat = await chatService.getChatById(summary.id);
+      if (chat == null) {
+        if (mounted) context.showErrorMessage(l10n.chatNotFound);
+        return;
+      }
+
+      final displayName = authService.displayName!;
+      await participantService.joinChat(
+        chatId: chat.id,
+        displayName: displayName,
+        isHost: false,
+      );
+
+      if (mounted) {
+        _navigateToChat(context, ref, chat);
+      }
+    } catch (e) {
+      if (mounted) context.showErrorMessage(l10n.failedToJoinChat(e.toString()));
+    }
+  }
+
 }
 
 class _PendingRequestCard extends StatelessWidget {
@@ -653,6 +957,78 @@ class _PendingRequestCard extends StatelessWidget {
   }
 }
 
+/// Hero chat card — visually elevated wrapper around ChatDashboardCard
+/// for the single most-urgent chat in the user's queue. Provides the
+/// game-like "next thing to do" focal point on Home.
+///
+/// The card itself is the existing ChatDashboardCard so phase/timer/
+/// participant rendering stays identical to "Also active" rows below.
+/// What's added: a subtle phase-tinted glow + slightly stronger shadow,
+/// so the eye lands here first.
+class _HeroChatCard extends StatelessWidget {
+  final ChatDashboardInfo dashInfo;
+  final VoidCallback onTap;
+
+  const _HeroChatCard({required this.dashInfo, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final chat = dashInfo.chat;
+    final isOfficial = chat.isOfficial;
+
+    // Pick a glow color tied to the active phase so the focal point reads
+    // as "this round needs your attention now" — not a generic highlight.
+    final Color glow;
+    if (isOfficial) {
+      glow = theme.colorScheme.primary;
+    } else {
+      switch (dashInfo.currentRoundPhase) {
+        case RoundPhase.proposing:
+          glow = AppColors.proposing;
+          break;
+        case RoundPhase.rating:
+          glow = AppColors.rating;
+          break;
+        case RoundPhase.waiting:
+        case null:
+          glow = theme.colorScheme.primary;
+          break;
+      }
+    }
+
+    return Container(
+      key: Key('hero-chat-card-${chat.id}'),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: glow.withValues(alpha: 0.18),
+            blurRadius: 16,
+            spreadRadius: 1,
+          ),
+        ],
+      ),
+      child: ChatDashboardCard(
+        key: Key('chat-card-${chat.id}'),
+        name: chat.displayName,
+        initialMessage: chat.displayInitialMessage,
+        onTap: onTap,
+        participantCount: dashInfo.participantCount,
+        phase: dashInfo.currentRoundPhase,
+        isPaused: dashInfo.isPaused,
+        timeRemaining: dashInfo.timeRemaining,
+        translationLanguages: chat.translationLanguages,
+        viewingLanguageCode: dashInfo.viewingLanguageCode,
+        phaseBarColorOverride: isOfficial ? theme.colorScheme.primary : null,
+        semanticLabel: isOfficial
+            ? 'Official chat: ${chat.displayName}. ${chat.displayInitialMessage}'
+            : 'Chat: ${chat.displayName}. ${chat.displayInitialMessage}',
+      ),
+    );
+  }
+}
+
 /// Staggered fade-in + slide-up animation for list items on initial load.
 class _StaggeredFadeIn extends StatefulWidget {
   final int index;
@@ -706,3 +1082,4 @@ class _StaggeredFadeInState extends State<_StaggeredFadeIn>
     );
   }
 }
+

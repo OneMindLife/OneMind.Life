@@ -80,6 +80,13 @@ dependencies:
   # YouTube embed
   youtube_player_iframe: ^5.1.7
 
+  # Self-hosted video (convergence card)
+  video_player: ^2.9.2
+  chewie: ^1.8.5
+
+  # On-device TTS for reading convergence text aloud
+  flutter_tts: ^4.2.0
+
   # Web SEO (tree-shaken on mobile via conditional import)
   web: ^1.1.0
   google_fonts: ^8.0.2

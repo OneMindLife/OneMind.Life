@@ -177,4 +177,115 @@ void main() {
       expect(info.hasParticipated, true);
     });
   });
+
+  group('partitionByAttention', () {
+    test('proposing + not participated -> nextUp', () {
+      final chat = ChatDashboardInfoFixtures.proposingTimed(
+        id: 1,
+        name: 'Needs prop',
+        hasParticipated: false,
+      );
+      final p = partitionByAttention([chat]);
+      expect(p.nextUp.map((c) => c.chat.name), ['Needs prop']);
+      expect(p.wrappingUp, isEmpty);
+      expect(p.inactive, isEmpty);
+    });
+
+    test('rating + not participated -> nextUp', () {
+      final chat = ChatDashboardInfoFixtures.ratingTimed(
+        id: 2,
+        name: 'Needs rating',
+        hasParticipated: false,
+      );
+      final p = partitionByAttention([chat]);
+      expect(p.nextUp.map((c) => c.chat.name), ['Needs rating']);
+      expect(p.wrappingUp, isEmpty);
+      expect(p.inactive, isEmpty);
+    });
+
+    test('proposing + participated -> wrappingUp', () {
+      final chat = ChatDashboardInfoFixtures.proposingTimed(
+        id: 3,
+        name: 'Submitted',
+        hasParticipated: true,
+      );
+      final p = partitionByAttention([chat]);
+      expect(p.nextUp, isEmpty);
+      expect(p.wrappingUp.map((c) => c.chat.name), ['Submitted']);
+      expect(p.inactive, isEmpty);
+    });
+
+    test('rating + participated -> wrappingUp', () {
+      final chat = ChatDashboardInfoFixtures.ratingTimed(
+        id: 4,
+        name: 'Rated',
+        hasParticipated: true,
+      );
+      final p = partitionByAttention([chat]);
+      expect(p.wrappingUp.map((c) => c.chat.name), ['Rated']);
+    });
+
+    test('paused -> inactive (regardless of participation)', () {
+      final unparticipatedPaused =
+          ChatDashboardInfoFixtures.paused(id: 5, name: 'Paused-unparticipated',
+                                           hasParticipated: false);
+      final participatedPaused =
+          ChatDashboardInfoFixtures.paused(id: 6, name: 'Paused-done',
+                                           hasParticipated: true);
+      final p = partitionByAttention(
+          [unparticipatedPaused, participatedPaused]);
+      expect(p.nextUp, isEmpty);
+      expect(p.wrappingUp, isEmpty);
+      expect(p.inactive.map((c) => c.chat.name),
+          containsAll(['Paused-unparticipated', 'Paused-done']));
+    });
+
+    test('no active round -> inactive', () {
+      final chat = ChatDashboardInfoFixtures.idle(id: 7, name: 'No round');
+      final p = partitionByAttention([chat]);
+      expect(p.inactive.map((c) => c.chat.name), ['No round']);
+    });
+
+    test('waiting phase -> inactive (round not yet open for action)', () {
+      final chat = ChatDashboardInfoFixtures.waiting(id: 8, name: 'Pending');
+      final p = partitionByAttention([chat]);
+      expect(p.nextUp, isEmpty);
+      expect(p.wrappingUp, isEmpty);
+      expect(p.inactive.map((c) => c.chat.name), ['Pending']);
+    });
+
+    test('preserves input order within each bucket', () {
+      final a = ChatDashboardInfoFixtures.proposingTimed(
+          id: 10, name: 'A', hasParticipated: false);
+      final b = ChatDashboardInfoFixtures.ratingTimed(
+          id: 11, name: 'B', hasParticipated: false);
+      final c = ChatDashboardInfoFixtures.proposingTimed(
+          id: 12, name: 'C', hasParticipated: true);
+      final d = ChatDashboardInfoFixtures.idle(id: 13, name: 'D');
+      final e = ChatDashboardInfoFixtures.paused(id: 14, name: 'E');
+
+      final p = partitionByAttention([a, b, c, d, e]);
+      expect(p.nextUp.map((c) => c.chat.name), ['A', 'B']);
+      expect(p.wrappingUp.map((c) => c.chat.name), ['C']);
+      expect(p.inactive.map((c) => c.chat.name), ['D', 'E']);
+    });
+
+    test('empty input produces three empty buckets', () {
+      final p = partitionByAttention([]);
+      expect(p.nextUp, isEmpty);
+      expect(p.wrappingUp, isEmpty);
+      expect(p.inactive, isEmpty);
+    });
+
+    test('paused + rating + not participated still goes to inactive '
+         '(pause dominates)', () {
+      // This is the subtle case where a user would otherwise need to act,
+      // but the host has paused — don't pull it into Next up.
+      final chat = ChatDashboardInfoFixtures.paused(
+          id: 15, name: 'Paused-rating', hasParticipated: false);
+      final p = partitionByAttention([chat]);
+      expect(p.nextUp, isEmpty);
+      expect(p.inactive.map((c) => c.chat.name), ['Paused-rating']);
+    });
+  });
 }

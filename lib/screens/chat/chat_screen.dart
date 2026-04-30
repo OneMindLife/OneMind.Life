@@ -8,21 +8,33 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
+import '../../services/background_audio_service.dart';
 import '../../services/proposition_service.dart';
+import '../../services/remote_log_service.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/tts_button.dart';
 import '../../core/l10n/locale_provider.dart';
-import '../../widgets/chat_language_selector.dart';
 import '../../widgets/glossary_term.dart';
 import '../../widgets/proposition_content_card.dart';
+import '../../widgets/round_phase_bar.dart';
 import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
 import '../rating/rating_screen.dart';
-import '../rating/read_only_results_screen.dart';
 import 'cycle_history_screen.dart';
 import 'other_propositions_screen.dart';
+import 'widgets/convergence_video_card.dart';
 import 'widgets/personal_code_sheet.dart';
 import 'widgets/previous_round_display.dart';
 import 'widgets/phase_panels.dart';
+import '../../widgets/support_onemind_dialog.dart';
+
+const _languageDisplayNames = {
+  'en': 'English',
+  'es': 'Español',
+  'pt': 'Português',
+  'fr': 'Français',
+  'de': 'Deutsch',
+};
 
 class ChatScreen extends ConsumerStatefulWidget {
   final Chat chat;
@@ -44,6 +56,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   bool _initialPhaseRecorded = false; // Whether we've recorded the phase on first load
   RoundPhase? _phaseOnOpen; // The phase when user first opened this screen
 
+  /// Tracks consensusItems length so we can detect a NEW convergence
+  /// (length grew) versus the initial load.
+  int? _lastSeenConsensusCount;
+
   // Prevent duplicate submissions from rapid double-clicks
   bool _isSubmitting = false;
   bool _isSkipping = false;
@@ -59,11 +75,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   // because realtime events may have been missed while the app was backgrounded.
   late final AppLifecycleListener _lifecycleListener;
 
+  // Captured in initState so dispose() can call leaveChat() without touching
+  // `ref` — Riverpod disposes the ConsumerState's ref BEFORE dispose() runs,
+  // so ref.read from dispose() throws "Cannot use ref after the widget was disposed".
+  BackgroundAudioService? _bgAudioForDispose;
+
   @override
   void initState() {
     super.initState();
     _setupScheduledTimeTimer();
     _setupLifecycleListener();
+    final bgUrl = widget.chat.backgroundAudioUrl;
+    if (bgUrl != null && bgUrl.isNotEmpty) {
+      final service = ref.read(backgroundAudioServiceProvider);
+      _bgAudioForDispose = service;
+      service.enterChat(bgUrl);
+    }
     if (widget.showShareDialog) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -118,6 +145,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   @override
   void dispose() {
+    _bgAudioForDispose?.leaveChat();
     _lifecycleListener.dispose();
     _scheduledTimeTimer?.cancel();
     _propositionController.dispose();
@@ -162,7 +190,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           ),
         );
       }
-    } catch (e) {
+    } catch (e, stack) {
+      final state = ref.read(chatDetailProvider(_params)).valueOrNull;
+      RemoteLog.log(
+        'proposition_submit_error',
+        e.toString(),
+        {
+          'error_type': e.runtimeType.toString(),
+          'chat_id': widget.chat.id,
+          'chat_name': widget.chat.displayName,
+          'round_id': state?.currentRound?.id,
+          'round_number': state?.currentRound?.customId,
+          'participant_id': state?.myParticipant?.id,
+          'content_length': content.length,
+          'stack': stack.toString().split('\n').take(12).join('\n'),
+        },
+      );
       if (mounted) {
         final l10n = AppLocalizations.of(context);
         context.showErrorMessage(l10n.failedToSubmit(e.toString()));
@@ -598,6 +641,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget build(BuildContext context) {
     final stateAsync = ref.watch(chatDetailProvider(_params));
 
+    // Detect a fresh convergence (consensusItems grew while screen open)
+    // and offer the user a chance to support OneMind. Throttled by
+    // DonatePromptService so it shows at most once every 7 days.
+    ref.listen<AsyncValue<ChatDetailState>>(chatDetailProvider(_params),
+        (prev, next) {
+      final newCount = next.valueOrNull?.consensusItems.length;
+      if (newCount == null) return;
+      final last = _lastSeenConsensusCount;
+      _lastSeenConsensusCount = newCount;
+      if (last == null) return; // initial load, not a fresh convergence
+      if (newCount <= last) return;
+      if (!ref.read(donatePromptServiceProvider).canShow()) return;
+      // Defer to after build so we don't show a dialog mid-frame.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        showSupportOneMindDialog(context, ref, source: 'convergence_dialog');
+      });
+    });
+
     // Previously pre-filled text field with emerging idea — removed per user request.
     // Users should always start with an empty text field in proposing phase.
 
@@ -700,17 +762,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final hasDescription =
                     (chat.displayDescription)?.trim().isNotEmpty == true;
 
+                final availableLanguages = chat.translationsEnabled
+                    ? chat.translationLanguages
+                    : const <String>[];
+                final hasLanguageChoice = availableLanguages.length > 1;
+                final currentLanguageCode = state.viewingLanguageCode ??
+                    ref.read(localeProvider).languageCode;
+
                 return <Widget>[
-                  // Chat language selector — hidden when translations aren't enabled
-                  ChatLanguageSelector(
-                    availableLanguages: chat.translationsEnabled
-                        ? chat.translationLanguages
-                        : const [],
-                    currentLanguageCode: state.viewingLanguageCode ?? ref.read(localeProvider).languageCode,
-                    onLanguageChanged: (code) =>
-                        ref.read(chatDetailProvider(_params).notifier).setViewingLanguage(code),
-                  ),
-                  // People button — always visible, badge for host with pending requests
+                  // Leaderboard button — visible for all chats including
+                  // public (host still sees a pending-request badge count).
                   IconButton(
                     icon: Badge(
                       label: Text('$pendingRequestCount'),
@@ -743,58 +804,137 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       tooltip: AppLocalizations.of(context).chatDescription,
                       onPressed: () => _showDescription(state),
                     ),
-                  // Non-host: Leave button (not for official chats)
-                  if (!isHost && !widget.chat.isOfficial)
-                    IconButton(
-                      icon: const Icon(Icons.exit_to_app),
-                      tooltip: AppLocalizations.of(context).leaveChat,
-                      onPressed: _confirmLeaveChat,
-                    ),
-                  // Host: overflow menu with Delete (Pause/Resume hidden for now)
-                  if (isHost)
-                    PopupMenuButton<String>(
-                      key: const Key('chat-more-menu'),
-                      onSelected: (value) {
-                        switch (value) {
-                          case 'pause':
-                            _showPauseConfirmation();
-                            break;
-                          case 'resume':
-                            ref.read(chatDetailProvider(_params).notifier).resumeChat();
-                            break;
-                          case 'delete':
-                            _confirmDeleteChat();
-                            break;
-                        }
-                      },
-                      itemBuilder: (menuContext) {
-                        final l10n = AppLocalizations.of(menuContext);
-                        return [
-                          PopupMenuItem(
-                            value: isHostPaused ? 'resume' : 'pause',
-                            child: Row(
-                              children: [
-                                Icon(isHostPaused ? Icons.play_arrow : Icons.pause),
-                                const SizedBox(width: 12),
-                                Text(isHostPaused ? l10n.resumeChat : l10n.pauseChat),
-                              ],
-                            ),
+                  // Overflow menu — language row (opens picker dialog),
+                  // leave (non-host), pause / delete (host).
+                  PopupMenuButton<String>(
+                    key: const Key('chat-more-menu'),
+                    icon: const Icon(Icons.more_vert),
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'language':
+                          _showLanguagePicker(
+                            availableLanguages: availableLanguages,
+                            currentLanguageCode: currentLanguageCode,
+                          );
+                          break;
+                        case 'music':
+                          ref
+                              .read(backgroundAudioEnabledProvider.notifier)
+                              .toggle();
+                          break;
+                        case 'leave':
+                          _confirmLeaveChat();
+                          break;
+                        case 'pause':
+                          _showPauseConfirmation();
+                          break;
+                        case 'resume':
+                          ref
+                              .read(chatDetailProvider(_params).notifier)
+                              .resumeChat();
+                          break;
+                        case 'delete':
+                          _confirmDeleteChat();
+                          break;
+                      }
+                    },
+                    itemBuilder: (menuContext) {
+                      final l10n = AppLocalizations.of(menuContext);
+                      final entries = <PopupMenuEntry<String>>[];
+
+                      // Music toggle — only when this chat has background audio.
+                      final bgAudioUrl = state.chat?.backgroundAudioUrl ??
+                          widget.chat.backgroundAudioUrl;
+                      if (bgAudioUrl != null && bgAudioUrl.isNotEmpty) {
+                        final musicOn = ref.read(backgroundAudioEnabledProvider);
+                        entries.add(PopupMenuItem<String>(
+                          key: const Key('chat-menu-music-toggle'),
+                          value: 'music',
+                          child: Row(
+                            children: [
+                              Icon(musicOn ? Icons.music_off : Icons.music_note),
+                              const SizedBox(width: 12),
+                              Text(musicOn ? l10n.turnMusicOff : l10n.turnMusicOn),
+                            ],
                           ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.delete, color: Colors.red),
-                                const SizedBox(width: 12),
-                                Text(l10n.deleteChat,
-                                    style: const TextStyle(color: Colors.red)),
-                              ],
-                            ),
+                        ));
+                        entries.add(const PopupMenuDivider());
+                      }
+
+                      if (hasLanguageChoice) {
+                        entries.add(PopupMenuItem<String>(
+                          value: 'language',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.translate),
+                              const SizedBox(width: 12),
+                              Expanded(child: Text(l10n.language)),
+                              Text(
+                                _languageDisplayNames[currentLanguageCode] ??
+                                    currentLanguageCode,
+                                style: Theme.of(menuContext)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(menuContext)
+                                          .colorScheme
+                                          .onSurfaceVariant,
+                                    ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right, size: 18),
+                            ],
                           ),
-                        ];
-                      },
-                    ),
+                        ));
+                        // Always followed by leave (non-host) or pause+delete (host).
+                        entries.add(const PopupMenuDivider());
+                      }
+
+                      if (!isHost) {
+                        entries.add(PopupMenuItem<String>(
+                          value: 'leave',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.exit_to_app),
+                              const SizedBox(width: 12),
+                              Text(l10n.leaveChat),
+                            ],
+                          ),
+                        ));
+                      }
+
+                      if (isHost) {
+                        entries.add(PopupMenuItem<String>(
+                          value: isHostPaused ? 'resume' : 'pause',
+                          child: Row(
+                            children: [
+                              Icon(isHostPaused
+                                  ? Icons.play_arrow
+                                  : Icons.pause),
+                              const SizedBox(width: 12),
+                              Text(isHostPaused
+                                  ? l10n.resumeChat
+                                  : l10n.pauseChat),
+                            ],
+                          ),
+                        ));
+                        entries.add(const PopupMenuDivider());
+                        entries.add(PopupMenuItem<String>(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              const Icon(Icons.delete, color: Colors.red),
+                              const SizedBox(width: 12),
+                              Text(l10n.deleteChat,
+                                  style: const TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ));
+                      }
+
+                      return entries;
+                    },
+                  ),
                 ];
               },
             ) ??
@@ -808,11 +948,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           children: [
             // Phase-aware accent strip
             PhaseAccentStrip(phase: state.currentRound?.phase),
-            // Host paused banner
-            if (state.chat?.hostPaused ?? widget.chat.hostPaused)
-              HostPausedBanner(
-                isHost: state.myParticipant?.isHost == true,
-              ),
+            // Note: HostPausedBanner used to render here; it now replaces the
+            // bottom phase panel entirely (see _buildCurrentPhasePanel).
             // Chat History
             Expanded(
               child: Builder(
@@ -834,9 +971,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       ...state.consensusItems.asMap().entries.expand((entry) {
                         final item = entry.value;
                         final isLastItem = entry.key == state.consensusItems.length - 1;
-                        final label = item.isHostOverride
-                            ? (state.chat?.hostDisplayName ?? 'Host')
-                            : l10n.consensusNumber(entry.key + 1);
                         final card = GestureDetector(
                           onTap: () => _pushScreen(
                             MaterialPageRoute(
@@ -848,10 +982,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                             ),
                           ),
                           child: MessageCard(
-                            label: label,
+                            label: l10n.convergenceNumber(entry.key + 1),
                             content: item.displayContent,
                             isPrimary: true,
                             isConsensus: !item.isHostOverride,
+                            mediaAbove: item.videoUrl != null
+                                ? ConvergenceVideoCard(
+                                    videoUrl: item.videoUrl!,
+                                    chatId: widget.chat.id.toString(),
+                                    source: 'cycle_winner',
+                                    cycleId: item.cycleId,
+                                    scrubBarColor: Theme.of(bodyContext).colorScheme.primary,
+                                  )
+                                : null,
+                            trailing: TtsButton(
+                              text: item.displayContent,
+                              audioUrl: item.audioUrl,
+                              chatId: widget.chat.id.toString(),
+                              source: 'cycle_winner',
+                              cycleId: item.cycleId,
+                            ),
                           ),
                         );
 
@@ -997,10 +1147,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   Widget _buildInitialMessageCard(AppLocalizations l10n, String initialMessage, bool isHost) {
-    final card = MessageCard(
-      label: l10n.initialMessage,
+    final audioUrl = widget.chat.initialMessageAudioUrl;
+    final videoUrl = widget.chat.initialMessageVideoUrl;
+    final Widget card = MessageCard(
+      label: l10n.initialMessageLabel,
       content: initialMessage,
       isPrimary: true,
+      mediaAbove: videoUrl != null
+          ? ConvergenceVideoCard(
+              key: ValueKey('initial-video-${widget.chat.id}'),
+              videoUrl: videoUrl,
+              chatId: widget.chat.id.toString(),
+              source: 'initial_message',
+            )
+          : null,
+      trailing: TtsButton(
+        text: initialMessage,
+        audioUrl: audioUrl,
+        chatId: widget.chat.id.toString(),
+        source: 'initial_message',
+      ),
     );
 
     if (!isHost) return Center(child: card);
@@ -1269,77 +1435,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  /// Shows current leader during rating, previous winner if exists, or placeholder.
+  /// Shows previous winner if exists, or placeholder.
+  /// During rating phase we deliberately do NOT expose any in-progress
+  /// data (current leader, scored propositions, etc.) — exposing it would
+  /// let a user who finished rating share their screen with a user who
+  /// hasn't proposed/rated yet, which is a cheating vector.
   Widget _buildLeaderOrWinnerOrPlaceholder(ChatDetailState state) {
-    // During rating phase: hide entirely if user hasn't rated,
-    // show current leader if they have
-    if (state.currentRound?.phase == RoundPhase.rating) {
-      if (!state.hasRated) {
-        return const SizedBox.shrink();
-      }
-      final scored = state.propositions
-          .where((p) => p.finalRating != null)
-          .toList()
-        ..sort((a, b) => (b.finalRating ?? 0).compareTo(a.finalRating ?? 0));
-      if (scored.isNotEmpty) {
-        return _buildCurrentLeader(scored.first, state);
-      }
-      // Scores not available yet — fall back to previous winner
-      if (state.previousRoundWinners.isNotEmpty) {
-        return _buildInlinePreviousWinner(state);
-      }
-      return const SizedBox.shrink();
-    }
-
-    // Proposing phase: show previous winner or placeholder
     if (state.previousRoundWinners.isNotEmpty) {
       return _buildInlinePreviousWinner(state);
     }
     return _buildTopCandidatePlaceholder();
-  }
-
-  Widget _buildCurrentLeader(Proposition leader, ChatDetailState state) {
-    final l10n = AppLocalizations.of(context)!;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: state.currentCycle != null
-            ? () {
-                final scored = state.propositions
-                    .where((p) => p.finalRating != null)
-                    .toList()
-                  ..sort((a, b) =>
-                      (b.finalRating ?? 0).compareTo(a.finalRating ?? 0));
-                _pushScreen(
-                  MaterialPageRoute(
-                    builder: (_) => CycleHistoryScreen(
-                      cycleId: state.currentCycle!.id,
-                      convergenceContent: leader.displayContent,
-                      convergenceNumber: state.consensusItems.length + 1,
-                      currentLeader: scored.isNotEmpty ? scored.first : null,
-                      currentRoundNumber: state.currentRound?.customId,
-                      currentRoundId: state.currentRound?.id,
-                      currentRoundPropositions: scored,
-                    ),
-                  ),
-                );
-              }
-            : null,
-        child: UnconstrainedBox(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width - 64,
-            ),
-            child: PropositionContentCard(
-              content: leader.displayContent,
-              label: l10n.currentLeader,
-              borderColor: Theme.of(context).colorScheme.primary,
-              glowColor: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   Widget _buildInlinePreviousWinner(ChatDetailState state) {
@@ -1353,13 +1458,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             setState(() => _currentWinnerIndex = index),
         onTap: state.currentCycle != null
             ? () {
-                final scored = state.currentRound?.phase == RoundPhase.rating
-                    ? (state.propositions
-                        .where((p) => p.finalRating != null)
-                        .toList()
-                      ..sort((a, b) =>
-                          (b.finalRating ?? 0).compareTo(a.finalRating ?? 0)))
-                    : null;
                 _pushScreen(
                   MaterialPageRoute(
                     builder: (_) => CycleHistoryScreen(
@@ -1368,12 +1466,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                               .displayContent ??
                           '',
                       convergenceNumber: state.consensusItems.length + 1,
-                      currentLeader: scored != null && scored.isNotEmpty
-                          ? scored.first
-                          : null,
-                      currentRoundNumber: state.currentRound?.customId,
-                      currentRoundId: state.currentRound?.id,
-                      currentRoundPropositions: scored,
                     ),
                   ),
                 );
@@ -1387,6 +1479,59 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // Use fresh chat from state for dynamic fields (schedulePaused), fall back to widget.chat
     final chat = state.chat ?? widget.chat;
     final isHost = state.myParticipant?.isHost == true;
+
+    // Host pause replaces the entire bottom panel — there are no actions
+    // available while paused, so we don't render the misleading
+    // "waiting for participants" / disabled-textfield UI underneath.
+    // If a round was in progress when pause hit, keep the RoundPhaseBar
+    // visible above the banner so users still see "Round X, Proposing"
+    // context (the bar itself shows "Paused" since phase_ends_at is null).
+    if (chat.hostPaused) {
+      final banner = HostPausedBanner(
+        isHost: isHost,
+        onResume: isHost
+            ? () => ref
+                .read(chatDetailProvider(_params).notifier)
+                .resumeChat()
+            : null,
+      );
+      final activeRound = state.currentRound;
+      if (activeRound != null &&
+          (activeRound.phase == RoundPhase.proposing ||
+              activeRound.phase == RoundPhase.rating)) {
+        // Participation % is meaningful even when paused — it tracks
+        // user actions (submitted/skipped/rated), not time. Compute it
+        // the same way the live ProposingStatePanel/RatingStatePanel do.
+        int? participationPercent;
+        if (activeRound.phase == RoundPhase.proposing) {
+          final submitters = state.propositions
+              .where((p) => p.participantId != null && !p.isCarriedForward)
+              .map((p) => p.participantId)
+              .toSet()
+              .length;
+          final done = submitters + state.participantsWhoSkippedProposing.length;
+          participationPercent = state.participants.isNotEmpty
+              ? (done * 100 / state.participants.length).round()
+              : 0;
+        } else {
+          participationPercent = state.ratingProgressPercent;
+        }
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RoundPhaseBar(
+              roundNumber: activeRound.customId,
+              isProposing: activeRound.phase == RoundPhase.proposing,
+              phaseEndsAt: null, // signals Paused indicator
+              isPaused: true,
+              participationPercent: participationPercent,
+            ),
+            banner,
+          ],
+        );
+      }
+      return banner;
+    }
 
     // FIRST: Check if chat has schedule and is paused (takes priority over round state)
     if (chat.hasSchedule) {
@@ -1716,8 +1861,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             final participantsWhoActed = isRatingPhase
                 ? participantsWhoRated
                 : participantsWhoProposed;
-            final isInPhase = currentState?.currentRound?.phase == RoundPhase.proposing ||
-                currentState?.currentRound?.phase == RoundPhase.rating;
 
             return FutureBuilder<List<Map<String, dynamic>>>(
               future: leaderboardFuture,
@@ -1812,32 +1955,29 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           final hasActed = participantsWhoActed.contains(p.id);
                           final position = rankings[p.id];
                           final rankText = position != null ? '#$position' : '—';
-                          return Opacity(
-                            opacity: hasActed || !isInPhase ? 1.0 : 0.5,
-                            child: ListTile(
-                              leading: CircleAvatar(child: Text(rankText)),
-                              title: Text(p.displayName),
-                              subtitle: hasActed
-                                  ? Text(
-                                      l10n.done,
-                                      style: theme.textTheme.labelSmall?.copyWith(
-                                        color: theme.colorScheme.primary,
-                                      ),
-                                    )
-                                  : null,
-                              trailing: p.isHost
-                                  ? Chip(label: Text(l10n.host))
-                                  : isHost
-                                      ? IconButton(
-                                          icon: const Icon(Icons.person_remove),
-                                          tooltip: l10n.kickParticipant,
-                                          onPressed: () {
-                                            Navigator.pop(modalContext);
-                                            _confirmKickParticipant(p);
-                                          },
-                                        )
-                                      : null,
-                            ),
+                          return ListTile(
+                            leading: CircleAvatar(child: Text(rankText)),
+                            title: Text(p.displayName),
+                            subtitle: hasActed
+                                ? Text(
+                                    l10n.done,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                  )
+                                : null,
+                            trailing: p.isHost
+                                ? Chip(label: Text(l10n.host))
+                                : isHost
+                                    ? IconButton(
+                                        icon: const Icon(Icons.person_remove),
+                                        tooltip: l10n.kickParticipant,
+                                        onPressed: () {
+                                          Navigator.pop(modalContext);
+                                          _confirmKickParticipant(p);
+                                        },
+                                      )
+                                    : null,
                           );
                         },
                       ),
@@ -1938,6 +2078,37 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           context.showErrorMessage(l10n.failedToKickParticipant(e.toString()));
         }
       }
+    }
+  }
+
+  Future<void> _showLanguagePicker({
+    required List<String> availableLanguages,
+    required String currentLanguageCode,
+  }) async {
+    final l10n = AppLocalizations.of(context);
+    final picked = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: Text(l10n.language),
+        children: [
+          for (final code in availableLanguages)
+            ListTile(
+              key: Key('chat-language-option-$code'),
+              leading: Icon(
+                code == currentLanguageCode
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(_languageDisplayNames[code] ?? code),
+              onTap: () => Navigator.of(ctx).pop(code),
+            ),
+        ],
+      ),
+    );
+    if (picked != null && picked != currentLanguageCode) {
+      ref
+          .read(chatDetailProvider(_params).notifier)
+          .setViewingLanguage(picked);
     }
   }
 

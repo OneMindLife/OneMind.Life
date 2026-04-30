@@ -89,6 +89,33 @@ class AnalyticsService {
     await _logEvent('chat_opened', {'chat_id': chatId});
   }
 
+  /// Home screen first paint. Use [isFirstVisit] to distinguish brand-new
+  /// users from returners. Fires once per HomeScreen mount, in initState.
+  Future<void> logHomeScreenViewed({required bool isFirstVisit}) async {
+    await _logEvent('home_screen_viewed', {
+      'is_first_visit': isFirstVisit ? 1 : 0,
+    });
+  }
+
+  /// First-time auto-join into the official OneMind chat completed.
+  /// [succeeded] is false when the chat could not be located or the join
+  /// API failed; it still records the attempt for funnel analysis.
+  Future<void> logOfficialChatAutoJoined({
+    required bool succeeded,
+    String? chatId,
+  }) async {
+    await _logEvent('official_chat_auto_joined', {
+      'succeeded': succeeded ? 1 : 0,
+      if (chatId != null) 'chat_id': chatId,
+    });
+  }
+
+  /// User was auto-navigated into the official chat after auto-join.
+  /// Distinguishes the new auto-open behavior from a manual chat tap.
+  Future<void> logOfficialChatAutoOpened({required String chatId}) async {
+    await _logEvent('official_chat_auto_opened', {'chat_id': chatId});
+  }
+
   // ============================================================
   // Round Events
   // ============================================================
@@ -226,6 +253,21 @@ class AnalyticsService {
     });
   }
 
+  /// User tapped the donate button (outbound click to Stripe payment link)
+  Future<void> logDonateClicked({required String source}) async {
+    await _logEvent('donate_clicked', {'source': source});
+  }
+
+  /// A donate prompt was shown to the user (e.g. convergence-reached dialog).
+  Future<void> logDonatePromptShown({required String source}) async {
+    await _logEvent('donate_prompt_shown', {'source': source});
+  }
+
+  /// The user dismissed a donate prompt without donating.
+  Future<void> logDonatePromptDismissed({required String source}) async {
+    await _logEvent('donate_prompt_dismissed', {'source': source});
+  }
+
   // ============================================================
   // Landing Page Events
   // ============================================================
@@ -343,6 +385,138 @@ class AnalyticsService {
         errorMessage.length > 100 ? 100 : errorMessage.length,
       ),
       if (screen != null) 'screen': screen,
+    });
+  }
+
+  // ============================================================
+  // Chat Media Events (video + audio on initial message & convergence cards)
+  // ============================================================
+
+  /// Video card entered the viewport. Fires once per widget lifetime.
+  /// [source] is `'initial_message'` or `'cycle_winner'`.
+  Future<void> logChatVideoImpression({
+    required String chatId,
+    required String source,
+    int? cycleId,
+  }) async {
+    await _logEvent('chat_video_impression', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+    });
+  }
+
+  /// Playback began (either from autoplay or user tap).
+  Future<void> logChatVideoStarted({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required bool autoplay,
+    required double durationSeconds,
+  }) async {
+    await _logEvent('chat_video_started', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'autoplay': autoplay ? 1 : 0,
+      'duration_seconds': durationSeconds,
+    });
+  }
+
+  /// Playback crossed a progress milestone (25, 50, or 75 percent).
+  /// Use logChatVideoCompleted for 100 percent.
+  Future<void> logChatVideoProgress({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required int percent, // 25 | 50 | 75
+  }) async {
+    await _logEvent('chat_video_progress', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'percent': percent,
+    });
+  }
+
+  /// Video played through to the end naturally.
+  Future<void> logChatVideoCompleted({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required double durationSeconds,
+  }) async {
+    await _logEvent('chat_video_completed', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'duration_seconds': durationSeconds,
+    });
+  }
+
+  /// Widget disposed before completion (user scrolled away, closed the screen).
+  /// Lets us measure real watch-time distributions.
+  Future<void> logChatVideoAbandoned({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required double watchTimeSeconds,
+    required int percentWatched, // 0-100
+    required double durationSeconds,
+  }) async {
+    await _logEvent('chat_video_abandoned', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'watch_time_seconds': watchTimeSeconds,
+      'percent_watched': percentWatched,
+      'duration_seconds': durationSeconds,
+    });
+  }
+
+  /// User unmuted the video (strong engagement signal).
+  Future<void> logChatVideoUnmuted({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required double atSeconds,
+  }) async {
+    await _logEvent('chat_video_unmuted', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'at_seconds': atSeconds,
+    });
+  }
+
+  /// User went fullscreen.
+  Future<void> logChatVideoFullscreen({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required double atSeconds,
+  }) async {
+    await _logEvent('chat_video_fullscreen', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'at_seconds': atSeconds,
+    });
+  }
+
+  /// User tapped the "read aloud" button on an initial-message or convergence card.
+  /// [hasPreRecorded] = true if the ElevenLabs MP3 played, false if device TTS fallback.
+  Future<void> logChatAudioPlayed({
+    required String chatId,
+    required String source,
+    int? cycleId,
+    required bool hasPreRecorded,
+  }) async {
+    await _logEvent('chat_audio_played', {
+      'chat_id': chatId,
+      'source': source,
+      if (cycleId != null) 'cycle_id': cycleId,
+      'has_pre_recorded': hasPreRecorded ? 1 : 0,
     });
   }
 

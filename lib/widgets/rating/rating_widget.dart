@@ -972,8 +972,11 @@ class RatingWidgetState extends State<RatingWidget>
             ),
           ),
 
-          // Undo button
-          if (_model.rankedPropositions.length > 2) ...[
+          // Undo button — visible from the binary phase onward. In the
+          // binary phase, undo wipes both initial DB rows so the user can
+          // re-pick or back out to use Skip Rating. In the positioning
+          // phase, it removes the most recently placed card.
+          if (_model.rankedPropositions.length >= 2) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(4),

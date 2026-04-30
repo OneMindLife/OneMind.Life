@@ -33,6 +33,44 @@ final publicChatsProvider =
   (ref) => PublicChatsNotifier(ref),
 );
 
+/// Top 3 public-chat suggestions for the Home "Looking for more" card.
+/// Excludes joined chats and paused chats (host- or schedule-paused).
+/// Ranked in two tiers, most participants first within each:
+///   1. Active — round in proposing/rating (real-time energy).
+///   2. Waiting to start — no active round yet, or stuck in the waiting
+///      phase because participant/proposing minimums aren't met. Surfaced
+///      only after the active tier is exhausted so the user's join helps
+///      kick these off.
+final topPublicChatSuggestionsProvider =
+    Provider<List<PublicChatSummary>>((ref) {
+  final publicAsync = ref.watch(publicChatsProvider);
+  final myChatsAsync = ref.watch(myChatsProvider);
+
+  final publicChats = publicAsync.valueOrNull?.chats ?? const [];
+  final joinedIds = myChatsAsync.valueOrNull?.dashboardChats
+          .map((d) => d.chat.id)
+          .toSet() ??
+      const <int>{};
+
+  int tier(PublicChatSummary p) {
+    final phase = p.currentPhase;
+    if (phase == RoundPhase.proposing || phase == RoundPhase.rating) return 0;
+    return 1; // null or waiting
+  }
+
+  final candidates = publicChats.where((p) {
+    if (joinedIds.contains(p.id)) return false;
+    if (p.schedulePaused || p.hostPaused) return false;
+    return true;
+  }).toList()
+    ..sort((a, b) {
+      final byTier = tier(a).compareTo(tier(b));
+      if (byTier != 0) return byTier;
+      return b.participantCount.compareTo(a.participantCount);
+    });
+  return candidates.take(3).toList();
+});
+
 /// Provider for chat detail state (ChatScreen) - family provider keyed by params
 /// Uses auth.uid() for RLS - Realtime subscriptions now work correctly
 final chatDetailProvider = StateNotifierProvider.autoDispose

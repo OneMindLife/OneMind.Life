@@ -95,5 +95,64 @@ void main() {
       expect(find.text('Hidden'), findsOneWidget);
       expect(find.text('Label'), findsOneWidget);
     });
+
+    testWidgets('unbounded (default) does not wrap in SingleChildScrollView',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        const PropositionContentCard(content: 'Full text no scroll'),
+      ));
+
+      expect(find.byType(SingleChildScrollView), findsNothing);
+    });
+
+    testWidgets('bounded=true wraps content in SingleChildScrollView',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        const PropositionContentCard(
+          content: 'Scrollable text',
+          bounded: true,
+        ),
+      ));
+
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+    });
+
+    testWidgets(
+      'unbounded grows beyond maxHeight to fit long content',
+      (tester) async {
+        final longText = List.generate(50, (i) => 'Line $i').join('\n');
+        await tester.pumpWidget(createTestWidget(
+          SizedBox(
+            width: 300,
+            child: PropositionContentCard(content: longText),
+          ),
+        ));
+
+        final cardSize = tester.getSize(find.byType(PropositionContentCard));
+        // 50 lines of text should exceed the old 150px maxHeight.
+        expect(cardSize.height, greaterThan(150));
+      },
+    );
+
+    testWidgets(
+      'bounded=true caps card height at maxHeight',
+      (tester) async {
+        final longText = List.generate(50, (i) => 'Line $i').join('\n');
+        await tester.pumpWidget(createTestWidget(
+          SizedBox(
+            width: 300,
+            child: PropositionContentCard(
+              content: longText,
+              bounded: true,
+              maxHeight: 120,
+            ),
+          ),
+        ));
+
+        final cardSize = tester.getSize(find.byType(PropositionContentCard));
+        // Card padding adds ~24px, but overall height should stay near the cap.
+        expect(cardSize.height, lessThanOrEqualTo(120 + 48));
+      },
+    );
   });
 }

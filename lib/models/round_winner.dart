@@ -17,6 +17,12 @@ class RoundWinner extends Equatable {
   final String? contentTranslated;
   final String? translationLanguage;
 
+  // Audio URL from joined rounds.audio_url (official chats only)
+  final String? audioUrl;
+
+  // Video URL from joined rounds.video_url (official chats, manually uploaded)
+  final String? videoUrl;
+
   const RoundWinner({
     required this.id,
     required this.roundId,
@@ -27,6 +33,8 @@ class RoundWinner extends Equatable {
     this.content,
     this.contentTranslated,
     this.translationLanguage,
+    this.audioUrl,
+    this.videoUrl,
   });
 
   /// Get the display content (translated if available, otherwise original)
@@ -44,6 +52,25 @@ class RoundWinner extends Equatable {
       }
     }
 
+    // Handle nested rounds join for audio_url and video_url
+    String? audioUrl;
+    String? videoUrl;
+    final rounds = json['rounds'];
+    if (rounds != null) {
+      Map? roundMap;
+      if (rounds is Map) {
+        roundMap = rounds;
+      } else if (rounds is List && rounds.isNotEmpty && rounds[0] is Map) {
+        roundMap = rounds[0] as Map;
+      }
+      if (roundMap != null) {
+        audioUrl = roundMap['audio_url'] as String?;
+        videoUrl = roundMap['video_url'] as String?;
+      }
+    }
+    audioUrl ??= json['audio_url'] as String?;
+    videoUrl ??= json['video_url'] as String?;
+
     return RoundWinner(
       id: json['id'] as int,
       roundId: json['round_id'] as int,
@@ -54,6 +81,8 @@ class RoundWinner extends Equatable {
       content: content,
       contentTranslated: json['content_translated'] as String?,
       translationLanguage: json['translation_language'] as String?,
+      audioUrl: audioUrl,
+      videoUrl: videoUrl,
     );
   }
 
@@ -61,6 +90,8 @@ class RoundWinner extends Equatable {
   RoundWinner copyWith({
     String? contentTranslated,
     String? translationLanguage,
+    String? audioUrl,
+    String? videoUrl,
   }) {
     return RoundWinner(
       id: id,
@@ -72,6 +103,8 @@ class RoundWinner extends Equatable {
       content: content,
       contentTranslated: contentTranslated ?? this.contentTranslated,
       translationLanguage: translationLanguage ?? this.translationLanguage,
+      audioUrl: audioUrl ?? this.audioUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
     );
   }
 
@@ -97,6 +130,8 @@ class RoundWinner extends Equatable {
         content,
         contentTranslated,
         translationLanguage,
+        audioUrl,
+        videoUrl,
       ];
 
   @override

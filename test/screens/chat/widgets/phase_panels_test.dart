@@ -124,7 +124,7 @@ void main() {
       expect(find.byKey(const Key('submit-proposition-button')), findsOneWidget);
     });
 
-    testWidgets('shows View propositions button when all submitted (multi)',
+    testWidgets('shows submitted propositions when all submitted',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -140,23 +140,18 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
-            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Input and individual proposition cards are gone; button replaces them
+      // Input is gone; user's own proposition cards are shown inline.
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('First idea'), findsNothing);
-      expect(find.text('Second idea'), findsNothing);
-      expect(
-        find.byKey(const Key('view-other-propositions-button')),
-        findsOneWidget,
-      );
+      expect(find.text('First idea'), findsOneWidget);
+      expect(find.text('Second idea'), findsOneWidget);
     });
 
-    testWidgets('shows View propositions button in single-prop mode',
+    testWidgets('shows submitted proposition in single-prop mode',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -171,68 +166,16 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
-            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsNothing);
-      expect(find.text('Only idea'), findsNothing);
-      expect(
-        find.byKey(const Key('view-other-propositions-button')),
-        findsOneWidget,
-      );
+      expect(find.text('Only idea'), findsOneWidget);
     });
 
-    testWidgets('View propositions button fires callback when tapped',
-        (tester) async {
-      final controller = TextEditingController();
-      var viewCalled = false;
-
-      await tester.pumpWidget(
-        createTestWidget(
-          ProposingStatePanel(
-            roundCustomId: 1,
-            propositionsPerUser: 1,
-            myPropositions: [PropositionFixtures.model(id: 1, content: 'Idea')],
-            propositionController: controller,
-            onSubmit: () {},
-            onViewOtherPropositions: () => viewCalled = true,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('view-other-propositions-button')));
-      expect(viewCalled, isTrue);
-    });
-
-    testWidgets('View propositions button is disabled when callback null',
-        (tester) async {
-      final controller = TextEditingController();
-
-      await tester.pumpWidget(
-        createTestWidget(
-          ProposingStatePanel(
-            roundCustomId: 1,
-            propositionsPerUser: 1,
-            myPropositions: [PropositionFixtures.model(id: 1, content: 'Idea')],
-            propositionController: controller,
-            onSubmit: () {},
-            // intentionally no onViewOtherPropositions
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final button = tester.widget<FilledButton>(
-        find.byKey(const Key('view-other-propositions-button')),
-      );
-      expect(button.onPressed, isNull);
-    });
-
-    testWidgets('View propositions button hidden while still able to submit',
+    testWidgets('proposition cards hidden while still able to submit',
         (tester) async {
       final controller = TextEditingController();
       final myProps = [PropositionFixtures.model(id: 1, content: 'One')];
@@ -245,19 +188,17 @@ void main() {
             myPropositions: myProps,
             propositionController: controller,
             onSubmit: () {},
-            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Input branch is active, button should not be present.
-      expect(find.byKey(const Key('view-other-propositions-button')),
-          findsNothing);
+      // Input branch is active; proposition cards are not shown yet.
       expect(find.byType(TextField), findsOneWidget);
+      expect(find.text('One'), findsNothing);
     });
 
-    testWidgets('View propositions button hidden when no submissions yet',
+    testWidgets('no proposition cards when no submissions yet',
         (tester) async {
       final controller = TextEditingController();
 
@@ -269,14 +210,12 @@ void main() {
             myPropositions: const [],
             propositionController: controller,
             onSubmit: () {},
-            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const Key('view-other-propositions-button')),
-          findsNothing);
+      expect(find.byType(TextField), findsOneWidget);
     });
 
     testWidgets('calls onSubmit when button pressed', (tester) async {
@@ -324,7 +263,7 @@ void main() {
       expect(find.text('0/1 submitted'), findsNothing);
     });
 
-    testWidgets('does not show submitted proposition content after submission',
+    testWidgets('shows submitted proposition content inline after submission',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -340,15 +279,14 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
-            onViewOtherPropositions: () {},
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Proposition content is no longer shown inline; a button replaces it.
-      expect(find.text('First'), findsNothing);
-      expect(find.text('Second'), findsNothing);
+      // User's own proposition content is shown inline as cards.
+      expect(find.text('First'), findsOneWidget);
+      expect(find.text('Second'), findsOneWidget);
     });
 
     // Feature intentionally hidden - host should not see propositions to preserve anonymity
@@ -543,7 +481,7 @@ void main() {
         find.text('The timer is stopped. Tap Resume in the app bar to continue.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.pause_circle), findsOneWidget);
+      expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
     });
 
     testWidgets('shows participant message when isHost is false', (tester) async {
@@ -561,7 +499,7 @@ void main() {
         find.text('The host has paused this chat. Please wait for them to resume.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.pause_circle), findsOneWidget);
+      expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
     });
   });
 

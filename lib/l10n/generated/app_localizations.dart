@@ -302,6 +302,162 @@ abstract class AppLocalizations {
   /// **'Your Chats'**
   String get yourChats;
 
+  /// No description provided for @nextUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Next up'**
+  String get nextUp;
+
+  /// No description provided for @nextUpWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Next up ({count})'**
+  String nextUpWithCount(int count);
+
+  /// No description provided for @wrappingUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrapping up'**
+  String get wrappingUp;
+
+  /// No description provided for @wrappingUpWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Wrapping up ({count})'**
+  String wrappingUpWithCount(int count);
+
+  /// No description provided for @inactive.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive'**
+  String get inactive;
+
+  /// No description provided for @inactiveWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive ({count})'**
+  String inactiveWithCount(int count);
+
+  /// No description provided for @allChats.
+  ///
+  /// In en, this message translates to:
+  /// **'All chats'**
+  String get allChats;
+
+  /// No description provided for @allChatsWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'All chats ({count})'**
+  String allChatsWithCount(int count);
+
+  /// No description provided for @noChatsHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here — you\'re all caught up.'**
+  String get noChatsHere;
+
+  /// No description provided for @enableNotificationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Get notified when it\'s your turn'**
+  String get enableNotificationsTitle;
+
+  /// No description provided for @enableNotificationsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ll ping you when a round needs you.'**
+  String get enableNotificationsBody;
+
+  /// No description provided for @enableNotificationsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable'**
+  String get enableNotificationsCta;
+
+  /// No description provided for @notificationsBlockedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications are blocked'**
+  String get notificationsBlockedTitle;
+
+  /// No description provided for @notificationsBlockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Unblock them in your browser\'s site settings to get notified.'**
+  String get notificationsBlockedBody;
+
+  /// No description provided for @gotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get gotIt;
+
+  /// No description provided for @notNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get notNow;
+
+  /// No description provided for @installOneMindTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Install OneMind'**
+  String get installOneMindTitle;
+
+  /// No description provided for @installOneMindBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to your home screen for the best experience.'**
+  String get installOneMindBody;
+
+  /// No description provided for @installOneMindIosBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap Share then \"Add to Home Screen\".'**
+  String get installOneMindIosBody;
+
+  /// No description provided for @installCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Install'**
+  String get installCta;
+
+  /// No description provided for @lookingForMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Join one to keep going'**
+  String get lookingForMore;
+
+  /// No description provided for @lookingForMoreDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Public chats with the most activity right now.'**
+  String get lookingForMoreDescription;
+
+  /// No description provided for @discoverPublicChatsCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Discover public chats'**
+  String get discoverPublicChatsCta;
+
+  /// No description provided for @seeAllPublicChats.
+  ///
+  /// In en, this message translates to:
+  /// **'See all public chats'**
+  String get seeAllPublicChats;
+
+  /// No description provided for @nothingToJoinTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing new to join right now'**
+  String get nothingToJoinTitle;
+
+  /// No description provided for @nothingToJoinDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Start your own chat and invite others.'**
+  String get nothingToJoinDescription;
+
   /// No description provided for @cancelRequest.
   ///
   /// In en, this message translates to:
@@ -800,6 +956,12 @@ abstract class AppLocalizations {
   /// **'Convergence {number} History'**
   String convergenceHistory(int number);
 
+  /// No description provided for @convergenceNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Convergence #{number}'**
+  String convergenceNumber(int number);
+
   /// No description provided for @noPropositionsToDisplay.
   ///
   /// In en, this message translates to:
@@ -1087,6 +1249,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Pause Chat'**
   String get pauseChat;
+
+  /// No description provided for @turnMusicOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn music on'**
+  String get turnMusicOn;
+
+  /// No description provided for @turnMusicOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn music off'**
+  String get turnMusicOff;
 
   /// No description provided for @leaveChat.
   ///
@@ -4931,6 +5105,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Donate'**
   String get donate;
+
+  /// No description provided for @supportOneMindTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support OneMind'**
+  String get supportOneMindTitle;
+
+  /// No description provided for @supportOneMindBody.
+  ///
+  /// In en, this message translates to:
+  /// **'OneMind is free and runs on donations. If this group just helped you reach a real decision together, would you consider chipping in to keep it going?'**
+  String get supportOneMindBody;
+
+  /// No description provided for @maybeLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Maybe later'**
+  String get maybeLater;
 }
 
 class _AppLocalizationsDelegate

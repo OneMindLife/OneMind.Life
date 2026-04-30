@@ -30,6 +30,10 @@ class PropositionCard extends StatelessWidget {
           ? primaryColor
           : theme.colorScheme.outline.withValues(alpha: 0.3),
       borderWidth: showGlow ? 2 : 1,
+      // Rating grid shows many cards at once — bound height so one long
+      // proposition can't dominate the screen. Full text still accessible
+      // via internal scroll when tapped into.
+      bounded: true,
     );
 
     // Show glow if active OR if in binary phase

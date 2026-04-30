@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import 'remote_log_service.dart';
 
 /// Exception thrown when attempting to submit a duplicate proposition.
 ///
@@ -109,6 +110,20 @@ class PropositionService {
     return propositions;
   }
 
+  /// Count of distinct participants who submitted at least one rating in [roundId].
+  Future<int> getRaterCount(int roundId) async {
+    final response = await _client
+        .from('grid_rankings')
+        .select('participant_id')
+        .eq('round_id', roundId);
+    final raters = <int>{};
+    for (final row in (response as List)) {
+      final id = row['participant_id'];
+      if (id is int) raters.add(id);
+    }
+    return raters.length;
+  }
+
   /// Translate a proposition using AI translation (fire-and-forget)
   /// This invokes the translate edge function to generate translations.
   ///
@@ -177,6 +192,20 @@ class PropositionService {
           );
         }
       }
+
+      // Capture non-duplicate edge-function failures so we can debug remotely.
+      RemoteLog.log(
+        'submit_proposition_fn_error',
+        'FunctionException status=${e.status}',
+        {
+          'status': e.status,
+          'details': e.details?.toString(),
+          'reason_phrase': e.reasonPhrase,
+          'round_id': roundId,
+          'participant_id': participantId,
+          'content_length': content.length,
+        },
+      );
 
       // Re-throw other FunctionExceptions
       rethrow;
@@ -320,6 +349,38 @@ class PropositionService {
           callback: (_) => onUpdate(),
         )
         .subscribe();
+  }
+
+  /// Delete a participant's grid_ranking for a single proposition.
+  /// Used by the undo flow so that "Skip Rating" can re-enable once the user
+  /// has undone all their placements (the rating_skips RLS policy refuses to
+  /// insert if any grid_rankings rows exist for the participant in the round).
+  Future<void> deleteGridRanking({
+    required int roundId,
+    required int propositionId,
+    required int participantId,
+  }) async {
+    await _client
+        .from('grid_rankings')
+        .delete()
+        .eq('round_id', roundId)
+        .eq('proposition_id', propositionId)
+        .eq('participant_id', participantId);
+  }
+
+  /// Count grid_rankings rows for a participant in a round. Used to gate the
+  /// "Skip Rating" UI: skip is only available when this count is zero.
+  Future<int> getMyRatingCount({
+    required int roundId,
+    required int participantId,
+  }) async {
+    final response = await _client
+        .from('grid_rankings')
+        .select('id')
+        .eq('round_id', roundId)
+        .eq('participant_id', participantId)
+        .count(CountOption.exact);
+    return response.count;
   }
 
   /// Submit grid rankings for propositions

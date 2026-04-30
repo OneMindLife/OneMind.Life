@@ -21,7 +21,6 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import OpenAI from "npm:openai@4.77.0";
 import { z } from "npm:zod@3.23.8";
 import {
   getCorsHeaders,
@@ -33,11 +32,24 @@ import {
 // Environment variables
 const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-// Initialize OpenAI client pointing to Gemini 2.0 Flash (free tier, ~1-2s responses)
-const openai = new OpenAI({
-  apiKey: Deno.env.get("GEMINI_API_KEY") ?? "",
-  baseURL: "https://generativelanguage.googleapis.com/v1beta/openai",
-});
+// We use Google Cloud Translation API (purpose-built translation service)
+// instead of an LLM. Reasons:
+//   1. Gemini kept returning spurious 429 RESOURCE_EXHAUSTED on this
+//      project even with tons of Tier 2 headroom — LLM quota pools are
+//      the wrong tool for deterministic translation anyway.
+//   2. Cloud Translation has its own separate quota (millions of chars /
+//      month), runs on Google's production translation infrastructure,
+//      and returns deterministic translations with sub-200ms latency.
+//   3. No more fragile markdown-stripping / JSON parsing of LLM output.
+//
+// Uses a dedicated `GOOGLE_TRANSLATE_API_KEY` — separate from the Gemini
+// key because AI-Studio-created keys are internally scoped to
+// Generative Language API and can't hit translate.googleapis.com even
+// when un-restricted in the dashboard. This key is a plain GCP key
+// restricted to just Cloud Translation API.
+const googleTranslateApiKey = Deno.env.get("GOOGLE_TRANSLATE_API_KEY") ?? "";
+const TRANSLATE_ENDPOINT =
+  "https://translation.googleapis.com/language/translate/v2";
 
 // Initialize Supabase client with service role for DB operations
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -63,60 +75,68 @@ type Translations = z.infer<typeof TranslationsSchema>;
 // =============================================================================
 
 /**
- * Translate content to English and Spanish using Kimi K2.5
+ * Translate `text` into a single target language via Google Cloud
+ * Translation API v2. Returns the translated string. Throws with a
+ * detailed error (status + body) on failure so the caller can surface
+ * it to remoteLog.
+ */
+async function translateTo(text: string, targetLang: string): Promise<string> {
+  const resp = await fetch(
+    `${TRANSLATE_ENDPOINT}?key=${googleTranslateApiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        q: text,
+        target: targetLang,
+        format: "text",
+      }),
+    },
+  );
+  if (!resp.ok) {
+    const body = await resp.text();
+    const err = new Error(
+      `Cloud Translation ${resp.status} ${resp.statusText}: ${body.slice(0, 500)}`,
+    );
+    // deno-lint-ignore no-explicit-any
+    (err as any).status = resp.status;
+    // deno-lint-ignore no-explicit-any
+    (err as any).body = body;
+    // deno-lint-ignore no-explicit-any
+    (err as any).headers = Object.fromEntries(resp.headers.entries());
+    throw err;
+  }
+  const data = await resp.json();
+  const translated = data?.data?.translations?.[0]?.translatedText;
+  if (typeof translated !== "string") {
+    throw new Error(
+      `Cloud Translation response malformed: ${JSON.stringify(data).slice(0, 500)}`,
+    );
+  }
+  return translated;
+}
+
+/**
+ * Translate content into English and Spanish concurrently using Google
+ * Cloud Translation API v2. Typical round-trip is ~150-300ms per call,
+ * and the two targets run in parallel so wall-clock is ~200ms.
+ *
+ * Retries each full batch up to MAX_RETRIES times on transient errors;
+ * each attempt logs diagnostic detail to client_logs on failure.
  */
 async function getTranslations(text: string): Promise<Translations> {
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000;
-
-  const prompt = `Translate the following text into English and Spanish.
-Keep the translations natural and preserve the original meaning.
-If the text is already in one of these languages, still provide both translations.
-
-Text to translate:
-${text}
-
-Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
-{"en": "English translation", "es": "Spanish translation"}`;
+  const RETRY_DELAY = 500;
 
   let attempts = 0;
 
   while (attempts < MAX_RETRIES) {
     try {
-      const message = await openai.chat.completions.create({
-        model: "gemini-2.0-flash",
-        max_tokens: 256,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-
-      // Extract text from response
-      const responseText = message.choices[0]?.message?.content ?? "";
-
-      // Clean up the response - remove any markdown code blocks
-      let cleanedResponse = responseText.trim();
-      if (cleanedResponse.startsWith("```json")) {
-        cleanedResponse = cleanedResponse.slice(7);
-      } else if (cleanedResponse.startsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(3);
-      }
-      if (cleanedResponse.endsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(0, -3);
-      }
-      cleanedResponse = cleanedResponse.trim();
-
-      // Validate JSON format
-      if (!cleanedResponse.startsWith("{") || !cleanedResponse.endsWith("}")) {
-        throw new Error("Response is not in valid JSON format");
-      }
-
-      // Parse and validate with Zod
-      const parsed = JSON.parse(cleanedResponse);
-      return TranslationsSchema.parse(parsed);
+      const [en, es] = await Promise.all([
+        translateTo(text, "en"),
+        translateTo(text, "es"),
+      ]);
+      return TranslationsSchema.parse({ en, es });
     } catch (error) {
       attempts++;
       console.error(`[SUBMIT-PROPOSITION] Translation attempt ${attempts} failed:`, error);

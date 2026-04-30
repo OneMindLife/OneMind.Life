@@ -7,13 +7,14 @@ import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
+import '../../services/active_audio.dart';
 import '../chat/chat_screen.dart';
 import '../create/create_chat_wizard.dart';
 import '../join/join_dialog.dart';
 import '../scan/qr_scanner_screen.dart';
 
 /// Full-page screen presented when the FAB is tapped.
-/// Offers three paths: Create Chat, Join Chat, Discover Chats.
+/// Offers three paths: Discover Chats, Create Chat, Join Chat.
 class ActionPickerScreen extends ConsumerWidget {
   const ActionPickerScreen({super.key});
 
@@ -44,6 +45,18 @@ class ActionPickerScreen extends ConsumerWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
+            // Order: Discover (lowest friction, "show me what's interesting")
+            // → Create (medium, "I have an idea") → Join (highest gating,
+            // "I have a code"). Most users arriving here are exploring; the
+            // few with a code typically click the invite link directly and
+            // bypass this screen.
+            _ActionCard(
+              icon: Icons.explore,
+              title: l10n.actionPickerDiscoverTitle,
+              description: l10n.actionPickerDiscoverDesc,
+              onTap: () => context.push('/discover'),
+            ),
+            const SizedBox(height: 16),
             _ActionCard(
               icon: Icons.add_comment,
               title: l10n.actionPickerCreateTitle,
@@ -56,13 +69,6 @@ class ActionPickerScreen extends ConsumerWidget {
               title: l10n.actionPickerJoinTitle,
               description: l10n.actionPickerJoinDesc,
               onTap: () => _openJoinPicker(context, ref),
-            ),
-            const SizedBox(height: 16),
-            _ActionCard(
-              icon: Icons.explore,
-              title: l10n.actionPickerDiscoverTitle,
-              description: l10n.actionPickerDiscoverDesc,
-              onTap: () => context.push('/discover'),
             ),
           ],
         ),
@@ -79,12 +85,16 @@ class ActionPickerScreen extends ConsumerWidget {
       // Pop back to home, then open the new chat
       Navigator.popUntil(context, (route) => route.isFirst);
       ref.read(myChatsProvider.notifier).refresh();
-      Navigator.push(
+      await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ChatScreen(chat: chat, showShareDialog: true),
         ),
       );
+      // ChatScreen.dispose isn't reliable on web — silence chat-scoped
+      // audio when returning here.
+      ActiveAudio.stopForeground();
+      ref.read(backgroundAudioServiceProvider).leaveChat();
     }
   }
 

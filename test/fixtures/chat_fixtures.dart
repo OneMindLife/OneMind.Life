@@ -52,6 +52,7 @@ class ChatFixtures {
     String? descriptionTranslated,
     String? initialMessageTranslated,
     String? translationLanguage,
+    String? backgroundAudioUrl,
   }) {
     return {
       'id': id,
@@ -99,6 +100,7 @@ class ChatFixtures {
       'description_translated': descriptionTranslated,
       'initial_message_translated': initialMessageTranslated,
       'translation_language': translationLanguage,
+      'background_audio_url': backgroundAudioUrl,
     };
   }
 
@@ -111,6 +113,9 @@ class ChatFixtures {
     bool isActive = true,
     bool isOfficial = false,
     bool hostPaused = false,
+    bool translationsEnabled = false,
+    List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
+    String? backgroundAudioUrl,
   }) {
     return Chat.fromJson(json(
       id: id,
@@ -120,6 +125,9 @@ class ChatFixtures {
       isActive: isActive,
       isOfficial: isOfficial,
       hostPaused: hostPaused,
+      translationsEnabled: translationsEnabled,
+      translationLanguages: translationLanguages,
+      backgroundAudioUrl: backgroundAudioUrl,
     ));
   }
 

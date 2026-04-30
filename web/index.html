@@ -72,6 +72,7 @@
     window._splashStart = Date.now();
     window._flutterReady = false;
     window._htmlPlayTapped = false;
+    window._htmlSkipTapped = false;
 
     // Engagement heartbeat — fixes 0% engagement in in-app browsers (Instagram,
     // Facebook) that kill the WebView without firing visibilitychange/pagehide,
@@ -243,21 +244,21 @@
   <!-- Loading splash (hidden by default, shown for returning users) -->
   <div id="splash" style="display:none">
     <div id="splash-brand">OneMind</div>
-    <div id="splash-text">Many people. One mind.</div>
-    <div id="splash-tagline">Anonymous groupchats where many minds think as one.</div>
+    <div id="splash-text">The anonymous idea game</div>
+    <div id="splash-tagline">Submit. Rank. Win.</div>
     <div id="splash-dots"><span></span><span></span><span></span></div>
   </div>
 
   <!-- HTML Play Screen (hidden by default, shown for new users at /) -->
   <div id="play-screen" style="display:none">
     <div id="play-brand">OneMind</div>
-    <div id="play-title">Many people. One mind.</div>
-    <div id="play-subtitle">Anonymous groupchats where many minds think as one.</div>
+    <div id="play-title">The anonymous idea game</div>
+    <div id="play-subtitle">Submit your best idea. Rank others. Watch one win.</div>
     <button id="play-btn" onclick="window._onPlayTap()">
       <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       <div class="spinner"></div>
     </button>
-    <div id="play-label">See how it works</div>
+    <div id="play-label">Play</div>
     <div id="play-legal">
       By continuing you agree to
       <a onclick="window._onLegalTap('terms')">Terms of Service</a>
@@ -314,8 +315,16 @@
         _removeOverlay();
       } else {
         _showPlayLoading();
-        // Will be removed by MutationObserver when Flutter renders
+        // Will be removed by MutationObserver when Flutter renders.
         window._pendingAction = action;
+        // Safety net: if Flutter takes >20s to paint (network / tunnel /
+        // bundle issues), yank the overlay anyway so the user isn't stuck
+        // staring at a spinner. Flutter will replace it once it finishes.
+        setTimeout(function() {
+          if (document.getElementById('play-screen')) {
+            _removeOverlay();
+          }
+        }, 20000);
       }
     }
 
@@ -329,25 +338,43 @@
         time_on_play_screen_ms: elapsed,
         flutter_was_ready: window._flutterReady
       });
-      // If Flutter already registered its auto-advance callback, call it
-      if (typeof window._flutterAutoAdvance === 'function') {
-        window._flutterAutoAdvance();
-      }
+      // Remove/loading FIRST so the overlay always dismisses, even if the
+      // Flutter callback below throws (e.g. router rebuild mid-call).
       _transitionToFlutter('play');
+      // If Flutter already registered its auto-advance callback, call it
+      try {
+        if (typeof window._flutterAutoAdvance === 'function') {
+          window._flutterAutoAdvance();
+        }
+      } catch (e) { /* overlay already removed — don't block UX */ }
     };
 
     // ── Skip button tapped ──
     window._onSkipTap = function() {
+      if (window._htmlSkipTapped) return; // prevent double-tap
+      window._htmlSkipTapped = true;
       var elapsed = Date.now() - (window._playScreenStart || Date.now());
       gtag('event', 'play_screen_skip_tapped', {
         event_category: 'onboarding',
         time_on_play_screen_ms: elapsed,
         flutter_was_ready: window._flutterReady
       });
-      // Set tutorial + home tour as complete so Flutter goes to home
+      // Set tutorial + home tour as complete so Flutter goes to home on
+      // its first SharedPreferences read.
       localStorage.setItem('flutter.tutorial_completed', 'true');
       localStorage.setItem('flutter.home_tour_completed', 'true');
+      // Show spinner while Flutter loads — avoids a jarring white flash
+      // on slow networks. 20s safety timeout in _transitionToFlutter
+      // ensures the overlay can never stick forever.
       _transitionToFlutter('skip');
+      // If Flutter is already loaded, its registered skip callback will
+      // invalidate providers + navigate. If not, Flutter's fresh boot
+      // picks up tutorial_completed=true and routes to home on its own.
+      try {
+        if (typeof window._flutterAutoSkip === 'function') {
+          window._flutterAutoSkip();
+        }
+      } catch (e) { /* overlay will be removed by observer/timeout */ }
     };
 
     // ── Legal link tapped ──
@@ -358,8 +385,15 @@
         link: page,
         time_on_play_screen_ms: elapsed
       });
-      // Navigate to legal page — Flutter will handle routing
-      history.replaceState(null, '', '/' + page);
+      // If Flutter already loaded, let GoRouter navigate — replaceState alone
+      // doesn't fire popstate, so GoRouter would keep rendering the tutorial
+      // it initialized on. If Flutter hasn't loaded yet, set the URL so it
+      // initializes on the legal route.
+      if (typeof window._flutterAutoLegal === 'function') {
+        window._flutterAutoLegal(page);
+      } else {
+        history.replaceState(null, '', '/' + page);
+      }
       _transitionToFlutter('legal');
     };
   </script>
@@ -384,7 +418,8 @@
 
         if (window._showingPlayScreen) {
           // Play screen mode: only remove overlay if user already acted
-          if (window._htmlPlayTapped || window._pendingAction) {
+          if (window._htmlPlayTapped || window._htmlSkipTapped ||
+              window._pendingAction) {
             _removeOverlay();
           }
           // Otherwise keep play screen on top — user hasn't tapped yet

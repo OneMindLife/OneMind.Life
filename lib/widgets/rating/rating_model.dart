@@ -969,6 +969,18 @@ class RatingModel extends ChangeNotifier {
   }
 
   void undoLastPlacement() {
+    // Special case: undoing from the binary phase wipes BOTH initial picks
+    // from the DB so the user can either re-confirm them or back out and
+    // skip rating entirely (the rating_skips RLS policy refuses to insert
+    // while any grid_rankings rows for this user/round still exist).
+    // Local UI state stays at binary so the same two cards remain visible
+    // and the user can re-pick without re-fetching.
+    if (_phase == RatingPhase.binary && _rankedPropositions.length == 2) {
+      onUndo?.call(_rankedPropositions[0].id);
+      onUndo?.call(_rankedPropositions[1].id);
+      return;
+    }
+
     if (_phase != RatingPhase.positioning) return;
     if (_rankedPropositions.length <= 2) return;
 

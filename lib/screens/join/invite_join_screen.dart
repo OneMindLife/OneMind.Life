@@ -216,20 +216,16 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
         ref.read(myChatsProvider.notifier).refresh();
 
         // Log analytics
+        final joinedChatId = result['chat_id'] as int;
         ref.read(analyticsServiceProvider).logChatJoined(
-          chatId: (result['chat_id'] as int).toString(),
+          chatId: joinedChatId.toString(),
           joinMethod: 'personal_code',
         );
 
-        // Skip tutorial for invite flow — go straight to home
-        final tutorialService = ref.read(tutorialServiceProvider);
-        tutorialService.markTutorialComplete();
-        tutorialService.markHomeTourComplete();
-        ref.invalidate(hasCompletedTutorialProvider);
-        ref.invalidate(hasCompletedHomeTourProvider);
-
         if (mounted) {
-          context.go('/');
+          // Land on Home with ?chat_id=N so HomeScreen auto-opens the chat
+          // the user just joined (HomeScreen._handleReturnToChat handles it).
+          context.go('/?chat_id=$joinedChatId');
         }
         return;
       }
@@ -243,13 +239,6 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           chatId: chatId,
           displayName: name,
         );
-
-        // Skip tutorial for invite flow — go straight to home
-        final tutorialService = ref.read(tutorialServiceProvider);
-        tutorialService.markTutorialComplete();
-        tutorialService.markHomeTourComplete();
-        ref.invalidate(hasCompletedTutorialProvider);
-        ref.invalidate(hasCompletedHomeTourProvider);
 
         if (mounted) {
           context.showInfoSnackBar(l10n.joinRequestSent);
@@ -281,15 +270,10 @@ class _InviteJoinScreenState extends ConsumerState<InviteJoinScreen> {
           joinMethod: joinMethod,
         );
 
-        // Skip tutorial for invite flow — go straight to home
-        final tutorialService = ref.read(tutorialServiceProvider);
-        tutorialService.markTutorialComplete();
-        tutorialService.markHomeTourComplete();
-        ref.invalidate(hasCompletedTutorialProvider);
-        ref.invalidate(hasCompletedHomeTourProvider);
-
         if (mounted) {
-          context.go('/');
+          // Land on Home with ?chat_id=N so HomeScreen auto-opens the chat
+          // the user just joined (HomeScreen._handleReturnToChat handles it).
+          context.go('/?chat_id=$chatId');
         }
       }
     } catch (e) {

@@ -13,6 +13,11 @@ class ReadOnlyResultsScreen extends StatefulWidget {
   final int? roundId;
   final int? myParticipantId;
 
+  /// Distinct rater count for this round. When non-null, shown as a subtitle
+  /// under the AppBar title. Omitted in tutorial contexts where there are no
+  /// real raters.
+  final int? raterCount;
+
   /// Whether to show a tutorial hint overlay
   final bool showTutorialHint;
 
@@ -38,6 +43,7 @@ class ReadOnlyResultsScreen extends StatefulWidget {
     required this.roundNumber,
     this.roundId,
     this.myParticipantId,
+    this.raterCount,
     this.showTutorialHint = false,
     this.tutorialWinnerName,
     this.tutorialHintTitle,
@@ -350,9 +356,20 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
           title: AnimatedOpacity(
             opacity: widget.showTutorialHint && _resultsDialogStep < 2 ? 0.25 : 1.0,
             duration: const Duration(milliseconds: 250),
-            child: Text(
-              l10n.roundResults,
-              style: const TextStyle(fontWeight: FontWeight.bold),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.roundResults,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                if (widget.raterCount != null)
+                  Text(
+                    'Raters: ${widget.raterCount}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+              ],
             ),
           ),
           actions: [

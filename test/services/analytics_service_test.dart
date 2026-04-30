@@ -284,6 +284,15 @@ void main() {
               parameters: {'document_type': 'privacy_policy'},
             )).called(1);
       });
+
+      test('logDonateClicked logs source', () async {
+        await analyticsService.logDonateClicked(source: 'home_app_bar');
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'donate_clicked',
+              parameters: {'source': 'home_app_bar'},
+            )).called(1);
+      });
     });
 
     group('Error Events', () {
@@ -332,6 +341,190 @@ void main() {
               parameters: {
                 'error_code': 'GENERIC_ERROR',
                 'error_message': 'Something went wrong',
+              },
+            )).called(1);
+      });
+    });
+
+    group('Chat Media Events', () {
+      test('logChatVideoImpression logs with cycle_id when provided', () async {
+        await analyticsService.logChatVideoImpression(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_impression',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoImpression omits cycle_id for initial_message', () async {
+        await analyticsService.logChatVideoImpression(
+          chatId: 'chat-246',
+          source: 'initial_message',
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_impression',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'initial_message',
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoStarted includes autoplay and duration', () async {
+        await analyticsService.logChatVideoStarted(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          autoplay: true,
+          durationSeconds: 80.0,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_started',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'autoplay': 1,
+                'duration_seconds': 80.0,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoProgress logs milestone percent', () async {
+        await analyticsService.logChatVideoProgress(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          percent: 50,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_progress',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'percent': 50,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoCompleted includes duration', () async {
+        await analyticsService.logChatVideoCompleted(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          durationSeconds: 80.0,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_completed',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'duration_seconds': 80.0,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoAbandoned captures watch time and percent', () async {
+        await analyticsService.logChatVideoAbandoned(
+          chatId: 'chat-246',
+          source: 'initial_message',
+          watchTimeSeconds: 12.5,
+          percentWatched: 42,
+          durationSeconds: 30.0,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_abandoned',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'initial_message',
+                'watch_time_seconds': 12.5,
+                'percent_watched': 42,
+                'duration_seconds': 30.0,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoUnmuted logs at_seconds', () async {
+        await analyticsService.logChatVideoUnmuted(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          atSeconds: 4.2,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_unmuted',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'at_seconds': 4.2,
+              },
+            )).called(1);
+      });
+
+      test('logChatVideoFullscreen logs at_seconds', () async {
+        await analyticsService.logChatVideoFullscreen(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          atSeconds: 10.0,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_video_fullscreen',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'at_seconds': 10.0,
+              },
+            )).called(1);
+      });
+
+      test('logChatAudioPlayed flags pre-recorded vs fallback', () async {
+        await analyticsService.logChatAudioPlayed(
+          chatId: 'chat-246',
+          source: 'cycle_winner',
+          cycleId: 573,
+          hasPreRecorded: true,
+        );
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_audio_played',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'cycle_winner',
+                'cycle_id': 573,
+                'has_pre_recorded': 1,
+              },
+            )).called(1);
+
+        await analyticsService.logChatAudioPlayed(
+          chatId: 'chat-246',
+          source: 'initial_message',
+          hasPreRecorded: false,
+        );
+        verify(() => mockAnalytics.logEvent(
+              name: 'chat_audio_played',
+              parameters: {
+                'chat_id': 'chat-246',
+                'source': 'initial_message',
+                'has_pre_recorded': 0,
               },
             )).called(1);
       });

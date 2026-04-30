@@ -43,6 +43,11 @@ class RoundPhaseBar extends StatelessWidget {
   /// phaseEndsAt used for layout reservation when reserveSpace is true.
   final DateTime? reservePhaseEndsAt;
 
+  /// When true, the timer slot is replaced with a "Paused" indicator
+  /// (pause icon + label) instead of a countdown. Use when the chat is
+  /// host_paused and phaseEndsAt has been cleared.
+  final bool isPaused;
+
   const RoundPhaseBar({
     super.key,
     required this.roundNumber,
@@ -61,6 +66,7 @@ class RoundPhaseBar extends StatelessWidget {
     this.frozenTimerDuration,
     this.reserveSpace = false,
     this.reservePhaseEndsAt,
+    this.isPaused = false,
   });
 
   @override
@@ -189,8 +195,33 @@ class RoundPhaseBar extends StatelessWidget {
                     ],
                   ),
                 ),
-              // Timer
-              if (phaseEndsAt != null || reserveSpace)
+              // Timer (or "Paused" indicator if isPaused)
+              if (isPaused)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 1,
+                      height: 16,
+                      margin: const EdgeInsets.symmetric(horizontal: 12),
+                      color: theme.colorScheme.outlineVariant,
+                    ),
+                    Icon(
+                      Icons.pause_circle_outline,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      l10n.chatPaused,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                )
+              else if (phaseEndsAt != null || reserveSpace)
                 AnimatedOpacity(
                   opacity: phaseEndsAt != null ? timerOpacity : 0.0,
                   duration: const Duration(milliseconds: 250),

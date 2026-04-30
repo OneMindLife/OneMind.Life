@@ -1,15 +1,13 @@
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
-// Fill in your Firebase Web config. Generate via `flutterfire configure`
-// or copy from your Firebase Console → Project Settings → Your apps (Web).
 firebase.initializeApp({
   apiKey: 'YOUR_API_KEY',
   appId: 'YOUR_APP_ID',
-  messagingSenderId: 'YOUR_SENDER_ID',
+  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
   projectId: 'YOUR_PROJECT_ID',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
+  authDomain: 'YOUR_AUTH_DOMAIN',
+  storageBucket: 'YOUR_STORAGE_BUCKET',
   measurementId: 'YOUR_MEASUREMENT_ID',
 });
 

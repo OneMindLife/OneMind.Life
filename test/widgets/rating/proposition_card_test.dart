@@ -215,12 +215,13 @@ void main() {
 
       await tester.pumpWidget(buildTestWidget(proposition: proposition));
 
-      // Find container with constraints
-      final containers = tester.widgetList<Container>(find.byType(Container));
+      // Rating cards use PropositionContentCard with bounded=true, which
+      // applies maxHeight via a ConstrainedBox (not via Container.constraints).
+      final boxes =
+          tester.widgetList<ConstrainedBox>(find.byType(ConstrainedBox));
 
-      final hasMaxHeightConstraint = containers.any((container) {
-        return container.constraints?.maxHeight == 150;
-      });
+      final hasMaxHeightConstraint =
+          boxes.any((box) => box.constraints.maxHeight == 150);
 
       expect(hasMaxHeightConstraint, true);
     });

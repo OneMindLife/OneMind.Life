@@ -7,6 +7,7 @@ import '../services/services.dart';
 import '../services/analytics_service.dart';
 import '../services/ab_test_service.dart';
 import '../services/tutorial_service.dart';
+import '../services/donate_prompt_service.dart';
 
 // =============================================================================
 // AUTH SERVICE (JWT-based authentication via Supabase Anonymous Auth)
@@ -109,6 +110,47 @@ final tutorialServiceProvider = Provider<TutorialService>((ref) {
 /// Check if user has completed tutorial
 final hasCompletedTutorialProvider = Provider<bool>((ref) {
   return ref.watch(tutorialServiceProvider).hasCompletedTutorial;
+});
+
+/// Throttles the convergence-reached "Support OneMind" dialog.
+final donatePromptServiceProvider = Provider<DonatePromptService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return DonatePromptService(prefs);
+});
+
+// =============================================================================
+// BACKGROUND AUDIO
+// =============================================================================
+
+/// Loops bundled background music while the user is in an opted-in chat
+/// (currently only the official OneMind chat). User-toggleable via the chat
+/// screen overflow menu; preference persists across sessions.
+final backgroundAudioServiceProvider = Provider<BackgroundAudioService>((ref) {
+  final prefs = ref.watch(sharedPreferencesProvider);
+  final service = BackgroundAudioService(prefs);
+  ref.onDispose(service.dispose);
+  return service;
+});
+
+/// `bool` state notifier mirroring [BackgroundAudioService.isEnabled] so the
+/// overflow-menu toggle rebuilds on change.
+class BackgroundAudioEnabledNotifier extends StateNotifier<bool> {
+  final BackgroundAudioService _service;
+  BackgroundAudioEnabledNotifier(this._service) : super(_service.isEnabled);
+
+  Future<void> setEnabled(bool enabled) async {
+    state = enabled;
+    await _service.setEnabled(enabled);
+  }
+
+  Future<void> toggle() => setEnabled(!state);
+}
+
+final backgroundAudioEnabledProvider =
+    StateNotifierProvider<BackgroundAudioEnabledNotifier, bool>((ref) {
+  return BackgroundAudioEnabledNotifier(
+    ref.watch(backgroundAudioServiceProvider),
+  );
 });
 
 // =============================================================================

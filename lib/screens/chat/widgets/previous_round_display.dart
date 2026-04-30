@@ -3,6 +3,8 @@ import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/proposition_content_card.dart';
+import '../../../widgets/tts_button.dart';
+import 'convergence_video_card.dart';
 
 /// Displays the previous round winner(s) with support for tied winners.
 /// Uses PropositionContentCard for consistent styling with other content displays.
@@ -43,7 +45,14 @@ class PreviousWinnerPanel extends StatelessWidget {
 
     final hasMultipleWinners = previousRoundWinners.length > 1;
     final currentWinner = previousRoundWinners[currentWinnerIndex];
-    final theme = Theme.of(context);
+    // Resolve label: explicit override (used by tutorial for "Placeholder")
+    // wins; otherwise derive from roundNumber → "Round N Winner(s)".
+    final String? cardLabel = labelOverride ??
+        (roundNumber != null
+            ? (hasMultipleWinners
+                ? l10n.roundWinners(roundNumber!)
+                : l10n.roundWinner(roundNumber!))
+            : null);
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -85,12 +94,21 @@ class PreviousWinnerPanel extends StatelessWidget {
                             child: PropositionContentCard(
                               content: currentWinner.displayContent ??
                                   l10n.unknownProposition,
-                              label: labelOverride
-                                ?? (roundNumber != null
-                                    ? l10n.roundWinner(roundNumber!)
-                                    : l10n.previousWinner),
+                              label: cardLabel,
                               borderColor: AppColors.consensus,
                               glowColor: AppColors.consensus,
+                              mediaAbove: currentWinner.videoUrl != null
+                                  ? ConvergenceVideoCard(
+                                      key: ValueKey('round-video-${currentWinner.id}'),
+                                      videoUrl: currentWinner.videoUrl!,
+                                      scrubBarColor: AppColors.consensus,
+                                    )
+                                  : null,
+                              trailing: TtsButton(
+                                text: currentWinner.displayContent ?? '',
+                                audioUrl: currentWinner.audioUrl,
+                                color: AppColors.consensus,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -115,12 +133,21 @@ class PreviousWinnerPanel extends StatelessWidget {
                       PropositionContentCard(
                         content: currentWinner.displayContent ??
                             l10n.unknownProposition,
-                        label: labelOverride
-                                ?? (roundNumber != null
-                                    ? l10n.roundWinner(roundNumber!)
-                                    : l10n.previousWinner),
+                        label: cardLabel,
                         borderColor: AppColors.consensus,
                         glowColor: AppColors.consensus,
+                        mediaAbove: currentWinner.videoUrl != null
+                            ? ConvergenceVideoCard(
+                                key: ValueKey('round-video-${currentWinner.id}'),
+                                videoUrl: currentWinner.videoUrl!,
+                                scrubBarColor: AppColors.consensus,
+                              )
+                            : null,
+                        trailing: TtsButton(
+                          text: currentWinner.displayContent ?? '',
+                          audioUrl: currentWinner.audioUrl,
+                          color: AppColors.consensus,
+                        ),
                       ),
 
                     // Page dots (only when multiple winners)

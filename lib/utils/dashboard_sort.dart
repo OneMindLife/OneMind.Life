@@ -1,4 +1,5 @@
 import '../models/chat_dashboard_info.dart';
+import '../models/round.dart';
 
 /// Sort dashboard chats like a conveyor belt — what needs attention next rises to top:
 /// 1. Not participated + active + timed — soonest phaseEndsAt first
@@ -26,6 +27,39 @@ List<ChatDashboardInfo> sortByUrgency(List<ChatDashboardInfo> chats) {
     return bActivity.compareTo(aActivity);
   });
   return sorted;
+}
+
+/// Split a sorted dashboard list into three feeder buckets:
+/// - `nextUp`: active round in proposing/rating where the user still owes
+///   an action (the "addictive feeder" queue — topmost card = do this next).
+/// - `wrappingUp`: active round in proposing/rating where the user is done;
+///   waiting for the group to finish so results can be revealed.
+/// - `inactive`: paused, between-rounds, or in the `waiting` phase (round
+///   hasn't opened for action yet). Nothing is running for the user here.
+///
+/// Order within each bucket is preserved from the input list (intended to be
+/// the output of [sortByUrgency]).
+({
+  List<ChatDashboardInfo> nextUp,
+  List<ChatDashboardInfo> wrappingUp,
+  List<ChatDashboardInfo> inactive,
+}) partitionByAttention(List<ChatDashboardInfo> sorted) {
+  final nextUp = <ChatDashboardInfo>[];
+  final wrappingUp = <ChatDashboardInfo>[];
+  final inactive = <ChatDashboardInfo>[];
+  for (final info in sorted) {
+    final phase = info.currentRoundPhase;
+    final isActionable =
+        phase == RoundPhase.proposing || phase == RoundPhase.rating;
+    if (info.isPaused || !isActionable) {
+      inactive.add(info);
+    } else if (!info.hasParticipated) {
+      nextUp.add(info);
+    } else {
+      wrappingUp.add(info);
+    }
+  }
+  return (nextUp: nextUp, wrappingUp: wrappingUp, inactive: inactive);
 }
 
 /// Returns urgency group (lower = more urgent):
