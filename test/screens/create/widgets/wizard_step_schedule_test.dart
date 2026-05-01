@@ -162,15 +162,6 @@ void main() {
         expect(find.text('10:00 AM'), findsOneWidget);
       });
 
-      testWidgets('shows visibility toggle', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        await tester.ensureVisible(find.text('Hide when outside schedule'));
-        await tester.pumpAndSettle();
-        expect(find.text('Hide when outside schedule'), findsOneWidget);
-        expect(find.byType(SwitchListTile), findsOneWidget);
-      });
-
       testWidgets('shows "Set an end time" button by default',
           (tester) async {
         await tester.pumpWidget(buildWidget());
@@ -306,66 +297,6 @@ void main() {
         expect(find.text('Window 2'), findsOneWidget);
       });
 
-      testWidgets('shows visibility toggle', (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.text('Hide when outside schedule'), findsOneWidget);
-      });
-    });
-
-    group('Visibility Toggle', () {
-      setUp(() {
-        enableSchedule = true;
-        scheduleSettings = scheduleSettings.copyWith(
-          type: state.ScheduleType.once,
-        );
-      });
-
-      testWidgets('shows correct subtitle when visible outside schedule',
-          (tester) async {
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.text('Chat visible but paused outside schedule'),
-            findsOneWidget);
-      });
-
-      testWidgets('shows correct subtitle when hidden outside schedule',
-          (tester) async {
-        scheduleSettings = scheduleSettings.copyWith(
-          visibleOutsideSchedule: false,
-        );
-
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.text('Chat hidden until next scheduled window'),
-            findsOneWidget);
-      });
-
-      testWidgets('calls onScheduleSettingsChanged when toggled',
-          (tester) async {
-        state.ScheduleSettings? captured;
-
-        await tester.pumpWidget(buildWidget(
-          onScheduleSettingsChanged: (s) => captured = s,
-        ));
-
-        await tester.ensureVisible(find.byType(Switch));
-        await tester.pumpAndSettle();
-        await tester.tap(find.byType(Switch));
-        await tester.pump();
-
-        // Switch is inverted: toggling "Hide" on → visibleOutsideSchedule = false
-        expect(captured?.visibleOutsideSchedule, false);
-      });
-
-      testWidgets('not shown when Always Active mode', (tester) async {
-        enableSchedule = false;
-
-        await tester.pumpWidget(buildWidget());
-
-        expect(find.text('Hide when outside schedule'), findsNothing);
-        expect(find.byType(SwitchListTile), findsNothing);
-      });
     });
 
     group('Navigation', () {

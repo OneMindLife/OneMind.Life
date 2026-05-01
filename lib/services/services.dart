@@ -1,4 +1,5 @@
 // Export all services
+export 'affirmation_service.dart';
 export 'auth_service.dart';
 export 'background_audio_service.dart';
 export 'billing_service.dart';

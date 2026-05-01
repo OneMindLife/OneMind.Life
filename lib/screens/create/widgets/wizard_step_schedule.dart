@@ -143,26 +143,6 @@ class WizardStepSchedule extends StatelessWidget {
                       ),
                     ),
                   ],
-
-                  // Visibility toggle — only for scheduled modes
-                  if (_mode != _ScheduleMode.always) ...[
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    SwitchListTile(
-                      title: Text(l10n.hideOutsideSchedule),
-                      subtitle: Text(
-                        scheduleSettings.visibleOutsideSchedule
-                            ? l10n.visiblePaused
-                            : l10n.hiddenUntilWindow,
-                      ),
-                      value: !scheduleSettings.visibleOutsideSchedule,
-                      onChanged: (v) => onScheduleSettingsChanged(
-                        scheduleSettings.copyWith(
-                            visibleOutsideSchedule: !v),
-                      ),
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                  ],
                 ],
               ),
             ),

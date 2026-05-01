@@ -4,9 +4,9 @@ import 'package:onemind_app/screens/home_tour/notifiers/home_tour_notifier.dart'
 
 void main() {
   group('HomeTourStep', () {
-    test('has 8 steps before complete', () {
+    test('has 7 steps before complete', () {
       final steps = HomeTourStep.values.where((s) => s != HomeTourStep.complete).toList();
-      expect(steps.length, 8);
+      expect(steps.length, 7);
     });
 
     test('steps are in correct order: body first, then app bar', () {
@@ -17,7 +17,6 @@ void main() {
         HomeTourStep.pendingRequest,
         HomeTourStep.createFab,
         HomeTourStep.languageSelector,
-        HomeTourStep.tutorialButton,
         HomeTourStep.menu,
         HomeTourStep.complete,
       ]);
@@ -36,8 +35,8 @@ void main() {
       expect(state.totalSteps, HomeTourState.total);
     });
 
-    test('total is 8', () {
-      expect(HomeTourState.total, 8);
+    test('total is 7', () {
+      expect(HomeTourState.total, 7);
     });
 
     test('copyWith creates new instance with updated fields', () {
@@ -48,7 +47,7 @@ void main() {
       );
       expect(updated.currentStep, HomeTourStep.languageSelector);
       expect(updated.stepIndex, 5);
-      expect(updated.totalSteps, 8);
+      expect(updated.totalSteps, 7);
     });
   });
 
@@ -77,7 +76,6 @@ void main() {
         HomeTourStep.pendingRequest,
         HomeTourStep.createFab,
         HomeTourStep.languageSelector,
-        HomeTourStep.tutorialButton,
         HomeTourStep.menu,
         HomeTourStep.complete,
       ];
@@ -97,11 +95,11 @@ void main() {
     });
 
     test('last step before complete is menu', () {
-      for (int i = 0; i < 7; i++) {
+      for (int i = 0; i < 6; i++) {
         notifier.nextStep();
       }
       expect(notifier.state.currentStep, HomeTourStep.menu);
-      expect(notifier.state.stepIndex, 7);
+      expect(notifier.state.stepIndex, 6);
 
       notifier.nextStep();
       expect(notifier.state.currentStep, HomeTourStep.complete);

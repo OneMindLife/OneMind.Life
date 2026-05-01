@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../config/app_colors.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
-import '../../../widgets/round_phase_bar.dart';
 import '../../../widgets/proposition_content_card.dart';
 
 /// Panel displayed when waiting for more participants to join.
@@ -15,15 +14,23 @@ class WaitingStatePanel extends StatelessWidget {
   /// When true and only the host is present, shows a hint to use it.
   final bool showShareHint;
 
+  /// When true the panel renders nothing — the waiting message is rendered
+  /// inline in the chat scroll instead, so the bottom panel goes empty.
+  final bool compactMode;
+
   const WaitingStatePanel({
     super.key,
     required this.participantCount,
     this.autoStartParticipantCount = 3,
     this.showShareHint = false,
+    this.compactMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (compactMode) {
+      return const SizedBox.shrink(key: Key('waiting-state-panel'));
+    }
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final remaining = autoStartParticipantCount - participantCount;
@@ -290,6 +297,13 @@ class ProposingStatePanel extends StatelessWidget {
   final int? participationPercent;
   final bool animateProgress;
 
+  /// When true, the panel renders only the phase bar — used while the
+  /// Affirm/Refine gate (or in-place refine input) is being shown in the
+  /// chat scroll above. Once the user submits or affirms, the parent
+  /// flips this off and the panel takes over with the normal post-action
+  /// indicators.
+  final bool gateMode;
+
   const ProposingStatePanel({
     super.key,
     required this.roundCustomId,
@@ -317,6 +331,7 @@ class ProposingStatePanel extends StatelessWidget {
     this.showPhaseBar = true,
     this.participationPercent,
     this.animateProgress = false,
+    this.gateMode = false,
   });
 
   @override
@@ -342,21 +357,26 @@ class ProposingStatePanel extends StatelessWidget {
     final newSubmissions = myPropositions.where((p) => !p.isCarriedForward).length;
     final canSubmitMore = newSubmissions < propositionsPerUser;
 
+    // Gate mode: the gate UI (Affirm/Refine buttons) is rendered by the
+    // parent directly under the in-chat winner card. The panel itself
+    // shows only the phase bar so the round + timer stay visible while
+    // the user is making the gate decision.
+    if (gateMode) {
+      // Phase bar is rendered at the top of the screen (under the AppBar).
+      // The panel here renders nothing; the chat scroll holds the action UI.
+      return const SizedBox.shrink(key: Key('proposing-state-panel'));
+    }
+
     return Column(
       key: const Key('proposing-state-panel'),
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Round + phase status bar (flush, no parent padding)
-        if (showPhaseBar)
-          RoundPhaseBar(
-            roundNumber: roundCustomId,
-            isProposing: true,
-            phaseEndsAt: phaseEndsAt,
-            onPhaseExpired: onPhaseExpired,
-            participationPercent: participationPercent,
-            animateProgress: animateProgress,
-          ),
+        // Top divider — separates the input/refine area from the chat
+        // scroll above it. Replaces the old top divider that lived inside
+        // the round-status bar (now moved to the bottom of the screen).
+        Divider(
+            height: 1, thickness: 1, color: Theme.of(context).dividerColor),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -727,6 +747,11 @@ class RatingStatePanel extends StatelessWidget {
   final bool frozenTimer;
   final Duration? frozenTimerDuration;
 
+  /// When true, the panel renders only the phase bar — the rating action
+  /// UI (Start Rating / Skip / Done indicators) lives in the chat scroll
+  /// above instead.
+  final bool compactMode;
+
   const RatingStatePanel({
     super.key,
     required this.roundCustomId,
@@ -752,11 +777,19 @@ class RatingStatePanel extends StatelessWidget {
     this.showInactivePhase = false,
     this.frozenTimer = false,
     this.frozenTimerDuration,
+    this.compactMode = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+
+    // Compact mode: action UI is rendered above in the chat scroll and
+    // the phase bar is rendered at the top of the screen (under the
+    // AppBar). The panel here renders nothing.
+    if (compactMode) {
+      return const SizedBox.shrink(key: Key('rating-state-panel'));
+    }
 
     // Spectator mode: show banner and disable interaction
     if (!isFunded) {
@@ -777,18 +810,10 @@ class RatingStatePanel extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Round + phase status bar (flush, no parent padding)
-        RoundPhaseBar(
-          roundNumber: roundCustomId,
-          isProposing: false,
-          phaseEndsAt: phaseEndsAt,
-          onPhaseExpired: onPhaseExpired,
-          participationPercent: participationPercent,
-          animateProgress: animateProgress,
-          showInactivePhase: showInactivePhase,
-          frozenTimer: frozenTimer,
-          frozenTimerDuration: frozenTimerDuration,
-        ),
+        // Top divider — separates the rating action area from the chat
+        // scroll above it.
+        Divider(
+            height: 1, thickness: 1, color: Theme.of(context).dividerColor),
         Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

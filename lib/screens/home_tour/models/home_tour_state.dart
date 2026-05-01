@@ -9,7 +9,6 @@ enum HomeTourStep {
   pendingRequest,
   createFab,
   languageSelector,
-  tutorialButton,
   menu,
   complete,
 }
@@ -20,7 +19,7 @@ class HomeTourState extends Equatable {
   final int stepIndex;
   final int totalSteps;
 
-  static const int total = 8;
+  static const int total = 7;
 
   const HomeTourState({
     this.currentStep = HomeTourStep.welcomeName,

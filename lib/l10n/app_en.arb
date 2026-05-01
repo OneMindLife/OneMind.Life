@@ -388,6 +388,12 @@
   "chatPausedSuccess": "Chat paused",
   "requestApproved": "Request approved",
   "requestDenied": "Request denied",
+  "failedToApproveRequest": "Failed to approve request: {error}",
+  "@failedToApproveRequest": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
 
   "failedToSubmit": "Failed to submit: {error}",
   "@failedToSubmit": {
@@ -595,6 +601,32 @@
     "placeholders": {
       "remaining": {"type": "int"}
     }
+  },
+
+  "gateAffirm": "Affirm",
+  "gateAlternative": "Alternative",
+  "gateMicrocopy": "Affirm this, or offer an alternative.",
+  "gateBack": "Back",
+  "alternativeMicrocopy": "Send your idea, go back, or skip your turn.",
+  "alternativeMicrocopyNoSkip": "Send your idea, or go back.",
+  "ratingMicrocopy": "Rate the propositions to choose the winner, or skip your turn.",
+  "ratingMicrocopyNoSkip": "Rate the propositions to choose the winner.",
+  "yourProposition": "Your proposition",
+  "waitingForNextPhase": "Waiting for next phase",
+  "@waitingForNextPhase": {
+    "description": "Subtext shown after a participant submits or affirms during the proposing phase. Phase ends when either everyone has acted OR the timer runs out — wording avoids implying a single cause."
+  },
+  "send": "Send",
+  "@send": {
+    "description": "Label on the submit button inside the proposition input card. Used in both R1 inline input and refine mode. Visible label (not just tooltip) so the refine microcopy can reference 'Send your idea' without confusion."
+  },
+  "yourAffirmation": "Your affirmation",
+  "@yourAffirmation": {
+    "description": "Label that replaces 'Round X Winner' on the previous-winner card after the participant affirms it during the proposing phase. Uses the 'Your X' noun pattern to read in parallel with 'Your proposition' on the submitted-prop card."
+  },
+  "participantsRankingExplainer": "Ranked by how each person's ratings and ideas align with the group",
+  "@participantsRankingExplainer": {
+    "description": "Subtext under the Participants header explaining (in plain English, no formula) how the rank order is determined."
   },
 
   "createChatTitle": "Create Chat",

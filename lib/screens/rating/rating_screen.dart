@@ -6,6 +6,7 @@ import '../../models/round.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../../widgets/rating/rating_widget.dart';
+import '../../widgets/rating_help_modal.dart';
 
 /// Provider for grid ranking state - family provider keyed by params
 final ratingProvider = AsyncNotifierProvider.autoDispose
@@ -96,7 +97,6 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
     final success = await notifier.submitRankings(rankings);
 
     if (mounted) {
-      final l10n = AppLocalizations.of(context);
       if (success) {
         // Log analytics event
         final chatState = ref.read(chatDetailProvider(_chatParams)).valueOrNull;
@@ -106,10 +106,10 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
           propositionsRated: rankings.length,
         );
 
-        context.showSuccessSnackBar(l10n.rankedSuccessfully(rankings.length));
         _hasPopped = true; // Prevent double-pop from phase change detection
         Navigator.of(context).pop(true);
       } else {
+        final l10n = AppLocalizations.of(context);
         context.showErrorMessage(l10n.failedToSaveRankings);
       }
     }
@@ -266,6 +266,8 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
             onCounterUpdate: (current, total) {
               ref.read(ratingProvider(_params).notifier).updatePlacing(current, total);
             },
+            showHelpButton: true,
+            onHelpPressed: (phase) => RatingHelpModal.show(context, phase),
           ),
           loading: () => Center(
             child: CircularProgressIndicator(

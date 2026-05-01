@@ -1125,7 +1125,8 @@ class _TutorialScreenState extends ConsumerState<TutorialScreen>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(l10n.tutorialDuplicateProposition),
-          backgroundColor: Colors.orange,
+          backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+          behavior: SnackBarBehavior.floating,
         ),
       );
       return;

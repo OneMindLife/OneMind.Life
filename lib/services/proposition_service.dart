@@ -491,13 +491,21 @@ class PropositionService {
     return (response as List).isNotEmpty;
   }
 
-  /// Cap for rating "done" — matches the DB trigger constant.
-  static const int ratingDoneCap = 10;
+  /// Maximum ratings per user before they're flagged "done."
+  ///
+  /// Sized for: working memory (Miller 7±2 — ranking quality drops sharply
+  /// past ~7 items as users can no longer hold the relative ordering in
+  /// head); the grid UI (~6–7 cards visible without forced compression on
+  /// phone); and statistical signal (7 ratings/prop yields a stable score
+  /// in MOVDA aggregation). Must match the DB trigger constant `v_cap`
+  /// in check_early_advance_on_rating(_skip).
+  static const int kMaxRatingsPerUser = 7;
 
   /// Get all participant IDs who have completed rating for a round.
   ///
-  /// A participant is "done" when they have rated min(10, non-self props)
-  /// propositions (matching the DB early advance trigger logic).
+  /// A participant is "done" when they have rated
+  /// `min(kMaxRatingsPerUser, non-self props)` propositions (matching the
+  /// DB early advance trigger logic).
   Future<Set<int>> getParticipantsWhoRated(int roundId) async {
     // Get all propositions for this round with their participant_id (author)
     final propositions = await _client
@@ -537,7 +545,7 @@ class PropositionService {
       final rated = entry.value;
       final ownProps = authoredCount[pid] ?? 0;
       final nonSelfProps = totalProps - ownProps;
-      final required = nonSelfProps < ratingDoneCap ? nonSelfProps : ratingDoneCap;
+      final required = nonSelfProps < kMaxRatingsPerUser ? nonSelfProps : kMaxRatingsPerUser;
       if (required > 0 && rated >= required) {
         done.add(pid);
       }
@@ -938,13 +946,19 @@ class PropositionService {
 
   /// Skip rating with cleanup — deletes any intermediate grid_rankings first.
   /// Used when skipping from inside the rating screen.
+  ///
+  /// Optional [correlationId] threads the caller's perf-log correlation
+  /// into the DB function so its start/end log_perf rows share the ID
+  /// with Flutter-side rows.
   Future<void> skipRatingWithCleanup({
     required int roundId,
     required int participantId,
+    String? correlationId,
   }) async {
     await _client.rpc('skip_rating_with_cleanup', params: {
       'p_round_id': roundId,
       'p_participant_id': participantId,
+      if (correlationId != null) 'p_correlation_id': correlationId,
     });
   }
 

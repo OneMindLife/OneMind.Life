@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../widgets/error_view.dart';
+
 /// A widget for managing email invites in invite-only mode.
 class EmailInviteSection extends StatefulWidget {
   final List<String> emails;
@@ -31,16 +33,12 @@ class _EmailInviteSectionState extends State<EmailInviteSection> {
     // Basic email validation
     final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
     if (!emailRegex.hasMatch(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid email address')),
-      );
+      context.showErrorMessage('Please enter a valid email address');
       return;
     }
 
     if (widget.emails.contains(email)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Email already added')),
-      );
+      context.showInfoSnackBar('Email already added');
       return;
     }
 

@@ -66,6 +66,12 @@ final propositionServiceProvider = Provider<PropositionService>((ref) {
   return PropositionService(client);
 });
 
+/// Affirmation service provider
+final affirmationServiceProvider = Provider<AffirmationService>((ref) {
+  final client = ref.watch(supabaseProvider);
+  return AffirmationService(client);
+});
+
 /// Analytics service provider
 final analyticsServiceProvider = Provider<AnalyticsService>((ref) {
   return AnalyticsService();

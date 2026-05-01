@@ -627,7 +627,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get previousWinner => 'Current Top Candidate';
 
   @override
-  String get yourProposition => 'Your Proposition';
+  String get yourProposition => 'Your proposition';
 
   @override
   String get yourPropositions => 'Your Propositions';
@@ -718,6 +718,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get requestDenied => 'Request denied';
+
+  @override
+  String failedToApproveRequest(String error) {
+    return 'Failed to approve request: $error';
+  }
 
   @override
   String failedToSubmit(String error) {
@@ -1025,6 +1030,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String skipsRemaining(int remaining) {
     return '$remaining skips remaining';
   }
+
+  @override
+  String get gateAffirm => 'Affirm';
+
+  @override
+  String get gateAlternative => 'Alternative';
+
+  @override
+  String get gateMicrocopy => 'Affirm this, or offer an alternative.';
+
+  @override
+  String get gateBack => 'Back';
+
+  @override
+  String get alternativeMicrocopy =>
+      'Send your idea, go back, or skip your turn.';
+
+  @override
+  String get alternativeMicrocopyNoSkip => 'Send your idea, or go back.';
+
+  @override
+  String get ratingMicrocopy =>
+      'Rate the propositions to choose the winner, or skip your turn.';
+
+  @override
+  String get ratingMicrocopyNoSkip =>
+      'Rate the propositions to choose the winner.';
+
+  @override
+  String get waitingForNextPhase => 'Waiting for next phase';
+
+  @override
+  String get send => 'Send';
+
+  @override
+  String get yourAffirmation => 'Your affirmation';
+
+  @override
+  String get participantsRankingExplainer =>
+      'Ranked by how each person\'s ratings and ideas align with the group';
 
   @override
   String get createChatTitle => 'Create Chat';

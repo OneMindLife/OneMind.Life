@@ -1199,7 +1199,7 @@ abstract class AppLocalizations {
   /// No description provided for @yourProposition.
   ///
   /// In en, this message translates to:
-  /// **'Your Proposition'**
+  /// **'Your proposition'**
   String get yourProposition;
 
   /// No description provided for @yourPropositions.
@@ -1375,6 +1375,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Request denied'**
   String get requestDenied;
+
+  /// No description provided for @failedToApproveRequest.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to approve request: {error}'**
+  String failedToApproveRequest(String error);
 
   /// No description provided for @failedToSubmit.
   ///
@@ -1885,6 +1891,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{remaining} skips remaining'**
   String skipsRemaining(int remaining);
+
+  /// No description provided for @gateAffirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Affirm'**
+  String get gateAffirm;
+
+  /// No description provided for @gateAlternative.
+  ///
+  /// In en, this message translates to:
+  /// **'Alternative'**
+  String get gateAlternative;
+
+  /// No description provided for @gateMicrocopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Affirm this, or offer an alternative.'**
+  String get gateMicrocopy;
+
+  /// No description provided for @gateBack.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get gateBack;
+
+  /// No description provided for @alternativeMicrocopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your idea, go back, or skip your turn.'**
+  String get alternativeMicrocopy;
+
+  /// No description provided for @alternativeMicrocopyNoSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Send your idea, or go back.'**
+  String get alternativeMicrocopyNoSkip;
+
+  /// No description provided for @ratingMicrocopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the propositions to choose the winner, or skip your turn.'**
+  String get ratingMicrocopy;
+
+  /// No description provided for @ratingMicrocopyNoSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate the propositions to choose the winner.'**
+  String get ratingMicrocopyNoSkip;
+
+  /// Subtext shown after a participant submits or affirms during the proposing phase. Phase ends when either everyone has acted OR the timer runs out — wording avoids implying a single cause.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for next phase'**
+  String get waitingForNextPhase;
+
+  /// Label on the submit button inside the proposition input card. Used in both R1 inline input and refine mode. Visible label (not just tooltip) so the refine microcopy can reference 'Send your idea' without confusion.
+  ///
+  /// In en, this message translates to:
+  /// **'Send'**
+  String get send;
+
+  /// Label that replaces 'Round X Winner' on the previous-winner card after the participant affirms it during the proposing phase. Uses the 'Your X' noun pattern to read in parallel with 'Your proposition' on the submitted-prop card.
+  ///
+  /// In en, this message translates to:
+  /// **'Your affirmation'**
+  String get yourAffirmation;
+
+  /// Subtext under the Participants header explaining (in plain English, no formula) how the rank order is determined.
+  ///
+  /// In en, this message translates to:
+  /// **'Ranked by how each person\'s ratings and ideas align with the group'**
+  String get participantsRankingExplainer;
 
   /// No description provided for @createChatTitle.
   ///

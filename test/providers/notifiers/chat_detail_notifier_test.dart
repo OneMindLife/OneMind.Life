@@ -693,6 +693,100 @@ void main() {
       expect(state.canSkipRating, true);
     });
 
+    // Regression: canSkipRating used to gate on myCurrentRoundRatingCount==0,
+    // which made the Skip button disappear (and the notifier throw) the
+    // moment a user placed any binary card. The cleanup path
+    // (skipRatingWithCleanup) was supposed to handle exactly this case but
+    // was unreachable behind the gate.
+    test('canSkipRating stays true when user has partial grid placements',
+        () {
+      final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+      final participants = [
+        ParticipantFixtures.model(id: 1),
+        ParticipantFixtures.model(id: 2),
+        ParticipantFixtures.model(id: 3),
+      ];
+      final state = ChatDetailState(
+        chat: chat,
+        participants: participants,
+        hasStartedRating: true,
+        hasSkippedRating: false,
+        ratingSkipCount: 0,
+        // Two binary placements written to grid_rankings — caller has
+        // started rating but isn't done. Skip must still be available.
+        myCurrentRoundRatingCount: 2,
+      );
+
+      expect(state.canSkipRating, true,
+          reason: 'mid-rating skip relies on the cleanup RPC; the gate '
+              "must let the button show so the user isn't stranded");
+    });
+  });
+
+  // The skip-rating routing decision is extracted as a pure function so
+  // the gate matrix can be tested without instantiating the whole
+  // notifier (whose constructor immediately calls _loadData and needs a
+  // full ProviderContainer + service mocks). The bug we fixed in 2d5e3cd
+  // was a routing-gate misalignment; these tests lock the gate matrix in.
+  group('decideSkipRatingRoute', () {
+    Chat chatAllowingSkip() =>
+        Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
+    final participants = [
+      ParticipantFixtures.model(id: 1),
+      ParticipantFixtures.model(id: 2),
+      ParticipantFixtures.model(id: 3),
+    ];
+
+    test('reject when chat disallows skip rating', () {
+      final chat = Chat.fromJson(
+          ChatFixtures.json(ratingMinimum: 2, allowSkipRating: false));
+      final state = ChatDetailState(chat: chat, participants: participants);
+      expect(decideSkipRatingRoute(state), SkipRatingRoute.reject);
+    });
+
+    test('reject when already skipped', () {
+      final state = ChatDetailState(
+        chat: chatAllowingSkip(),
+        participants: participants,
+        hasSkippedRating: true,
+      );
+      expect(decideSkipRatingRoute(state), SkipRatingRoute.reject);
+    });
+
+    test('reject when already rated (completed)', () {
+      final state = ChatDetailState(
+        chat: chatAllowingSkip(),
+        participants: participants,
+        hasRated: true,
+      );
+      expect(decideSkipRatingRoute(state), SkipRatingRoute.reject);
+    });
+
+    test('direct when no rating activity yet', () {
+      final state = ChatDetailState(
+        chat: chatAllowingSkip(),
+        participants: participants,
+        hasStartedRating: false,
+        myCurrentRoundRatingCount: 0,
+      );
+      expect(decideSkipRatingRoute(state), SkipRatingRoute.direct);
+    });
+
+    // The bug: this case used to return reject because canSkipRating
+    // gated on myCurrentRoundRatingCount==0. Now it correctly routes
+    // to cleanup so the RPC wipes the partial grid_rankings.
+    test('cleanup when user has started rating mid-round', () {
+      final state = ChatDetailState(
+        chat: chatAllowingSkip(),
+        participants: participants,
+        hasStartedRating: true,
+        myCurrentRoundRatingCount: 2,
+      );
+      expect(decideSkipRatingRoute(state), SkipRatingRoute.cleanup,
+          reason: 'partial placements must route through cleanup; '
+              'previously this returned reject which stranded the user');
+    });
+
     test('canSkipRating is false when already skipped', () {
       final chat = Chat.fromJson(ChatFixtures.json(ratingMinimum: 2));
       final participants = [

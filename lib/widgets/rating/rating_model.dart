@@ -1,5 +1,41 @@
 import 'package:flutter/material.dart';
 
+/// Tolerance values used to decide when two propositions occupy the
+/// "same" position on the rating grid (and should therefore be grouped
+/// into a single [PositionStack]).
+///
+/// Three different tolerances apply in different contexts:
+///
+/// - [displayBucket] = 1.0 — used in **read-only results mode** (when the
+///   model is built via [RatingModel.fromResults]). The grid is
+///   conceptually 0–100 integer slots; near-tied propositions whose
+///   ratings differ by less than 1 point should appear as a single
+///   stacked card with cycle arrows, not two cards painted on top of
+///   each other.
+///
+/// - [dragNormal] = 0.1 — used during **live drag** at normal positions.
+///   Fine snap so the user can manipulate cards at sub-integer precision
+///   without unintended stack joining.
+///
+/// - [dragCompress] = 0.5 — used during **live drag** when the virtual
+///   position has crossed 0 or 100 (compression / expansion). Wider
+///   tolerance so cards being pushed off the boundary share a stack
+///   reliably.
+///
+/// - [spreadAfterExpand] = 0.5 — separate concern. After an expansion
+///   spreads cards back across the grid, this tolerance is used to
+///   detect cards that landed on top of each other so they can be
+///   nudged apart. Same numeric value as [dragCompress] but a distinct
+///   semantic.
+class RatingStackTolerance {
+  const RatingStackTolerance._();
+
+  static const double displayBucket = 1.0;
+  static const double dragNormal = 0.1;
+  static const double dragCompress = 0.5;
+  static const double spreadAfterExpand = 0.5;
+}
+
 /// Represents the different phases of the ranking process
 enum RatingPhase {
   binary, // Initial comparison of two messages
@@ -125,6 +161,33 @@ class RatingModel extends ChangeNotifier {
   /// Whether resuming from saved rankings (propositions include 'position' field)
   final bool isResuming;
 
+  /// True when this model was constructed via [RatingModel.fromResults]
+  /// for read-only display of completed round results. Switches stack
+  /// detection to the wider [RatingStackTolerance.displayBucket] (1.0)
+  /// so near-tied propositions group into a single stacked card.
+  bool _resultsMode = false;
+
+  /// True iff this model is in read-only results-display mode.
+  bool get isResultsMode => _resultsMode;
+
+  /// Returns the stack-detection tolerance appropriate for the current
+  /// mode + virtual position. See [RatingStackTolerance] for the three
+  /// values and their rationales.
+  ///
+  /// Made `@visibleForTesting` so test code can assert the current
+  /// tolerance directly.
+  @visibleForTesting
+  double get currentStackTolerance {
+    if (_resultsMode) return RatingStackTolerance.displayBucket;
+    final isCompressing = _virtualPosition > 100 || _virtualPosition < 0;
+    return isCompressing
+        ? RatingStackTolerance.dragCompress
+        : RatingStackTolerance.dragNormal;
+  }
+
+  /// Internal alias preserved for clarity at call sites.
+  double get _currentStackTolerance => currentStackTolerance;
+
   RatingModel(
     List<Map<String, dynamic>> propositions, {
     this.onPlacementConfirmed,
@@ -148,6 +211,7 @@ class RatingModel extends ChangeNotifier {
   /// The finalRating (0-100) is mapped directly to position (0-100).
   factory RatingModel.fromResults(List<Map<String, dynamic>> propositions) {
     final model = RatingModel._forResults();
+    model._resultsMode = true;
 
     for (final prop in propositions) {
       final id = prop['id'].toString();
@@ -1102,7 +1166,7 @@ class RatingModel extends ChangeNotifier {
   /// After expansion, spread any cards that ended up at the same position
   void _spreadDuplicatePositions() {
     // Group cards by position (with tolerance)
-    const tolerance = 0.5;
+    const tolerance = RatingStackTolerance.spreadAfterExpand;
     final positionGroups = <double, List<int>>{};
 
     for (int i = 0; i < _rankedPropositions.length; i++) {
@@ -1154,8 +1218,7 @@ class RatingModel extends ChangeNotifier {
     final oldStacks = Map<double, PositionStack>.from(_positionStacks);
     _positionStacks.clear();
 
-    final isCompressing = _virtualPosition > 100 || _virtualPosition < 0;
-    final tolerance = isCompressing ? 0.5 : 0.1;
+    final tolerance = _currentStackTolerance;
 
     final positionGroups = <double, List<RatingProposition>>{};
 
@@ -1214,6 +1277,15 @@ class RatingModel extends ChangeNotifier {
           preservedDefaultId = null;
         } else if (oldStack != null && allCardIds.contains(oldStack.defaultCardId)) {
           defaultCardId = oldStack.defaultCardId;
+        } else if (_resultsMode) {
+          // Read-only results: the default card is the actual round
+          // winner (highest position = highest rating). This guarantees
+          // the visible card in a near-tie stack matches what the
+          // convergence trigger picked, instead of being whichever
+          // happened to be inserted last.
+          final sortedByPosition = List<RatingProposition>.from(entry.value)
+            ..sort((a, b) => b.position.compareTo(a.position));
+          defaultCardId = sortedByPosition.first.id;
         } else {
           final sortedByPlacement = List<RatingProposition>.from(entry.value)
             ..sort((a, b) => b.placementOrder.compareTo(a.placementOrder));
@@ -1231,7 +1303,7 @@ class RatingModel extends ChangeNotifier {
   }
 
   PositionStack? getStackAtPosition(double position) {
-    const tolerance = 0.1;
+    final tolerance = _currentStackTolerance;
     for (var entry in _positionStacks.entries) {
       if ((position - entry.key).abs() < tolerance) {
         return entry.value;
@@ -1241,7 +1313,7 @@ class RatingModel extends ChangeNotifier {
   }
 
   void cycleStackCard(double position, String currentCardId) {
-    final tolerance = (_virtualPosition > 100 || _virtualPosition < 0) ? 0.5 : 0.1;
+    final tolerance = _currentStackTolerance;
 
     PositionStack? stack;
     double? stackPosition;

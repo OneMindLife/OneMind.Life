@@ -48,6 +48,16 @@ class RoundPhaseBar extends StatelessWidget {
   /// host_paused and phaseEndsAt has been cleared.
   final bool isPaused;
 
+  /// When false, the bottom divider is omitted. Useful when the bar sits
+  /// flush against the bottom edge of the screen and a trailing rule
+  /// would just float above empty space.
+  final bool showBottomDivider;
+
+  /// When false, the top divider is omitted. Useful when the bar sits
+  /// directly under an AppBar so a leading rule would just stack against
+  /// the AppBar's bottom edge.
+  final bool showTopDivider;
+
   const RoundPhaseBar({
     super.key,
     required this.roundNumber,
@@ -67,6 +77,8 @@ class RoundPhaseBar extends StatelessWidget {
     this.reserveSpace = false,
     this.reservePhaseEndsAt,
     this.isPaused = false,
+    this.showBottomDivider = true,
+    this.showTopDivider = true,
   });
 
   @override
@@ -79,7 +91,7 @@ class RoundPhaseBar extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (barVisible)
+        if (barVisible && showTopDivider)
           Divider(height: 1, thickness: 1, color: theme.dividerColor),
         AnimatedSize(
           duration: const Duration(milliseconds: 300),
@@ -254,7 +266,7 @@ class RoundPhaseBar extends StatelessWidget {
           ),
         ),
         ),
-        if (barVisible)
+        if (barVisible && showBottomDivider)
           Divider(height: 1, thickness: 1, color: theme.dividerColor),
       ],
     );

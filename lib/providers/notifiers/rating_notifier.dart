@@ -4,6 +4,7 @@ import '../../core/l10n/locale_provider.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../services/proposition_service.dart';
+import '../../utils/perf_logger.dart';
 
 /// State for grid ranking screen
 class RatingState extends Equatable {
@@ -128,13 +129,21 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
       excludeIds: fetchedIds.toList(),
     );
 
-    // If all propositions are ranked, mark as complete
-    final isComplete = remainingCount == 0;
+    // Cap-aware "done" — at kMaxRatingsPerUser placements, we stop fetching
+    // even if more propositions remain (resume case for users who hit cap
+    // before leaving). Otherwise users in big chats would face a long tail
+    // of "ghost" ratings the system doesn't need from them.
+    final cap = PropositionService.kMaxRatingsPerUser;
+    final reachedCap = savedRankings.length >= cap;
+    final isComplete = remainingCount == 0 || reachedCap;
+    final cappedTotalKnown = reachedCap
+        ? savedRankings.length
+        : (savedRankings.length + remainingCount).clamp(0, cap);
 
     return RatingState(
       propositions: savedRankings,
       fetchedIds: fetchedIds,
-      totalKnown: savedRankings.length + remainingCount,
+      totalKnown: cappedTotalKnown,
       currentPlacing: savedRankings.length,
       isComplete: isComplete,
       isResuming: true,
@@ -166,6 +175,13 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
       excludeIds: fetchedIds.toList(),
     );
 
+    // Display-side cap on totalKnown so the progress chip ("3 / 7") shows
+    // the soft target instead of the full prop count. fetchNextProposition
+    // enforces the hard cap on actual fetches.
+    final cap = PropositionService.kMaxRatingsPerUser;
+    final cappedTotalKnown =
+        (propositions.length + remainingCount).clamp(0, cap);
+
     return RatingState(
       propositions: propositions
           .map((p) => {
@@ -174,15 +190,26 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
               })
           .toList(),
       fetchedIds: fetchedIds,
-      totalKnown: propositions.length + remainingCount,
+      totalKnown: cappedTotalKnown,
       isResuming: false,
     );
   }
 
-  /// Fetch the next proposition for ranking
+  /// Fetch the next proposition for ranking. Returns null at the cap so
+  /// the rating widget triggers its `setNoMorePropositions` → auto-submit
+  /// path. The cap prevents users in large chats from rating a long tail
+  /// of "ghost" propositions whose ratings the system doesn't need.
   Future<Proposition?> fetchNextProposition() async {
     final currentState = state.valueOrNull;
     if (currentState == null || currentState.isFetchingNext) return null;
+
+    // Hard cap: once user has placed [kMaxRatingsPerUser] ratings, treat
+    // the round as complete from their perspective even if more
+    // propositions remain.
+    if (currentState.fetchedIds.length >= PropositionService.kMaxRatingsPerUser) {
+      state = AsyncData(currentState.copyWith(isComplete: true));
+      return null;
+    }
 
     state = AsyncData(currentState.copyWith(isFetchingNext: true));
 
@@ -230,14 +257,25 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
 
   /// Submit final rankings
   Future<bool> submitRankings(Map<String, double> rankings) async {
+    final corr = PerfLogger.start(
+      'submit_rankings',
+      roundId: _roundId,
+      payload: {'rankings_count': rankings.length},
+    );
     try {
       await _propositionService.submitGridRankings(
         roundId: _roundId,
         rankings: rankings,
         participantId: _participantId,
       );
+      PerfLogger.end(corr,
+          action: 'submit_rankings', roundId: _roundId);
       return true;
-    } catch (e) {
+    } catch (e, st) {
+      PerfLogger.error(corr, e,
+          action: 'submit_rankings',
+          roundId: _roundId,
+          stackTrace: st);
       return false;
     }
   }

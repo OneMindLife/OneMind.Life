@@ -256,9 +256,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             onPressed: () {
               Navigator.pop(dialogContext);
               ref.read(myChatsProvider.notifier).cancelRequest(request.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(l10n.requestCancelled)),
-              );
+              context.showInfoSnackBar(l10n.requestCancelled);
             },
             child: Text(l10n.yesCancel),
           ),
@@ -296,12 +294,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 mode: LaunchMode.externalApplication,
               );
             },
-          ),
-          IconButton(
-            key: const Key('tutorial-button'),
-            icon: const Icon(Icons.help_outline),
-            tooltip: l10n.howItWorks,
-            onPressed: () => context.push('/tutorial?skipIntro=true'),
           ),
           PopupMenuButton<String>(
             key: const Key('overflow-menu'),

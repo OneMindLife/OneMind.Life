@@ -6,7 +6,7 @@
 -- grid_rankings rows — each trigger sees only its own transaction's rows.
 --
 -- Uses per-proposition model: advance when min(ratings per prop) >= threshold.
--- With 6 participants, 1 skip: active_raters=5, threshold=min(10,max(4,1))=4.
+-- With 6 participants, 1 skip: active_raters=5, threshold=min(7,max(4,1))=4.
 -- 3 propositions, each can get max 4 ratings (5 raters - 1 author).
 --
 -- Related tests:

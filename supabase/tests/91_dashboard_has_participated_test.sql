@@ -17,7 +17,7 @@
 
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(16);
+SELECT plan(18);
 
 -- =============================================================================
 -- Setup: Users
@@ -586,6 +586,95 @@ SELECT isnt(
    ) WHERE name = 'HP Chat E (rating, not submitted)'),
   NULL,
   'has_participated returns non-NULL even when Alice placed nothing'
+);
+
+-- =============================================================================
+-- Chat L: proposing phase, R2+ scenario where Alice has AFFIRMED the carried
+-- winner (and submitted nothing of her own). This is the bug we just fixed —
+-- the dashboard previously only looked at propositions + round_skips and
+-- ignored affirmations, so the chat stayed in the home screen's "Up Next"
+-- pile even though Alice had taken her action. Expect has_participated=TRUE.
+-- =============================================================================
+INSERT INTO chats (name, initial_message, access_method, creator_id, start_mode,
+                   proposing_threshold_count, proposing_threshold_percent,
+                   rating_threshold_count, rating_threshold_percent)
+VALUES ('HP Chat L (proposing, affirmed)', 'Q', 'public',
+        '00000000-0000-0000-0000-000000000b01', 'manual', NULL, NULL, NULL, NULL);
+
+INSERT INTO participants (chat_id, user_id, display_name, status) VALUES
+  ((SELECT id FROM chats WHERE name = 'HP Chat L (proposing, affirmed)'),
+   '00000000-0000-0000-0000-000000000b01', 'Alice', 'active');
+
+INSERT INTO cycles (chat_id) VALUES
+  ((SELECT id FROM chats WHERE name = 'HP Chat L (proposing, affirmed)'));
+INSERT INTO rounds (cycle_id, custom_id, phase, phase_started_at) VALUES
+  ((SELECT id FROM cycles WHERE chat_id =
+      (SELECT id FROM chats WHERE name = 'HP Chat L (proposing, affirmed)')
+      AND completed_at IS NULL),
+   2, 'proposing', now());
+
+INSERT INTO affirmations (round_id, participant_id, user_id) VALUES
+  ((SELECT r.id FROM rounds r JOIN cycles cy ON cy.id = r.cycle_id
+     WHERE cy.chat_id =
+       (SELECT id FROM chats WHERE name = 'HP Chat L (proposing, affirmed)')
+       AND r.completed_at IS NULL),
+   (SELECT p.id FROM participants p WHERE p.chat_id =
+       (SELECT id FROM chats WHERE name = 'HP Chat L (proposing, affirmed)')
+       AND p.user_id = '00000000-0000-0000-0000-000000000b01'),
+   '00000000-0000-0000-0000-000000000b01');
+
+-- 17: affirmed-only proposing -> TRUE (regression guard for the home-screen
+--     bug where affirm chats stayed in the "Up Next" feeder)
+SELECT is(
+  (SELECT has_participated FROM get_my_chats_dashboard(
+     '00000000-0000-0000-0000-000000000b01', 'en'
+   ) WHERE name = 'HP Chat L (proposing, affirmed)'),
+  TRUE,
+  'has_participated = TRUE when user only affirmed during proposing'
+);
+
+-- =============================================================================
+-- Chat M: same as L, but with TWO participants — Alice affirmed, Bob has
+-- done nothing. Confirms affirmation is evaluated per-participant and that
+-- Bob isn't pulled along by Alice's affirmation.
+-- =============================================================================
+INSERT INTO chats (name, initial_message, access_method, creator_id, start_mode,
+                   proposing_threshold_count, proposing_threshold_percent,
+                   rating_threshold_count, rating_threshold_percent)
+VALUES ('HP Chat M (affirm per-user)', 'Q', 'public',
+        '00000000-0000-0000-0000-000000000b01', 'manual', NULL, NULL, NULL, NULL);
+
+INSERT INTO participants (chat_id, user_id, display_name, status) VALUES
+  ((SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)'),
+   '00000000-0000-0000-0000-000000000b01', 'Alice', 'active'),
+  ((SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)'),
+   '00000000-0000-0000-0000-000000000b02', 'Bob',   'active');
+
+INSERT INTO cycles (chat_id) VALUES
+  ((SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)'));
+INSERT INTO rounds (cycle_id, custom_id, phase, phase_started_at) VALUES
+  ((SELECT id FROM cycles WHERE chat_id =
+      (SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)')
+      AND completed_at IS NULL),
+   2, 'proposing', now());
+
+INSERT INTO affirmations (round_id, participant_id, user_id) VALUES
+  ((SELECT r.id FROM rounds r JOIN cycles cy ON cy.id = r.cycle_id
+     WHERE cy.chat_id =
+       (SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)')
+       AND r.completed_at IS NULL),
+   (SELECT p.id FROM participants p WHERE p.chat_id =
+       (SELECT id FROM chats WHERE name = 'HP Chat M (affirm per-user)')
+       AND p.user_id = '00000000-0000-0000-0000-000000000b01'),
+   '00000000-0000-0000-0000-000000000b01');
+
+-- 18: Bob (no affirmation) is still FALSE in the same chat
+SELECT is(
+  (SELECT has_participated FROM get_my_chats_dashboard(
+     '00000000-0000-0000-0000-000000000b02', 'en'
+   ) WHERE name = 'HP Chat M (affirm per-user)'),
+  FALSE,
+  'Bob is FALSE when only Alice affirmed (per-user affirmation check)'
 );
 
 SELECT * FROM finish();

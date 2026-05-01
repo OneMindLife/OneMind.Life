@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Answering questions about runtime behavior
+
+When asked how something behaves at runtime — what a trigger does on expiry, what a cron job extends, what an RPC checks, what a state machine transitions to, etc. — **read the source before answering**. Don't reason from priors and don't claim "no, it doesn't do X" without grepping for it.
+
+The high-stakes places where this has burned past sessions:
+- `supabase/functions/process-timers/index.ts` — phase expiry behavior (advance vs extend, minimum checks, cron cadence)
+- `supabase/migrations/*` — RLS policies, RPC bodies, trigger functions, advance logic
+- `lib/providers/notifiers/*` — state-derivation rules (e.g. `canSkipRating`, `canSkip`, `hasParticipated`)
+
+A 30-second grep beats an uninformed answer. If the user pushes back on something runtime-ish, default to "let me check" and pull up the actual code.
+
 ## Build & Test Commands
 
 ```bash

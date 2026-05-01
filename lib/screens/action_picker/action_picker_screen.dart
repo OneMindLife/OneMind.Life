@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../providers/chat_providers.dart';
 import '../../providers/providers.dart';
 import '../../services/active_audio.dart';
+import '../../widgets/error_view.dart';
 import '../chat/chat_screen.dart';
 import '../create/create_chat_wizard.dart';
 import '../join/join_dialog.dart';
@@ -200,9 +201,7 @@ class _JoinMethodScreen extends ConsumerWidget {
       );
     } else {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.invalidQrCode)),
-      );
+      context.showInfoSnackBar(l10n.invalidQrCode);
     }
   }
 }

@@ -19,6 +19,16 @@ on:
         default: false
         type: boolean
 
+# Only one Deploy run per branch at a time. Any in-flight run gets
+# cancelled the moment a newer push arrives, so:
+#   • 3 commits pushed together → only the latest finishes
+#   • push, wait 1 min, push again → 1st run is cancelled mid-build
+#   • push race conditions resolve to "last writer wins"
+# Group key is workflow + ref so different branches don't fight.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
   SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}

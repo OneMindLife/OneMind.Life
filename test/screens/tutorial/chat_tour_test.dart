@@ -127,13 +127,18 @@ void main() {
       await tester.pumpApp(
         TutorialScreen(skipIntro: true, onComplete: () {}),
       );
+      // tutorial_screen.dart's initState fires a Future.delayed(300ms) +
+      // a follow-up Future.delayed(400ms) for fade-in setup. pumpAndSettle
+      // doesn't always drain those before the test ends, leaving timers
+      // pending at teardown. Advance fake time past them explicitly.
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Skip chat tour via notifier
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TutorialScreen)),
       );
       container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       expect(find.byType(TextField), findsOneWidget);
@@ -143,13 +148,14 @@ void main() {
       await tester.pumpApp(
         TutorialScreen(skipIntro: true, onComplete: () {}),
       );
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
-      // Skip to proposing to check icon
       final container = ProviderScope.containerOf(
         tester.element(find.byType(TutorialScreen)),
       );
       container.read(tutorialChatNotifierProvider.notifier).skipChatTour();
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.leaderboard), findsOneWidget);

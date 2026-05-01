@@ -7,9 +7,11 @@ import '../../core/l10n/language_service.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../models/chat_credits.dart';
 import '../../models/models.dart';
+import '../../services/affirmation_service.dart';
 import '../../services/chat_service.dart';
 import '../../services/participant_service.dart';
 import '../../services/proposition_service.dart';
+import '../../utils/perf_logger.dart';
 import '../mixins/language_aware_mixin.dart';
 import '../providers.dart';
 
@@ -38,12 +40,19 @@ class ChatDetailState extends Equatable {
   // Skip rating state
   final int ratingSkipCount;
   final bool hasSkippedRating;
+  // Affirmation state for the current proposing round (R2+ "I support
+  // the carried-forward winner" action). Counts toward participation %
+  // alongside submitters and skippers.
+  final int affirmationCount;
+  final bool hasAffirmed;
   // Participants who have submitted ratings in the current round
   final Set<int> participantsWhoRated;
   // Participants who have skipped proposing in the current round
   final Set<int> participantsWhoSkippedProposing;
   // Participants who have skipped rating in the current round
   final Set<int> participantsWhoSkippedRating;
+  // Participants who have affirmed in the current proposing round.
+  final Set<int> participantsWhoAffirmed;
   // Minimum rating count across all propositions (for per-proposition progress bar)
   final int minRatingsPerProp;
   // Number of grid_rankings rows the current user has in the current round.
@@ -90,9 +99,12 @@ class ChatDetailState extends Equatable {
     this.hasSkipped = false,
     this.ratingSkipCount = 0,
     this.hasSkippedRating = false,
+    this.affirmationCount = 0,
+    this.hasAffirmed = false,
     this.participantsWhoRated = const {},
     this.participantsWhoSkippedProposing = const {},
     this.participantsWhoSkippedRating = const {},
+    this.participantsWhoAffirmed = const {},
     this.minRatingsPerProp = 0,
     this.myCurrentRoundRatingCount = 0,
     this.chatCredits,
@@ -161,8 +173,14 @@ class ChatDetailState extends Equatable {
     if (chat?.allowSkipRating != true) return false;
     return !hasSkippedRating &&
         !hasRated &&
-        ratingSkipCount < maxRatingSkips &&
-        myCurrentRoundRatingCount == 0;
+        ratingSkipCount < maxRatingSkips;
+    // myCurrentRoundRatingCount intentionally NOT gated: a user mid-rating
+    // (e.g. binary placed but not yet positioning) must still be able to
+    // skip. skipRating() routes to skipRatingWithCleanup() which deletes
+    // intermediate grid_rankings before inserting the skip row, so the
+    // partial state gets wiped atomically. Gating the button here would
+    // strand them — Skip disappears the moment they place anything, but
+    // the chat screen still flags them as "in progress" so they're stuck.
   }
 
   ChatDetailState copyWith({
@@ -187,9 +205,12 @@ class ChatDetailState extends Equatable {
     bool? hasSkipped,
     int? ratingSkipCount,
     bool? hasSkippedRating,
+    int? affirmationCount,
+    bool? hasAffirmed,
     Set<int>? participantsWhoRated,
     Set<int>? participantsWhoSkippedProposing,
     Set<int>? participantsWhoSkippedRating,
+    Set<int>? participantsWhoAffirmed,
     int? minRatingsPerProp,
     int? myCurrentRoundRatingCount,
     ChatCredits? chatCredits,
@@ -221,9 +242,12 @@ class ChatDetailState extends Equatable {
       hasSkipped: hasSkipped ?? this.hasSkipped,
       ratingSkipCount: ratingSkipCount ?? this.ratingSkipCount,
       hasSkippedRating: hasSkippedRating ?? this.hasSkippedRating,
+      affirmationCount: affirmationCount ?? this.affirmationCount,
+      hasAffirmed: hasAffirmed ?? this.hasAffirmed,
       participantsWhoRated: participantsWhoRated ?? this.participantsWhoRated,
       participantsWhoSkippedProposing: participantsWhoSkippedProposing ?? this.participantsWhoSkippedProposing,
       participantsWhoSkippedRating: participantsWhoSkippedRating ?? this.participantsWhoSkippedRating,
+      participantsWhoAffirmed: participantsWhoAffirmed ?? this.participantsWhoAffirmed,
       minRatingsPerProp: minRatingsPerProp ?? this.minRatingsPerProp,
       myCurrentRoundRatingCount:
           myCurrentRoundRatingCount ?? this.myCurrentRoundRatingCount,
@@ -259,9 +283,12 @@ class ChatDetailState extends Equatable {
         hasSkipped,
         ratingSkipCount,
         hasSkippedRating,
+        affirmationCount,
+        hasAffirmed,
         participantsWhoRated,
         participantsWhoSkippedProposing,
         participantsWhoSkippedRating,
+        participantsWhoAffirmed,
         minRatingsPerProp,
         myCurrentRoundRatingCount,
         chatCredits,
@@ -287,6 +314,33 @@ class ChatDetailParams extends Equatable {
   List<Object?> get props => [chatId, showPreviousResults];
 }
 
+/// Routing decision for the rating-skip action.
+///
+///   reject  — caller is in a state where skip isn't allowed (already
+///             rated, already skipped, quota exceeded, chat disallows).
+///   cleanup — caller has placed grid rankings; route through the
+///             skip_rating_with_cleanup RPC so the partial state gets
+///             wiped atomically before the skip row is inserted.
+///   direct  — caller has no grid rankings yet; the simple insert path
+///             is enough.
+///
+/// Extracted from `ChatDetailNotifier.skipRating` so the gate logic is
+/// independently testable. The earlier inline form was the source of
+/// the bug fixed in 2d5e3cd: a stricter `canSkipRating` gate hid the
+/// cleanup branch behind a check it never satisfied.
+enum SkipRatingRoute { reject, cleanup, direct }
+
+/// Decides which skip-rating path to take for a given chat state.
+/// Pure function — no side effects, no service calls — so the gate
+/// matrix is testable as a 3-line unit test instead of a full notifier
+/// integration.
+SkipRatingRoute decideSkipRatingRoute(ChatDetailState state) {
+  if (!state.canSkipRating) return SkipRatingRoute.reject;
+  return state.hasStartedRating
+      ? SkipRatingRoute.cleanup
+      : SkipRatingRoute.direct;
+}
+
 /// Notifier for managing ChatScreen state with real-time subscriptions.
 ///
 /// Uses debounced refresh to handle Realtime race conditions.
@@ -300,6 +354,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   final ChatService _chatService;
   final ParticipantService _participantService;
   final PropositionService _propositionService;
+  final AffirmationService _affirmationService;
   final SupabaseClient _supabase;
   final LanguageService _languageService;
 
@@ -318,6 +373,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   RealtimeChannel? _ratingSkipChannel;
   RealtimeChannel? _gridRankingChannel;
   RealtimeChannel? _creditChannel;
+  RealtimeChannel? _affirmationChannel;
 
   // Debounce timers
   Timer? _refreshDebounce;
@@ -325,6 +381,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   Timer? _joinRequestDebounce;
   Timer? _skipDebounce;
   Timer? _ratingSkipDebounce;
+  Timer? _affirmationDebounce;
 
   // Rate limiting
   DateTime? _lastRefreshTime;
@@ -332,6 +389,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   DateTime? _lastJoinRequestRefreshTime;
   DateTime? _lastSkipRefreshTime;
   DateTime? _lastRatingSkipRefreshTime;
+  DateTime? _lastAffirmationRefreshTime;
 
   // Cache last known state for use during loading
   ChatDetailState? _cachedState;
@@ -339,6 +397,18 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   // Prevent multiple startPhase clicks
   bool _isStartingPhase = false;
   bool get isStartingPhase => _isStartingPhase;
+
+  // Concurrent-load guard. Without this, Realtime cascades (e.g. a single
+  // pause click fires chats UPDATE → cycles UPDATE → chat_credits UPDATE
+  // → ...) trigger overlapping _loadData calls. Eight in flight at once
+  // serialize on the DB connection pool, each one slower than the last.
+  // Observed in perf_logs: a single pause produced 8 chat_detail_load
+  // events spanning 13 seconds with the slowest at 5.2s (vs 1.6s alone).
+  // Mutex collapses the storm: while one load is running, new
+  // _scheduleRefresh calls flip a "pending" flag; when the running load
+  // finishes, ONE more refresh is scheduled if pending.
+  bool _isLoading = false;
+  bool _pendingRefresh = false;
 
   static const _debounceDuration = Duration(milliseconds: 150);
   static const _minRefreshInterval = Duration(seconds: 1);
@@ -350,6 +420,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   })  : _chatService = ref.read(chatServiceProvider),
         _participantService = ref.read(participantServiceProvider),
         _propositionService = ref.read(propositionServiceProvider),
+        _affirmationService = ref.read(affirmationServiceProvider),
         _supabase = ref.read(supabaseProvider),
         _languageService = ref.read(languageServiceProvider),
         super(const AsyncLoading()) {
@@ -443,6 +514,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _joinRequestDebounce?.cancel();
     _skipDebounce?.cancel();
     _ratingSkipDebounce?.cancel();
+    _affirmationDebounce?.cancel();
     disposeLanguageSupport();
     _unsubscribeAll();
     super.dispose();
@@ -457,11 +529,32 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _joinRequestChannel?.unsubscribe();
     _skipChannel?.unsubscribe();
     _ratingSkipChannel?.unsubscribe();
+    _affirmationChannel?.unsubscribe();
     _gridRankingChannel?.unsubscribe();
     _creditChannel?.unsubscribe();
   }
 
   Future<void> _loadData({bool setupSubscriptions = false}) async {
+    // Concurrent-load guard. If a load is already running, mark that we
+    // need another pickup once it finishes and bail out. The pending
+    // refresh fires in the finally block, so we still get the latest
+    // state — just without 8 parallel loads competing for the pool.
+    if (_isLoading) {
+      _pendingRefresh = true;
+      // Best-effort observability: log the suppression so we can see
+      // in perf_logs how many cascades the guard collapsed.
+      PerfLogger.start(
+        'chat_detail_load_suppressed',
+        chatId: chatId,
+      );
+      return;
+    }
+    _isLoading = true;
+    final perfCorr = PerfLogger.start(
+      'chat_detail_load',
+      chatId: chatId,
+      payload: {'setup_subscriptions': setupSubscriptions},
+    );
     try {
       // Load all data in parallel (including fresh chat data for schedulePaused, etc.)
       final results = await Future.wait([
@@ -518,9 +611,12 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       bool hasSkipped = false;
       int ratingSkipCount = 0;
       bool hasSkippedRating = false;
+      int affirmationCount = 0;
+      bool hasAffirmed = false;
       Set<int> participantsWhoRated = {};
       Set<int> participantsWhoSkippedProposing = {};
       Set<int> participantsWhoSkippedRating = {};
+      Set<int> participantsWhoAffirmed = {};
       int minRatingsPerProp = 0;
       int myCurrentRoundRatingCount = 0;
       bool isMyParticipantFunded = true;
@@ -577,6 +673,12 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
               roundId: currentRound.id,
               participantId: myParticipant.id,
             ),
+            _affirmationService.getAffirmationCount(currentRound.id),
+            _affirmationService.hasAffirmed(
+              roundId: currentRound.id,
+              participantId: myParticipant.id,
+            ),
+            _affirmationService.getParticipantsWhoAffirmed(currentRound.id),
           ]);
 
           propositions = roundResults[0] as List<Proposition>;
@@ -593,6 +695,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
           participantsWhoSkippedRating = roundResults[9] as Set<int>;
           minRatingsPerProp = roundResults[10] as int;
           myCurrentRoundRatingCount = roundResults[11] as int;
+          affirmationCount = roundResults[12] as int;
+          hasAffirmed = roundResults[13] as bool;
+          participantsWhoAffirmed = roundResults[14] as Set<int>;
 
           // Check if my participant is funded for this round
           try {
@@ -671,9 +776,12 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         hasSkipped: hasSkipped,
         ratingSkipCount: ratingSkipCount,
         hasSkippedRating: hasSkippedRating,
+        affirmationCount: affirmationCount,
+        hasAffirmed: hasAffirmed,
         participantsWhoRated: participantsWhoRated,
         participantsWhoSkippedProposing: participantsWhoSkippedProposing,
         participantsWhoSkippedRating: participantsWhoSkippedRating,
+        participantsWhoAffirmed: participantsWhoAffirmed,
         minRatingsPerProp: minRatingsPerProp,
         myCurrentRoundRatingCount: myCurrentRoundRatingCount,
         chatCredits: chatCredits,
@@ -695,8 +803,24 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       } else {
         _updateDynamicSubscriptions();
       }
+      PerfLogger.end(perfCorr,
+          action: 'chat_detail_load', chatId: chatId);
     } catch (e, st) {
+      PerfLogger.error(perfCorr, e,
+          action: 'chat_detail_load',
+          chatId: chatId,
+          stackTrace: st);
       state = AsyncError(e, st);
+    } finally {
+      _isLoading = false;
+      // Drain any refresh requests that arrived while we were loading.
+      // Goes through _scheduleRefresh so it picks up the existing
+      // 150ms debounce + 1s rate limit (and any further suppressions
+      // if more events keep arriving).
+      if (_pendingRefresh) {
+        _pendingRefresh = false;
+        _scheduleRefresh();
+      }
     }
   }
 
@@ -831,6 +955,15 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
         currentState.currentRound!.id,
         () {
           _scheduleSkipRefresh();
+        },
+      );
+
+      // Update affirmation subscription for current round
+      _affirmationChannel?.unsubscribe();
+      _affirmationChannel = _affirmationService.subscribeToAffirmations(
+        currentState.currentRound!.id,
+        () {
+          _scheduleAffirmationRefresh();
         },
       );
 
@@ -1080,6 +1213,60 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     }
   }
 
+  void _scheduleAffirmationRefresh() {
+    final now = DateTime.now();
+    if (_lastAffirmationRefreshTime != null &&
+        now.difference(_lastAffirmationRefreshTime!) < _minRefreshInterval) {
+      final timeSinceLastRefresh =
+          now.difference(_lastAffirmationRefreshTime!);
+      final delay = _minRefreshInterval - timeSinceLastRefresh;
+      _affirmationDebounce?.cancel();
+      _affirmationDebounce = Timer(delay + _debounceDuration, () {
+        _lastAffirmationRefreshTime = DateTime.now();
+        _refreshAffirmations();
+      });
+      return;
+    }
+    _affirmationDebounce?.cancel();
+    _affirmationDebounce = Timer(_debounceDuration, () {
+      _lastAffirmationRefreshTime = DateTime.now();
+      _refreshAffirmations();
+    });
+  }
+
+  Future<void> _refreshAffirmations() async {
+    final currentState = state.valueOrNull;
+    if (currentState?.currentRound == null ||
+        currentState?.myParticipant == null) {
+      return;
+    }
+    try {
+      final results = await Future.wait([
+        _affirmationService.getAffirmationCount(currentState!.currentRound!.id),
+        _affirmationService.hasAffirmed(
+          roundId: currentState.currentRound!.id,
+          participantId: currentState.myParticipant!.id,
+        ),
+        _affirmationService
+            .getParticipantsWhoAffirmed(currentState.currentRound!.id),
+      ]);
+
+      final affirmationCount = results[0] as int;
+      final hasAffirmed = results[1] as bool;
+      final participantsWhoAffirmed = results[2] as Set<int>;
+
+      final updatedState = currentState.copyWith(
+        affirmationCount: affirmationCount,
+        hasAffirmed: hasAffirmed,
+        participantsWhoAffirmed: participantsWhoAffirmed,
+      );
+      state = AsyncData(updatedState);
+      _cachedState = updatedState;
+    } catch (e) {
+      // Log but don't fail - next event will retry
+    }
+  }
+
   void _scheduleRatingSkipRefresh() {
     final now = DateTime.now();
     if (_lastRatingSkipRefreshTime != null &&
@@ -1171,14 +1358,22 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       return;
     }
 
-    await _propositionService.submitProposition(
-      roundId: currentState!.currentRound!.id,
-      participantId: currentState.myParticipant!.id,
-      content: content,
+    final roundId = currentState!.currentRound!.id;
+    await PerfLogger.measure(
+      'submit_proposition',
+      () async {
+        await _propositionService.submitProposition(
+          roundId: roundId,
+          participantId: currentState.myParticipant!.id,
+          content: content,
+        );
+        // Immediately refresh to show own submission (don't wait for debounced realtime)
+        await _refreshPropositions();
+      },
+      chatId: chatId,
+      roundId: roundId,
+      payload: {'content_length': content.length},
     );
-
-    // Immediately refresh to show own submission (don't wait for debounced realtime)
-    await _refreshPropositions();
   }
 
   /// Skip proposing for the current round
@@ -1216,8 +1411,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   /// Skip rating for the current round
   ///
-  /// User must not have already rated or started rating, and skip quota must not be exceeded.
-  /// Skippers count toward participation for early advance calculations.
+  /// User must not have already rated or already skipped, and skip quota
+  /// must not be exceeded. Skippers count toward participation for early
+  /// advance calculations. If they had placed any grid rankings the route
+  /// goes through skip_rating_with_cleanup so the partial state gets
+  /// wiped atomically.
   Future<void> skipRating() async {
     final currentState = state.valueOrNull;
     if (currentState?.currentRound == null ||
@@ -1225,22 +1423,47 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       return;
     }
 
-    // Validate canSkipRating before calling service
-    if (!currentState!.canSkipRating) {
-      throw Exception('Cannot skip rating: already rated, already skipped, or skip quota exceeded');
-    }
-
-    if (currentState.hasStartedRating) {
-      // Use cleanup version to delete intermediate grid_rankings first
-      await _propositionService.skipRatingWithCleanup(
-        roundId: currentState.currentRound!.id,
-        participantId: currentState.myParticipant!.id,
-      );
-    } else {
-      await _propositionService.skipRating(
-        roundId: currentState.currentRound!.id,
-        participantId: currentState.myParticipant!.id,
-      );
+    final route = decideSkipRatingRoute(currentState!);
+    switch (route) {
+      case SkipRatingRoute.reject:
+        throw Exception('Cannot skip rating: already rated, already skipped, or skip quota exceeded');
+      case SkipRatingRoute.cleanup:
+        // Manual start/end (instead of measure) so we can thread the
+        // correlation_id into the DB function for cross-source ties.
+        final cleanupRoundId = currentState.currentRound!.id;
+        final cleanupCorr = PerfLogger.start(
+          'skip_rating_with_cleanup',
+          chatId: chatId,
+          roundId: cleanupRoundId,
+        );
+        try {
+          await _propositionService.skipRatingWithCleanup(
+            roundId: cleanupRoundId,
+            participantId: currentState.myParticipant!.id,
+            correlationId: cleanupCorr,
+          );
+          PerfLogger.end(cleanupCorr,
+              action: 'skip_rating_with_cleanup',
+              chatId: chatId,
+              roundId: cleanupRoundId);
+        } catch (e, st) {
+          PerfLogger.error(cleanupCorr, e,
+              action: 'skip_rating_with_cleanup',
+              chatId: chatId,
+              roundId: cleanupRoundId,
+              stackTrace: st);
+          rethrow;
+        }
+      case SkipRatingRoute.direct:
+        await PerfLogger.measure(
+          'skip_rating_direct',
+          () => _propositionService.skipRating(
+            roundId: currentState.currentRound!.id,
+            participantId: currentState.myParticipant!.id,
+          ),
+          chatId: chatId,
+          roundId: currentState.currentRound!.id,
+        );
     }
 
     // Immediately update local state (optimistic)
@@ -1560,10 +1783,20 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     if (currentState == null) return;
     if (currentState.myParticipant?.isHost != true) return;
 
+    final perfCorr =
+        PerfLogger.start('host_resume_chat', chatId: chatId);
     try {
-      await _chatService.hostResumeChat(chatId);
+      // Pass the same correlation_id to the DB function so its start/end
+      // log_perf rows share the ID with the Flutter-side ones.
+      await _chatService.hostResumeChat(chatId, correlationId: perfCorr);
+      PerfLogger.end(perfCorr,
+          action: 'host_resume_chat', chatId: chatId);
       // Realtime will update state automatically
-    } catch (e) {
+    } catch (e, st) {
+      PerfLogger.error(perfCorr, e,
+          action: 'host_resume_chat',
+          chatId: chatId,
+          stackTrace: st);
       // Re-fetch to ensure UI is in sync
       await refresh();
       rethrow;

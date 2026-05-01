@@ -9,8 +9,12 @@ on:
     branches: [main, develop]
   workflow_call:
 
+# Hardcoded "ci-" prefix instead of ${{ github.workflow }} because when
+# this workflow is called via workflow_call from deploy.yml, github.workflow
+# resolves to the caller's name ("Deploy"), which collided with deploy.yml's
+# own concurrency group and silently cancelled every test run.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,18 +40,13 @@ jobs:
         run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run tests
-        run: flutter test --coverage
-
-      - name: Build Web (verify build works)
-        run: flutter build web
-
-      - name: Check test coverage
-        run: |
-          # Generate coverage report summary
-          if [ -f coverage/lcov.info ]; then
-            echo "Coverage report generated"
-            # You can add coverage threshold checks here
-          fi
+        run: flutter test
+        # NOTE: --coverage was dropped to save ~30-60s. Re-add it once a
+        # real threshold check exists (the previous "Check test coverage"
+        # step was a stub that only echoed a confirmation). Build
+        # verification was also dropped — deploy-web rebuilds the web app
+        # anyway, so building twice was pure duplication. A broken build
+        # still fails the deploy job visibly; the gate is unchanged.
 
   # Note: Supabase SQL tests removed from CI due to Docker image availability issues
   # Run locally with: supabase start && supabase test db

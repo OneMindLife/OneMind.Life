@@ -1,6 +1,6 @@
 -- Test: Rating early advance uses per-proposition model
 -- Verifies that trigger functions use the per-proposition approach:
---   threshold = min(10, max(active_raters - 1, 1))
+--   threshold = min(7, max(active_raters - 1, 1))
 --   advance when min(ratings per proposition) >= threshold
 
 BEGIN;

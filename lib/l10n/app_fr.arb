@@ -379,6 +379,12 @@
   "chatPausedSuccess": "Chat mis en pause",
   "requestApproved": "Demande approuvee",
   "requestDenied": "Demande refusee",
+  "failedToApproveRequest": "Echec de l'approbation de la demande: {error}",
+  "@failedToApproveRequest": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
   "failedToSubmit": "Echec de la soumission: {error}",
   "@failedToSubmit": {
     "placeholders": {
@@ -1403,5 +1409,18 @@
   "donate": "Faire un don",
   "supportOneMindTitle": "Soutenir OneMind",
   "supportOneMindBody": "OneMind est gratuit et fonctionne grâce aux dons. Si ce groupe vient de vous aider à prendre une vraie décision ensemble, accepteriez-vous de contribuer pour qu'il continue ?",
-  "maybeLater": "Plus tard"
+  "maybeLater": "Plus tard",
+
+  "gateAffirm": "Affirmer",
+  "gateAlternative": "Alternative",
+  "gateMicrocopy": "Affirmez ceci ou proposez une alternative.",
+  "gateBack": "Retour",
+  "alternativeMicrocopy": "Envoyez votre idée, revenez en arrière ou passez votre tour.",
+  "alternativeMicrocopyNoSkip": "Envoyez votre idée ou revenez en arrière.",
+  "send": "Envoyer",
+  "ratingMicrocopy": "Évaluez les propositions pour choisir le gagnant, ou passez votre tour.",
+  "ratingMicrocopyNoSkip": "Évaluez les propositions pour choisir le gagnant.",
+  "waitingForNextPhase": "En attente de la prochaine phase",
+  "yourAffirmation": "Votre affirmation",
+  "participantsRankingExplainer": "Classés selon l'alignement de leurs évaluations et idées avec le groupe"
 }

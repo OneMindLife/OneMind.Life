@@ -733,6 +733,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get requestDenied => 'Demande refusee';
 
   @override
+  String failedToApproveRequest(String error) {
+    return 'Echec de l\'approbation de la demande: $error';
+  }
+
+  @override
   String failedToSubmit(String error) {
     return 'Echec de la soumission: $error';
   }
@@ -1042,6 +1047,47 @@ class AppLocalizationsFr extends AppLocalizations {
   String skipsRemaining(int remaining) {
     return '$remaining passages restants';
   }
+
+  @override
+  String get gateAffirm => 'Affirmer';
+
+  @override
+  String get gateAlternative => 'Alternative';
+
+  @override
+  String get gateMicrocopy => 'Affirmez ceci ou proposez une alternative.';
+
+  @override
+  String get gateBack => 'Retour';
+
+  @override
+  String get alternativeMicrocopy =>
+      'Envoyez votre idée, revenez en arrière ou passez votre tour.';
+
+  @override
+  String get alternativeMicrocopyNoSkip =>
+      'Envoyez votre idée ou revenez en arrière.';
+
+  @override
+  String get ratingMicrocopy =>
+      'Évaluez les propositions pour choisir le gagnant, ou passez votre tour.';
+
+  @override
+  String get ratingMicrocopyNoSkip =>
+      'Évaluez les propositions pour choisir le gagnant.';
+
+  @override
+  String get waitingForNextPhase => 'En attente de la prochaine phase';
+
+  @override
+  String get send => 'Envoyer';
+
+  @override
+  String get yourAffirmation => 'Votre affirmation';
+
+  @override
+  String get participantsRankingExplainer =>
+      'Classés selon l\'alignement de leurs évaluations et idées avec le groupe';
 
   @override
   String get createChatTitle => 'Creer un Chat';

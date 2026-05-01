@@ -33,7 +33,6 @@ class MockHomeContent extends StatelessWidget {
     // For non-body steps, all cards at uniform opacity
     // (parent handles overall dimming via outer AnimatedOpacity)
     if (currentStep == HomeTourStep.languageSelector ||
-        currentStep == HomeTourStep.tutorialButton ||
         currentStep == HomeTourStep.createFab ||
         currentStep == HomeTourStep.menu ||
         currentStep == HomeTourStep.complete) {

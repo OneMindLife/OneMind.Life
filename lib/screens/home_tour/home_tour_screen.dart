@@ -114,7 +114,6 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen>
   /// Whether [step] targets an app bar button (not body cards or FAB).
   bool _isAppBarStep(HomeTourStep step) {
     return step == HomeTourStep.languageSelector ||
-        step == HomeTourStep.tutorialButton ||
         step == HomeTourStep.menu;
   }
 
@@ -157,22 +156,13 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen>
         actions: [
           // All buttons always rendered (fixed positions, no shifting).
           // Opacity: 0.0 before step, 1.0 on step, 0.25 after.
-          // Order matches real home screen: Language, How It Works, Legal Docs
+          // Order matches real home screen: Language, Menu (overflow)
           _appBarButton(
             step: step,
             activeOn: HomeTourStep.languageSelector,
             child: IconButton(
               icon: const Icon(Icons.language),
               tooltip: l10n.language,
-              onPressed: () {},
-            ),
-          ),
-          _appBarButton(
-            step: step,
-            activeOn: HomeTourStep.tutorialButton,
-            child: IconButton(
-              icon: const Icon(Icons.help_outline),
-              tooltip: l10n.howItWorks,
               onPressed: () {},
             ),
           ),
@@ -337,9 +327,6 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen>
         return;
 
       // All app bar steps: tooltip at top of body
-      case HomeTourStep.tutorialButton:
-        newTop = 8;
-
       case HomeTourStep.menu:
         newTop = 8;
 
@@ -425,9 +412,6 @@ class _HomeTourScreenState extends ConsumerState<HomeTourScreen>
             ),
           ],
         );
-      case HomeTourStep.tutorialButton:
-        title = l10n.homeTourTutorialButtonTitle;
-        description = l10n.homeTourTutorialButtonDesc;
       case HomeTourStep.menu:
         title = l10n.homeTourMenuTitle;
         description = l10n.homeTourMenuDesc;

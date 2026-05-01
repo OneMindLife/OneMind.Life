@@ -96,10 +96,6 @@ class _CreditsScreenState extends State<CreditsScreen> {
 
       if (updated != null) {
         setState(() => _credits = updated);
-        if (mounted) {
-          final l10n = AppLocalizations.of(context);
-          context.showSuccessSnackBar(enabled ? l10n.autoRefillEnabled : l10n.autoRefillDisabled);
-        }
       }
     } catch (e) {
       if (mounted) {

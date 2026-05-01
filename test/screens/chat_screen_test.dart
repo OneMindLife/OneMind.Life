@@ -697,8 +697,9 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Should show proposing panel elements - skip button (shown when text field is empty)
-        expect(find.byKey(const Key('skip-proposing-button')), findsOneWidget);
+        // R1 proposing: input lives in chat scroll. With empty text and
+        // skips enabled, the trailing icon is the skip button.
+        expect(find.byKey(const Key('inline-r1-skip-button')), findsOneWidget);
       });
 
       testWidgets('shows text field for proposition input', (tester) async {
@@ -911,22 +912,21 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly (no longer in popup menu)
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // Verify modal shows participants
-        expect(find.text('Leaderboard (2)'), findsOneWidget);
+        expect(find.text('Participants (2)'), findsOneWidget);
         expect(find.text('Host User'), findsOneWidget);
         expect(find.text('Regular User'), findsOneWidget);
       });
 
-      testWidgets('host sees kick button for non-host participants', (tester) async {
+      testWidgets('host can long-press a non-host row to kick them', (tester) async {
         final chat = ChatFixtures.model();
         final hostParticipant = ParticipantFixtures.host();
         final regularParticipant = ParticipantFixtures.model(id: 2, displayName: 'Regular User');
         final List<Participant> participants = [hostParticipant, regularParticipant];
 
-        // Best practice: use pre-loaded state instead of async mocks
         final state = createTestState(
           chat: chat,
           participants: participants,
@@ -936,13 +936,16 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
-        // Host should see kick button for regular user
-        expect(find.byIcon(Icons.person_remove), findsOneWidget);
-        expect(find.byTooltip('Kick participant'), findsOneWidget);
+        // Kick lives on long-press now — the trailing slot is reserved
+        // for the done-state checkmark column.
+        expect(find.byIcon(Icons.person_remove), findsNothing);
+        await tester.longPress(find.text('Regular User'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Kick Participant?'), findsOneWidget);
       });
 
       testWidgets('non-host does not see kick button', (tester) async {
@@ -966,7 +969,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // Non-host should NOT see kick button
@@ -991,11 +994,11 @@ void main() {
         await tester.pumpAndSettle();
 
         // Tap the participants icon button directly
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // Verify modal is showing with correct count
-        expect(find.text('Leaderboard (1)'), findsOneWidget);
+        expect(find.text('Participants (1)'), findsOneWidget);
 
         // The Consumer widget in the modal ensures it watches state changes
         // Integration test would verify actual realtime behavior
@@ -1024,7 +1027,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // Ranked participants show position numbers
@@ -1056,7 +1059,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // All participants should show dashes
@@ -1089,7 +1092,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.leaderboard));
+        await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
         // Find all ListTile widgets and verify order
@@ -1099,267 +1102,35 @@ void main() {
         expect(titles, ['Alice', 'Host User', 'Bob']);
       });
 
-      group('Done label for participation tracking', () {
-        testWidgets('shows Done for participants who proposed in proposing phase', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final participants = [hostParticipant, p2, p3];
+      // Per-user "Done" indicator was retired — naming individual
+      // stragglers worked against NCDD's "every voice at its own pace"
+      // ethos. The round status bar's progress % already shows how
+      // close the round is to closing.
+      testWidgets('participants sheet does not surface per-user Done state',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final propositions = [
+          PropositionFixtures.model(
+              id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
+        ];
+        final state = createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          participants: [hostParticipant, p2],
+          myParticipant: hostParticipant,
+          propositions: propositions,
+        );
 
-          // Host and Alice have submitted propositions, Bob has not
-          final propositions = [
-            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
-            PropositionFixtures.model(id: 2, roundId: 1, participantId: 2, content: 'Alice idea'),
-          ];
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.groups));
+        await tester.pumpAndSettle();
 
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.proposing(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            propositions: propositions,
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host and Alice should show "Done", Bob should not
-          expect(find.text('Done'), findsNWidgets(2));
-        });
-
-        testWidgets('shows Done for participants who skipped proposing', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final participants = [hostParticipant, p2, p3];
-
-          // Host proposed, Alice skipped, Bob hasn't acted
-          final propositions = [
-            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
-          ];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.proposing(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            propositions: propositions,
-            participantsWhoSkippedProposing: {2}, // Alice skipped
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host (proposed) and Alice (skipped) should show "Done"
-          expect(find.text('Done'), findsNWidgets(2));
-        });
-
-        testWidgets('shows Done for participants who rated in rating phase', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final participants = [hostParticipant, p2, p3];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.rating(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            participantsWhoRated: {1, 2}, // Host and Alice rated
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host and Alice should show "Done", Bob should not
-          expect(find.text('Done'), findsNWidgets(2));
-        });
-
-        testWidgets('shows Done for participants who skipped rating', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final participants = [hostParticipant, p2, p3];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.rating(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            participantsWhoRated: {1}, // Host rated
-            participantsWhoSkippedRating: {2}, // Alice skipped rating
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host (rated) and Alice (skipped rating) should both show "Done"
-          expect(find.text('Done'), findsNWidgets(2));
-        });
-
-        testWidgets('keeps all participants fully visible regardless of acted state', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final participants = [hostParticipant, p2];
-
-          // Host proposed, Alice hasn't acted
-          final propositions = [
-            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
-          ];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.proposing(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            propositions: propositions,
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // No Opacity widget should dim any participant
-          final opacities = tester.widgetList<Opacity>(find.byType(Opacity)).toList();
-          for (final o in opacities) {
-            expect(o.opacity, 1.0, reason: 'Participant tiles must render at full opacity');
-          }
-
-          // Done tag is the sole indicator of acted state
-          expect(find.text('Done'), findsOneWidget);
-        });
-
-        testWidgets('mixed: some propose, some skip, rest not acted in proposing phase', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final p4 = ParticipantFixtures.model(id: 4, displayName: 'Carol');
-          final participants = [hostParticipant, p2, p3, p4];
-
-          // Host proposed, Alice skipped, Bob and Carol haven't acted
-          final propositions = [
-            PropositionFixtures.model(id: 1, roundId: 1, participantId: 1, content: 'Host idea'),
-          ];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.proposing(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            propositions: propositions,
-            participantsWhoSkippedProposing: {2}, // Alice skipped
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host (proposed) and Alice (skipped) = 2 "Done"
-          expect(find.text('Done'), findsNWidgets(2));
-        });
-
-        testWidgets('mixed: some rate, some skip rating, rest not acted in rating phase', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final p3 = ParticipantFixtures.model(id: 3, displayName: 'Bob');
-          final p4 = ParticipantFixtures.model(id: 4, displayName: 'Carol');
-          final participants = [hostParticipant, p2, p3, p4];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.rating(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            participantsWhoRated: {1, 3}, // Host and Bob rated
-            participantsWhoSkippedRating: {2}, // Alice skipped rating
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Host (rated), Alice (skipped), Bob (rated) = 3 "Done"
-          expect(find.text('Done'), findsNWidgets(3));
-        });
-
-        testWidgets('no Done labels when no active phase', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final participants = [hostParticipant, p2];
-
-          // No round = no active phase
-          final state = createTestState(
-            chat: chat,
-            participants: participants,
-            myParticipant: hostParticipant,
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // No Done labels should show when there's no active phase
-          expect(find.text('Done'), findsNothing);
-        });
-
-        testWidgets('carried forward propositions do not count as participation', (tester) async {
-          final chat = ChatFixtures.model();
-          final hostParticipant = ParticipantFixtures.host(); // id 1
-          final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
-          final participants = [hostParticipant, p2];
-
-          // Only a carried-forward proposition exists for participant 2 (Alice)
-          // This should NOT count as Alice having proposed
-          final propositions = [
-            PropositionFixtures.carriedForward(id: 1, roundId: 1, carriedFromId: 99),
-            PropositionFixtures.model(id: 2, roundId: 1, participantId: 1, content: 'Host idea'),
-          ];
-
-          final state = createTestState(
-            chat: chat,
-            round: RoundFixtures.proposing(),
-            participants: participants,
-            myParticipant: hostParticipant,
-            propositions: propositions,
-          );
-
-          await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
-          await tester.pumpAndSettle();
-
-          await tester.tap(find.byIcon(Icons.leaderboard));
-          await tester.pumpAndSettle();
-
-          // Only Host should show "Done" (carried forward doesn't count)
-          expect(find.text('Done'), findsOneWidget);
-        });
+        // No checkmark column, no "Done" subtitle.
+        expect(find.byIcon(Icons.check), findsNothing);
+        expect(find.text('Done'), findsNothing);
       });
     });
 
@@ -1654,19 +1425,21 @@ void main() {
         expect(find.text('Strong proposition'), findsOneWidget);
       });
 
-      testWidgets('shows emergence card during rating phase', (tester) async {
+      testWidgets('rating phase shows the rating-action indicator, not the previous winner card',
+          (tester) async {
+        // Behavior change: during rating the chat scroll surfaces the
+        // rating action UI (or done / skipped indicators) instead of the
+        // previous winner card. The previous winner is no longer needed
+        // there since the user is voting, not comparing-with-context.
         final chat = ChatFixtures.model();
-        final round = RoundFixtures.rating(customId: 2); // Rating phase
+        final round = RoundFixtures.rating(customId: 2);
         final participant = ParticipantFixtures.model();
         final winner = RoundWinnerFixtures.soleWinner(
-          roundId: 1, // Previous round
+          roundId: 1,
           content: 'Winning proposition',
           globalScore: 85.0,
         );
 
-        // State with previous round winners but in rating phase
-        // hasStartedRating=true prevents auto-navigation to rating screen
-        // hasRated=true means user finished rating, so previous winner is visible
         final state = createTestState(
           chat: chat,
           round: round,
@@ -1676,15 +1449,18 @@ void main() {
           consecutiveSoleWins: 1,
           previousRoundId: 1,
           hasStartedRating: true, // Prevent auto-navigation
-          hasRated: true, // User has rated — card becomes visible
+          hasRated: true,         // User has rated — done indicator visible
         );
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        // Previous winner should be VISIBLE during rating phase when user has rated
-        expect(find.text('Winning proposition'), findsWidgets,
-            reason: 'Previous winner should be visible during rating phase after rating');
+        // The previous-winner content is hidden during rating.
+        expect(find.text('Winning proposition'), findsNothing,
+            reason: 'Previous winner card is replaced by rating-action UI in rating phase');
+        // The done indicator surfaces in the chat scroll.
+        expect(find.byKey(const Key('inline-rating-complete-indicator')),
+            findsOneWidget);
       });
 
       testWidgets('shows emergence card during proposing phase with previous winners',
@@ -2044,7 +1820,8 @@ void main() {
 
           // Should show spectator banner
           expect(find.text('Spectating — insufficient credits'), findsOneWidget);
-          // Should NOT show proposition input
+          // Should NOT show proposition input (in chat scroll OR panel).
+          expect(find.byKey(const Key('inline-r1-input')), findsNothing);
           expect(find.byKey(const Key('proposition-input')), findsNothing);
         });
 
@@ -2066,11 +1843,12 @@ void main() {
 
           // Should show spectator banner
           expect(find.text('Spectating — insufficient credits'), findsOneWidget);
-          // Should NOT show rate button
+          // Should NOT show rate button — neither in chat scroll nor in panel.
+          expect(find.byKey(const Key('inline-start-rating-button')), findsNothing);
           expect(find.byKey(const Key('start-rating-button')), findsNothing);
         });
 
-        testWidgets('funded participant sees normal proposing panel',
+        testWidgets('funded participant sees inline proposing input',
             (tester) async {
           final chat = ChatFixtures.model();
           final round = RoundFixtures.proposing();
@@ -2084,8 +1862,9 @@ void main() {
           await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
           await tester.pumpAndSettle();
 
-          // Should show text field, no spectator banner
-          expect(find.byKey(const Key('proposition-input')), findsOneWidget);
+          // Funded R1: input lives in the chat scroll (inline), not in a
+          // panel below. No spectator banner.
+          expect(find.byKey(const Key('inline-r1-input')), findsOneWidget);
           expect(find.text('Spectating — insufficient credits'), findsNothing);
         });
 
@@ -2403,6 +2182,516 @@ void main() {
         expect(find.byKey(const ValueKey('task_result_1')), findsNothing);
         // But the research results should still show
         expect(find.text('Research Results'), findsOneWidget);
+      });
+    });
+
+    group('Inline action UIs (gate / alternative / rating-action)', () {
+      // Coverage for the chat-scroll action UIs introduced when we moved
+      // input + start-rating out of the bottom panel. The bottom panel is
+      // now "compact" (just the phase-bar slot, which the screen renders
+      // at the top under the AppBar) and the chat scroll holds the
+      // contextual action — gate buttons, alternative textfield, rating CTA,
+      // post-submit prop card with chevron toggle.
+
+      testWidgets('R1 proposing renders the inline textfield + skip in chat scroll',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 1);
+
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          // No previous winner = R1.
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-r1-input')), findsOneWidget);
+        // Empty textfield + skips allowed → inline skip icon visible.
+        expect(find.byKey(const Key('inline-r1-skip-button')), findsOneWidget);
+        // Old in-panel input/skip keys must not also be rendered.
+        expect(find.byKey(const Key('proposition-input')), findsNothing);
+        expect(find.byKey(const Key('skip-proposing-button')), findsNothing);
+      });
+
+      testWidgets('R2+ proposing with skips renders the Affirm/Alternative gate',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+          globalScore: 90.0,
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
+        // Microcopy under the gate buttons.
+        expect(find.text('Affirm this, or offer an alternative.'), findsOneWidget);
+        // Inline R1 input must not be rendered (gate replaces it for R2+).
+        expect(find.byKey(const Key('inline-r1-input')), findsNothing);
+        // Alternative textfield is hidden until the user taps Alternative.
+        expect(find.byKey(const Key('inline-alternative-input')), findsNothing);
+      });
+
+      testWidgets('tapping Alternative reveals the in-place textfield with Back + Skip',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-alternative-input')), findsOneWidget);
+        expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
+        expect(find.byKey(const Key('inline-alternative-skip-button')), findsOneWidget);
+        // Gate buttons gone — replaced by the textfield card.
+        expect(find.byKey(const Key('gate-affirm-button')), findsNothing);
+        expect(find.byKey(const Key('gate-alternative-button')), findsNothing);
+        // Alternative microcopy under the new buttons.
+        expect(find.text('Send your idea, go back, or skip your turn.'),
+            findsOneWidget);
+      });
+
+      testWidgets('Back from alternative restores the gate and preserves typed text',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.pumpAndSettle();
+
+        // Type something into the alternative textfield, then go Back.
+        await tester.enterText(
+          find.byKey(const Key('inline-alternative-input')),
+          'something better',
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byKey(const Key('inline-alternative-back-button')));
+        await tester.pumpAndSettle();
+
+        // We're back at the gate.
+        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
+        // Tap Alternative again — the typed text should still be there.
+        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.pumpAndSettle();
+        expect(find.text('something better'), findsOneWidget);
+      });
+
+      testWidgets('rating phase (funded, not yet rated) renders Start Rating + skip',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.rating(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          // hasStartedRating prevents auto-navigation to the rating screen.
+          hasStartedRating: true,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-start-rating-button')), findsOneWidget);
+        // Indicator widgets are absent (user hasn't rated or skipped yet).
+        expect(find.byKey(const Key('inline-rating-complete-indicator')),
+            findsNothing);
+        expect(find.byKey(const Key('inline-rating-skipped-indicator')),
+            findsNothing);
+      });
+
+      testWidgets('rating phase + hasRated surfaces the inline done indicator',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.rating(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          hasRated: true,
+          hasStartedRating: true,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-rating-complete-indicator')),
+            findsOneWidget);
+        // No CTAs while done.
+        expect(find.byKey(const Key('inline-start-rating-button')), findsNothing);
+        // Done state closes with the same "Waiting for next phase" subtext
+        // used across the other exit states.
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+      });
+
+      testWidgets(
+          'rating phase + hasSkippedRating surfaces the inline skipped indicator + waiting subtext',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.rating(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+        ).copyWith(hasSkippedRating: true);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-rating-skipped-indicator')),
+            findsOneWidget);
+        // CTA gone.
+        expect(find.byKey(const Key('inline-start-rating-button')), findsNothing);
+        // Same closing line as Done / submit / affirm / proposing-skip.
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+      });
+
+      testWidgets('R2+ post-submit shows the submitted prop card alone — no peek-back',
+          (tester) async {
+        // Once the user has submitted, the previous winner is intentionally
+        // hidden. Going back to "see what you're competing with" would
+        // invite second-guessing without changing the outcome.
+        final chat = ChatFixtures.model();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final mySubmission = PropositionFixtures.model(
+          id: 99,
+          content: 'My fresh idea',
+        );
+
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          myPropositions: [mySubmission],
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Submitted prop visible.
+        expect(find.text('My fresh idea'), findsOneWidget);
+        // Previous winner is hidden post-submit.
+        expect(find.text('Standing winner'), findsNothing);
+        // No chevron toggles in either direction.
+        expect(find.byKey(const Key('post-submit-to-winner-button')),
+            findsNothing);
+        expect(find.byKey(const Key('post-submit-to-prop-button')),
+            findsNothing);
+      });
+    });
+
+    group('Skip-config aware UI', () {
+      // The gate, alternative row, and rating action UIs render different
+      // copy + buttons based on the chat's allow_skip_* config. Verifies
+      // those render branches.
+
+      Chat chatWith({bool skipProposing = true, bool skipRating = true}) {
+        return Chat.fromJson(ChatFixtures.json(
+          allowSkipProposing: skipProposing,
+          allowSkipRating: skipRating,
+        ));
+      }
+
+      testWidgets('R2+ gate appears even when allow_skip_proposing=false',
+          (tester) async {
+        // Decoupled by migration 20260501070000 — affirm has its own RPC
+        // and is no longer gated by allow_skip_proposing. The gate UI
+        // should render in any R2+ chat with a previous winner.
+        final chat = chatWith(skipProposing: false);
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
+        // No fallback to in-panel input.
+        expect(find.byKey(const Key('proposition-input')), findsNothing);
+      });
+
+      testWidgets('alternative row hides Skip button + drops "skip" microcopy when allow_skip_proposing=false',
+          (tester) async {
+        final chat = chatWith(skipProposing: false);
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.pumpAndSettle();
+
+        // Back button stays.
+        expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
+        // Skip button hidden.
+        expect(find.byKey(const Key('inline-alternative-skip-button')), findsNothing);
+        // Microcopy uses the no-skip variant.
+        expect(find.text('Send your idea, or go back.'), findsOneWidget);
+        expect(find.text('Send your idea, go back, or skip your turn.'),
+            findsNothing);
+      });
+
+      testWidgets('alternative row keeps Skip when allow_skip_proposing=true (control)',
+          (tester) async {
+        final chat = chatWith(skipProposing: true);
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
+        expect(find.byKey(const Key('inline-alternative-skip-button')), findsOneWidget);
+        expect(find.text('Send your idea, go back, or skip your turn.'),
+            findsOneWidget);
+      });
+
+      testWidgets('rating microcopy drops "skip" when allow_skip_rating=false',
+          (tester) async {
+        final chat = chatWith(skipRating: false);
+        final round = RoundFixtures.rating(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          hasStartedRating: true, // Prevents auto-navigate.
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-start-rating-button')), findsOneWidget);
+        expect(find.text('Rate the propositions to choose the winner.'),
+            findsOneWidget);
+        expect(
+            find.text(
+                'Rate the propositions to choose the winner, or skip your turn.'),
+            findsNothing);
+      });
+
+      testWidgets('rating microcopy keeps "skip" suffix when allow_skip_rating=true (control)',
+          (tester) async {
+        final chat = chatWith(skipRating: true);
+        final round = RoundFixtures.rating(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          hasStartedRating: true,
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(
+            find.text(
+                'Rate the propositions to choose the winner, or skip your turn.'),
+            findsOneWidget);
+      });
+
+      testWidgets('Affirmed indicator replaces gate buttons after the user affirms',
+          (tester) async {
+        // Optimistic flag (_hasAffirmedThisRound) is set by tapping
+        // Affirm. We approximate that here by setting state.hasAffirmed
+        // directly so the assertion targets the render branch.
+        final chat = chatWith();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        ).copyWith(hasAffirmed: true);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // The winner card's label flips from "Round X Winner" to
+        // "You affirmed" — that label IS the confirmation. The standalone
+        // orange chip has been retired in favor of this in-card cue.
+        expect(find.text('Your affirmation'), findsOneWidget);
+        expect(find.byKey(const Key('inline-affirmed-indicator')),
+            findsNothing);
+        // Gate buttons are gone.
+        expect(find.byKey(const Key('gate-affirm-button')), findsNothing);
+        expect(find.byKey(const Key('gate-alternative-button')), findsNothing);
+        // Bottom panel collapses — no stray textfield underneath the
+        // affirmed confirmation card.
+        expect(find.byKey(const Key('proposition-input')), findsNothing);
+        // Affirm mirrors submit: card label is the confirmation, plus
+        // the waiting-for-everyone subtext.
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Submitted prop card shows waiting-for-everyone subtext during proposing',
+          (tester) async {
+        final chat = chatWith();
+        final round = RoundFixtures.proposing(customId: 2);
+        final myProp = PropositionFixtures.model(
+          id: 99,
+          content: 'My fresh idea',
+          carriedFromId: null,
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          propositions: [myProp],
+          myPropositions: [myProp],
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+      });
+
+      testWidgets(
+          'Skipped during proposing: inline chip + waiting subtext, no bottom-panel duplicate',
+          (tester) async {
+        final chat = chatWith();
+        final round = RoundFixtures.proposing(customId: 2);
+        final winner = RoundWinnerFixtures.soleWinner(
+          roundId: 1,
+          content: 'Standing winner',
+        );
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          previousRoundWinners: [winner],
+          isSoleWinner: true,
+          consecutiveSoleWins: 1,
+          previousRoundId: 1,
+        ).copyWith(hasSkipped: true);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // Inline chip shows the skipped state.
+        expect(find.byKey(const Key('inline-skipped-indicator')),
+            findsOneWidget);
+        // Same waiting subtext as submit/affirm — three exit states
+        // share the same closing line.
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+        // Bottom panel collapsed — no duplicate "Skipped" badge in the
+        // panel and no proposition textfield underneath.
+        expect(find.byKey(const Key('skipped-indicator')), findsNothing);
+        expect(find.byKey(const Key('proposition-input')), findsNothing);
+      });
+
+      // Regression: R1 of a new cycle (no previous winner) with a
+      // skipped user used to fall through to the empty "Top Candidate"
+      // placeholder card because the inline skipped indicator only
+      // fired inside the previous-winner branch. The skipped indicator
+      // now lives in a phase-aware fallback so it surfaces with or
+      // without a previous winner.
+      testWidgets(
+          'Skipped during R1 proposing (no previous winner): inline chip + waiting subtext, no placeholder',
+          (tester) async {
+        final chat = chatWith();
+        final round = RoundFixtures.proposing(customId: 1);
+        final state = createTestState(
+          chat: chat,
+          round: round,
+          // No previousRoundWinners — R1 of a fresh cycle.
+        ).copyWith(hasSkipped: true);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('inline-skipped-indicator')),
+            findsOneWidget);
+        expect(find.text('Waiting for next phase'), findsOneWidget);
+        // No empty "Placeholder"-labeled card slipping through.
+        expect(find.text('Placeholder'), findsNothing);
       });
     });
   });

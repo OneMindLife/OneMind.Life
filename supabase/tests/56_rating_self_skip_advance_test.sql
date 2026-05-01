@@ -1,6 +1,6 @@
 -- Tests that rating early advance works with per-proposition model.
 -- 3 participants, 0 skips, 3 propositions.
--- Threshold = min(10, max(3-1, 1)) = 2.
+-- Threshold = min(7, max(3-1, 1)) = 2.
 -- Advance when every proposition has >= 2 ratings.
 BEGIN;
 SELECT plan(5);

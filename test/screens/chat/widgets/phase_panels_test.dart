@@ -838,14 +838,20 @@ void main() {
     });
   });
 
-  group('ProposingStatePanel - Countdown Timer After Submission', () {
-    testWidgets('shows countdown timer after submitting all propositions',
+  group('ProposingStatePanel - Post-action indicators', () {
+    // The countdown timer used to live inside this panel via the embedded
+    // RoundPhaseBar. The phase bar has since moved to the top of the chat
+    // screen (under the AppBar), so the panel only renders post-action
+    // state (the user's submitted prop card, the skipped indicator, etc.).
+    // These tests verify those indicators render correctly; timer behavior
+    // is covered separately by RoundPhaseBar widget tests.
+
+    testWidgets('renders the user\'s submitted prop card after submission',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
         PropositionFixtures.model(id: 1, content: 'My idea'),
       ];
-      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 5));
 
       await tester.pumpWidget(
         createTestWidget(
@@ -855,22 +861,18 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
-            phaseEndsAt: phaseEndsAt,
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Should show the waiting text and countdown timer
-      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
-      // Timer should be present (showing minutes)
-      expect(find.textContaining('m'), findsWidgets);
+      expect(find.text('My idea'), findsOneWidget,
+          reason: 'Submitted prop is centered in the panel after submit cap reached');
     });
 
-    testWidgets('shows countdown timer after skipping',
+    testWidgets('renders the skipped indicator after skipping',
         (tester) async {
       final controller = TextEditingController();
-      final phaseEndsAt = DateTime.now().add(const Duration(minutes: 3));
 
       await tester.pumpWidget(
         createTestWidget(
@@ -881,21 +883,15 @@ void main() {
             propositionController: controller,
             onSubmit: () {},
             hasSkipped: true,
-            phaseEndsAt: phaseEndsAt,
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Should show skipped indicator
       expect(find.byKey(const Key('skipped-indicator')), findsOneWidget);
-      // Should show waiting text with countdown
-      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
-      // Timer should be present (showing minutes)
-      expect(find.textContaining('m'), findsWidgets);
     });
 
-    testWidgets('does not show countdown timer when phaseEndsAt is null after submission',
+    testWidgets('does not render its own countdown timer (now at top of screen)',
         (tester) async {
       final controller = TextEditingController();
       final propositions = [
@@ -910,16 +906,15 @@ void main() {
             myPropositions: propositions,
             propositionController: controller,
             onSubmit: () {},
-            phaseEndsAt: null, // No deadline
+            phaseEndsAt: DateTime.now().add(const Duration(minutes: 5)),
           ),
         ),
       );
       await tester.pumpAndSettle();
 
-      // Should show waiting text without timer parentheses
-      // "Waiting for rating phase" text removed — timer is in RoundPhaseBar
-      // Should not have parentheses for timer
-      expect(find.text('('), findsNothing);
+      // No timer text inside the panel — RoundPhaseBar handles that now.
+      expect(find.textContaining('m '), findsNothing,
+          reason: 'Countdown timer moved to RoundPhaseBar at the top of the screen');
     });
   });
 
@@ -1060,8 +1055,9 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('rating-skipped-indicator')), findsOneWidget);
-      // Timer should show minutes
-      expect(find.textContaining('m'), findsWidgets);
+      // Timer is now rendered by the top-of-screen RoundPhaseBar, not here.
+      expect(find.textContaining('m '), findsNothing,
+          reason: 'Countdown timer no longer rendered by RatingStatePanel');
     });
 
     testWidgets('disables skip button when isPaused is true',
@@ -1232,9 +1228,9 @@ void main() {
 
       // Should show the rating complete indicator
       expect(find.byKey(const Key('rating-complete-indicator')), findsOneWidget);
-      // "Waiting for rating phase to end" text removed — timer is in RoundPhaseBar
-      // Timer should be present (showing minutes)
-      expect(find.textContaining('m'), findsWidgets);
+      // Timer moved to top-of-screen RoundPhaseBar; not rendered here.
+      expect(find.textContaining('m '), findsNothing,
+          reason: 'Countdown timer no longer rendered by RatingStatePanel');
     });
 
     testWidgets('does not show countdown timer when phaseEndsAt is null after rating',
@@ -1259,8 +1255,11 @@ void main() {
       expect(container, findsOneWidget);
     });
 
-    testWidgets('passes onPhaseExpired to CountdownTimer after rating',
+    testWidgets('still renders rating-complete indicator even with phaseEndsAt set',
         (tester) async {
+      // Sanity check that passing phaseEndsAt doesn't break the panel —
+      // the timer itself is rendered by the top-of-screen RoundPhaseBar
+      // (not here), and the indicator still appears.
       final phaseEndsAt = DateTime.now().add(const Duration(minutes: 5));
 
       await tester.pumpWidget(
@@ -1275,12 +1274,9 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Verify CountdownTimer is rendered in the rating-complete-indicator
-      // The actual expiration callback behavior is tested in countdown_timer_test.dart
       expect(find.byKey(const Key('rating-complete-indicator')), findsOneWidget);
-      expect(find.textContaining('m'), findsWidgets);
     });
   });
 }

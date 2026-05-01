@@ -18,6 +18,7 @@ import 'core/errors/app_exception.dart';
 import 'core/l10n/locale_provider.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'providers/providers.dart';
+import 'utils/perf_logger.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -71,6 +72,11 @@ Future<void> main() async {
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
   );
+
+  // Perf logger: emit timing events to remote `perf_logs` for diagnosis.
+  // Defaults to `kDebugMode` so prod builds stay quiet. Toggle off via
+  // `PerfLogger.enabled = false;` if a debug session shouldn't write.
+  PerfLogger.enabled = kDebugMode;
 
   // Initialize SharedPreferences for localization
   final sharedPreferences = await SharedPreferences.getInstance();

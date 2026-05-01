@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../l10n/generated/app_localizations.dart';
+import '../../widgets/error_view.dart';
 import 'invite_code_parser.dart';
 
 export 'invite_code_parser.dart' show extractInviteCode;
@@ -51,9 +52,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     }
     if (mounted) {
       final l10n = AppLocalizations.of(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.invalidQrCode), duration: const Duration(seconds: 2)),
-      );
+      context.showInfoSnackBar(l10n.invalidQrCode);
     }
   }
 

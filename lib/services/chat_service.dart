@@ -1120,10 +1120,18 @@ class ChatService {
     await _client.rpc('host_pause_chat', params: {'p_chat_id': chatId});
   }
 
-  /// Resume chat that was manually paused (host only)
-  /// Restores timer from saved state if schedule is not also paused
-  Future<void> hostResumeChat(int chatId) async {
-    await _client.rpc('host_resume_chat', params: {'p_chat_id': chatId});
+  /// Resume chat that was manually paused (host only).
+  /// Restores timer from saved state if schedule is not also paused.
+  ///
+  /// Optional [correlationId] threads the caller's perf-log correlation
+  /// into the DB function so its start/end log_perf rows share the ID
+  /// with Flutter-side rows. The DB function generates its own ID if
+  /// none is passed (still safe — just doesn't tie cross-source).
+  Future<void> hostResumeChat(int chatId, {String? correlationId}) async {
+    await _client.rpc('host_resume_chat', params: {
+      'p_chat_id': chatId,
+      if (correlationId != null) 'p_correlation_id': correlationId,
+    });
   }
 
   /// Delete a consensus (host only). Returns whether cycle was restarted.

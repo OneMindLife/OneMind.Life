@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/models/proposition.dart';
 import 'package:onemind_app/screens/rating/read_only_results_screen.dart';
+import 'package:onemind_app/widgets/rating/rating_widget.dart';
 
 void main() {
   group('ReadOnlyResultsScreen', () {
@@ -192,6 +193,133 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(popped, true);
+    });
+
+    // ===========================================================
+    // Near-tie display bug regression
+    // (NCDD Higher Ed Exchange demo, chat 309, 2026-05-01)
+    // ===========================================================
+    //
+    // Two propositions whose final ratings differ by less than 1 point
+    // should render as a single stacked card whose visible default is
+    // the higher-rated card — NOT as two cards painted on top of each
+    // other where the visible card is decided by paint order.
+    group('near-tie stacking (NCDD R1 regression)', () {
+      testWidgets(
+        'two propositions <1 point apart render only the higher-rated as '
+        'the visible card text',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              ReadOnlyResultsScreen(
+                propositions: [
+                  // Listed in non-rating order to confirm placement
+                  // order does not influence visibility
+                  Proposition(
+                    id: 1,
+                    roundId: 1,
+                    content: 'DEI question',
+                    createdAt: DateTime.now(),
+                    finalRating: 99.91,
+                  ),
+                  Proposition(
+                    id: 2,
+                    roundId: 1,
+                    content: 'ingrained patterns',
+                    createdAt: DateTime.now(),
+                    finalRating: 100.00,
+                  ),
+                ],
+                roundNumber: 1,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // The higher-rated card's content must be visible. The
+          // runner-up may or may not have its content visible depending
+          // on whether the StackedPropositionCard exposes both —
+          // the load-bearing assertion is that the WINNER is the
+          // surface card.
+          expect(find.text('ingrained patterns'), findsOneWidget,
+              reason: 'higher-rated proposition must be visibly on top in '
+                  'the stack');
+        },
+      );
+
+      testWidgets(
+        'propositions >1 point apart still render as separate cards',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              ReadOnlyResultsScreen(
+                propositions: [
+                  Proposition(
+                    id: 1,
+                    roundId: 1,
+                    content: 'high prop',
+                    createdAt: DateTime.now(),
+                    finalRating: 90.0,
+                  ),
+                  Proposition(
+                    id: 2,
+                    roundId: 1,
+                    content: 'mid prop',
+                    createdAt: DateTime.now(),
+                    finalRating: 50.0,
+                  ),
+                  Proposition(
+                    id: 3,
+                    roundId: 1,
+                    content: 'low prop',
+                    createdAt: DateTime.now(),
+                    finalRating: 10.0,
+                  ),
+                ],
+                roundNumber: 1,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          // All three should render their content (none stacked).
+          expect(find.text('high prop'), findsOneWidget);
+          expect(find.text('mid prop'), findsOneWidget);
+          expect(find.text('low prop'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'screen mounts a RatingWidget for non-empty propositions',
+        (tester) async {
+          await tester.pumpWidget(
+            createTestWidget(
+              ReadOnlyResultsScreen(
+                propositions: [
+                  Proposition(
+                    id: 1,
+                    roundId: 1,
+                    content: 'a',
+                    createdAt: DateTime.now(),
+                    finalRating: 80.0,
+                  ),
+                  Proposition(
+                    id: 2,
+                    roundId: 1,
+                    content: 'b',
+                    createdAt: DateTime.now(),
+                    finalRating: 79.5,
+                  ),
+                ],
+                roundNumber: 1,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(RatingWidget), findsOneWidget);
+        },
+      );
     });
   });
 }

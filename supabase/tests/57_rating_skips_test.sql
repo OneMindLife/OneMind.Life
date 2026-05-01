@@ -140,7 +140,7 @@ SELECT is(
 
 -- =============================================================================
 -- TEST 7: User1 rates (skips own Prop A, rates B, C, D)
--- active_raters = 4 - 2 skips = 2. threshold = min(10, max(2-1, 1)) = 1.
+-- active_raters = 4 - 2 skips = 2. threshold = min(7, max(2-1, 1)) = 1.
 -- Per-prop after User1: prop_a=0, prop_b=1, prop_c=1, prop_d=1 → min=0 < 1. NOT met.
 -- =============================================================================
 

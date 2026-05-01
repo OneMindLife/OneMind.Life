@@ -1,14 +1,14 @@
 -- Tests for per-proposition early advance model.
 --
 -- The new model advances the round when every proposition has enough ratings:
---   threshold = min(10, max(active_raters - 1, 1))
+--   threshold = min(7, max(active_raters - 1, 1))
 --   where active_raters = active participants - rating skippers
 --   advance when min(ratings per proposition) >= threshold
 --
 -- Edge cases tested:
 --   1. Carry-forward proposition (author has 2 props)
 --   2. Multiple carry-forwards from tied previous round
---   3. Large chat (threshold caps at 10)
+--   3. Large chat (threshold caps at 7)
 --   4. All participants skip rating
 --   5. 2 participants minimum viable
 --   6. Least-rated-first RPC functions
@@ -19,7 +19,7 @@ SELECT plan(23);
 
 -- =============================================================================
 -- SCENARIO A: 3 participants + 1 carry-forward (authored by P1)
--- P1 has 2 propositions (own + carry). Threshold = min(10, max(3-1, 1)) = 2.
+-- P1 has 2 propositions (own + carry). Threshold = min(7, max(3-1, 1)) = 2.
 -- =============================================================================
 
 DO $$
@@ -277,7 +277,7 @@ SELECT is(
 
 -- =============================================================================
 -- SCENARIO C: 2 participants (minimum viable)
--- Threshold = min(10, max(2-1, 1)) = 1. Each rates the other's prop.
+-- Threshold = min(7, max(2-1, 1)) = 1. Each rates the other's prop.
 -- =============================================================================
 
 DO $$
@@ -349,7 +349,7 @@ SELECT is(
 -- =============================================================================
 -- SCENARIO D: Maximum skips then remaining raters complete
 -- 5 participants, rating_minimum=2, max_skips=3. 3 skip, 2 must rate.
--- active_raters = 5 - 3 = 2. threshold = min(10, max(2-1, 1)) = 1.
+-- active_raters = 5 - 3 = 2. threshold = min(7, max(2-1, 1)) = 1.
 -- =============================================================================
 
 DO $$
@@ -447,7 +447,7 @@ SELECT is(
 
 -- =============================================================================
 -- SCENARIO E: 5 participants, 1 skip, 1 carry-forward
--- active_raters = 5 - 1 = 4. threshold = min(10, max(4-1, 1)) = 3.
+-- active_raters = 5 - 1 = 4. threshold = min(7, max(4-1, 1)) = 3.
 -- Tests intermediate non-advance states.
 -- =============================================================================
 

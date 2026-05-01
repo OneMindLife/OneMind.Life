@@ -121,6 +121,16 @@ class RatingWidget extends StatefulWidget {
   /// The proposition id to attach the tracked key to
   final String? trackedCardId;
 
+  /// Whether to show a help icon under the controls. Tapping opens a
+  /// phase-aware demo modal explaining the buttons. Hidden in read-only
+  /// mode and during tutorial demos.
+  final bool showHelpButton;
+
+  /// Callback to open the help modal for the current phase. The widget
+  /// invokes this when the user taps the help icon. Receives the active
+  /// `RatingPhase` so the host can route to the right demo.
+  final void Function(RatingPhase phase)? onHelpPressed;
+
   const RatingWidget({
     super.key,
     required this.propositions,
@@ -140,6 +150,8 @@ class RatingWidget extends StatefulWidget {
     this.demoController,
     this.trackedCardKey,
     this.trackedCardId,
+    this.showHelpButton = false,
+    this.onHelpPressed,
   });
 
   @override
@@ -504,7 +516,11 @@ class RatingWidgetState extends State<RatingWidget>
       final yPercent = 1 - (proposition.position / 100);
       final yPosition = (yPercent * stackHeight) + buffer;
 
-      final roundedPos = (proposition.position * 10).round() / 10;
+      // Stack membership is the model's source of truth — look it up
+      // there rather than re-rounding positions in the widget. The
+      // model uses different tolerances depending on mode (live drag =
+      // 0.1, read-only results = 1.0); duplicating the rounding here
+      // would silently disagree with the model in results mode.
       final stack = _model.getStackAtPosition(proposition.position);
       final isDefaultCard = stack?.defaultCardId == proposition.id;
 
@@ -512,17 +528,25 @@ class RatingWidgetState extends State<RatingWidget>
         (p) => p.isActive,
         orElse: () => proposition,
       );
-      final activeRoundedPos = (activeProp.position * 10).round() / 10;
-      final activeAtThisPosition =
-          roundedPos == activeRoundedPos && activeProp.id != proposition.id;
+      final activeAtThisPosition = stack != null &&
+          stack.allCardIds.contains(activeProp.id) &&
+          activeProp.id != proposition.id;
 
       Widget cardWidget;
       bool shouldHide = false;
 
-      if (proposition.isActive && stack != null) {
-        final allCardsInStack = _model.rankedPropositions
-            .where((p) => ((p.position * 10).round() / 10) == roundedPos)
+      // Helper: resolve stack.allCardIds into the live RatingProposition
+      // objects from the model.
+      List<RatingProposition> resolveStackCards(PositionStack s) {
+        final byId = {for (final p in _model.rankedPropositions) p.id: p};
+        return s.allCardIds
+            .where((id) => byId.containsKey(id))
+            .map((id) => byId[id]!)
             .toList();
+      }
+
+      if (proposition.isActive && stack != null) {
+        final allCardsInStack = resolveStackCards(stack);
 
         final actualDefaultCard = allCardsInStack.firstWhere(
           (p) => p.id == stack.defaultCardId,
@@ -538,9 +562,7 @@ class RatingWidgetState extends State<RatingWidget>
           model: _model,
         );
       } else if (stack != null && isDefaultCard && !activeAtThisPosition) {
-        final allCardsInStack = _model.rankedPropositions
-            .where((p) => ((p.position * 10).round() / 10) == roundedPos)
-            .toList();
+        final allCardsInStack = resolveStackCards(stack);
 
         final actualDefaultCard = allCardsInStack.firstWhere(
           (p) => p.id == stack.defaultCardId,
@@ -754,59 +776,68 @@ class RatingWidgetState extends State<RatingWidget>
   Widget _buildBinaryControls() {
     final theme = Theme.of(context);
 
-    return Container(
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha:0.5),
-          width: 1,
-        ),
-      ),
-      child: SizedBox(
-        width: 40,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Swap button
-            _AnimatedControlButton(
-              onTap: _model.swapBinaryPositions,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surface,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: theme.colorScheme.primary,
-                    width: 2,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.primary.withValues(alpha:0.5),
+              width: 1,
+            ),
+          ),
+          child: SizedBox(
+            width: 40,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Swap button
+                _AnimatedControlButton(
+                  onTap: _model.swapBinaryPositions,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.surface,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.swap_vert,
+                      size: 25,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                 ),
-                child: Icon(
-                  Icons.swap_vert,
-                  size: 25,
-                  color: theme.colorScheme.primary,
+                const SizedBox(height: 20),
+                // Confirm button
+                _AnimatedControlButton(
+                  onTap: _model.confirmBinaryChoice,
+                  child: Container(
+                    key: widget.checkButtonKey,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      size: 25,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(height: 20),
-            // Confirm button
-            _AnimatedControlButton(
-              onTap: _model.confirmBinaryChoice,
-              child: Container(
-                key: widget.checkButtonKey,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.check,
-                  size: 25,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
-      ),
+        if (widget.showHelpButton) ...[
+          const SizedBox(height: 12),
+          _buildHelpIcon(RatingPhase.binary),
+        ],
+      ],
     );
   }
 
@@ -1011,7 +1042,37 @@ class RatingWidgetState extends State<RatingWidget>
               ),
             ),
           ],
+          if (widget.showHelpButton) ...[
+            const SizedBox(height: 16),
+            _buildHelpIcon(RatingPhase.positioning),
+          ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildHelpIcon(RatingPhase phase) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      width: 40,
+      height: 40,
+      child: _AnimatedControlButton(
+        onTap: () => widget.onHelpPressed?.call(phase),
+        child: Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.colorScheme.outline.withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            Icons.help_outline,
+            size: 22,
+            color: theme.colorScheme.outline,
+          ),
+        ),
       ),
     );
   }

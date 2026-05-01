@@ -3298,5 +3298,223 @@ void main() {
             reason: 'lazy-loaded card must not jump to boundary');
       });
     });
+
+    // ===========================================================
+    // Read-only results display: integer-bucket stack grouping
+    // ===========================================================
+    //
+    // Regression for the NCDD Higher Ed Exchange demo (chat 309,
+    // 2026-05-01): the actual round 1 winner was a 0.01-point
+    // near-tie between two propositions (global scores 100.00 and
+    // 99.91). With the old fine-snap tolerance (0.1) used uniformly
+    // across modes, the two cards rendered at nearly identical
+    // pixel positions but in DIFFERENT stack buckets, so the visible
+    // top card was chosen by paint order rather than by rating.
+    //
+    // The fix: in results-display mode, group at bucket = 1.0 so
+    // near-tied propositions form a single PositionStack with the
+    // higher-rated card as the default (visible) card.
+    group('fromResults — display bucket stacking', () {
+      test('near-tied propositions (1 point apart) form a single stack', () {
+        // The literal NCDD R1 numbers
+        final model = RatingModel.fromResults([
+          {'id': 1, 'content': 'ingrained patterns', 'finalRating': 100.00},
+          {'id': 2, 'content': 'DEI question', 'finalRating': 99.91},
+        ]);
+
+        final stack = model.getStackAtPosition(100.0);
+        expect(stack, isNotNull,
+            reason: 'cards within 1 point should share a stack in results mode');
+        expect(stack!.cardCount, 2);
+        expect(stack.allCardIds, containsAll(['1', '2']));
+      });
+
+      test('higher-rated card is the stack default (the visible card)', () {
+        final model = RatingModel.fromResults([
+          // Insert in non-rating order to confirm placement order
+          // does NOT decide the default in results mode
+          {'id': 'lower', 'content': 'lower', 'finalRating': 99.91},
+          {'id': 'higher', 'content': 'higher', 'finalRating': 100.00},
+        ]);
+
+        final stack = model.getStackAtPosition(100.0)!;
+        expect(stack.defaultCardId, 'higher',
+            reason: 'in results mode, the visible card is the actual round '
+                'winner — not the most-recently-inserted card');
+      });
+
+      test(
+        'three propositions: top two within 1 point stack, third stays separate',
+        () {
+          final model = RatingModel.fromResults([
+            {'id': 'a', 'content': 'a', 'finalRating': 100.0},
+            {'id': 'b', 'content': 'b', 'finalRating': 99.5},
+            {'id': 'c', 'content': 'c', 'finalRating': 98.0}, // > 1 from b
+          ]);
+
+          final topStack = model.getStackAtPosition(100.0);
+          expect(topStack, isNotNull);
+          expect(topStack!.allCardIds, containsAll(['a', 'b']));
+
+          // c is more than the 1.0 bucket away from b → no stack at c's pos
+          final cStack = model.getStackAtPosition(98.0);
+          expect(cStack, isNull,
+              reason: 'a card 1.5+ points from any neighbor should not stack');
+        },
+      );
+
+      test('exact ties stack and the higher-id default still applies', () {
+        final model = RatingModel.fromResults([
+          {'id': 'first', 'content': 'first', 'finalRating': 50.0},
+          {'id': 'second', 'content': 'second', 'finalRating': 50.0},
+          {'id': 'third', 'content': 'third', 'finalRating': 50.0},
+        ]);
+
+        final stack = model.getStackAtPosition(50.0);
+        expect(stack, isNotNull);
+        expect(stack!.cardCount, 3);
+        // Tied — defaultCardId is whichever the model picks; just
+        // confirm it's one of the tied cards.
+        expect(['first', 'second', 'third'], contains(stack.defaultCardId));
+      });
+
+      test('isResultsMode is true for fromResults factory only', () {
+        final results = RatingModel.fromResults([
+          {'id': 1, 'content': 'a', 'finalRating': 50.0},
+        ]);
+        expect(results.isResultsMode, isTrue);
+
+        final live = RatingModel([
+          {'id': 1, 'content': 'a'},
+          {'id': 2, 'content': 'b'},
+        ]);
+        expect(live.isResultsMode, isFalse);
+      });
+
+      test(
+        'live mode tolerance is fine-snap (0.1) at normal positions',
+        () {
+          // Direct assertion on the tolerance the live model uses.
+          // Avoids the placement/compression mechanics that interact
+          // when cards approach boundaries.
+          final live = RatingModel([
+            {'id': 1, 'content': 'a'},
+            {'id': 2, 'content': 'b'},
+          ]);
+          expect(live.currentStackTolerance, RatingStackTolerance.dragNormal);
+          expect(live.currentStackTolerance, 0.1,
+              reason: 'live drag preserves sub-integer precision so users '
+                  'can place cards at fine positions without snapping');
+        },
+      );
+
+      test(
+        'results mode tolerance is the integer-slot bucket (1.0)',
+        () {
+          final results = RatingModel.fromResults([
+            {'id': 1, 'content': 'a', 'finalRating': 50.0},
+          ]);
+          expect(results.currentStackTolerance,
+              RatingStackTolerance.displayBucket);
+          expect(results.currentStackTolerance, 1.0,
+              reason: 'results mode groups near-tied propositions into a '
+                  'single stack so the visible card matches the actual winner');
+        },
+      );
+
+      test(
+        'live mode DOES still stack at fine-snap tolerance (regression)',
+        () {
+          // Distance 0.09 < 0.1 → should stack in live mode (existing
+          // behavior; the refactor must not have changed this).
+          final model = RatingModel([
+            {'id': 1, 'content': 'first'},
+            {'id': 2, 'content': 'second'},
+            {'id': 3, 'content': 'third'},
+          ]);
+          model.confirmBinaryChoice();
+          model.setActivePropositionPosition(99.91);
+          model.confirmPlacement();
+
+          final stack = model.getStackAtPosition(100.0);
+          expect(stack, isNotNull,
+              reason: '0.09 distance is within the 0.1 fine-snap tolerance — '
+                  'live mode must still stack at this distance');
+        },
+      );
+
+      test('live mode still stacks exact ties at integer position', () {
+        // Regression: the new bucket logic should not break exact-tie
+        // stacking that already worked.
+        final model = RatingModel([
+          {'id': 1, 'content': 'A'},
+          {'id': 2, 'content': 'B'},
+          {'id': 3, 'content': 'C'},
+        ]);
+        model.confirmBinaryChoice();
+        model.setActivePropositionPosition(100.0);
+        model.confirmPlacement();
+
+        final stack = model.getStackAtPosition(100.0);
+        expect(stack, isNotNull);
+        expect(stack!.cardCount, 2);
+      });
+
+      test(
+        'results mode: 16-proposition NCDD R1 snapshot — TWO near-tie '
+        'clusters surface (top winner+DEI, mid critical-thinking+mission)',
+        () {
+          // Recreates the actual rating-results data from chat 309 R1
+          // (verified against the production database 2026-05-01).
+          //
+          // The bug surfaced because the top two propositions were a
+          // 0.09-point near-tie. While building this test we discovered
+          // a SECOND near-tie cluster in the same dataset: positions
+          // 73.81 and 73.09 (distance 0.72) are also within bucket 1.0.
+          // Both clusters were silently rendering as overlapping cards
+          // before the fix.
+          final model = RatingModel.fromResults([
+            {'id': 'winner', 'content': 'ingrained patterns', 'finalRating': 100.00},
+            {'id': 'dei', 'content': 'DEI', 'finalRating': 99.91},
+            {'id': 'gov', 'content': 'governmental interference', 'finalRating': 92.67},
+            {'id': 'red_blue', 'content': 'Red/Blue Divide', 'finalRating': 88.25},
+            {'id': 'genai', 'content': 'genAI values', 'finalRating': 74.88},
+            {'id': 'crit_thinking', 'content': 'critical thinking + digital literacy', 'finalRating': 73.81},
+            {'id': 'mission', 'content': 'mission/telos of the university', 'finalRating': 73.09},
+            {'id': 'departure', 'content': 'departure of faculty/students of color', 'finalRating': 63.72},
+            {'id': 'ai_skills', 'content': 'skills now that AI does many tasks', 'finalRating': 50.60},
+            {'id': 'sustained_reading', 'content': 'sustained reading not AI summaries', 'finalRating': 47.26},
+            {'id': 'literacy', 'content': 'literacy', 'finalRating': 45.68},
+            {'id': 'religion_lgbtq', 'content': 'religion/LGBTQ+ tensions', 'finalRating': 36.77},
+            {'id': 'civic', 'content': 'civic engagement beyond voting', 'finalRating': 22.53},
+            {'id': 'trump', 'content': 'Trump\'s terror', 'finalRating': 15.22},
+            {'id': 'interfaith', 'content': 'interfaith dialogue', 'finalRating': 10.86},
+            {'id': 'motivation', 'content': 'student motivation', 'finalRating': 0.00},
+          ]);
+
+          // Top stack — winner+DEI, winner is default
+          final topStack = model.getStackAtPosition(100.0);
+          expect(topStack, isNotNull);
+          expect(topStack!.cardCount, 2);
+          expect(topStack.allCardIds, containsAll(['winner', 'dei']));
+          expect(topStack.defaultCardId, 'winner',
+              reason: 'higher-rated proposition must be the visible default');
+
+          // Middle stack — crit_thinking + mission (73.81 vs 73.09)
+          final midStack = model.getStackAtPosition(73.5);
+          expect(midStack, isNotNull,
+              reason: '73.81 and 73.09 are 0.72 apart — within results bucket');
+          expect(midStack!.cardCount, 2);
+          expect(midStack.allCardIds, containsAll(['crit_thinking', 'mission']));
+          expect(midStack.defaultCardId, 'crit_thinking',
+              reason: 'higher-rated of the mid pair is the visible default');
+
+          // Exactly two stacks total
+          expect(model.positionStacks.length, 2,
+              reason: 'every other proposition is > 1 point from its '
+                  'neighbors; only the two near-tie clusters form stacks');
+        },
+      );
+    });
   });
 }

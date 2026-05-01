@@ -731,6 +731,11 @@ class AppLocalizationsEs extends AppLocalizations {
   String get requestDenied => 'Solicitud denegada';
 
   @override
+  String failedToApproveRequest(String error) {
+    return 'Error al aprobar la solicitud: $error';
+  }
+
+  @override
   String failedToSubmit(String error) {
     return 'Error al enviar: $error';
   }
@@ -1038,6 +1043,46 @@ class AppLocalizationsEs extends AppLocalizations {
   String skipsRemaining(int remaining) {
     return '$remaining saltos restantes';
   }
+
+  @override
+  String get gateAffirm => 'Afirmar';
+
+  @override
+  String get gateAlternative => 'Alternativa';
+
+  @override
+  String get gateMicrocopy => 'Afirma esto u ofrece una alternativa.';
+
+  @override
+  String get gateBack => 'Atrás';
+
+  @override
+  String get alternativeMicrocopy =>
+      'Envía tu idea, vuelve atrás o salta tu turno.';
+
+  @override
+  String get alternativeMicrocopyNoSkip => 'Envía tu idea o vuelve atrás.';
+
+  @override
+  String get ratingMicrocopy =>
+      'Califica las propuestas para elegir al ganador o salta tu turno.';
+
+  @override
+  String get ratingMicrocopyNoSkip =>
+      'Califica las propuestas para elegir al ganador.';
+
+  @override
+  String get waitingForNextPhase => 'Esperando la próxima fase';
+
+  @override
+  String get send => 'Enviar';
+
+  @override
+  String get yourAffirmation => 'Tu afirmación';
+
+  @override
+  String get participantsRankingExplainer =>
+      'Ordenados según qué tanto sus calificaciones e ideas se alinean con el grupo';
 
   @override
   String get createChatTitle => 'Crear Chat';
