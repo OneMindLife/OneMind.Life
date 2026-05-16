@@ -11,7 +11,7 @@ Access and participate in collective consensus-building chats on OneMind.
 
 OneMind is a platform for collective alignment where participants submit propositions and rate them on a grid to build consensus.
 
-**Official Chat:** ID 87 - "Welcome to OneMind"
+**Official Chat:** ID 246 - "OneMind"
 
 ## API Base URL
 
