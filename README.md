@@ -1,39 +1,39 @@
 # OneMind
 
-**OneMind is a collective alignment platform for humanity.**
+**OneMind is a conversation that ranks itself.**
 
-**Try it live at [onemind.life](https://onemind.life)**
+**Try it live at [onemind.life](https://onemind.life)** · **[Watch the demo](https://www.youtube.com/watch?v=zzq2TPhuVSg)**
 
-**[Watch the demo on YouTube](https://www.youtube.com/watch?v=zzq2TPhuVSg)**
+Everyone's anonymous — no name, no profile, no followers. Drop an honest opinion, and the crowd sorts every opinion by voting **head-to-head** (two at a time, pick the stronger). Position isn't likes, upvotes, karma, or recency — it's how often an idea **wins in direct comparison**, judged by everyone. The best rise to the top on **merit**, not volume.
 
-It enhances cooperation through shared direction via a convergence mechanism. Any group of people can use OneMind to reach consensus on ideas through structured, democratic deliberation.
+And it branches without limit: **reply to any opinion and that reply opens its own ranked thread** — infinitely deep. So a group's, or the whole world's, thinking self-organizes into a **living, merit-ranked tree of ideas**.
+
+Think Reddit — if replies nested forever, were sorted by head-to-head votes instead of upvotes, and nobody had a name.
+
+> A centralized, **open-source** web app — **not a blockchain, crypto, or token project.** Unrelated to the "One Mind" mental-health nonprofit (onemind.org).
 
 ## How It Works
 
-1. Someone poses a question/topic (seed)
-2. Participants submit propositions (anonymous)
-3. Participants rank propositions (grid ranking)
-4. Winner determined by MOVDA algorithm
-5. If same proposition wins **N rounds in a row** → consensus reached (N is configurable, default 2)
-6. If not → new round, repeat
+1. **Open the one global chat** — no sign-up ([onemind.life/g/GLOBAL](https://onemind.life/g/GLOBAL), or in Telegram via [@OneMindLifeBot](https://t.me/OneMindLifeBot))
+2. **Add your honest opinion**, anonymously
+3. **Vote head-to-head** — you're shown two takes at a time; pick the stronger
+4. **Every vote re-ranks the room** — the best ideas rise on merit (pairwise voting produces a global ranking, like Elo — not a like-count)
+5. **Reply to any opinion to open a thread** — threads rank the same way and nest without limit, so the conversation branches into a tree of the group's best thinking
 
 ## Who Is It For?
 
-**Everyone.** Any humans who work together:
-- Classrooms & research institutions
-- Families & friend groups
-- Private sector teams
-- Emergency response teams
-- Global conversations
-- Any group seeking shared direction
+**Anyone who wants to know what a group — or the world — actually thinks**, judged on the idea rather than who's loudest:
+- The global public square (the always-on world chat)
+- Teams, classrooms, families, and communities deciding something together
+- AI agents and researchers who need ground truth on human preference
 
 ## Features
 
-- **Anonymous propositions** - Nobody can see who proposed what
-- **Democratic rating** - All participants rank propositions via grid ranking
-- **Zoom-like access** - 6-character invite codes, no sign-up required
-- **Real-time updates** - See changes as they happen
-- **Flexible settings** - Timers, thresholds, approval requirements
+- **Anonymous** — nobody sees who wrote what; ideas compete on merit, not status
+- **Head-to-head ranking** — pairwise voting sorts every opinion by direct comparison, not likes or karma
+- **Infinite threads** — every reply opens its own ranked sub-conversation; the conversation is a tree, not a flat feed
+- **No sign-up** — open the chat and start, anonymous by default
+- **Open-source** — this repository
 
 ## Getting Started
 
