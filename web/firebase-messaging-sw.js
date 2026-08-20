@@ -2,13 +2,13 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'YOUR_API_KEY',
-  appId: 'YOUR_APP_ID',
+  apiKey: 'YOUR_FIREBASE_API_KEY',
+  appId: 'YOUR_FIREBASE_APP_ID',
   messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  projectId: 'YOUR_PROJECT_ID',
-  authDomain: 'YOUR_PROJECT_ID.firebaseapp.com',
-  storageBucket: 'YOUR_PROJECT_ID.firebasestorage.app',
-  measurementId: 'YOUR_MEASUREMENT_ID',
+  projectId: 'YOUR_FIREBASE_PROJECT_ID',
+  authDomain: 'YOUR_FIREBASE_PROJECT_ID.firebaseapp.com',
+  storageBucket: 'YOUR_FIREBASE_PROJECT_ID.firebasestorage.app',
+  measurementId: 'G-2XCF0J8BGQ',
 });
 
 const messaging = firebase.messaging();
@@ -23,7 +23,9 @@ messaging.onBackgroundMessage(function(payload) {
   return self.registration.showNotification(title, {
     body: body,
     icon: '/icons/Icon-192.png',
-    data: { chat_id: chatId, url: '/?chat_id=' + chatId },
+    // Must be /home: '/' is the marketing LandingScreen and ignores chat_id,
+    // so a tapped notification would land on the hero page instead of the chat.
+    data: { chat_id: chatId, url: '/home?chat_id=' + chatId },
   });
 });
 

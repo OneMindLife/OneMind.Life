@@ -138,18 +138,19 @@ SELECT ok(
 );
 
 -- =============================================================================
--- TEST 6 (KEY BUG TEST): Timer gives at least rating_duration_seconds
--- The rating timer is 60 seconds. phase_ends_at should be at least 60 seconds
--- after phase_started_at (rounded up to the next minute boundary).
+-- TEST 6 (KEY BUG TEST): Timer gives ~rating_duration_seconds
+-- The rating timer is 60 seconds. Since 20260811160000 phase_ends_at snaps to
+-- the NEAREST minute boundary, so it can sit up to 15s (the alignment
+-- tolerance) short of 60 — but never the sliver this test was written for.
 --
 -- BUG: date_trunc('minute', NOW()) + 1 minute gives a timer of (60 - seconds_past_minute).
 --      When the trigger fires at XX:YY:55, this is only 5 seconds!
 -- =============================================================================
 
 SELECT ok(
-    (SELECT EXTRACT(EPOCH FROM (phase_ends_at - phase_started_at)) >= 60
+    (SELECT EXTRACT(EPOCH FROM (phase_ends_at - phase_started_at)) >= 45
      FROM public.rounds WHERE id = current_setting('test.round_id')::INT),
-    'Timer must give at least rating_duration_seconds (60s) from phase_started_at'
+    'Timer must give rating_duration_seconds minus alignment tolerance (60s - 15s)'
 );
 
 -- =============================================================================
@@ -203,9 +204,9 @@ SELECT is(
 -- =============================================================================
 
 SELECT ok(
-    (SELECT EXTRACT(EPOCH FROM (phase_ends_at - phase_started_at)) >= 60
+    (SELECT EXTRACT(EPOCH FROM (phase_ends_at - phase_started_at)) >= 45
      FROM public.rounds WHERE id = current_setting('test.round2_id')::INT),
-    'Proposition trigger timer must also give at least 60s from phase_started_at'
+    'Proposition trigger timer must also give at least 60s - 15s tolerance'
 );
 
 SELECT * FROM finish();

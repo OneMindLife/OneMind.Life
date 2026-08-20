@@ -21,6 +21,11 @@ class RoundPhaseBar extends StatelessWidget {
   /// Whether to show the inactive phase chip. Defaults to true.
   final bool showInactivePhase;
 
+  /// Whether to show the "Round N" label (and its divider). C15 tree-mode
+  /// chats hide it — round numbers are meaningless across parallel
+  /// subrounds; the bar keeps only the phase tag and the countdown.
+  final bool showRoundNumber;
+
   /// Whether to highlight both phase chips as active. Defaults to false.
   final bool highlightAllPhases;
 
@@ -67,6 +72,7 @@ class RoundPhaseBar extends StatelessWidget {
     this.participationPercent,
     this.animateProgress = false,
     this.showInactivePhase = false,
+    this.showRoundNumber = true,
     this.highlightAllPhases = false,
     this.roundOpacity = 1.0,
     this.phasesOpacity = 1.0,
@@ -102,18 +108,20 @@ class RoundPhaseBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               // Round number
-              AnimatedOpacity(
-                opacity: roundOpacity,
-                duration: const Duration(milliseconds: 250),
-                child: Text(
-                  l10n.roundNumber(roundNumber),
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
+              if (showRoundNumber)
+                AnimatedOpacity(
+                  opacity: roundOpacity,
+                  duration: const Duration(milliseconds: 250),
+                  child: Text(
+                    l10n.roundNumber(roundNumber),
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                 ),
-              ),
               // Divider between round and phases
+              if (showRoundNumber)
               AnimatedOpacity(
                 opacity: phasesOpacity,
                 duration: const Duration(milliseconds: 250),

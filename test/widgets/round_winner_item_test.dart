@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/widgets/round_winner_item.dart';
+import 'package:onemind_app/widgets/tts_button.dart';
 
 void main() {
   Widget createTestWidget(Widget child) {
@@ -116,6 +117,38 @@ void main() {
       final decoration = container.decoration as BoxDecoration;
       final border = decoration.border as Border;
       expect(border.top.width, 2.0);
+    });
+
+    testWidgets('renders a read-aloud TtsButton when showTts is true',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        RoundWinnerItem(
+          winnerTexts: const ['Read me aloud'],
+          label: 'Round 1 Winner',
+          showTts: true,
+          onTap: () {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TtsButton), findsOneWidget);
+      final tts = tester.widget<TtsButton>(find.byType(TtsButton));
+      expect(tts.text, 'Read me aloud');
+      expect(tts.source, 'cycle_winner');
+    });
+
+    testWidgets('no TtsButton by default (showTts defaults to false)',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        RoundWinnerItem(
+          winnerTexts: const ['Silent'],
+          label: 'Round 1 Winner',
+          onTap: () {},
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TtsButton), findsNothing);
     });
 
     testWidgets('uses consensus border when isConvergence is false', (tester) async {

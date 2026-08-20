@@ -28,7 +28,7 @@ void main() {
     }
 
     testWidgets(
-      'initial-message toggle defaults to ON and reveals the message field',
+      'initial-message toggle defaults to OFF and hides the message field',
       (tester) async {
         final nameController = TextEditingController();
         final messageController = TextEditingController();
@@ -39,15 +39,43 @@ void main() {
           messageController: messageController,
         );
 
-        final toggleFinder = find.widgetWithText(SwitchListTile, 'Set initial message');
+        final toggleFinder =
+            find.widgetWithText(SwitchListTile, 'Set initial message');
         expect(toggleFinder, findsOneWidget);
         expect(
           tester.widget<SwitchListTile>(toggleFinder).value,
-          isTrue,
-          reason: 'Default-on nudges hosts to frame a question.',
+          isFalse,
+          reason:
+              'An ongoing group chat is a standing space, not a single poll — '
+              'it should not open with a fixed question by default.',
         );
 
-        // The message TextFormField is rendered when the toggle is on.
+        // With the toggle off, the message field is not rendered.
+        expect(find.text('Initial Message'), findsNothing);
+
+        nameController.dispose();
+        messageController.dispose();
+      },
+    );
+
+    testWidgets(
+      'toggling on reveals the message field',
+      (tester) async {
+        final nameController = TextEditingController();
+        final messageController = TextEditingController();
+
+        await pumpStep(
+          tester,
+          nameController: nameController,
+          messageController: messageController,
+        );
+
+        // Default off -> field hidden.
+        expect(find.text('Initial Message'), findsNothing);
+
+        await tester.tap(find.byType(SwitchListTile));
+        await tester.pumpAndSettle();
+
         expect(find.text('Initial Message'), findsOneWidget);
 
         nameController.dispose();
@@ -56,10 +84,10 @@ void main() {
     );
 
     testWidgets(
-      'toggling off hides the message field and clears the controller',
+      'toggling on then off hides the field and clears the draft',
       (tester) async {
         final nameController = TextEditingController();
-        final messageController = TextEditingController(text: 'Existing question?');
+        final messageController = TextEditingController();
 
         await pumpStep(
           tester,
@@ -67,11 +95,14 @@ void main() {
           messageController: messageController,
         );
 
-        // Sanity: starts on, field present, text preserved.
+        // On.
+        await tester.tap(find.byType(SwitchListTile));
+        await tester.pumpAndSettle();
         expect(find.text('Initial Message'), findsOneWidget);
-        expect(messageController.text, 'Existing question?');
 
-        // Tap the switch off.
+        // Put a draft in, then toggle off.
+        messageController.text = 'Existing question?';
+        await tester.pump();
         await tester.tap(find.byType(SwitchListTile));
         await tester.pumpAndSettle();
 
@@ -79,36 +110,8 @@ void main() {
         expect(
           messageController.text,
           isEmpty,
-          reason: 'Toggling off should also clear stale draft text.',
+          reason: 'Toggling off should clear stale draft text.',
         );
-
-        nameController.dispose();
-        messageController.dispose();
-      },
-    );
-
-    testWidgets(
-      're-toggling on after off shows the field again with an empty controller',
-      (tester) async {
-        final nameController = TextEditingController();
-        final messageController = TextEditingController();
-
-        await pumpStep(
-          tester,
-          nameController: nameController,
-          messageController: messageController,
-        );
-
-        // Off, then back on.
-        await tester.tap(find.byType(SwitchListTile));
-        await tester.pumpAndSettle();
-        expect(find.text('Initial Message'), findsNothing);
-
-        await tester.tap(find.byType(SwitchListTile));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Initial Message'), findsOneWidget);
-        expect(messageController.text, isEmpty);
 
         nameController.dispose();
         messageController.dispose();

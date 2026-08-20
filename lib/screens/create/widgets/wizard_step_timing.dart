@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/create_chat_state.dart';
 import 'form_inputs.dart';
+import 'wizard_common.dart';
 
-/// Step 2 of the create chat wizard: Timing (middle step)
-/// Focuses on proposing and rating phase durations.
+/// Timing step of the create chat wizard: proposing and rating phase
+/// durations. For Always-Active chats, the cadence anchor ("First deadline")
+/// follows on its own dedicated step — see [WizardStepFirstDeadline] — so the
+/// anchor question always knows the duration chosen here.
 class WizardStepTiming extends StatelessWidget {
   final TimerSettings timerSettings;
   final void Function(TimerSettings) onTimerSettingsChanged;
@@ -23,158 +26,107 @@ class WizardStepTiming extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Large icon as visual anchor
-                  Icon(
-                    Icons.timer_outlined,
-                    size: 64,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Title
-                  Text(
-                    l10n.wizardStep2Title,
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Proposing duration — always shown first
-                  SettingTile(
-                    question: 'How long for proposing?',
-                    description:
-                        'Currently: ${formatDurationDescription(timerSettings.proposingPreset, timerSettings.proposingDuration, l10n)}',
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color:
-                              theme.colorScheme.outline.withAlpha(77),
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: TimerPresets(
-                        label: '',
-                        selected: timerSettings.proposingPreset,
-                        customDuration:
-                            timerSettings.proposingPreset == 'custom'
-                                ? timerSettings.proposingDuration
-                                : null,
-                        onChanged: (preset, duration) {
-                          if (timerSettings.useSameDuration) {
-                            onTimerSettingsChanged(
-                                timerSettings.copyWith(
-                              proposingPreset: preset,
-                              proposingDuration: duration,
-                              ratingPreset: preset,
-                              ratingDuration: duration,
-                            ));
-                          } else {
-                            onTimerSettingsChanged(
-                                timerSettings.copyWith(
-                              proposingPreset: preset,
-                              proposingDuration: duration,
-                            ));
-                          }
-                        },
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Same duration toggle
-                  SettingTile(
-                    question: 'Same duration for rating phase?',
-                    description: timerSettings.useSameDuration
-                        ? 'Yes, rating uses the same time'
-                        : 'No, rating has a different duration',
-                    trailing: Switch(
-                      value: timerSettings.useSameDuration,
-                      onChanged: (value) {
-                        if (value) {
-                          onTimerSettingsChanged(timerSettings.copyWith(
-                            useSameDuration: true,
-                            ratingPreset: timerSettings.proposingPreset,
-                            ratingDuration: timerSettings.proposingDuration,
-                          ));
-                        } else {
-                          onTimerSettingsChanged(timerSettings.copyWith(
-                              useSameDuration: false));
-                        }
-                      },
-                    ),
-                  ),
-
-                  // Rating duration — only shown when different from proposing
-                  if (!timerSettings.useSameDuration) ...[
-                    const SizedBox(height: 8),
-                    SettingTile(
-                      question: 'How long for rating?',
-                      description:
-                          'Currently: ${formatDurationDescription(timerSettings.ratingPreset, timerSettings.ratingDuration, l10n)}',
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color:
-                                theme.colorScheme.outline.withAlpha(77),
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: TimerPresets(
-                          label: '',
-                          selected: timerSettings.ratingPreset,
-                          customDuration:
-                              timerSettings.ratingPreset == 'custom'
-                                  ? timerSettings.ratingDuration
-                                  : null,
-                          onChanged: (preset, duration) {
-                            onTimerSettingsChanged(
-                                timerSettings.copyWith(
-                              ratingPreset: preset,
-                              ratingDuration: duration,
-                            ));
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+    return WizardStepLayout(
+      icon: Icons.timer_outlined,
+      title: l10n.wizardStep2Title,
+      onContinue: onContinue,
+      children: [
+        // Proposing duration — always shown first
+        SettingTile(
+          question: l10n.wizardTimingProposingQuestion,
+          description: l10n.wizardTimingCurrently(formatDurationDescription(
+              timerSettings.proposingPreset,
+              timerSettings.proposingDuration,
+              l10n)),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: theme.colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: TimerPresets(
+              label: '',
+              selected: timerSettings.proposingPreset,
+              customDuration: timerSettings.proposingPreset == 'custom'
+                  ? timerSettings.proposingDuration
+                  : null,
+              onChanged: (preset, duration) {
+                if (timerSettings.useSameDuration) {
+                  onTimerSettingsChanged(timerSettings.copyWith(
+                    proposingPreset: preset,
+                    proposingDuration: duration,
+                    ratingPreset: preset,
+                    ratingDuration: duration,
+                  ));
+                } else {
+                  onTimerSettingsChanged(timerSettings.copyWith(
+                    proposingPreset: preset,
+                    proposingDuration: duration,
+                  ));
+                }
+              },
             ),
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 8),
 
-          // Navigation button
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: onContinue,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(l10n.continue_),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 18),
-                ],
+        // Same duration toggle
+        SettingTile(
+          question: l10n.wizardTimingSameDurationQuestion,
+          description: timerSettings.useSameDuration
+              ? l10n.wizardTimingSameDurationYes
+              : l10n.wizardTimingSameDurationNo,
+          trailing: Switch(
+            value: timerSettings.useSameDuration,
+            onChanged: (value) {
+              if (value) {
+                onTimerSettingsChanged(timerSettings.copyWith(
+                  useSameDuration: true,
+                  ratingPreset: timerSettings.proposingPreset,
+                  ratingDuration: timerSettings.proposingDuration,
+                ));
+              } else {
+                onTimerSettingsChanged(
+                    timerSettings.copyWith(useSameDuration: false));
+              }
+            },
+          ),
+        ),
+
+        // Rating duration — only shown when different from proposing
+        if (!timerSettings.useSameDuration) ...[
+          const SizedBox(height: 8),
+          SettingTile(
+            question: l10n.wizardTimingRatingQuestion,
+            description: l10n.wizardTimingCurrently(formatDurationDescription(
+                timerSettings.ratingPreset,
+                timerSettings.ratingDuration,
+                l10n)),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.colorScheme.outlineVariant),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: TimerPresets(
+                label: '',
+                selected: timerSettings.ratingPreset,
+                customDuration: timerSettings.ratingPreset == 'custom'
+                    ? timerSettings.ratingDuration
+                    : null,
+                onChanged: (preset, duration) {
+                  onTimerSettingsChanged(timerSettings.copyWith(
+                    ratingPreset: preset,
+                    ratingDuration: duration,
+                  ));
+                },
               ),
             ),
           ),
         ],
-      ),
+      ],
     );
   }
 }

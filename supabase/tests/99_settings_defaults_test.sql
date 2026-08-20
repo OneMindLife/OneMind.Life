@@ -99,7 +99,8 @@ SELECT is(
 SELECT is(
   (SELECT auto_start_participant_count FROM chats WHERE id = current_setting('test.chat_id')::bigint),
   3,
-  'auto_start_participant_count default is 3 (matches wizard + constraint floor)'
+  'auto_start_participant_count column default is 3 (the ambient wizard overrides '
+  'it to 1 for immediate start; constraint floor relaxed to 1 in 20260630100818)'
 );
 
 SELECT is(
@@ -120,8 +121,8 @@ SELECT is(
 
 SELECT is(
   (SELECT proposing_minimum FROM chats WHERE id = current_setting('test.chat_id')::bigint),
-  3,
-  'proposing_minimum default is 3'
+  2,
+  'proposing_minimum default is 2 (CSI floor, 20260704160000)'
 );
 
 SELECT is(

@@ -158,7 +158,10 @@ void main() {
       expect(find.byType(TtsButton), findsOneWidget);
     });
 
-    testWidgets('renders inline ConvergenceVideoCard when videoUrl is present', (tester) async {
+    testWidgets('does not render ConvergenceVideoCard even when videoUrl is present', (tester) async {
+      // Convergence videos were removed from chat display: cold users don't
+      // expect them and the full-screen video wall buried the propose action.
+      // The videoUrl field still parses from the backend but is never rendered.
       await tester.pumpWidget(createTestWidget(
         PreviousWinnerPanel(
           previousRoundWinners: [
@@ -172,9 +175,9 @@ void main() {
           onWinnerIndexChanged: (_) {},
         ),
       ));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      expect(find.byType(ConvergenceVideoCard), findsOneWidget);
+      expect(find.byType(ConvergenceVideoCard), findsNothing);
     });
 
     testWidgets('hides ConvergenceVideoCard when videoUrl is null', (tester) async {
@@ -212,6 +215,51 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(TtsButton), findsOneWidget);
+    });
+
+    testWidgets('hideTts:true renders no TtsButton (quick chat, single winner)',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        PreviousWinnerPanel(
+          previousRoundWinners: [
+            RoundWinner(
+              id: 1, roundId: 1, propositionId: 1,
+              content: 'Winner', rank: 1, createdAt: testDate,
+              audioUrl: 'https://example.com/round.mp3',
+            ),
+          ],
+          currentWinnerIndex: 0,
+          onWinnerIndexChanged: (_) {},
+          hideTts: true,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Winner'), findsOneWidget); // content still renders
+      expect(find.byType(TtsButton), findsNothing); // ...but no speak-aloud
+    });
+
+    testWidgets('hideTts:true renders no TtsButton (quick chat, tied winners)',
+        (tester) async {
+      await tester.pumpWidget(createTestWidget(
+        PreviousWinnerPanel(
+          previousRoundWinners: [
+            RoundWinner(id: 1, roundId: 1, propositionId: 1,
+                content: 'Winner 1', globalScore: 80.0,
+                rank: 1, createdAt: testDate),
+            RoundWinner(id: 2, roundId: 1, propositionId: 2,
+                content: 'Winner 2', globalScore: 80.0,
+                rank: 1, createdAt: testDate),
+          ],
+          currentWinnerIndex: 0,
+          onWinnerIndexChanged: (_) {},
+          hideTts: true,
+        ),
+      ));
+      await tester.pumpAndSettle();
+
+      // Both tie-navigation branches gate their TtsButton on hideTts.
+      expect(find.byType(TtsButton), findsNothing);
     });
   });
 

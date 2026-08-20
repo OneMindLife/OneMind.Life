@@ -1,5 +1,6 @@
 // Edge Function: translate
-// AI-powered translation using Kimi K2.5 via NVIDIA
+// Translation via Google Cloud Translation v2 (was Kimi K2.5/NVIDIA, which
+// 404'd ~2026-05-17 and silently broke all translation — see provider note below)
 //
 // Accepts one of:
 // - { text, proposition_id, entity_type?, field_name? } - Single text for proposition
@@ -18,7 +19,6 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import OpenAI from "npm:openai@4.77.0";
 import { z } from "npm:zod@3.23.8";
 import {
   getCorsHeaders,
@@ -32,23 +32,30 @@ const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
 
-// Initialize OpenAI client pointing to NVIDIA-hosted Kimi K2.5
-const openai = new OpenAI({
-  apiKey: Deno.env.get("NVIDIA_API_KEY") ?? "",
-  baseURL: "https://integrate.api.nvidia.com/v1",
-});
+// Translation provider. Originally an LLM (NVIDIA-hosted Kimi K2.5) — but that
+// model path started 404ing on NVIDIA NIM ~2026-05-17 and silently killed ALL
+// translation (chats + propositions) for over a month. DeepSeek was tried next
+// but the account hits 402 Insufficient Balance. So this now uses Google Cloud
+// Translation v2 — the SAME deterministic, funded, purpose-built API that
+// `submit-proposition` already relies on (key GOOGLE_TRANSLATE_API_KEY). No LLM
+// flakiness, no funding cliff, ~200ms per call, languages run in parallel.
+const googleTranslateApiKey = Deno.env.get("GOOGLE_TRANSLATE_API_KEY") ?? "";
+const GOOGLE_TRANSLATE_ENDPOINT =
+  "https://translation.googleapis.com/language/translate/v2";
 
 // Initialize Supabase client with service role for DB operations
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Zod validation schema for all supported languages
+// A translation set: every key must be a supported language and every value a
+// non-empty string. Partial by design — a caller may ask for English only, and
+// requiring all five here would reject that valid result.
 const TranslationsSchema = z.object({
-  en: z.string(),
-  es: z.string(),
-  pt: z.string(),
-  fr: z.string(),
-  de: z.string(),
-});
+  en: z.string().min(1),
+  es: z.string().min(1),
+  pt: z.string().min(1),
+  fr: z.string().min(1),
+  de: z.string().min(1),
+}).partial();
 
 type Translations = z.infer<typeof TranslationsSchema>;
 
@@ -97,76 +104,82 @@ const RequestSchema = z.object({
  * Generate translations for text using Kimi K2.5 via NVIDIA
  * Includes retry logic with exponential backoff
  */
-async function getTranslations(text: string): Promise<Translations> {
+// All languages the schema requires. Google Translate uses plain ISO codes
+// (en/es/pt/fr/de), so the schema keys ARE the target codes.
+const TARGET_LANGS = ["en", "es", "pt", "fr", "de"] as const;
+
+/**
+ * Translate `text` into one target language via Google Cloud Translation v2.
+ * Source language is auto-detected. Retries with exponential backoff on
+ * transient failures. Mirrors submit-proposition's translateTo().
+ */
+async function translateOne(text: string, target: string): Promise<string> {
   const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000;
-
-  const prompt = `Translate the following text into English, Spanish, Portuguese, French, and German.
-Keep the translations natural and preserve the original meaning.
-If the text is already in one of these languages, still provide all translations.
-
-Text to translate:
-${text}
-
-Return ONLY a JSON object with exactly these keys (no markdown, no explanation):
-{"en": "English translation", "es": "Spanish translation", "pt": "Portuguese translation", "fr": "French translation", "de": "German translation"}`;
-
+  const RETRY_DELAY = 600;
   let attempts = 0;
 
-  while (attempts < MAX_RETRIES) {
+  while (true) {
     try {
-      const message = await openai.chat.completions.create({
-        model: "moonshotai/kimi-k2.5",
-        max_tokens: 4096, // Kimi K2.5 is a reasoning model — thinking tokens count against this limit
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      });
-
-      // Extract text from response
-      const responseText = message.choices[0]?.message?.content ?? "";
-
-      // Clean up the response - remove any markdown code blocks
-      let cleanedResponse = responseText.trim();
-      if (cleanedResponse.startsWith("```json")) {
-        cleanedResponse = cleanedResponse.slice(7);
-      } else if (cleanedResponse.startsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(3);
-      }
-      if (cleanedResponse.endsWith("```")) {
-        cleanedResponse = cleanedResponse.slice(0, -3);
-      }
-      cleanedResponse = cleanedResponse.trim();
-
-      // Validate JSON format
-      if (!cleanedResponse.startsWith("{") || !cleanedResponse.endsWith("}")) {
-        throw new Error("Response is not in valid JSON format");
-      }
-
-      // Parse and validate with Zod
-      const parsed = JSON.parse(cleanedResponse);
-      return TranslationsSchema.parse(parsed);
-    } catch (error) {
-      attempts++;
-      console.error(`[TRANSLATE] Attempt ${attempts} failed:`, error);
-
-      if (attempts === MAX_RETRIES) {
+      const resp = await fetch(
+        `${GOOGLE_TRANSLATE_ENDPOINT}?key=${googleTranslateApiKey}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ q: text, target, format: "text" }),
+        },
+      );
+      if (!resp.ok) {
+        const body = await resp.text();
         throw new Error(
-          `Translation failed after ${MAX_RETRIES} attempts: ${error instanceof Error ? error.message : "Unknown error"}`
+          `Cloud Translation ${resp.status} ${resp.statusText}: ${body.slice(0, 300)}`,
         );
       }
-
-      // Exponential backoff
-      await new Promise((resolve) =>
-        setTimeout(resolve, RETRY_DELAY * Math.pow(2, attempts - 1))
-      );
+      const data = await resp.json();
+      const translated = data?.data?.translations?.[0]?.translatedText;
+      if (typeof translated !== "string") {
+        throw new Error(
+          `Cloud Translation response malformed: ${JSON.stringify(data).slice(0, 300)}`,
+        );
+      }
+      return translated;
+    } catch (error) {
+      attempts++;
+      console.error(`[TRANSLATE] ${target} attempt ${attempts} failed:`, error);
+      if (attempts >= MAX_RETRIES) {
+        throw new Error(
+          `Translation failed after ${MAX_RETRIES} attempts: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
+      }
+      await new Promise((r) => setTimeout(r, RETRY_DELAY * Math.pow(2, attempts - 1)));
     }
   }
+}
 
-  throw new Error("Translation failed unexpectedly");
+/**
+ * Produce translations of `text` for `targets`. Each target is fetched in
+ * parallel (~200ms wall-clock total). Google auto-detects the source, so a text
+ * already in one of the targets still gets a clean copy for that language.
+ *
+ * `targets` defaults to all five for callers that want the full set. Pass a
+ * narrower list and we only pay Google for what we'll actually store — the
+ * previous version always fetched five and then threw four away, which for an
+ * English-only chat was 5x the cost and 5x the failure surface for one row.
+ */
+async function getTranslations(
+  text: string,
+  targets: readonly string[] = TARGET_LANGS,
+): Promise<Translations> {
+  if (!googleTranslateApiKey) {
+    throw new Error("GOOGLE_TRANSLATE_API_KEY is not configured");
+  }
+  const results = await Promise.all(
+    targets.map((lang) => translateOne(text, lang)),
+  );
+  const out: Record<string, string> = {};
+  targets.forEach((lang, i) => {
+    out[lang] = results[i];
+  });
+  return TranslationsSchema.parse(out);
 }
 
 // =============================================================================
@@ -337,7 +350,7 @@ Deno.serve(async (req: Request) => {
 
     for (const item of itemsToTranslate) {
       console.log("[TRANSLATE] Generating translations for:", item.text.substring(0, 100));
-      const translations = await getTranslations(item.text);
+      const translations = await getTranslations(item.text, requestedLanguages);
       console.log("[TRANSLATE] Generated translations:", JSON.stringify(translations));
 
       if (Object.keys(translations).length === 0) {
@@ -345,9 +358,10 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Prepare insert records for this item, filtered to requested languages
+      // getTranslations already fetched exactly the requested languages, so
+      // there is nothing left to filter out here.
       const inserts = Object.entries(translations)
-        .filter(([lang]) => requestedLanguages.includes(lang as typeof SUPPORTED_LANGUAGES[number]))
+        .filter((e): e is [string, string] => typeof e[1] === "string")
         .map(([lang, translated_text]) => {
         const record: {
           proposition_id?: number;

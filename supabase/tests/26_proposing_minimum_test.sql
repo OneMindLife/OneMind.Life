@@ -1,18 +1,17 @@
--- Test proposing_minimum constraint (minimum 3)
+-- Test proposing_minimum constraint (minimum 2 since conditional
+-- self-inclusion, migration 20260704160000 — was 3)
 BEGIN;
 
 SELECT plan(5);
 
 -- =============================================================================
--- Test 1: Cannot set proposing_minimum below 3
+-- Test 1: Cannot set proposing_minimum below 2; 2 is the CSI floor
 -- =============================================================================
 
-SELECT throws_ok(
+SELECT lives_ok(
     $$INSERT INTO chats (name, initial_message, proposing_minimum, access_method)
-      VALUES ('Test Chat', 'Test', 2, 'code')$$,
-    '23514',  -- check_violation
-    NULL,
-    'Cannot create chat with proposing_minimum = 2 (below minimum 3)'
+      VALUES ('Test Chat Min 2', 'Test', 2, 'code')$$,
+    'Can create chat with proposing_minimum = 2 (CSI floor)'
 );
 
 SELECT throws_ok(
@@ -20,7 +19,7 @@ SELECT throws_ok(
       VALUES ('Test Chat', 'Test', 1, 'code')$$,
     '23514',
     NULL,
-    'Cannot create chat with proposing_minimum = 1 (below minimum 3)'
+    'Cannot create chat with proposing_minimum = 1 (below minimum 2)'
 );
 
 -- =============================================================================
@@ -40,7 +39,7 @@ SELECT lives_ok(
 );
 
 -- =============================================================================
--- Test 3: Default value is 3
+-- Test 3: Default value is 2 (CSI floor, 20260704160000)
 -- =============================================================================
 
 INSERT INTO chats (name, initial_message, access_method)
@@ -48,8 +47,8 @@ VALUES ('Test Chat Default', 'Test', 'code');
 
 SELECT is(
     (SELECT proposing_minimum FROM chats WHERE name = 'Test Chat Default'),
-    3,
-    'Default proposing_minimum should be 3'
+    2,
+    'Default proposing_minimum should be 2'
 );
 
 -- Cleanup

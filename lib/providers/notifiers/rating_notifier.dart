@@ -268,6 +268,21 @@ class RatingNotifier extends AutoDisposeFamilyAsyncNotifier<RatingState, GridRan
         rankings: rankings,
         participantId: _participantId,
       );
+      // Best-effort "finished rating" marker: broadcasts the rater's Done
+      // state to other viewers via the rating_completions realtime channel.
+      // Liveness only — the bootstrap derives Done from grid coverage, so a
+      // failure here must never poison the (already committed) submit.
+      try {
+        await _propositionService.markRatingComplete(
+          roundId: _roundId,
+          participantId: _participantId,
+        );
+      } catch (e, st) {
+        PerfLogger.error(corr, e,
+            action: 'mark_rating_complete',
+            roundId: _roundId,
+            stackTrace: st);
+      }
       PerfLogger.end(corr,
           action: 'submit_rankings', roundId: _roundId);
       return true;

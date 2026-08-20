@@ -121,6 +121,11 @@ void main() {
     when(() => analytics.logOfficialChatAutoOpened(
           chatId: any(named: 'chatId'),
         )).thenAnswer((_) async {});
+    // ChatScreen.initState fires these when an auto-navigate mounts it.
+    when(() => analytics.logScreenView(screenName: any(named: 'screenName')))
+        .thenAnswer((_) async {});
+    when(() => analytics.logChatOpened(chatId: any(named: 'chatId')))
+        .thenAnswer((_) async {});
 
     when(() => prefs.getString(any())).thenReturn(null);
     when(() => prefs.setString(any(), any())).thenAnswer((_) async => true);
@@ -178,27 +183,31 @@ void main() {
     );
   }
 
-  group('Home auto-join flash suppression', () {
+  group('Official auto-join retired', () {
+    // The official-chat auto-join was retired (2026-05-30): the landing CTA now
+    // sends new users to the /create quick-rank flow instead of dumping them into
+    // the official chat. These tests guard that the auto-join NEVER fires.
     testWidgets(
-        'while auto-join is in flight: discovery card is hidden, spinner is shown',
+        'first-time visitor: official chat is NOT auto-joined; discovery shows immediately',
         (tester) async {
       // First-time user path: hasAutoJoinedOfficial == false.
       when(() => prefs.getBool('official_chat_auto_joined')).thenReturn(null);
-      // Hold the auto-join pending so the suppression flag stays true.
+      // If auto-join were still wired, this would be awaited and hold a spinner.
       final pending = Completer<Chat?>();
       when(() => chatService.getOfficialChat())
           .thenAnswer((_) => pending.future);
 
       await tester.pumpWidget(buildHome());
-      // Flush the post-frame callback that kicks off _ensureJoinedOfficialChat.
       await tester.pump();
 
-      // While the join is pending, the discovery empty state must not
-      // render; a neutral loading indicator stands in its place.
-      expect(find.byKey(const Key('empty-state-panel')), findsNothing);
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Auto-join is retired → no getOfficialChat/join, no in-flight spinner,
+      // and the discovery empty state renders immediately.
+      verifyNever(() => chatService.getOfficialChat());
+      verifyNever(
+          () => participantService.joinPublicChat(chatId: any(named: 'chatId')));
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.byKey(const Key('empty-state-panel')), findsOneWidget);
 
-      // Let the widget tear down cleanly.
       pending.complete(null);
       await tester.pumpAndSettle();
     });
@@ -248,7 +257,7 @@ void main() {
   // ============================================================================
   group('Hijack prevention for /join/CODE flow', () {
     testWidgets(
-        'first-time visitor with no other chats: auto-navigates to official chat',
+        'first-time visitor with no other chats: does NOT auto-join or auto-navigate (retired)',
         (tester) async {
       when(() => prefs.getBool('official_chat_auto_joined')).thenReturn(null);
       final officialChat = ChatFixtures.model(id: 246, name: 'OneMind');
@@ -258,19 +267,21 @@ void main() {
           .thenAnswer((_) async => ParticipantFixtures.model());
 
       await tester.pumpWidget(buildHome(initialChats: const []));
-      // Pump just enough to drain the auto-join future and reach the
-      // navigate decision; pumpAndSettle would force ChatScreen to render.
       for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
 
-      // logOfficialChatAutoOpened is called only when the navigate path
-      // is taken — its presence confirms the navigation was triggered.
-      verify(() => analytics.logOfficialChatAutoOpened(chatId: '246')).called(1);
+      // Retired: no auto-join, no auto-navigate, even for a fresh first-time user.
+      verifyNever(() => chatService.getOfficialChat());
+      verifyNever(
+          () => participantService.joinPublicChat(chatId: any(named: 'chatId')));
+      verifyNever(() => analytics.logOfficialChatAutoOpened(
+            chatId: any(named: 'chatId'),
+          ));
     });
 
     testWidgets(
-        'first-time visitor who came from /join/CODE: does NOT auto-navigate to official',
+        'first-time visitor who came from /join/CODE: does NOT auto-join the official chat',
         (tester) async {
       when(() => prefs.getBool('official_chat_auto_joined')).thenReturn(null);
       final officialChat = ChatFixtures.model(id: 246, name: 'OneMind');
@@ -279,8 +290,6 @@ void main() {
       when(() => participantService.joinPublicChat(chatId: any(named: 'chatId')))
           .thenAnswer((_) async => ParticipantFixtures.model());
 
-      // Simulate Home being mounted AFTER InviteJoinScreen joined the user
-      // to demo chat 295 — that chat is already in their list.
       final demoChat = ChatDashboardInfoFixtures.idle(
         id: 295,
         name: 'NCDD Higher Ed Exchange',
@@ -289,10 +298,8 @@ void main() {
       await tester.pumpWidget(buildHome(initialChats: [demoChat]));
       await tester.pumpAndSettle();
 
-      // Auto-join into the official chat still happens so it appears in
-      // the user's list — but the user is NOT auto-navigated away from
-      // Home into the official chat.
-      verify(() => participantService.joinPublicChat(chatId: 246)).called(1);
+      // Retired: the official chat is no longer force-joined or auto-opened.
+      verifyNever(() => participantService.joinPublicChat(chatId: 246));
       verifyNever(() => analytics.logOfficialChatAutoOpened(
             chatId: any(named: 'chatId'),
           ));

@@ -9,13 +9,50 @@ import 'package:onemind_app/widgets/home_banner_carousel.dart';
 void main() {
   group('computeHomeBannerSlides', () {
     group('non-web platform', () {
-      test('returns no slides (no banners on native)', () {
+      test('pending push → notifications slide (native FCM prompt)', () {
         final slides = computeHomeBannerSlides(
           isWeb: false,
           isMobile: true,
           isPwaInstalled: false,
           isIos: false,
           pushDismissed: false,
+          pushStatus: AuthorizationStatus.notDetermined,
+        );
+        expect(slides, [HomeBannerSlide.notifications]);
+      });
+
+      test('no install slide on native (already installed by definition)',
+          () {
+        final slides = computeHomeBannerSlides(
+          isWeb: false,
+          isMobile: true,
+          isPwaInstalled: false,
+          isIos: false,
+          pushDismissed: false,
+          pushStatus: AuthorizationStatus.notDetermined,
+        );
+        expect(slides, isNot(contains(HomeBannerSlide.install)));
+      });
+
+      test('permission already granted → no slides', () {
+        final slides = computeHomeBannerSlides(
+          isWeb: false,
+          isMobile: true,
+          isPwaInstalled: false,
+          isIos: true,
+          pushDismissed: false,
+          pushStatus: AuthorizationStatus.authorized,
+        );
+        expect(slides, isEmpty);
+      });
+
+      test('prompt dismissed → no slides', () {
+        final slides = computeHomeBannerSlides(
+          isWeb: false,
+          isMobile: true,
+          isPwaInstalled: false,
+          isIos: false,
+          pushDismissed: true,
           pushStatus: AuthorizationStatus.notDetermined,
         );
         expect(slides, isEmpty);

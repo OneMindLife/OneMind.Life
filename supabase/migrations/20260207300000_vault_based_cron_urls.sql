@@ -145,6 +145,21 @@ SELECT cron.schedule(
     $$
 );
 
+-- 4d. moltbook-agent-heartbeat (every 30 minutes)
+SELECT cron.unschedule('moltbook-agent-heartbeat');
+
+SELECT cron.schedule(
+    'moltbook-agent-heartbeat',
+    '*/30 * * * *',
+    $$
+    SELECT net.http_post(
+        url := get_edge_function_url('moltbook-agent'),
+        headers := get_cron_headers(),
+        body := '{}'::jsonb
+    ) AS request_id;
+    $$
+);
+
 -- =============================================================================
 -- STEP 5: Update trigger functions to use get_edge_function_url()
 -- =============================================================================

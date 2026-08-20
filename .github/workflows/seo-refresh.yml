@@ -1,0 +1,62 @@
+name: SEO Daily Refresh
+
+# Rebuilds + redeploys the WEDGE so the static /opinions/<code> SEO pages pick up
+# fresh content (it's a build-time snapshot). Deploys the wedge ONLY — it must
+# never run the Flutter deploy.yml, which would clobber the wedge on onemind.life.
+#
+# THE DAILY SCHEDULE IS OFF (2026-07-25). Two reasons:
+#
+#   1. It no longer buys anything. The /opinions/<code> pages date from the
+#      expanding-thread era; the product is now the single group chat at
+#      /c/GLOBAL, which renders live from Supabase in the browser and needs no
+#      rebuild. Nothing on the site is stale without this job.
+#   2. It was actively dangerous. `actions/checkout` on a schedule trigger takes
+#      origin/main, and this deploys to channelId: live unconditionally — so it
+#      overwrote prod with origin/main every morning. Since the wedge deploy path
+#      is manual and local (`cd wedge && npm run build`, then root
+#      `firebase deploy`), any locally-deployed work that hadn't been pushed was
+#      silently reverted at ~09:30 UTC. That cost a full day of UI work on
+#      2026-07-19 (86 commits unpushed).
+#
+# Also disabled via the Actions API (`gh workflow disable seo-refresh.yml`), so
+# the schedule cannot fire even from an older checkout of this file.
+#
+# If per-build SEO content matters again (more SEO-eligible chats), prefer
+# restoring this as workflow_dispatch-only, or gate any revived schedule on a
+# check that the live build's commit is an ancestor of origin/main.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build the wedge (static export, fresh SEO content)
+        working-directory: wedge
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          # --include=dev: the build tools (@tailwindcss/postcss, tailwindcss,
+          # etc.) are devDependencies. Do NOT set NODE_ENV=production here — that
+          # makes `npm ci` prune devDependencies, so the build can't find
+          # postcss and dies. `next build` produces a production build anyway.
+          npm ci --include=dev
+          npm run build
+
+      - name: Deploy to Firebase Hosting (root firebase.json -> wedge/out)
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ONEMIND_95FB2 }}
+          projectId: onemind-95fb2
+          channelId: live
+          entryPoint: "."

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
+import '../../create/utils/cadence.dart';
 
 /// A bottom sheet that displays all chat settings in read-only mode.
 /// Visible to all participants.
@@ -148,6 +149,14 @@ class ChatSettingsSheet extends StatelessWidget {
                       AppLocalizations.of(context)!.ratingDuration,
                       _formatDuration(context, chat.ratingDurationSeconds),
                     ),
+                    // Cadence rhythm: the duration isn't the whole story when
+                    // phases flip on a wall-clock grid — show the flip times.
+                    if (chat.cadenceAnchorAt != null)
+                      _buildSettingRow(
+                        context,
+                        AppLocalizations.of(context).chatSettingsRhythmLabel,
+                        _formatRhythm(context),
+                      ),
                   ],
                 ),
                 const SizedBox(height: 24),
@@ -197,8 +206,12 @@ class ChatSettingsSheet extends StatelessWidget {
                     _buildSettingRow(
                       context,
                       AppLocalizations.of(context)!.confirmationRounds,
-                      AppLocalizations.of(context)!.nConsecutiveWins(chat.confirmationRoundsRequired),
+                      chat.confirmationRoundsRequired == 1
+                          ? AppLocalizations.of(context)!.instantMode
+                          : AppLocalizations.of(context)!
+                              .nConsecutiveWins(chat.confirmationRoundsRequired),
                     ),
+
                     _buildSettingRow(
                       context,
                       AppLocalizations.of(context)!.propositionsPerUser,
@@ -370,6 +383,27 @@ class ChatSettingsSheet extends StatelessWidget {
       final days = seconds ~/ 86400;
       return l10n.nDays(days);
     }
+  }
+
+  /// Daily flip times implied by the cadence anchor + phase duration, shown
+  /// in the viewer's local clock (the instants are absolute; each viewer sees
+  /// their own wall times).
+  String _formatRhythm(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final flips = previewFlipTimes(
+      chat.cadenceAnchorAt!.toLocal(),
+      Duration(seconds: chat.proposingDurationSeconds),
+    );
+    final tzName = DateTime.now().timeZoneName;
+    if (flips.length == 1) {
+      return l10n.wizardCadencePreviewOne(flips.first.format(context), tzName);
+    }
+    final formatted = flips.map((t) => t.format(context)).toList();
+    return l10n.wizardCadencePreviewTwo(
+      formatted.sublist(0, formatted.length - 1).join(' / '),
+      formatted.last,
+      tzName,
+    );
   }
 
   String _formatDateTime(DateTime dt) {

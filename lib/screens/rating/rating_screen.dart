@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../../utils/perf_logger.dart';
 import '../../widgets/error_view.dart';
 import '../../models/round.dart';
 import '../../providers/chat_providers.dart';
@@ -157,6 +158,21 @@ class _RatingScreenState extends ConsumerState<RatingScreen> {
 
     if (_hasSeenRatingPhase && (roundChanged || cycleEnded) && !_hasPopped) {
       _hasPopped = true;
+      // Remote-debug: capture WHY the rating screen closed so we can
+      // distinguish "round genuinely ended" from races (user placed
+      // final rating, server completed the round, user got bounced).
+      // See feedback_voice_replies.md / perf_logs for read pattern.
+      PerfLogger.start(
+        'rating_screen.exit_on_round_end',
+        chatId: widget.chatId,
+        roundId: widget.roundId,
+        payload: {
+          'reason': roundChanged ? 'round_changed' : 'cycle_ended',
+          'state_round_id': stateRoundId,
+          'state_phase': currentPhase?.name,
+          'has_seen_rating_phase': _hasSeenRatingPhase,
+        },
+      );
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           final l10n = AppLocalizations.of(context);

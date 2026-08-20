@@ -1,0 +1,8 @@
+# Configuration for generate-options Edge Function
+#
+# verify_jwt = false: Function validates auth internally (validateAuth via
+# supabase.auth.getUser). Deploy with --no-verify-jwt. Client-invoked from
+# Flutter; we validate the real user JWT inside the function.
+
+[function]
+verify_jwt = false

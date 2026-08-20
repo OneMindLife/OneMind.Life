@@ -1,6 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/models.dart';
+import 'matches/match_pair_selector.dart' show PriorVote;
 import 'remote_log_service.dart';
+import '../utils/perf_logger.dart';
 
 /// Exception thrown when attempting to submit a duplicate proposition.
 ///
@@ -110,16 +112,22 @@ class PropositionService {
     return propositions;
   }
 
-  /// Count of distinct participants who submitted at least one rating in [roundId].
+  /// Count of distinct participants who rated in [roundId].
+  ///
+  /// Counts across BOTH rating surfaces: grid_rankings (0-100 grid mode) and
+  /// rating_completions (matches/pairwise mode). A matches round has no grid_rankings,
+  /// so a grid-only count would wrongly report 0 raters.
   Future<int> getRaterCount(int roundId) async {
-    final response = await _client
-        .from('grid_rankings')
-        .select('participant_id')
-        .eq('round_id', roundId);
     final raters = <int>{};
-    for (final row in (response as List)) {
-      final id = row['participant_id'];
-      if (id is int) raters.add(id);
+    final results = await Future.wait([
+      _client.from('grid_rankings').select('participant_id').eq('round_id', roundId),
+      _client.from('rating_completions').select('participant_id').eq('round_id', roundId),
+    ]);
+    for (final response in results) {
+      for (final row in (response as List)) {
+        final id = row['participant_id'];
+        if (id is int) raters.add(id);
+      }
     }
     return raters.length;
   }
@@ -280,13 +288,18 @@ class PropositionService {
   /// Get rating progress for a user in a round
   /// Returns: { 'rated': int, 'total': int, 'completed': bool, 'started': bool }
   Future<Map<String, dynamic>> getRatingProgress(int roundId, int participantId) async {
-    // Count propositions user needs to rate (excluding their own)
-    final propositionsToRate = await _client
+    // Count propositions user needs to rate: all non-own props — plus their
+    // own when excluding those would leave fewer than 2 (conditional
+    // self-inclusion, mirrors get_least_rated_propositions). Fetching all and
+    // filtering in Dart also keeps AI (null-author) props, which `.neq` drops.
+    final allProps = await _client
         .from('propositions')
-        .select('id')
-        .eq('round_id', roundId)
-        .neq('participant_id', participantId);
-    final totalToRate = (propositionsToRate as List).length;
+        .select('id, participant_id')
+        .eq('round_id', roundId);
+    final all = allProps as List;
+    final nonOwnCount =
+        all.where((p) => p['participant_id'] != participantId).length;
+    final totalToRate = nonOwnCount >= 2 ? nonOwnCount : all.length;
 
     // Count how many they've actually rated
     final gridRankings = await _client
@@ -330,10 +343,22 @@ class PropositionService {
     );
   }
 
-  /// Subscribe to proposition changes (insert and delete)
+  /// Subscribe to proposition changes (insert/update/delete) for a round.
+  ///
+  /// The callback receives the Postgres event type plus the new and old
+  /// record maps so the consumer can decide whether to merge the payload
+  /// directly into local state or fall back to a refetch. Calling
+  /// `onUpdate(event, null, null)` is a legal pass-through if the
+  /// payload is unusable (Realtime sometimes sends empty maps under
+  /// row-level security); the caller should treat that as a hint to
+  /// schedule a full refresh.
   RealtimeChannel subscribeToPropositions(
     int roundId,
-    void Function() onUpdate,
+    void Function(
+      PostgresChangeEvent event,
+      Map<String, dynamic>? newRecord,
+      Map<String, dynamic>? oldRecord,
+    ) onUpdate,
   ) {
     return _client
         .channel('propositions:$roundId')
@@ -346,9 +371,21 @@ class PropositionService {
             column: 'round_id',
             value: roundId,
           ),
-          callback: (_) => onUpdate(),
+          callback: (payload) => onUpdate(
+            payload.eventType,
+            payload.newRecord.isEmpty ? null : payload.newRecord,
+            payload.oldRecord.isEmpty ? null : payload.oldRecord,
+          ),
         )
-        .subscribe();
+        // DEBUG (perflog): log the channel's subscribe lifecycle so we can see
+        // whether the host's propositions channel actually reaches SUBSCRIBED
+        // (vs CHANNEL_ERROR / TIMED_OUT / CLOSED) — the live-count bug.
+        .subscribe((status, [error]) {
+      PerfLogger.start('rt_sub.props:$roundId', roundId: roundId, payload: {
+        'status': status.name,
+        if (error != null) 'error': error.toString(),
+      });
+    });
   }
 
   /// Delete a participant's grid_ranking for a single proposition.
@@ -408,6 +445,119 @@ class PropositionService {
       data,
       onConflict: 'round_id,proposition_id,participant_id',
     );
+  }
+
+  // ============================================================
+  // Matches (pairwise) rating mode
+  // ============================================================
+
+  /// Record one pairwise match: the rater preferred [winnerPropositionId] over
+  /// [loserPropositionId] (or judged them equal via [isTie]). Feeds MOVDA
+  /// alongside grid_rankings. The pair-selector never re-offers a faced pair,
+  /// so this is a plain insert; the UI must debounce taps to avoid a duplicate
+  /// (the unique unordered-pair index would otherwise raise).
+  Future<void> submitPairwiseComparison({
+    required int roundId,
+    required int participantId,
+    required int winnerPropositionId,
+    required int loserPropositionId,
+    bool isTie = false,
+  }) async {
+    await _client.from('pairwise_comparisons').insert({
+      'round_id': roundId,
+      'participant_id': participantId,
+      'winner_proposition_id': winnerPropositionId,
+      'loser_proposition_id': loserPropositionId,
+      'is_tie': isTie,
+      'is_skip': false,
+    });
+  }
+
+  /// Record that the rater passed on a pair (per-match skip). Inserts a
+  /// pairwise_comparisons row with [propAId]/[propBId] as the (arbitrarily
+  /// ordered) pair, is_tie=false, is_skip=true. The pair-selector treats this
+  /// as a faced pair that counts toward both props' exposure but crowns no
+  /// winner, so it is never re-offered. Idempotent — a duplicate unordered-pair
+  /// insert (e.g. a debounced double-tap) raises 23505 and is ignored, mirroring
+  /// [markRatingComplete].
+  Future<void> submitPairwiseSkip({
+    required int roundId,
+    required int participantId,
+    required int propAId,
+    required int propBId,
+  }) async {
+    try {
+      await _client.from('pairwise_comparisons').insert({
+        'round_id': roundId,
+        'participant_id': participantId,
+        'winner_proposition_id': propAId,
+        'loser_proposition_id': propBId,
+        'is_tie': false,
+        'is_skip': true,
+      });
+    } on PostgrestException catch (e) {
+      // 23505 = unique_violation: this pair is already recorded, fine.
+      if (e.code != '23505') rethrow;
+    }
+  }
+
+  /// Mark that a participant finished rating this round (matches mode, written
+  /// when the pair-selector is exhausted). Idempotent — a duplicate (e.g. from
+  /// a panel re-mount) is ignored. Feeds matches-mode progress% + early-advance.
+  Future<void> markRatingComplete({
+    required int roundId,
+    required int participantId,
+  }) async {
+    try {
+      await _client.from('rating_completions').insert({
+        'round_id': roundId,
+        'participant_id': participantId,
+      });
+    } on PostgrestException catch (e) {
+      // 23505 = unique_violation: already marked done, fine.
+      if (e.code != '23505') rethrow;
+    }
+  }
+
+  /// The matches a participant has already cast this round, as [PriorVote]s for
+  /// the pair-selector (drives exposure counts + faced-pair tracking).
+  Future<List<PriorVote>> getPriorPairwiseVotes({
+    required int roundId,
+    required int participantId,
+  }) async {
+    final rows = await _client
+        .from('pairwise_comparisons')
+        .select('winner_proposition_id, loser_proposition_id, is_tie, is_skip')
+        .eq('round_id', roundId)
+        .eq('participant_id', participantId);
+
+    return rows
+        .map((r) => PriorVote(
+              winnerId: r['winner_proposition_id'] as int,
+              loserId: r['loser_proposition_id'] as int,
+              isTie: (r['is_tie'] as bool?) ?? false,
+              isSkip: (r['is_skip'] as bool?) ?? false,
+            ))
+        .toList();
+  }
+
+  /// ALL pairwise comparisons in a round — every rater, not just one
+  /// participant. Powers the live standings list shown above the duel during
+  /// matches voting. RLS restricts reads to the chat's participants.
+  Future<List<PriorVote>> getRoundPairwiseVotes(int roundId) async {
+    final rows = await _client
+        .from('pairwise_comparisons')
+        .select('winner_proposition_id, loser_proposition_id, is_tie, is_skip')
+        .eq('round_id', roundId);
+
+    return rows
+        .map((r) => PriorVote(
+              winnerId: r['winner_proposition_id'] as int,
+              loserId: r['loser_proposition_id'] as int,
+              isTie: (r['is_tie'] as bool?) ?? false,
+              isSkip: (r['is_skip'] as bool?) ?? false,
+            ))
+        .toList();
   }
 
   /// Get existing grid rankings for a participant in a round
@@ -538,14 +688,17 @@ class PropositionService {
       ratedCount[pid] = (ratedCount[pid] ?? 0) + 1;
     }
 
-    // A participant is done when rated count >= min(cap, non-self props)
+    // A participant is done when rated count >= min(cap, votable props).
+    // Votable = non-self props, or ALL props when non-self < 2 (conditional
+    // self-inclusion — mirrors get_least_rated_propositions).
     final done = <int>{};
     for (final entry in ratedCount.entries) {
       final pid = entry.key;
       final rated = entry.value;
       final ownProps = authoredCount[pid] ?? 0;
       final nonSelfProps = totalProps - ownProps;
-      final required = nonSelfProps < kMaxRatingsPerUser ? nonSelfProps : kMaxRatingsPerUser;
+      final votable = nonSelfProps >= 2 ? nonSelfProps : totalProps;
+      final required = votable < kMaxRatingsPerUser ? votable : kMaxRatingsPerUser;
       if (required > 0 && rated >= required) {
         done.add(pid);
       }
@@ -814,14 +967,22 @@ class PropositionService {
     required int participantId,
     required List<int> excludeIds,
   }) async {
-    // Count propositions excluding user's own and already fetched
+    // Count votable propositions not yet fetched. Votable = all props except
+    // the user's own — unless that leaves fewer than 2, in which case own
+    // props are votable too (conditional self-inclusion, mirrors
+    // get_least_rated_propositions). Dart-side filter also keeps AI
+    // (null-author) props, which `.neq` drops.
     final response = await _client
         .from('propositions')
-        .select('id')
-        .eq('round_id', roundId)
-        .neq('participant_id', participantId);
+        .select('id, participant_id')
+        .eq('round_id', roundId);
 
-    final allIds = (response as List).map((r) => r['id'] as int).toSet();
+    final all = response as List;
+    final nonOwn =
+        all.where((p) => p['participant_id'] != participantId).toList();
+    final votable = nonOwn.length >= 2 ? nonOwn : all;
+
+    final allIds = votable.map((r) => r['id'] as int).toSet();
     final excludeSet = excludeIds.toSet();
     final remaining = allIds.difference(excludeSet);
 
@@ -904,10 +1065,15 @@ class PropositionService {
     return response != null;
   }
 
-  /// Subscribe to skip changes for a round
+  /// Subscribe to round_skips changes for a round. Same payload-passing
+  /// contract as [subscribeToPropositions] — see that method for details.
   RealtimeChannel subscribeToSkips(
     int roundId,
-    void Function() onUpdate,
+    void Function(
+      PostgresChangeEvent event,
+      Map<String, dynamic>? newRecord,
+      Map<String, dynamic>? oldRecord,
+    ) onUpdate,
   ) {
     return _client
         .channel('round_skips:$roundId')
@@ -920,7 +1086,11 @@ class PropositionService {
             column: 'round_id',
             value: roundId,
           ),
-          callback: (_) => onUpdate(),
+          callback: (payload) => onUpdate(
+            payload.eventType,
+            payload.newRecord.isEmpty ? null : payload.newRecord,
+            payload.oldRecord.isEmpty ? null : payload.oldRecord,
+          ),
         )
         .subscribe();
   }
@@ -984,10 +1154,15 @@ class PropositionService {
     return response != null;
   }
 
-  /// Subscribe to rating skip changes for a round
+  /// Subscribe to rating_skips changes for a round. Same payload-passing
+  /// contract as [subscribeToPropositions] — see that method for details.
   RealtimeChannel subscribeToRatingSkips(
     int roundId,
-    void Function() onUpdate,
+    void Function(
+      PostgresChangeEvent event,
+      Map<String, dynamic>? newRecord,
+      Map<String, dynamic>? oldRecord,
+    ) onUpdate,
   ) {
     return _client
         .channel('rating_skips:$roundId')
@@ -1000,7 +1175,11 @@ class PropositionService {
             column: 'round_id',
             value: roundId,
           ),
-          callback: (_) => onUpdate(),
+          callback: (payload) => onUpdate(
+            payload.eventType,
+            payload.newRecord.isEmpty ? null : payload.newRecord,
+            payload.oldRecord.isEmpty ? null : payload.oldRecord,
+          ),
         )
         .subscribe();
   }
@@ -1022,6 +1201,38 @@ class PropositionService {
             value: roundId,
           ),
           callback: (_) => onUpdate(),
+        )
+        .subscribe();
+  }
+
+  /// Subscribe to rating_completions for a round. Fires once per rater when
+  /// they finish rating (grid batch submit or matches pair-exhaustion), so
+  /// the Done tags and matches progress bar tick live for other viewers.
+  /// Same payload-passing contract as [subscribeToRatingSkips].
+  RealtimeChannel subscribeToRatingCompletions(
+    int roundId,
+    void Function(
+      PostgresChangeEvent event,
+      Map<String, dynamic>? newRecord,
+      Map<String, dynamic>? oldRecord,
+    ) onUpdate,
+  ) {
+    return _client
+        .channel('rating_completions:$roundId')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: 'public',
+          table: 'rating_completions',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'round_id',
+            value: roundId,
+          ),
+          callback: (payload) => onUpdate(
+            payload.eventType,
+            payload.newRecord.isEmpty ? null : payload.newRecord,
+            payload.oldRecord.isEmpty ? null : payload.oldRecord,
+          ),
         )
         .subscribe();
   }

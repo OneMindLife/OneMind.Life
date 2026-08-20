@@ -28,17 +28,6 @@ class AgentSection extends StatelessWidget {
         if (settings.enabled) ...[
           const Divider(),
           SettingTile(
-            question: 'Should agents also rate?',
-            description: settings.agentsAlsoRate
-                ? 'Yes, agents rate alongside humans'
-                : 'No, agents only propose ideas',
-            trailing: Switch(
-              value: settings.agentsAlsoRate,
-              onChanged: (v) =>
-                  onChanged(settings.copyWith(agentsAlsoRate: v)),
-            ),
-          ),
-          SettingTile(
             question: 'How many agents?',
             description: '${settings.agentCount} ${settings.agentCount == 1 ? 'agent' : 'agents'} will participate',
             trailing: NumberInput(
@@ -47,6 +36,17 @@ class AgentSection extends StatelessWidget {
               onChanged: (v) => onChanged(settings.withCount(v)),
               min: 1,
               max: 5,
+            ),
+          ),
+          SettingTile(
+            question: 'Should agents also rate?',
+            description: settings.agentsAlsoRate
+                ? 'Yes, agents rate alongside humans'
+                : 'No, agents only propose ideas',
+            trailing: Switch(
+              value: settings.agentsAlsoRate,
+              onChanged: (v) =>
+                  onChanged(settings.copyWith(agentsAlsoRate: v)),
             ),
           ),
           SettingTile(

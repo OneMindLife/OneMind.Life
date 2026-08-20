@@ -1,0 +1,40 @@
+name: OneMind Daily Growth Report
+
+on:
+  schedule:
+    # Every day at 4 AM ET (8 AM UTC)
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  daily-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install google-analytics-data google-ads python-dateutil
+
+      - name: Generate and send report
+        env:
+          GA_PROPERTY_ID: ${{ secrets.GA_PROPERTY_ID }}
+          GA_CREDENTIALS: ${{ secrets.GA_CREDENTIALS }}
+          GOOGLE_ADS_DEVELOPER_TOKEN: ${{ secrets.GOOGLE_ADS_DEVELOPER_TOKEN }}
+          GOOGLE_ADS_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_ADS_OAUTH_CLIENT_ID }}
+          GOOGLE_ADS_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_ADS_OAUTH_CLIENT_SECRET }}
+          GOOGLE_ADS_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_ADS_OAUTH_REFRESH_TOKEN }}
+          SMTP_EMAIL: ${{ secrets.SMTP_EMAIL }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          SMTP_FROM: ${{ secrets.SMTP_FROM }}
+          SMTP_TO: ${{ secrets.SMTP_TO }}
+        run: python scripts/daily-report.py

@@ -9,6 +9,7 @@ import '../../providers/providers.dart';
 import '../../screens/tutorial/tutorial_data.dart';
 import '../../utils/language_utils.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/name_section.dart';
 
 class JoinDialog extends ConsumerStatefulWidget {
   final void Function(Chat chat) onJoined;
@@ -29,6 +30,8 @@ class JoinDialog extends ConsumerStatefulWidget {
 class _JoinDialogState extends ConsumerState<JoinDialog> {
   final _codeController = TextEditingController();
   final _emailController = TextEditingController();
+  // Name gate: joining requires a display name (never auto-generated).
+  final _nameController = TextEditingController();
   bool _isLoading = false;
   String? _error;
   Chat? _foundChat;
@@ -41,21 +44,17 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
     super.initState();
     if (widget.preloadedChat != null) {
       _foundChat = widget.preloadedChat;
-      // Check invite-only status asynchronously
-      WidgetsBinding.instance.addPostFrameCallback((_) => _loadInviteOnlyStatus());
+      _loadInviteOnlyStatus();
     }
   }
 
-  Future<void> _loadInviteOnlyStatus() async {
+  void _loadInviteOnlyStatus() {
     if (_foundChat == null) return;
-    try {
-      final inviteService = ref.read(inviteServiceProvider);
-      final inviteOnly = await inviteService.isInviteOnly(_foundChat!.id);
-      if (mounted) {
-        setState(() => _isInviteOnly = inviteOnly);
-      }
-    } catch (_) {
-      // Non-critical — default is false (not invite-only)
+    // accessMethod is populated by getChatByCode (and the preloaded-chat
+    // path that fed the dialog). A direct SELECT here is RLS-blocked
+    // for non-participants, so consult the in-memory chat instead.
+    if (mounted) {
+      setState(() => _isInviteOnly = _foundChat!.accessMethod == AccessMethod.inviteOnly);
     }
   }
 
@@ -72,6 +71,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
     }
     _codeController.dispose();
     _emailController.dispose();
+    _nameController.dispose();
     super.dispose();
   }
 
@@ -99,7 +99,6 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
 
     try {
       final chatService = ref.read(chatServiceProvider);
-      final inviteService = ref.read(inviteServiceProvider);
       final participantService = ref.read(participantServiceProvider);
       final languageCode = ref.read(localeProvider).languageCode;
       final chat = await chatService.getChatByCode(code, languageCode: languageCode);
@@ -123,7 +122,7 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
         return;
       }
 
-      final inviteOnly = await inviteService.isInviteOnly(chat.id);
+      final inviteOnly = chat.accessMethod == AccessMethod.inviteOnly;
 
       setState(() {
         _foundChat = chat;
@@ -201,10 +200,17 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
     });
 
     try {
-      final authService = ref.read(authServiceProvider);
       final participantService = ref.read(participantServiceProvider);
       final inviteService = ref.read(inviteServiceProvider);
-      final name = authService.displayName!;
+      // Name gate: stored name, or the one typed in this dialog.
+      final name = await commitNameSection(ref, _nameController);
+      if (name == null) {
+        setState(() {
+          _error = l10n.pleaseEnterName;
+          _isLoading = false;
+        });
+        return;
+      }
 
       if (_foundChat!.requireApproval) {
         // Request to join (auth.uid() is used automatically)
@@ -386,6 +392,12 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
                   ),
                   const SizedBox(height: 16),
                 ],
+                // Who you'll join as: inline field for first-timers, or a
+                // "Joining as X" line with an edit pencil.
+                NameSection(
+                  controller: _nameController,
+                  asLabel: l10n.joiningAs,
+                ),
               ],
               if (_foundChat!.requireApproval)
                 Padding(
@@ -452,15 +464,26 @@ class _JoinDialogState extends ConsumerState<JoinDialog> {
                 : Text(l10n.verifyEmail),
           )
         else
-          ElevatedButton(
-            onPressed: _isLoading ? null : _joinChat,
-            child: _isLoading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(_foundChat!.requireApproval ? l10n.requestToJoin : l10n.join),
+          // Disabled until a name exists (typed or stored) — joining
+          // requires a display name.
+          ListenableBuilder(
+            listenable: _nameController,
+            builder: (context, _) {
+              final hasName = ref.read(authServiceProvider).hasDisplayName ||
+                  _nameController.text.trim().isNotEmpty;
+              return ElevatedButton(
+                onPressed: _isLoading || !hasName ? null : _joinChat,
+                child: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(_foundChat!.requireApproval
+                        ? l10n.requestToJoin
+                        : l10n.join),
+              );
+            },
           ),
       ],
     );

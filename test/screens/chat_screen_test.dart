@@ -14,6 +14,7 @@ import 'package:onemind_app/core/l10n/locale_provider.dart';
 import 'package:onemind_app/core/l10n/language_service.dart';
 import 'package:onemind_app/screens/chat/chat_screen.dart';
 import 'package:onemind_app/widgets/error_view.dart';
+import 'package:onemind_app/widgets/tts_button.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/services/chat_service.dart';
 import 'package:onemind_app/services/participant_service.dart';
@@ -280,6 +281,7 @@ void main() {
     Chat chat, {
     ChatDetailState? chatDetailState,
     bool showPreviousResults = false,
+    FakeChatDetailNotifier? notifier,
   }) {
     final overrides = <Override>[
       chatServiceProvider.overrideWithValue(mockChatService),
@@ -291,13 +293,16 @@ void main() {
       languageServiceProvider.overrideWithValue(mockLanguageService),
     ];
 
-    // If state provided, override chatDetailProvider with pre-loaded state
-    if (chatDetailState != null) {
+    // If state provided, override chatDetailProvider with pre-loaded state.
+    // Pass [notifier] instead to keep a handle for driving state changes
+    // mid-test (realtime-update assertions).
+    if (chatDetailState != null || notifier != null) {
       overrides.add(
         chatDetailProvider(ChatDetailParams(
           chatId: chat.id,
           showPreviousResults: showPreviousResults,
-        )).overrideWith((ref) => FakeChatDetailNotifier(chatDetailState)),
+        )).overrideWith(
+            (ref) => notifier ?? FakeChatDetailNotifier(chatDetailState!)),
       );
     }
 
@@ -335,6 +340,7 @@ void main() {
     ChatCredits? chatCredits,
     bool isMyParticipantFunded = true,
     Set<int> participantsWhoRated = const {},
+    Set<int> participantsWhoProposed = const {},
     Set<int> participantsWhoSkippedProposing = const {},
     Set<int> participantsWhoSkippedRating = const {},
   }) {
@@ -359,6 +365,7 @@ void main() {
       chatCredits: chatCredits,
       isMyParticipantFunded: isMyParticipantFunded,
       participantsWhoRated: participantsWhoRated,
+      participantsWhoProposed: participantsWhoProposed,
       participantsWhoSkippedProposing: participantsWhoSkippedProposing,
       participantsWhoSkippedRating: participantsWhoSkippedRating,
     );
@@ -467,6 +474,32 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('share-button')), findsOneWidget);
+      });
+
+      testWidgets('quick chat (maxCycles==1): minimal app bar — Invite, no '
+          'overflow, no participants roster', (tester) async {
+        final chat = ChatFixtures.codeAccess().copyWith(maxCycles: 1);
+        final state = createTestState(
+          chat: chat,
+          participants: [
+            ParticipantFixtures.host(),
+            ParticipantFixtures.model(id: 2),
+          ],
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        // One labeled action (Invite, the relabeled share button)...
+        expect(find.text('Invite'), findsOneWidget);
+        expect(find.byKey(const Key('share-button')), findsOneWidget);
+        // ...and NO overflow menu (pause/delete/leave don't apply).
+        expect(find.byKey(const Key('chat-more-menu')), findsNothing);
+
+        // No back arrow — a quick chat is a sealed single-use tool, not a
+        // dashboard you navigate back out of.
+        final appBar = tester.widget<AppBar>(find.byType(AppBar));
+        expect(appBar.automaticallyImplyLeading, isFalse);
       });
 
       // TODO: Fix this test - share button behavior for public chats needs verification
@@ -666,6 +699,201 @@ void main() {
       });
     });
 
+    // The host's "advance proposing → rating" control for QUICK chats
+    // (maxCycles == 1). Quick chats render a custom proposing UI that does NOT
+    // use ProposingStatePanel, so _buildQuickChatHostAdvance is the only place
+    // the advance button exists for them. Gate: maxCycles == 1 && host &&
+    // manual && !preview && phase == proposing. Enabled only when there are
+    // >= 2 non-carried propositions.
+    group('Quick Chat Host Advance Button', () {
+      const advanceKey = Key('quick-chat-advance-to-rating-button');
+
+      ChatDetailState quickProposingState({
+        required bool isHost,
+        required int propositionCount,
+        Chat? chatOverride,
+      }) {
+        final chat = chatOverride ??
+            ChatFixtures.codeAccess().copyWith(maxCycles: 1);
+        final me = isHost
+            ? ParticipantFixtures.host()
+            : ParticipantFixtures.model(id: 2, isHost: false);
+        // Non-carried propositions (no carriedFromId) — these count toward the
+        // >= 2 readiness gate.
+        final props = PropositionFixtures.list(count: propositionCount);
+        return createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          participants: [ParticipantFixtures.host(), me],
+          myParticipant: me,
+          propositions: props,
+        );
+      }
+
+      testWidgets(
+          'quick + host + manual + proposing + >=2 propositions: button '
+          'present AND enabled', (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickProposingState(isHost: true, propositionCount: 2);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        final finder = find.byKey(advanceKey);
+        expect(finder, findsOneWidget);
+        final button = tester.widget<FilledButton>(finder);
+        expect(button.onPressed, isNotNull,
+            reason: '2 non-carried propositions should enable the button');
+      });
+
+      testWidgets(
+          'quick + host + manual + proposing + <2 propositions: button '
+          'present but DISABLED, hint shown', (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickProposingState(isHost: true, propositionCount: 1);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        final finder = find.byKey(advanceKey);
+        expect(finder, findsOneWidget);
+        final button = tester.widget<FilledButton>(finder);
+        expect(button.onPressed, isNull,
+            reason: 'fewer than 2 non-carried propositions disables the button');
+
+        // The disabled-state hint steers a stuck host toward inviting and
+        // reflects the current count (1 so far).
+        expect(
+          find.text(
+              'Tap Invite to get more ideas — 1 so far, 2 needed to start voting'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('non-quick chat (maxCycles == null): button ABSENT',
+          (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        // codeAccess() defaults to maxCycles == null (not a quick chat).
+        final state = quickProposingState(
+          isHost: true,
+          propositionCount: 2,
+          chatOverride: ChatFixtures.codeAccess(),
+        );
+        expect(state.chat!.maxCycles, isNull);
+
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(advanceKey), findsNothing);
+      });
+
+      testWidgets('non-host viewer in quick proposing chat: button ABSENT',
+          (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickProposingState(isHost: false, propositionCount: 2);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(advanceKey), findsNothing);
+      });
+    });
+
+    // The host's invite prompt during the RATING phase of a quick chat
+    // (maxCycles == 1, matches mode). The seed-options path goes straight to
+    // rating without ever passing through the proposing screen where the share
+    // block otherwise lives, so the rating phase must surface it too — above
+    // the end-voting bar.
+    group('Quick Chat Rating-Phase Share Block', () {
+      const shareKey = Key('quick-host-share-block');
+
+      ChatDetailState quickRatingState({
+        required bool isHost,
+        bool isPreview = false,
+      }) {
+        final chat = ChatFixtures.codeAccess().copyWith(
+          maxCycles: 1,
+          ratingMode: 'matches',
+          isPreview: isPreview,
+        );
+        final me = isHost
+            ? ParticipantFixtures.host()
+            : ParticipantFixtures.model(id: 2, isHost: false);
+        return createTestState(
+          chat: chat,
+          round: RoundFixtures.rating(),
+          participants: [ParticipantFixtures.host(), me],
+          myParticipant: me,
+          propositions: PropositionFixtures.list(count: 3),
+          hasStartedRating: true,
+        );
+      }
+
+      testWidgets(
+          'quick + host + matches + rating: share block present, worded for '
+          'voting', (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickRatingState(isHost: true);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(shareKey), findsOneWidget);
+        expect(find.text('Invite your group to vote'), findsOneWidget);
+      });
+
+      testWidgets('non-host viewer in quick rating chat: share block ABSENT',
+          (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickRatingState(isHost: false);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(shareKey), findsNothing);
+      });
+
+      testWidgets('preview quick chat (solo/agents): share block ABSENT',
+          (tester) async {
+        tester.view.physicalSize = const Size(1200, 2400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final state = quickRatingState(isHost: true, isPreview: true);
+        await tester
+            .pumpWidget(createTestWidget(state.chat!, chatDetailState: state));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(shareKey), findsNothing);
+      });
+    });
+
     group('Initial Message', () {
       testWidgets('displays initial message in chat history', (tester) async {
         final chat = ChatFixtures.model(
@@ -678,6 +906,40 @@ void main() {
         await tester.pump();
 
         expect(find.text('What is the meaning of life?'), findsOneWidget);
+      });
+
+      testWidgets(
+          'normal chat (maxCycles==null): initial message shows speak-aloud '
+          'TTS button', (tester) async {
+        final chat = ChatFixtures.model(
+          initialMessage: 'What is the meaning of life?',
+        );
+        final state = createTestState(chat: chat);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pump();
+
+        // Chat-era audio chrome is present on a normal (multi-cycle) chat.
+        expect(find.byType(TtsButton), findsWidgets);
+        expect(find.byIcon(Icons.volume_up_outlined), findsWidgets);
+      });
+
+      testWidgets(
+          'quick chat (maxCycles==1): initial message hides the speak-aloud '
+          'TTS button', (tester) async {
+        final chat = ChatFixtures.model(
+          initialMessage: 'Where should we eat?',
+        ).copyWith(maxCycles: 1);
+        final state = createTestState(chat: chat);
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pump();
+
+        // The question still renders...
+        expect(find.text('Where should we eat?'), findsOneWidget);
+        // ...but the speak-aloud button is gone (lean one-shot decision).
+        expect(find.byType(TtsButton), findsNothing);
+        expect(find.byIcon(Icons.volume_up_outlined), findsNothing);
       });
     });
 
@@ -1003,6 +1265,85 @@ void main() {
         // The Consumer widget in the modal ensures it watches state changes
         // Integration test would verify actual realtime behavior
       });
+
+      testWidgets(
+          'Pending chip flips to Done while sheet is open when state updates',
+          (tester) async {
+        // Regression: the sheet used to read the ChatDetailState snapshot
+        // captured at open time, so chips never updated live even though
+        // the notifier patched participantsWho* sets from realtime events.
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final alice = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final participants = [hostParticipant, alice];
+
+        final initialState = createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          participants: participants,
+          myParticipant: hostParticipant,
+          participantsWhoProposed: const {},
+        );
+        final notifier = FakeChatDetailNotifier(initialState);
+
+        await tester.pumpWidget(createTestWidget(chat, notifier: notifier));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.groups));
+        await tester.pumpAndSettle();
+
+        // Nobody has acted yet: both rows show Pending.
+        expect(find.text('Pending'), findsNWidgets(2));
+        expect(find.text('Done'), findsNothing);
+
+        // Simulate a realtime proposition INSERT patching the set.
+        notifier.updateState(
+          initialState.copyWith(participantsWhoProposed: {alice.id}),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('Pending'), findsOneWidget);
+      });
+
+      testWidgets(
+          'rating phase: Pending flips to Done when participantsWhoRated updates',
+          (tester) async {
+        // Covers the rating-completion realtime path: the notifier patches
+        // participantsWhoRated in place when a rating_completions event
+        // arrives, and the open sheet must reflect it immediately.
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final alice = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final participants = [hostParticipant, alice];
+
+        final initialState = createTestState(
+          chat: chat,
+          round: RoundFixtures.rating(),
+          participants: participants,
+          myParticipant: hostParticipant,
+          participantsWhoRated: const {},
+        );
+        final notifier = FakeChatDetailNotifier(initialState);
+
+        await tester.pumpWidget(createTestWidget(chat, notifier: notifier));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.groups));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Pending'), findsNWidgets(2));
+        expect(find.text('Done'), findsNothing);
+
+        // Simulate what _onRatingCompletionRealtime does on INSERT.
+        notifier.updateState(
+          initialState.copyWith(participantsWhoRated: {alice.id}),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Done'), findsOneWidget);
+        expect(find.text('Pending'), findsOneWidget);
+      });
       testWidgets('shows ranking numbers from leaderboard data', (tester) async {
         final chat = ChatFixtures.model();
         final hostParticipant = ParticipantFixtures.host();
@@ -1097,16 +1438,25 @@ void main() {
 
         // Find all ListTile widgets and verify order
         final listTiles = tester.widgetList<ListTile>(find.byType(ListTile)).toList();
-        // First should be #1 Alice, second #2 Host, third unranked Bob
-        final titles = listTiles.map((t) => (t.title as Text).data).toList();
+        // First should be #1 Alice, second #2 Host, third unranked Bob.
+        // The current user's row title is a Row (name + edit pencil); other
+        // participants use a plain Text. Extract the name from either.
+        final titles = listTiles.map((t) {
+          final title = t.title;
+          if (title is Text) return title.data;
+          final flex = (title as Row).children.whereType<Flexible>().first;
+          return (flex.child as Text).data;
+        }).toList();
         expect(titles, ['Alice', 'Host User', 'Bob']);
       });
 
-      // Per-user "Done" indicator was retired — naming individual
-      // stragglers worked against NCDD's "every voice at its own pace"
-      // ethos. The round status bar's progress % already shows how
-      // close the round is to closing.
-      testWidgets('participants sheet does not surface per-user Done state',
+      // Proposing-phase "Done" tag is driven by `participantsWhoProposed`,
+      // NOT by the local propositions list — authorship is hidden client-side
+      // during proposing, so the propositions a viewer holds don't reveal who
+      // acted. A participant absent from the who-proposed set shows no Done,
+      // even if a (different viewer's) proposition happens to be in state.
+      testWidgets(
+          'participants sheet shows no Done for a participant who has not proposed',
           (tester) async {
         final chat = ChatFixtures.model();
         final hostParticipant = ParticipantFixtures.host();
@@ -1121,6 +1471,7 @@ void main() {
           participants: [hostParticipant, p2],
           myParticipant: hostParticipant,
           propositions: propositions,
+          // who-proposed set is empty → nobody is "Done" yet.
         );
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
@@ -1128,9 +1479,31 @@ void main() {
         await tester.tap(find.byIcon(Icons.groups));
         await tester.pumpAndSettle();
 
-        // No checkmark column, no "Done" subtitle.
-        expect(find.byIcon(Icons.check), findsNothing);
         expect(find.text('Done'), findsNothing);
+      });
+
+      testWidgets(
+          'participants sheet shows Done for a participant in participantsWhoProposed during proposing',
+          (tester) async {
+        final chat = ChatFixtures.model();
+        final hostParticipant = ParticipantFixtures.host();
+        final p2 = ParticipantFixtures.model(id: 2, displayName: 'Alice');
+        final state = createTestState(
+          chat: chat,
+          round: RoundFixtures.proposing(),
+          participants: [hostParticipant, p2],
+          myParticipant: hostParticipant,
+          // Alice (id 2) has proposed this round per the bootstrap signal.
+          participantsWhoProposed: {2},
+        );
+
+        await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.groups));
+        await tester.pumpAndSettle();
+
+        // Exactly one Done chip — for Alice, the participant who proposed.
+        expect(find.text('Done'), findsOneWidget);
       });
     });
 
@@ -2215,7 +2588,7 @@ void main() {
         expect(find.byKey(const Key('skip-proposing-button')), findsNothing);
       });
 
-      testWidgets('R2+ proposing with skips renders the Affirm/Alternative gate',
+      testWidgets('R2+ proposing renders the Yes/No "better idea?" gate',
           (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.proposing(customId: 2);
@@ -2236,17 +2609,19 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
-        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
-        // Microcopy under the gate buttons.
-        expect(find.text('Affirm this, or offer an alternative.'), findsOneWidget);
+        expect(find.byKey(const Key('gate-yes-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-no-button')), findsOneWidget);
+        // The question replaces the old microcopy.
+        expect(find.text('Can you think of something better?'), findsOneWidget);
+        // Skip lives on the question (default fixture allows skipping).
+        expect(find.byKey(const Key('gate-skip-button')), findsOneWidget);
         // Inline R1 input must not be rendered (gate replaces it for R2+).
         expect(find.byKey(const Key('inline-r1-input')), findsNothing);
-        // Alternative textfield is hidden until the user taps Alternative.
+        // Alternative textfield is hidden until the user taps Yes.
         expect(find.byKey(const Key('inline-alternative-input')), findsNothing);
       });
 
-      testWidgets('tapping Alternative reveals the in-place textfield with Back + Skip',
+      testWidgets('tapping Yes reveals the textfield with Back only (no Skip)',
           (tester) async {
         final chat = ChatFixtures.model();
         final round = RoundFixtures.proposing(customId: 2);
@@ -2266,18 +2641,18 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.tap(find.byKey(const Key('gate-yes-button')));
         await tester.pumpAndSettle();
 
         expect(find.byKey(const Key('inline-alternative-input')), findsOneWidget);
         expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
-        expect(find.byKey(const Key('inline-alternative-skip-button')), findsOneWidget);
+        // Skip is NOT here — it lives on the Yes/No question instead.
+        expect(find.byKey(const Key('inline-alternative-skip-button')), findsNothing);
         // Gate buttons gone — replaced by the textfield card.
-        expect(find.byKey(const Key('gate-affirm-button')), findsNothing);
-        expect(find.byKey(const Key('gate-alternative-button')), findsNothing);
-        // Alternative microcopy under the new buttons.
-        expect(find.text('Send your idea, go back, or skip your turn.'),
-            findsOneWidget);
+        expect(find.byKey(const Key('gate-yes-button')), findsNothing);
+        expect(find.byKey(const Key('gate-no-button')), findsNothing);
+        // Back-only microcopy under the textfield.
+        expect(find.text('Send your idea, or go back.'), findsOneWidget);
       });
 
       testWidgets('Back from alternative restores the gate and preserves typed text',
@@ -2300,7 +2675,7 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        await tester.tap(find.byKey(const Key('gate-yes-button')));
         await tester.pumpAndSettle();
 
         // Type something into the alternative textfield, then go Back.
@@ -2314,10 +2689,10 @@ void main() {
         await tester.pumpAndSettle();
 
         // We're back at the gate.
-        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
-        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
-        // Tap Alternative again — the typed text should still be there.
-        await tester.tap(find.byKey(const Key('gate-alternative-button')));
+        expect(find.byKey(const Key('gate-yes-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-no-button')), findsOneWidget);
+        // Tap Yes again — the typed text should still be there.
+        await tester.tap(find.byKey(const Key('gate-yes-button')));
         await tester.pumpAndSettle();
         expect(find.text('something better'), findsOneWidget);
       });
@@ -2464,13 +2839,13 @@ void main() {
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('gate-affirm-button')), findsOneWidget);
-        expect(find.byKey(const Key('gate-alternative-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-yes-button')), findsOneWidget);
+        expect(find.byKey(const Key('gate-no-button')), findsOneWidget);
         // No fallback to in-panel input.
         expect(find.byKey(const Key('proposition-input')), findsNothing);
       });
 
-      testWidgets('alternative row hides Skip button + drops "skip" microcopy when allow_skip_proposing=false',
+      testWidgets('gate hides Skip on the question when allow_skip_proposing=false',
           (tester) async {
         final chat = chatWith(skipProposing: false);
         final round = RoundFixtures.proposing(customId: 2);
@@ -2489,20 +2864,19 @@ void main() {
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('gate-alternative-button')));
-        await tester.pumpAndSettle();
 
-        // Back button stays.
+        // Skip is hidden on the question (chat disallows skipping).
+        expect(find.byKey(const Key('gate-skip-button')), findsNothing);
+
+        // After tapping Yes, the textfield shows Back only (Skip never here).
+        await tester.tap(find.byKey(const Key('gate-yes-button')));
+        await tester.pumpAndSettle();
         expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
-        // Skip button hidden.
         expect(find.byKey(const Key('inline-alternative-skip-button')), findsNothing);
-        // Microcopy uses the no-skip variant.
         expect(find.text('Send your idea, or go back.'), findsOneWidget);
-        expect(find.text('Send your idea, go back, or skip your turn.'),
-            findsNothing);
       });
 
-      testWidgets('alternative row keeps Skip when allow_skip_proposing=true (control)',
+      testWidgets('gate shows Skip on the question when allow_skip_proposing=true',
           (tester) async {
         final chat = chatWith(skipProposing: true);
         final round = RoundFixtures.proposing(customId: 2);
@@ -2521,13 +2895,15 @@ void main() {
 
         await tester.pumpWidget(createTestWidget(chat, chatDetailState: state));
         await tester.pumpAndSettle();
-        await tester.tap(find.byKey(const Key('gate-alternative-button')));
-        await tester.pumpAndSettle();
 
+        // Skip is offered on the question.
+        expect(find.byKey(const Key('gate-skip-button')), findsOneWidget);
+
+        // But not in the alternative textfield (Back only there).
+        await tester.tap(find.byKey(const Key('gate-yes-button')));
+        await tester.pumpAndSettle();
         expect(find.byKey(const Key('inline-alternative-back-button')), findsOneWidget);
-        expect(find.byKey(const Key('inline-alternative-skip-button')), findsOneWidget);
-        expect(find.text('Send your idea, go back, or skip your turn.'),
-            findsOneWidget);
+        expect(find.byKey(const Key('inline-alternative-skip-button')), findsNothing);
       });
 
       testWidgets('rating microcopy drops "skip" when allow_skip_rating=false',
@@ -2601,8 +2977,8 @@ void main() {
         expect(find.byKey(const Key('inline-affirmed-indicator')),
             findsNothing);
         // Gate buttons are gone.
-        expect(find.byKey(const Key('gate-affirm-button')), findsNothing);
-        expect(find.byKey(const Key('gate-alternative-button')), findsNothing);
+        expect(find.byKey(const Key('gate-yes-button')), findsNothing);
+        expect(find.byKey(const Key('gate-no-button')), findsNothing);
         // Bottom panel collapses — no stray textfield underneath the
         // affirmed confirmation card.
         expect(find.byKey(const Key('proposition-input')), findsNothing);

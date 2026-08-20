@@ -168,10 +168,16 @@ void main() {
 
   Widget buildApp() {
     final router = GoRouter(
-      initialLocation: '/',
+      initialLocation: '/home',
       routes: [
+        // Mirrors the real router: '/' is the marketing landing (ignores
+        // chat_id), '/home' is where chat_id is read and the chat auto-opens.
         GoRoute(
           path: '/',
+          builder: (context, state) => const Scaffold(body: Text('Landing')),
+        ),
+        GoRoute(
+          path: '/home',
           builder: (context, state) {
             final chatIdParam = state.uri.queryParameters['chat_id'];
             return _StubHome(
@@ -212,7 +218,7 @@ void main() {
   // Regression guard for the "FAB → Discover → tap chat lands on
   // 'What would you like to do?'" bug. When the action picker was pushed
   // via Navigator.push (root navigator) and Discover via context.push
-  // (go_router), DiscoverScreen's `context.go('/?chat_id=N')` would only
+  // (go_router), DiscoverScreen's `context.go('/home?chat_id=N')` would only
   // reset go_router's stack — the action picker stayed stranded on top.
   // Routing the action picker through go_router (`/actions`) keeps the
   // whole stack under one navigator, so context.go clears everything.
@@ -234,7 +240,7 @@ void main() {
       expect(find.byType(DiscoverScreen), findsOneWidget,
           reason: 'DiscoverScreen should be visible after tapping Discover');
 
-      // 3. Tap the chat tile → joinChat → context.go('/?chat_id=1')
+      // 3. Tap the chat tile → joinChat → context.go('/home?chat_id=1')
       await tester.tap(find.text('Friday Plans'));
       await tester.pumpAndSettle();
 

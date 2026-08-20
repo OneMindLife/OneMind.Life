@@ -232,6 +232,7 @@ Given the following topic, create exactly ${agentCount} agent personas. Each age
 ${topicContext}
 
 Requirements:
+- GROUND IN REALITY: read the topic, names, numbers, and addresses LITERALLY and in plain everyday terms. Do NOT infer history, architecture, eras, or years from numbers — e.g., a street address like "1738 Market Street" is just a place where people live or meet, NOT the year 1738 or a historic building. Base each persona on the real people in this chat and the actual everyday decision they are making.
 - Each persona gets a short name starting with "The " (e.g., "The Customer Advocate", "The Risk Analyst")
 - Each personality must be specific to the topic, not generic
 - Format each personality as: "You evaluate ONE thing: [criterion]. Rate highest when [X]. Rate lowest when [Y]."
@@ -948,7 +949,27 @@ async function fetchPreviousConsensus(
 // CONTEXT FETCHING
 // =============================================================================
 
-async function fetchChatContext(chatId: number): Promise<ChatContext> {
+// C15 tree: a child cycle's question is its PARENT PROPOSITION, not the
+// chat-level opening message. Returns null for root cycles.
+async function getParentProposition(
+  cycleId: number
+): Promise<{ id: number; content: string } | null> {
+  const { data: cyc } = await supabase
+    .from("cycles")
+    .select("parent_proposition_id")
+    .eq("id", cycleId)
+    .maybeSingle();
+  const pid = cyc?.parent_proposition_id as number | null | undefined;
+  if (!pid) return null;
+  const { data: prop } = await supabase
+    .from("propositions")
+    .select("id, content")
+    .eq("id", pid)
+    .maybeSingle();
+  return prop ? { id: prop.id as number, content: prop.content as string } : null;
+}
+
+async function fetchChatContext(chatId: number, cycleId?: number): Promise<ChatContext> {
   const { data, error } = await supabase
     .from("chats")
     .select("name, initial_message, description, confirmation_rounds_required, enable_agents, proposing_agent_count, rating_agent_count, agent_instructions, agent_configs, translation_languages, agent_model")
@@ -960,6 +981,16 @@ async function fetchChatContext(chatId: number): Promise<ChatContext> {
       `Failed to fetch chat: ${error?.message || "Not found"}`
     );
   }
+
+  // Tree-node rounds answer their parent thought, not the root question.
+  if (cycleId) {
+    const parent = await getParentProposition(cycleId);
+    if (parent) {
+      (data as ChatContext).initial_message =
+        `Follow-up to the group's thought: "${parent.content}" — propose what naturally follows from it.`;
+    }
+  }
+
   return data as ChatContext;
 }
 
@@ -967,6 +998,10 @@ async function fetchConsensusHistory(
   chatId: number,
   cycleId: number
 ): Promise<ConsensusWinner[]> {
+  // C15 tree: chat-wide winner history is ROOT context — it would only
+  // confuse a child node's follow-up prompt. Child cycles get no history.
+  if (await getParentProposition(cycleId)) return [];
+
   const { data: completedCycles, error } = await supabase
     .from("cycles")
     .select("id, winning_proposition_id, task_result, category")
@@ -1105,9 +1140,14 @@ async function callAgentPropose(
   content: string,
   apiKey: string,
   category?: string,
+  roundId?: number,
 ): Promise<{ success: boolean; skipped?: boolean; skip_reason?: string; duplicate?: boolean; proposition_id?: number; propositions_remaining?: number }> {
   const url = `${supabaseUrl}/functions/v1/agent-propose`;
+  // Pass the target round so the proposal lands in the exact branch we're
+  // proposing for — critical for tree chats with many concurrent proposing
+  // rounds (otherwise agent-propose falls back to the chat's newest round).
   const body: Record<string, unknown> = { chat_id: chatId, content };
+  if (roundId) body.round_id = roundId;
   if (category) body.category = category;
   const response = await fetch(url, {
     method: "POST",
@@ -1434,8 +1474,9 @@ TASK: Generate exactly 1 proposition (max ${MAX_CONTENT_LENGTH} chars). ${refine
     // Auto-detect category from content shape
     const category = content!.trim().endsWith("?") ? "question" : "thought";
 
-    // Submit via Agent API (validates phase, sanitizes content, detects duplicates)
-    const result = await callAgentPropose(chatId, content!, apiKey, category);
+    // Submit via Agent API (validates phase, sanitizes content, detects duplicates).
+    // Pass roundId so the proposal lands in THIS branch, not the chat's newest one.
+    const result = await callAgentPropose(chatId, content!, apiKey, category, roundId);
 
     if (result.skipped) {
       console.warn(
@@ -1503,10 +1544,15 @@ async function handleRating(
   apiKey: string,
   allPersonas?: Persona[],
 ): Promise<void> {
-  // Filter out the persona's own proposition
-  const toRate = propositions.filter(
+  // Filter out the persona's own proposition — unless that leaves fewer than
+  // 2 (conditional self-inclusion, mirrors agent-rate and the human selection
+  // paths). In a 2-prop round the per-prop advance threshold counts ALL
+  // active raters, so the persona must rate its own prop too or the round
+  // can never advance.
+  const nonOwn = propositions.filter(
     (p) => p.participant_id !== persona.participant_id
   );
+  const toRate = nonOwn.length >= 2 ? nonOwn : propositions;
 
   if (toRate.length === 0) {
     console.log(
@@ -1515,7 +1561,9 @@ async function handleRating(
     return;
   }
 
-  // Check idempotency — skip if this persona already rated this round
+  // Check idempotency — skip if this persona already rated this round.
+  // Grid mode leaves grid_rankings rows; matches mode leaves a
+  // rating_completions row instead (agent-rate records pairwise votes).
   const { data: existingRatings } = await supabase
     .from("grid_rankings")
     .select("id")
@@ -1526,6 +1574,20 @@ async function handleRating(
   if (existingRatings && existingRatings.length > 0) {
     console.log(
       `${LOG_PREFIX} [${persona.name}] Already rated in round ${roundId}, skipping`
+    );
+    return;
+  }
+
+  const { data: existingCompletion } = await supabase
+    .from("rating_completions")
+    .select("id")
+    .eq("round_id", roundId)
+    .eq("participant_id", persona.participant_id)
+    .limit(1);
+
+  if (existingCompletion && existingCompletion.length > 0) {
+    console.log(
+      `${LOG_PREFIX} [${persona.name}] Already completed rating in round ${roundId}, skipping`
     );
     return;
   }
@@ -1806,7 +1868,7 @@ Deno.serve(async (req: Request) => {
       }
 
       // Fetch chat context to get per-phase agent counts
-      let dispatchChatContext = await fetchChatContext(chat_id);
+      let dispatchChatContext = await fetchChatContext(chat_id, cycle_id);
 
       // --- Dynamic persona generation (first dispatch only) ---
       if (dispatchChatContext.agent_configs === null) {
@@ -1849,7 +1911,27 @@ Deno.serve(async (req: Request) => {
           } else {
             // Another dispatcher already saved — re-fetch to get their configs
             console.log(`${LOG_PREFIX} [PERSONA-GEN] agent_configs already set by concurrent run, re-fetching`);
-            dispatchChatContext = await fetchChatContext(chat_id);
+            dispatchChatContext = await fetchChatContext(chat_id, cycle_id);
+          }
+        } else {
+          // Generation failed (LLM error/timeout → empty). Cache a sane, neutral
+          // persona so we do NOT re-run generation — and risk a misfire — on every
+          // dispatch. A friendly, grounded participant is far safer than re-deriving
+          // an adversarial archetype from the title each round.
+          const fallbackPersonas = Array.from({ length: agentCount }, (_, i) => ({
+            name: i === 0 ? "The Contributor" : `The Contributor ${i + 1}`,
+            personality:
+              "You are a thoughtful, friendly participant. Propose practical, constructive ideas relevant to what the group is actually deciding, and judge ideas on their merit and how well they serve everyone involved. Keep proposals short, concrete, and grounded in everyday reality.",
+          }));
+          const { data: fbUpdated } = await supabase
+            .from("chats")
+            .update({ agent_configs: fallbackPersonas })
+            .eq("id", chat_id)
+            .is("agent_configs", null)
+            .select("agent_configs");
+          if (fbUpdated && fbUpdated.length > 0) {
+            dispatchChatContext.agent_configs = fallbackPersonas;
+            console.log(`${LOG_PREFIX} [PERSONA-GEN] Generation failed; cached neutral fallback personas for chat ${chat_id}`);
           }
         }
       }
@@ -1909,7 +1991,7 @@ Deno.serve(async (req: Request) => {
             // Results are visible to agents via task_result in consensus history context
             if (prevCategory === "research_task" && !prevConsensus.task_result) {
               console.log(`${LOG_PREFIX} [DISPATCHER] research_task — auto-executing enhanced research`);
-              const chatContext = await fetchChatContext(chat_id);
+              const chatContext = await fetchChatContext(chat_id, cycle_id);
               const consensusHistory = await fetchConsensusHistory(chat_id, cycle_id);
               const brief: ResearchBrief = {
                 consensusContent: prevConsensus.winning_content,
@@ -1951,7 +2033,7 @@ Deno.serve(async (req: Request) => {
               const classification = await classifyConsensus(prevConsensus.winning_content, logCtx);
               console.log(`${LOG_PREFIX} [DISPATCHER] Legacy classification: ${classification}`);
               if (classification === "RESEARCH_TASK") {
-                const chatContext = await fetchChatContext(chat_id);
+                const chatContext = await fetchChatContext(chat_id, cycle_id);
                 const consensusHistory = await fetchConsensusHistory(chat_id, cycle_id);
                 const brief: ResearchBrief = {
                   consensusContent: prevConsensus.winning_content,
@@ -2077,7 +2159,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Fetch shared context
-    const chatContext = await fetchChatContext(chat_id);
+    const chatContext = await fetchChatContext(chat_id, cycle_id);
     const consensusHistory = await fetchConsensusHistory(chat_id, cycle_id);
 
     if (phase === "proposing") {

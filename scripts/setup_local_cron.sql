@@ -23,6 +23,8 @@ SELECT vault.create_secret('local-dev-secret', 'cron_secret', 'Local dev cron se
 SELECT cron.unschedule('process-timers');
 SELECT cron.unschedule('process-auto-refills');
 SELECT cron.unschedule('cleanup-inactive-chats');
+SELECT cron.unschedule('moltbook-agent-heartbeat');
+SELECT cron.unschedule('moltcourt-agent-heartbeat');
 
 -- =============================================================================
 -- STEP 3: Recreate cron jobs for local development
@@ -68,6 +70,32 @@ SELECT cron.schedule(
     $$
 );
 
+-- Add local cron job for moltbook-agent (runs every minute locally for testing, production is every 30 min)
+SELECT cron.schedule(
+    'moltbook-agent-heartbeat',
+    '* * * * *',
+    $$
+    SELECT net.http_post(
+        url := get_edge_function_url('moltbook-agent'),
+        headers := get_cron_headers(),
+        body := '{}'::jsonb
+    ) AS request_id;
+    $$
+);
+
+-- Add local cron job for moltcourt-agent (runs every minute locally for testing, production is every 4 hours)
+SELECT cron.schedule(
+    'moltcourt-agent-heartbeat',
+    '* * * * *',
+    $$
+    SELECT net.http_post(
+        url := get_edge_function_url('moltcourt-agent'),
+        headers := get_cron_headers(),
+        body := '{"source": "heartbeat"}'::jsonb
+    ) AS request_id;
+    $$
+);
+
 -- =============================================================================
 -- STEP 4: Verify setup
 -- =============================================================================
@@ -80,4 +108,4 @@ SELECT jobname, schedule,
            ELSE 'OTHER'
        END as target
 FROM cron.job
-WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats');
+WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats', 'moltbook-agent-heartbeat', 'moltcourt-agent-heartbeat');

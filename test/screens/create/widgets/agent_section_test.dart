@@ -228,6 +228,27 @@ void main() {
       expect(find.text('Customize agents?'), findsOneWidget);
     });
 
+    testWidgets(
+        '"How many agents?" is rendered above "Should agents also rate?"',
+        (tester) async {
+      await tester.pumpWidget(_wrapWidget(
+        AgentSection(
+          settings: AgentSettings.defaults().copyWith(enabled: true),
+          onChanged: (_) {},
+        ),
+      ));
+
+      final howManyY = tester.getTopLeft(find.text('How many agents?')).dy;
+      final alsoRateY =
+          tester.getTopLeft(find.text('Should agents also rate?')).dy;
+      expect(
+        howManyY,
+        lessThan(alsoRateY),
+        reason:
+            'Count comes before the rate toggle so the order reads naturally.',
+      );
+    });
+
     testWidgets('toggling customizeAgents off resets customizeIndividually',
         (tester) async {
       AgentSettings? updated;

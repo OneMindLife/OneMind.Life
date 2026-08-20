@@ -236,8 +236,6 @@ void main() {
 
         when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await openDialog(tester);
 
@@ -256,8 +254,6 @@ void main() {
 
         when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await openDialog(tester);
 
@@ -274,8 +270,6 @@ void main() {
 
         when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await openDialog(tester);
 
@@ -290,12 +284,10 @@ void main() {
 
     group('Invite-Only Chats', () {
       testWidgets('shows invite requirement message', (tester) async {
-        final chat = ChatFixtures.model();
+        final chat = ChatFixtures.model(accessMethod: 'invite_only');
 
         when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => true);
 
         await openDialog(tester);
 
@@ -308,12 +300,10 @@ void main() {
       });
 
       testWidgets('shows email input for invite-only chats', (tester) async {
-        final chat = ChatFixtures.model();
+        final chat = ChatFixtures.model(accessMethod: 'invite_only');
 
         when(() => mockChatService.getChatByCode(any(), languageCode: any(named: 'languageCode')))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => true);
 
         await openDialog(tester);
 
@@ -431,8 +421,6 @@ void main() {
             .thenAnswer((_) async => chat);
         when(() => mockParticipantService.getMyParticipant(chat.id))
             .thenAnswer((_) async => null);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await openDialog(tester);
 
@@ -463,8 +451,6 @@ void main() {
             .thenAnswer((_) async => chat);
         when(() => mockParticipantService.getMyParticipant(chat.id))
             .thenAnswer((_) async => kickedParticipant);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await openDialog(tester);
 

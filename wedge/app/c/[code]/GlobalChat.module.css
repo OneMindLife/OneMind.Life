@@ -1,0 +1,1680 @@
+/* Global Chat: the continuous "the room speaks" surface. CSS lifted verbatim
+   from docs/design/global-chat/reference-prototype.dc.html and scoped as a CSS
+   Module so its class names (feed, msg, prop, stage) cannot collide with the
+   design-system rules in globals.css. Design tokens and the serif/sans/mono
+   font families come from globals.css :root and the next/font families already
+   loaded in the root layout, so there are no external font links. The two
+   prototype demo buttons (Skip phase, Restart) are intentionally omitted. */
+
+.wrap {
+  /* The original dark palette this screen was designed for. globals.css :root
+     went LIGHT in the 2026-07 "Public Record" reskin, which orphaned GlobalChat
+     (its cards are built for these). Re-scope them to /c only — /g + landing
+     keep the light palette. */
+  --bg-0: #020308;
+  --ink-0: #e8ecf4;
+  --ink-1: #a8b2c8;
+  --ink-2: #6a7590;
+  --ink-3: #3f485e;
+  --line: rgba(168, 178, 200, 0.08);
+  --line-strong: rgba(168, 178, 200, 0.14);
+  --accent: #6b9dff;
+  --winner: #b4d1ff;
+  --converged: #d8c28a;
+  --halo: rgba(107, 157, 255, 0.12);
+
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  height: 100dvh;
+  min-height: 600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+}
+/* Full-viewport dark backdrop so the area outside the 440px column (desktop)
+   is dark too, not the light body from globals.css. */
+.wrap::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: #020308;
+  z-index: -1;
+}
+.ambient {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(ellipse 55% 40% at 50% 12%, rgba(107, 157, 255, 0.13), transparent 65%),
+    radial-gradient(ellipse 45% 40% at 78% 6%, rgba(137, 180, 255, 0.05), transparent 70%);
+  animation: breathe 14s ease-in-out infinite;
+  transition: background 1.2s;
+}
+.wrap.reveal .ambient::before {
+  background: radial-gradient(ellipse 60% 42% at 50% 12%, rgba(216, 194, 138, 0.15), transparent 66%),
+    radial-gradient(ellipse 40% 35% at 30% 70%, rgba(107, 157, 255, 0.04), transparent 70%);
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.74;
+    transform: scale(1.05);
+  }
+}
+.grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+}
+
+.gh {
+  position: relative;
+  z-index: 10;
+  padding: 15px 18px 12px;
+  flex: 0 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+.ghTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+}
+.logomark {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.brand b {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+.brand .sep {
+  color: var(--ink-3);
+}
+.ghActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.presence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.presence .pdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #6fe3a8;
+  box-shadow: 0 0 7px #6fe3a8;
+  animation: ppulse 2.4s ease-in-out infinite;
+}
+.presence .pcount {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+@keyframes ppulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+.invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-1);
+  font-size: 12px;
+  font-family: var(--sans);
+  cursor: pointer;
+}
+.invite svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.invite:hover {
+  border-color: var(--accent);
+  color: var(--ink-0);
+}
+
+/* feed = permanent chat of winners + live round staging */
+.feed {
+  position: relative;
+  z-index: 5;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px 16px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+/* Bottom-anchor the record: when the permanent chat is short (few/no winners),
+   its content sits low — near the live feed + composer — instead of floating at
+   the top. The spacer collapses once content overflows, so it scrolls normally. */
+.feed::before {
+  content: "";
+  margin-top: auto;
+}
+.feed::-webkit-scrollbar {
+  width: 5px;
+}
+.feed::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: 3px;
+}
+.daydiv {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 2px 0;
+}
+/* The room's seed question — the prompt everyone answers. Sits at the top of
+   the feed so an arrival immediately sees what to talk about (kills blank-page). */
+.topic {
+  text-align: center;
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.24;
+  color: var(--ink-0);
+  padding: 6px 10px 2px;
+  overflow-wrap: anywhere;
+}
+
+/* winner message (the room speaks) */
+.msg {
+  animation: rise 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.msg .body {
+  min-width: 0;
+}
+.msg .time {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.msg .bubble {
+  position: relative;
+  /* Chat-bubble sizing: hug the text, wrap only at the column edge, and sit
+     centered in the column with its text centered inside. */
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+  border: 1px solid rgba(216, 194, 138, 0.28);
+  background: radial-gradient(ellipse 120% 120% at 0% 0%, rgba(216, 194, 138, 0.07), transparent 60%),
+    rgba(216, 194, 138, 0.02);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+.msg.fresh .bubble {
+  animation: cglow 1.8s ease-out both;
+}
+.msg.fresh .bubble::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.85) 302deg,
+    var(--converged) 336deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: shine 1.5s ease-out 0.1s both;
+  pointer-events: none;
+}
+.msg .take {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--ink-0);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+/* Timestamp only — no rule, minimal lead. The divider + its padding made the
+   bubble read taller than its content warranted. */
+.msg .foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-top: 6px;
+}
+.msg .stat {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.msg .stat b {
+  color: var(--converged);
+  font-weight: 500;
+  font-size: 11px;
+}
+.msg .yours {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+/* ── "Follow the channel" retention nudge (Telegram, post-participation) ───── */
+.followBar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 14px 10px;
+  padding: 9px 10px 9px 14px;
+  border: 1px solid rgba(107, 157, 255, 0.35);
+  border-radius: 13px;
+  background: rgba(107, 157, 255, 0.08);
+}
+.followText {
+  flex: 1 1 auto;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--ink-1);
+}
+.followText b {
+  color: var(--accent);
+  font-weight: 500;
+}
+.followGo {
+  flex: 0 0 auto;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 9px;
+  background: var(--accent);
+  color: #041022;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.followX {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  cursor: pointer;
+}
+.followX:hover {
+  color: var(--ink-1);
+}
+
+/* ── The record window (permanent chat: the winning messages the room kept).
+   Framed like an instrument panel, parallel to the live-feed window but
+   gold-keyed (decided / permanent) vs the live feed's blue (active / churning).
+   Both windows carry a mono header so it's always clear what each piece is. */
+/* Visual stacking of the room's flex-column panels (top→bottom), set via `order`
+   so the phase bar sits BETWEEN the record and the live feed without reordering
+   the JSX: record (1) → phase bar/.dock (2) → live feed (3) → composer (4).
+   header + follow-bar stay order 0 (render first, in DOM order). */
+.recordWin {
+  order: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.recordWin .feed {
+  border-radius: 0;
+  min-height: 0;
+}
+
+/* ── Record empty-state — names the top zone as the permanent chat (where
+   winning messages land), distinct from the live feed window below. */
+.recordEmpty {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  line-height: 1.6;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 0 26px;
+}
+
+/* ── Live feed — a fixed-height, scrollable WINDOW of the current round's
+   incoming messages, sitting right above the composer. Its own bordered panel
+   with a pulsing LIVE header so it reads as a distinct live collection, NOT the
+   permanent chat/record above. Compact lines (not the big serif winner bubbles)
+   reinforce "transient stream" vs "permanent record". */
+/* Voting window — the duel + post-ballot leaderboard live here, framed and
+   fixed-height like the live feed (same slot; they never coexist). Content
+   scrolls within so the window height stays consistent across phases. */
+.voteWin {
+  order: 3;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: min(34vh, 264px);
+  margin: 0 14px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 15px;
+  background: rgba(107, 157, 255, 0.03);
+  overflow: hidden;
+}
+.voteHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.voteCheck {
+  color: var(--winner);
+  font-size: 12px;
+}
+.voteCount {
+  margin-left: auto;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}
+.voteScroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.voteFoot {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+}
+.liveFeed {
+  order: 3;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  /* Hug the takes: the box is only as tall as its content, growing up to this
+     cap, then the take list (.liveScroll, flex 1 1 auto + overflow-y) scrolls. */
+  max-height: min(34vh, 264px);
+  margin: 0 14px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 15px;
+  background: rgba(107, 157, 255, 0.03);
+  overflow: hidden;
+}
+.liveHead {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: livePulse 2s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.liveCount {
+  margin-left: auto;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}
+.liveScroll {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+/* Top-anchor: the current round's takes fill from the TOP of the live feed box
+   (default flex-start), rather than pinning to the bottom. With a small round
+   the takes cluster at the top with empty space below; on overflow the
+   auto-scroll (GlobalChat.tsx) keeps the newest in view. */
+.liveMsg {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(168, 178, 200, 0.03);
+  animation: rise 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.liveMine {
+  border-color: rgba(107, 157, 255, 0.4);
+  background: rgba(107, 157, 255, 0.06);
+}
+.liveText {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-1);
+  overflow-wrap: anywhere;
+}
+.liveMine .liveText {
+  color: var(--ink-0);
+}
+.liveYou {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.liveEmpty {
+  margin: auto;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* Share affordance on every winner — the distribution loop. */
+.msg .share {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(216, 194, 138, 0.35);
+  border-radius: 999px;
+  background: rgba(216, 194, 138, 0.06);
+  color: var(--converged);
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.msg .share:hover {
+  background: rgba(216, 194, 138, 0.13);
+  border-color: rgba(216, 194, 138, 0.55);
+}
+.msg .share svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+.msg .share.shareMine {
+  color: var(--accent);
+  border-color: rgba(107, 157, 255, 0.4);
+  background: rgba(107, 157, 255, 0.08);
+}
+.msg .share.shareMine:hover {
+  background: rgba(107, 157, 255, 0.15);
+}
+
+/* Celebration toast — the payoff beat when a winner lands. */
+.celebrate {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  padding: 24px;
+}
+.celebrateCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+  padding: 16px 26px;
+  border-radius: 18px;
+  border: 1px solid rgba(216, 194, 138, 0.3);
+  background: linear-gradient(180deg, rgba(28, 26, 18, 0.94), rgba(14, 12, 8, 0.96));
+  box-shadow: 0 12px 48px rgba(216, 194, 138, 0.2);
+  animation: pop 2.9s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.celebrateCard.celebrateMine {
+  border-color: rgba(107, 157, 255, 0.45);
+  box-shadow: 0 12px 60px rgba(107, 157, 255, 0.34);
+}
+.celebrateBig {
+  font-family: var(--serif);
+  font-size: 22px;
+  line-height: 1.15;
+  color: var(--ink-0);
+}
+.celebrateSub {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+@keyframes pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.82) translateY(8px);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.04) translateY(0);
+  }
+  20% {
+    transform: scale(1);
+  }
+  82% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.97) translateY(-6px);
+  }
+}
+
+/* Winner share sheet — preview card + share button. */
+.shareCard {
+  border: 1px solid rgba(216, 194, 138, 0.28);
+  border-radius: 14px;
+  background: radial-gradient(ellipse 120% 120% at 0% 0%, rgba(216, 194, 138, 0.08), transparent 60%),
+    rgba(216, 194, 138, 0.03);
+  padding: 16px 16px 13px;
+  margin: 4px 0 12px;
+}
+.shareTake {
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.22;
+  color: var(--ink-0);
+  overflow-wrap: anywhere;
+}
+.shareMeta {
+  margin-top: 10px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.shareMeta b {
+  color: var(--converged);
+  font-weight: 500;
+  font-size: 11px;
+}
+.shareMeta span {
+  color: var(--accent);
+}
+.shareBtn {
+  width: 100%;
+  border: 1px solid var(--accent);
+  border-radius: 13px;
+  background: var(--accent);
+  color: #08111f;
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 15px;
+  padding: 13px;
+  cursor: pointer;
+  box-shadow: 0 0 26px rgba(107, 157, 255, 0.32);
+  margin-bottom: 8px;
+}
+.shareBtn:active {
+  transform: scale(0.98);
+}
+
+
+/* ── Arrival coach: a transient, CENTRED spotlight ────────────────────────────
+   .coaching dims the busy surfaces (feed, progress bar, AI suggestion) for a
+   beat so the mission line reads cleanly on an otherwise-busy screen. It floats
+   in LAST (after the room settles), holds, then fades — net-zero clutter once
+   it's gone.
+   2026-08-11: moved from pinned-under-the-header (.coachTop, top: 82px) to the
+   centre of the viewport, so it's the first thing the eye lands on. Centring
+   means the transform carries BOTH axes, so coachIn animates translate(x, y)
+   rather than translateY alone. */
+.coaching .feed {
+  opacity: 0.2;
+  transition: opacity 0.45s ease;
+}
+.coaching .pbar,
+.coaching .optStack,
+.coaching .dockHint {
+  opacity: 0.32;
+  transition: opacity 0.45s ease;
+}
+.coachFloat {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: min(340px, 86vw);
+  text-align: center;
+  padding: 14px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(107, 157, 255, 0.4);
+  background: linear-gradient(180deg, rgba(20, 28, 48, 0.96), rgba(10, 14, 26, 0.97));
+  box-shadow: 0 8px 34px rgba(107, 157, 255, 0.34);
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.4;
+  pointer-events: none;
+  animation: coachIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both,
+    coachPulse 1.6s ease-in-out 0.5s infinite;
+}
+.coachFloat b {
+  color: var(--accent);
+  font-weight: 600;
+}
+@keyframes coachIn {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 10px)) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes coachPulse {
+  0%,
+  100% {
+    box-shadow: 0 8px 34px rgba(107, 157, 255, 0.26);
+  }
+  50% {
+    box-shadow: 0 8px 46px rgba(107, 157, 255, 0.5);
+  }
+}
+
+/* The room's opening question — rendered as the FIRST message in the feed (no
+   pinned header). Blue/neutral treatment so it reads as the prompt, not a
+   converged winner (which are gold). No stats footer. */
+.seedMsg .bubble {
+  border-color: rgba(107, 157, 255, 0.28);
+  background: radial-gradient(
+      ellipse 120% 120% at 0% 0%,
+      rgba(107, 157, 255, 0.06),
+      transparent 60%
+    ),
+    rgba(107, 157, 255, 0.02);
+}
+
+/* live staging (current round) */
+.stage {
+  border: 1px dashed var(--line-strong);
+  border-radius: 16px;
+  padding: 12px 12px 14px;
+  background: rgba(107, 157, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  /* Phase handoff: the stage remounts on proposing↔voting↔new-round, so a
+     mount rise makes the swap read as staged motion instead of a hard cut. */
+  animation: rise 0.38s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.stage.vote {
+  border-style: solid;
+  border-color: rgba(180, 209, 255, 0.24);
+  background: rgba(180, 209, 255, 0.03);
+}
+.stageHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.stageTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.stageTitle .lv {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+.stage.vote .stageTitle .lv {
+  background: var(--winner);
+  box-shadow: 0 0 6px var(--winner);
+}
+.stageCount {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+}
+.ptake {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 9px;
+  align-items: baseline;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(168, 178, 200, 0.03);
+  animation: rise 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.ptake .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  align-self: center;
+}
+.ptake .tt {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ink-1);
+  overflow-wrap: anywhere;
+}
+.ptake .tm {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+.ptake.mine {
+  border-color: rgba(107, 157, 255, 0.4);
+  background: rgba(107, 157, 255, 0.06);
+}
+.ptake.mine .tt {
+  color: var(--ink-0);
+}
+.ptake.mine .tm {
+  color: var(--accent);
+}
+.h0 {
+  background: #6b9dff;
+}
+.h1 {
+  background: #d8c28a;
+}
+.h2 {
+  background: #8fb8ff;
+}
+.h3 {
+  background: #b48ad8;
+}
+.h4 {
+  background: #6fe3a8;
+}
+.h5 {
+  background: #e0a97d;
+}
+.stageEmpty {
+  text-align: center;
+  padding: 10px 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.stageEmpty .eb {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--ink-0);
+}
+.stageEmpty .es {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  max-width: 250px;
+}
+.stageEmpty .ar {
+  font-size: 14px;
+  color: var(--accent);
+  animation: bob 1.8s ease-in-out infinite;
+}
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+/* compact duel inside stage */
+.duel {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin-top: 2px;
+}
+.prop {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.6), rgba(8, 12, 24, 0.8));
+  border-radius: 15px;
+  padding: 15px 15px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+  text-align: left;
+  width: 100%;
+  min-height: 78px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-family: var(--sans);
+}
+.prop:hover {
+  border-color: rgba(107, 157, 255, 0.4);
+}
+.prop:active {
+  transform: scale(0.97);
+}
+.prop:disabled {
+  cursor: default;
+}
+.prop .text {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.22;
+  color: var(--ink-0);
+  overflow-wrap: anywhere;
+}
+.prop .pick {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 9px;
+}
+.prop::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 252deg,
+    rgba(255, 255, 255, 0.9) 304deg,
+    var(--accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam 2.6s linear infinite;
+  pointer-events: none;
+}
+.vrow {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.equal {
+  flex: 1;
+  text-align: center;
+  padding: 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  cursor: pointer;
+  background: rgba(168, 178, 200, 0.045);
+}
+.equal:hover {
+  border-color: rgba(107, 157, 255, 0.45);
+  color: var(--ink-0);
+}
+.vskip {
+  flex: 0 0 auto;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  cursor: pointer;
+  background: none;
+}
+.vskip:hover {
+  color: var(--ink-1);
+}
+.equal:disabled,
+.vskip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.vprog {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.vprog i {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--line-strong);
+}
+.vprog i.on {
+  background: var(--winner);
+  box-shadow: 0 0 6px rgba(180, 209, 255, 0.5);
+}
+.stageDone {
+  text-align: center;
+  padding: 8px 6px 2px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--winner);
+}
+
+/* ── Post-ballot leaderboard (voting done): provisional standings + voter count.
+   The voter's reward for finishing — live MOVDA standings + social proof. Safe
+   to reveal here (their ballot is already in → no herding). #1 = the current pick. */
+.resultBoard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px;
+  animation: rise 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.resultHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.resultTitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--winner);
+}
+.resultVotes {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.resultList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.resultList li {
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+  padding: 11px 4px;
+  border-top: 1px solid var(--line);
+}
+.resultList li:first-child {
+  border-top: none;
+}
+.resultRank {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.resultText {
+  flex: 1 1 auto;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-1);
+  overflow-wrap: anywhere;
+}
+.resultScore {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+.resultLead .resultRank {
+  color: var(--winner);
+}
+.resultLead .resultText {
+  color: var(--ink-0);
+}
+.resultLead .resultScore {
+  color: var(--winner);
+  font-weight: 500;
+}
+.resultFoot {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+  padding-top: 2px;
+}
+
+/* composer dock */
+/* Composer pinned at the very bottom (order 4) — below the live feed. You read
+   the room top→down and type at the bottom, like any chat. */
+.composerBar {
+  order: 4;
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+  padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+}
+/* Phase bar (order 2) — sits between the record and the live feed (see .recordWin). */
+.dock {
+  order: 2;
+  position: relative;
+  z-index: 10;
+  flex: 0 0 auto;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+.composer {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  padding: 8px 8px 8px 15px;
+  border: 1px solid rgba(107, 157, 255, 0.35);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.7), rgba(8, 12, 24, 0.85));
+  animation: composerBreathe 2.4s ease-in-out infinite;
+}
+/* White-light beam sweeps the composer border to pull the eye to it —
+   matches game mode's .beckon on the empty propose field. Drives propose-rate. */
+.composer::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.9) 302deg,
+    var(--accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam 2.6s linear infinite;
+  pointer-events: none;
+}
+@keyframes composerBreathe {
+  0%,
+  100% {
+    box-shadow: 0 0 26px rgba(107, 157, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 46px rgba(107, 157, 255, 0.42);
+  }
+}
+.composer textarea {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  resize: none;
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 15px;
+  line-height: 1.4;
+  max-height: 88px;
+  padding: 6px 0;
+}
+.composer textarea::placeholder {
+  color: var(--ink-3);
+}
+.send {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #08111f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 0 22px rgba(107, 157, 255, 0.3);
+}
+.send svg {
+  width: 17px;
+  height: 17px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+}
+.send:disabled {
+  background: rgba(107, 157, 255, 0.08);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  box-shadow: none;
+  cursor: default;
+}
+/* AI starters render as the same stacked cards the room votes on (.prop), so
+   the proposing dock speaks the duel's visual language. Tapping one pre-fills
+   the composer below — the final "write your own" card — and the stack
+   collapses. Uniform pick list; the last card just happens to be editable. */
+.optStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+  animation: rise 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.optCard {
+  position: relative;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.6), rgba(8, 12, 24, 0.8));
+  border-radius: 14px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+  text-align: left;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.optCard:hover,
+.optCard:focus-visible {
+  border-color: rgba(107, 157, 255, 0.4);
+}
+.optCard:active {
+  transform: scale(0.98);
+}
+.optText {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 15.5px;
+  line-height: 1.24;
+  color: var(--ink-0);
+  overflow-wrap: anywhere;
+}
+.optPick {
+  align-self: flex-end;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+/* Same white-light beam that sweeps the duel cards + composer, so every card in
+   the propose dock reads as one live set. Staggered per card → a cascade down
+   the stack rather than a unison flash. */
+.optCard::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 252deg,
+    rgba(255, 255, 255, 0.9) 304deg,
+    var(--accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: beam 2.6s linear infinite;
+  pointer-events: none;
+}
+.optCard:nth-child(2)::before {
+  animation-delay: 0.45s;
+}
+.optCard:nth-child(3)::before {
+  animation-delay: 0.9s;
+}
+/* When the composer is the last card in the stack, tighten its radius to match
+   the option cards so the four cards read as one set. Its accent border + beam
+   already mark it as the actionable/custom one. */
+.composerLast {
+  border-radius: 14px;
+}
+.dockStatus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 15px;
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.5), rgba(8, 12, 24, 0.6));
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: center;
+  /* Post-submit / between-rounds status line enters smoothly. */
+  animation: rise 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.dockStatus.vote {
+  color: var(--winner);
+  border-color: rgba(180, 209, 255, 0.24);
+}
+.dockStatus b {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+.pbar {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--line-strong);
+  border-radius: 13px;
+  background: rgba(18, 26, 46, 0.4);
+  padding: 11px 14px;
+  margin-bottom: 10px;
+}
+.pbarFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 0;
+  background: linear-gradient(90deg, rgba(107, 157, 255, 0.16), rgba(107, 157, 255, 0.05));
+  transition: width 1s linear;
+}
+.pbar.voting .pbarFill {
+  background: linear-gradient(90deg, rgba(180, 209, 255, 0.18), rgba(180, 209, 255, 0.05));
+}
+.pbarRow {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  /* Longer labels/times (e.g. Spanish) drop the time to its own line cleanly
+     instead of breaking the label mid-word. */
+  flex-wrap: wrap;
+  row-gap: 3px;
+}
+.pbarLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  /* Never break the label itself mid-word — it stays one piece and, if the row
+     is tight, the time wraps below it (see .pbarRow flex-wrap). */
+  white-space: nowrap;
+}
+.pbar.voting .pbarLabel {
+  color: var(--winner);
+}
+.pbarLabel::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 7px currentColor;
+}
+.pbarTime {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+.pbarTime b {
+  color: var(--ink-0);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.dockHint {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 8px;
+}
+.dockHint b {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+@keyframes beam {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+@keyframes rise {
+  0% {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cglow {
+  0% {
+    box-shadow: 0 0 0 rgba(216, 194, 138, 0);
+  }
+  35% {
+    box-shadow: 0 0 40px rgba(216, 194, 138, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(216, 194, 138, 0.16);
+  }
+}
+/* Entrance choreography ("the room comes alive"): while .wrap carries .intro
+   (~1.6s, once per mount, cleared in JS) the feed children stagger-rise
+   top-to-bottom — topic, then winners/stage — and the dock follows. Delays
+   step ~70ms and cap at the 8th child. Only opacity/transform animate; the
+   selectors out-specify the base .msg/.ptake/.stage rise rules so nothing
+   double-triggers, and once .intro clears the (finished, name-unchanged)
+   animations keep their end state. Pointer events are live throughout. */
+.wrap.intro .feed > * {
+  animation: rise 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.wrap.intro .feed > *:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.wrap.intro .feed > *:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.wrap.intro .feed > *:nth-child(4) {
+  animation-delay: 0.21s;
+}
+.wrap.intro .feed > *:nth-child(5) {
+  animation-delay: 0.28s;
+}
+.wrap.intro .feed > *:nth-child(6) {
+  animation-delay: 0.35s;
+}
+.wrap.intro .feed > *:nth-child(7) {
+  animation-delay: 0.42s;
+}
+.wrap.intro .feed > *:nth-child(n + 8) {
+  animation-delay: 0.49s;
+}
+.wrap.intro .dock {
+  animation: rise 0.42s cubic-bezier(0.2, 0.7, 0.2, 1) 0.56s both;
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0;
+    --beam-angle: 0deg;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    --beam-angle: 360deg;
+  }
+}
+
+/* invite sheet */
+.scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(2, 3, 8, 0.66);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.sheet {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(180deg, rgba(20, 28, 48, 0.97), rgba(10, 15, 30, 0.99));
+  border: 1px solid var(--line-strong);
+  border-bottom: none;
+  border-radius: 22px 22px 0 0;
+  padding: 22px 20px calc(22px + env(safe-area-inset-bottom));
+  animation: up 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes up {
+  0% {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+.sheet h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.14;
+  margin-bottom: 8px;
+}
+.sheet .sub {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.linkRow {
+  display: flex;
+  gap: 8px;
+}
+.link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  background: rgba(2, 3, 8, 0.4);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-1);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.copy {
+  flex-shrink: 0;
+  padding: 13px 18px;
+  border-radius: 11px;
+  background: var(--accent);
+  color: #08111f;
+  border: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+}
+.done {
+  margin-top: 16px;
+  width: 100%;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.qr {
+  margin: 16px auto 4px;
+  background: #fff;
+  padding: 12px;
+  border-radius: 14px;
+  width: max-content;
+  display: flex;
+  justify-content: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient::before,
+  .presence .pdot,
+  .msg,
+  .msg.fresh .bubble,
+  .msg.fresh .bubble::before,
+  .ptake,
+  .stage,
+  .optStack,
+  .dockStatus,
+  .stageEmpty .ar,
+  .prop::before,
+  .optCard::before,
+  .celebrateCard,
+  .coachFloat,
+  .composer,
+  .composer::before,
+  .sheet,
+  .wrap.intro .feed > *,
+  .wrap.intro .dock {
+    animation: none !important;
+  }
+  .pbarFill {
+    transition: none !important;
+  }
+}

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
@@ -10,6 +11,7 @@ import 'package:onemind_app/providers/notifiers/rating_notifier.dart';
 import 'package:onemind_app/providers/providers.dart';
 import 'package:onemind_app/screens/rating/rating_screen.dart';
 import 'package:onemind_app/services/proposition_service.dart';
+import 'package:onemind_app/utils/perf_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../fixtures/proposition_fixtures.dart';
@@ -616,6 +618,102 @@ void main() {
           reason: 'after error, round is treated as complete from this user');
       expect(state.isFetchingNext, false,
           reason: 'in-flight flag must be cleared even on error');
+    });
+  });
+
+  group('submitRankings completion marker', () {
+    // A successful grid submit also writes the rating_completions marker,
+    // which broadcasts the rater's Done state to other viewers in realtime.
+    // The marker is best-effort: its failure must never fail the submit.
+    setUp(() {
+      PerfLogger.enabled = false;
+      when(() => propositionService.getExistingGridRankings(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+            languageCode: any(named: 'languageCode'),
+          )).thenAnswer((_) async => []);
+      when(() => propositionService.getInitialPropositionsForGridRanking(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+            languageCode: any(named: 'languageCode'),
+          )).thenAnswer((_) async => [
+            PropositionFixtures.model(id: 1),
+            PropositionFixtures.model(id: 2),
+          ]);
+      when(() => propositionService.getRemainingPropositionCount(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+            excludeIds: any(named: 'excludeIds'),
+          )).thenAnswer((_) async => 0);
+    });
+
+    tearDown(() {
+      PerfLogger.enabled = kDebugMode;
+    });
+
+    Future<RatingNotifier> bootNotifier() async {
+      container = makeContainer();
+      const params = GridRankingParams(
+          roundId: roundId, participantId: participantId);
+      await waitForData(container!, params);
+      return container!.read(ratingProvider(params).notifier);
+    }
+
+    test('successful submit writes the finished-rating marker', () async {
+      when(() => propositionService.submitGridRankings(
+            roundId: any(named: 'roundId'),
+            rankings: any(named: 'rankings'),
+            participantId: any(named: 'participantId'),
+          )).thenAnswer((_) async {});
+      when(() => propositionService.markRatingComplete(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+          )).thenAnswer((_) async {});
+
+      final notifier = await bootNotifier();
+      final ok = await notifier.submitRankings({'1': 80.0, '2': 20.0});
+
+      expect(ok, true);
+      verify(() => propositionService.markRatingComplete(
+            roundId: roundId,
+            participantId: participantId,
+          )).called(1);
+    });
+
+    test('marker failure does not poison the submit', () async {
+      when(() => propositionService.submitGridRankings(
+            roundId: any(named: 'roundId'),
+            rankings: any(named: 'rankings'),
+            participantId: any(named: 'participantId'),
+          )).thenAnswer((_) async {});
+      when(() => propositionService.markRatingComplete(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+          )).thenThrow(Exception('network blip'));
+
+      final notifier = await bootNotifier();
+      final ok = await notifier.submitRankings({'1': 80.0, '2': 20.0});
+
+      expect(ok, true,
+          reason: 'ratings are already committed — the marker is liveness '
+              'only, its failure must not surface as a failed submit');
+    });
+
+    test('failed submit never writes the marker', () async {
+      when(() => propositionService.submitGridRankings(
+            roundId: any(named: 'roundId'),
+            rankings: any(named: 'rankings'),
+            participantId: any(named: 'participantId'),
+          )).thenThrow(Exception('write failed'));
+
+      final notifier = await bootNotifier();
+      final ok = await notifier.submitRankings({'1': 80.0, '2': 20.0});
+
+      expect(ok, false);
+      verifyNever(() => propositionService.markRatingComplete(
+            roundId: any(named: 'roundId'),
+            participantId: any(named: 'participantId'),
+          ));
     });
   });
 }

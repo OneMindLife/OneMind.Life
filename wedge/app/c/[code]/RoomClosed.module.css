@@ -1,0 +1,146 @@
+/* The closed face of a scheduled room. Same dark palette as GlobalChat (the
+   tokens live on .wrap there, scoped to /c so the light "Public Record" palette
+   in globals.css keeps /g and the landing page). A visitor who arrives at 3pm
+   should feel they found the right place at the wrong time — not a dead link. */
+
+.wrap {
+  --bg-0: #020308;
+  --ink-0: #e8ecf4;
+  --ink-1: #a8b2c8;
+  --ink-2: #6a7590;
+  --ink-3: #3f485e;
+  --line: rgba(168, 178, 200, 0.08);
+  --line-strong: rgba(168, 178, 200, 0.14);
+  --accent: #6b9dff;
+  --winner: #b4d1ff;
+
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 40px 24px;
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+  text-align: center;
+}
+
+/* Dark backdrop beyond the 440px column on desktop. */
+.wrap::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: #020308;
+  z-index: -1;
+}
+
+.brand {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.headline {
+  font-size: 20px;
+  font-weight: 300;
+  letter-spacing: -0.01em;
+  color: var(--ink-1);
+  margin: 0;
+}
+
+.countdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.countdownValue {
+  font-family: var(--mono);
+  font-size: 40px;
+  line-height: 1.1;
+  font-weight: 400;
+  color: var(--winner);
+  font-variant-numeric: tabular-nums;
+}
+
+.countdownLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.schedule {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.scheduleMuted {
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.notify {
+  appearance: none;
+  border: 1px solid var(--line-strong);
+  background: transparent;
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-size: 14px;
+  font-weight: 300;
+  padding: 12px 22px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.notify:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: rgba(107, 157, 255, 0.08);
+}
+
+.notify:disabled {
+  cursor: default;
+  color: var(--ink-2);
+}
+
+.notifyDone {
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.winner {
+  width: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.winnerLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+
+.winnerText {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--winner);
+}

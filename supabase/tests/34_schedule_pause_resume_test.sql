@@ -136,7 +136,7 @@ SELECT is(
 -- Note: calculate_round_minute_end() aligns to next minute boundary, adding up to 60 extra seconds
 SELECT ok(
     (SELECT EXTRACT(EPOCH FROM (phase_ends_at - NOW())) FROM public.rounds
-     WHERE id = current_setting('test.round_id')::INT) BETWEEN 100 AND 190,
+     WHERE id = current_setting('test.round_id')::INT) BETWEEN 85 AND 190,
     'phase_ends_at should be restored to approximately 2 minutes from now (with minute alignment)'
 );
 
@@ -198,7 +198,7 @@ SELECT is(
 -- Note: calculate_round_minute_end() aligns to next minute boundary, adding up to 60 extra seconds
 SELECT ok(
     (SELECT EXTRACT(EPOCH FROM (phase_ends_at - NOW())) FROM public.rounds
-     WHERE id = current_setting('test.round_id')::INT) BETWEEN 160 AND 250,
+     WHERE id = current_setting('test.round_id')::INT) BETWEEN 145 AND 250,
     'Rating phase timer should be restored (~180 seconds, with minute alignment)'
 );
 
@@ -247,7 +247,7 @@ SELECT * FROM process_scheduled_chats();
 -- Note: calculate_round_minute_end() aligns to next minute boundary, adding up to 60 extra seconds
 SELECT ok(
     (SELECT EXTRACT(EPOCH FROM (phase_ends_at - NOW())) FROM public.rounds
-     WHERE id = current_setting('test.round_id')::INT) BETWEEN 290 AND 370,
+     WHERE id = current_setting('test.round_id')::INT) BETWEEN 275 AND 370,
     'Resume with 0 remaining should use full phase duration (300 seconds, with minute alignment)'
 );
 

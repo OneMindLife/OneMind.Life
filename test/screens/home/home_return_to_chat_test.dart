@@ -20,7 +20,10 @@ import 'package:onemind_app/services/participant_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:onemind_app/screens/chat/chat_screen.dart';
+
 import '../../fixtures/chat_fixtures.dart';
+import '../../fixtures/participant_fixtures.dart';
 import '../../mocks/mock_supabase_client.dart';
 
 class _MockChatService extends Mock implements ChatService {}
@@ -124,6 +127,13 @@ void main() {
     when(() => analytics.logOfficialChatAutoOpened(
           chatId: any(named: 'chatId'),
         )).thenAnswer((_) async {});
+    // ChatScreen.initState fires these when _handleReturnToChat navigates
+    // into the chat; without the stubs the mount throws on the non-nullable
+    // Future return types and fails the test.
+    when(() => analytics.logScreenView(screenName: any(named: 'screenName')))
+        .thenAnswer((_) async {});
+    when(() => analytics.logChatOpened(chatId: any(named: 'chatId')))
+        .thenAnswer((_) async {});
 
     when(() => prefs.getString(any())).thenReturn(null);
     when(() => prefs.setString(any(), any())).thenAnswer((_) async => true);
@@ -151,6 +161,14 @@ void main() {
     when(() => participantService.getMyPendingRequests())
         .thenAnswer((_) async => []);
 
+    // Membership route guard (home_screen._handleReturnToChat): for non-public
+    // chats it checks getMyParticipant and only navigates in for an ACTIVE
+    // member. Default to an active membership so the existing navigation tests
+    // exercise the "member returns to their chat" path; individual tests
+    // override this to simulate a non-member.
+    when(() => participantService.getMyParticipant(any()))
+        .thenAnswer((_) async => ParticipantFixtures.model(status: ParticipantStatus.active));
+
     // Returning user — skip the auto-join-official-chat path entirely
     // so the only navigation we observe is from _handleReturnToChat.
     when(() => prefs.getBool('official_chat_auto_joined')).thenReturn(true);
@@ -162,7 +180,7 @@ void main() {
         )).thenAnswer((_) async => []);
   });
 
-  Widget buildHome({int? returnToChatId}) {
+  Widget buildHome({int? returnToChatId, bool instantOpen = false}) {
     return ProviderScope(
       overrides: [
         localeProvider.overrideWith((ref) => _TestLocaleNotifier()),
@@ -182,7 +200,8 @@ void main() {
         locale: const Locale('en'),
         // Pass returnToChatId via constructor — this mimics what the
         // router does when the URL becomes /?chat_id=N.
-        home: HomeScreen(returnToChatId: returnToChatId),
+        home: HomeScreen(
+            returnToChatId: returnToChatId, instantOpen: instantOpen),
       ),
     );
   }
@@ -230,6 +249,119 @@ void main() {
       // Pre-fix: this assertion fails — getChatById(2) was never called
       // because _handleReturnToChat only runs in initState.
       verify(() => chatService.getChatById(2)).called(1);
+    });
+  });
+
+  group('HomeScreen membership route guard', () {
+    testWidgets(
+        'ACTIVE member of a private chat is routed INTO the chat', (tester) async {
+      final chat = ChatFixtures.model(
+          id: 7, name: 'Private', accessMethod: 'code');
+      when(() => chatService.getChatById(7)).thenAnswer((_) async => chat);
+      when(() => participantService.getMyParticipant(7)).thenAnswer(
+          (_) async => ParticipantFixtures.model(
+              chatId: 7, status: ParticipantStatus.active));
+
+      await tester.pumpWidget(buildHome(returnToChatId: 7));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      verify(() => participantService.getMyParticipant(7)).called(1);
+      // A member lands inside the chat UI.
+      expect(find.byType(ChatScreen), findsOneWidget);
+    });
+
+    testWidgets(
+        'NON-member (left/kicked → still passes chats RLS) of a private chat '
+        'is NOT dropped into the chat UI', (tester) async {
+      // A user who LEFT keeps a participant row, so the `chats` SELECT policy
+      // still returns the row and getChatById is non-null — but they are not
+      // an ACTIVE member, so the guard must keep them out of the chat screen.
+      final chat = ChatFixtures.model(
+          id: 8, name: 'Private', accessMethod: 'code');
+      when(() => chatService.getChatById(8)).thenAnswer((_) async => chat);
+      when(() => participantService.getMyParticipant(8)).thenAnswer(
+          (_) async => ParticipantFixtures.model(
+              chatId: 8, status: ParticipantStatus.left));
+
+      await tester.pumpWidget(buildHome(returnToChatId: 8));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      verify(() => participantService.getMyParticipant(8)).called(1);
+      // The guard bounced them (it attempts context.go('/join/CODE'); under
+      // the bare MaterialApp harness that no-ops) — the key invariant is that
+      // no ChatScreen was ever pushed for a non-member.
+      expect(find.byType(ChatScreen), findsNothing);
+    });
+
+    testWidgets(
+        'PUBLIC chat renders for a non-member (joinable in place)',
+        (tester) async {
+      final chat = ChatFixtures.model(
+          id: 9, name: 'Public', accessMethod: 'public');
+      when(() => chatService.getChatById(9)).thenAnswer((_) async => chat);
+      // No membership row at all.
+      when(() => participantService.getMyParticipant(9))
+          .thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildHome(returnToChatId: 9));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // Public chats short-circuit the guard: membership is never consulted
+      // and the chat is allowed to render.
+      verifyNever(() => participantService.getMyParticipant(9));
+      expect(find.byType(ChatScreen), findsOneWidget);
+    });
+  });
+
+  group('HomeScreen instantOpen (seamless URL → chat)', () {
+    testWidgets(
+        'veils Home behind a spinner until the chat pushes — no Home flash',
+        (tester) async {
+      final chat = ChatFixtures.model(
+          id: 12, name: 'Official', accessMethod: 'public');
+      when(() => chatService.getChatById(12)).thenAnswer((_) async => chat);
+
+      await tester.pumpWidget(buildHome(returnToChatId: 12, instantOpen: true));
+
+      // First frames: bare spinner, NO Home chrome (app bar title 'OneMind').
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('OneMind'), findsNothing);
+
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // The chat screen is up; the veil never showed Home on the way in.
+      expect(find.byType(ChatScreen), findsOneWidget);
+    });
+
+    testWidgets('drops the veil and falls back to Home when the chat fails',
+        (tester) async {
+      when(() => chatService.getChatById(13)).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(buildHome(returnToChatId: 13, instantOpen: true));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+
+      // No chat to open — Home surfaces as the fallback instead of an
+      // infinite spinner.
+      expect(find.byType(ChatScreen), findsNothing);
+      expect(find.text('OneMind'), findsOneWidget);
+    });
+
+    testWidgets('instantOpen without a chat_id renders Home normally',
+        (tester) async {
+      await tester.pumpWidget(buildHome(instantOpen: true));
+      await tester.pump(const Duration(milliseconds: 50));
+
+      expect(find.text('OneMind'), findsOneWidget);
     });
   });
 }

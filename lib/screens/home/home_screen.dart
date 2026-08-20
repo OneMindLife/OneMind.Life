@@ -13,6 +13,7 @@ import '../../config/router.dart';
 import '../../providers/providers.dart';
 import '../../services/active_audio.dart';
 import '../../utils/dashboard_sort.dart';
+import '../../utils/perf_logger.dart';
 import '../chat/chat_screen.dart';
 import '../create/create_chat_wizard.dart';
 import 'all_chats_screen.dart';
@@ -20,15 +21,38 @@ import '../legal/legal_documents_dialog.dart';
 import '../../widgets/chat_dashboard_card.dart';
 import '../../widgets/language_selector.dart';
 import '../../widgets/home_banner_carousel.dart';
+import '../../widgets/name_section.dart';
 import '../../widgets/welcome_header.dart';
 
 const String _donateUrl = 'https://buy.stripe.com/aFa6oHbXedYZg1xap4b3q01';
 
 class HomeScreen extends ConsumerStatefulWidget {
-  const HomeScreen({super.key, this.returnToChatId});
+  const HomeScreen(
+      {super.key,
+      this.returnToChatId,
+      this.shareOnOpen = false,
+      this.autoCreate = false,
+      this.instantOpen = false});
 
   /// If set, auto-navigate to this chat on mount (e.g. after Stripe checkout redirect)
   final int? returnToChatId;
+
+  /// When true (?instant=1, set by the official-chat auto-join), Home renders
+  /// a bare spinner instead of its UI until [returnToChatId] is pushed — the
+  /// visitor goes URL → chat with no Home flash in between. Falls back to the
+  /// normal Home UI if the chat can't be opened.
+  final bool instantOpen;
+
+  /// When true (?share=1), open the auto-navigated chat with its invite dialog —
+  /// used by quick-create so a browser refresh restores the chat AND the prompt.
+  final bool shareOnOpen;
+
+  /// When true, immediately open the Create-chat wizard on top of Home. Used by
+  /// the `/create` route (landing "Try It Free") so the wizard runs with Home as
+  /// its base — the wizard pops its result back to Home, which then opens the new
+  /// chat. Without a Home base the wizard's pop lands on an empty stack (blank
+  /// screen); see _openCreateChat.
+  final bool autoCreate;
 
   @override
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
@@ -38,6 +62,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     with SingleTickerProviderStateMixin {
   StreamSubscription<Chat>? _approvedChatSubscription;
   bool _hasPlayedEntrance = false;
+  // Remote-debug: track which (chat_id, round_id) combos we've already
+  // logged a "Coming up" entry for, so we don't spam perf_logs every
+  // build. One row per chat-round in this bucket is enough to debug
+  // "why is this chat showing as done?" reports.
+  final Set<String> _comingUpLogged = <String>{};
   bool _olderChatsExpanded = false;
   Timer? _tickTimer;
 
@@ -46,6 +75,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   /// empty state so new users don't see it flash for a beat before their
   /// auto-joined OneMind chat appears.
   bool _isAutoJoiningOfficial = false;
+
+  /// instantOpen veil: while true, build() shows a bare spinner instead of
+  /// the Home UI. Cleared right before the chat pushes (Home then renders
+  /// invisibly beneath it) or on any failure path (Home becomes the fallback).
+  late bool _instantVeil =
+      widget.instantOpen && widget.returnToChatId != null;
+
+  void _dropInstantVeil() {
+    if (_instantVeil && mounted) setState(() => _instantVeil = false);
+  }
 
   // Invite code state removed — joining now handled via action picker
 
@@ -58,6 +97,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     });
     // Listen for approved join requests to auto-open the chat
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Landing "Try It Free" lands on /create -> HomeScreen(autoCreate: true).
+      // Open the wizard on top of Home so its pop-with-result is handled here
+      // (opens the new chat + refreshes the list), instead of popping into a
+      // blank stack.
+      if (widget.autoCreate) {
+        _openCreateChat(context, ref);
+      }
       _setupApprovedChatListener();
       _handleReturnToChat();
       _ensureJoinedOfficialChat();
@@ -66,9 +112,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           // A push notification was tapped for a specific chat. Use
           // go_router to reset the stack to Home with ?chat_id=X —
           // HomeScreen picks that up in initState and auto-opens the
-          // chat, popping any chat that was on top.
+          // chat, popping any chat that was on top. Must be /home: the '/'
+          // route is the marketing LandingScreen and ignores chat_id.
           if (!mounted) return;
-          ref.read(routerProvider).go('/?chat_id=$chatId');
+          ref.read(routerProvider).go('/home?chat_id=$chatId');
         },
       );
     });
@@ -82,6 +129,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final analytics = ref.read(analyticsServiceProvider);
     final isFirstVisit = !tutorialService.hasAutoJoinedOfficial;
     analytics.logHomeScreenViewed(isFirstVisit: isFirstVisit);
+    // Official-chat auto-join is RETIRED — the landing CTA now sends new users to
+    // the quick-create ranking flow (/create) instead of dumping them into the
+    // official chat (the activation cliff). Returning users keep their dashboard.
+    return;
+    // ignore: dead_code
     if (!isFirstVisit) return;
     // Suppress the discover-more-chats empty state while the join is in
     // flight — otherwise a fresh user sees it flash for ~1s before the
@@ -90,6 +142,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     Chat? officialChat;
     var joinSucceeded = false;
     try {
+      // Wait for auth + display name to finish provisioning before joining.
+      // currentUserIdProvider awaits both ensureSignedIn and ensureDisplayName.
+      // Without this, the PWA-direct-to-/home redirect races against
+      // ensureDisplayName and joinPublicChat falls back to "Anonymous".
+      await ref.read(currentUserIdProvider.future);
       final chatService = ref.read(chatServiceProvider);
       officialChat = await chatService.getOfficialChat();
       if (officialChat != null) {
@@ -163,11 +220,59 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final chatService = ref.read(chatServiceProvider);
     try {
       final chat = await chatService.getChatById(chatId);
-      if (mounted && chat != null) {
-        _navigateToChat(context, ref, chat);
+      if (!mounted || chat == null) {
+        // RLS filtered the row (chat doesn't exist, or a private chat the
+        // current anon user can't see) — we never got an invite code, so we
+        // can't route to /join. Stay on Home. (Left untouched so this can't
+        // interfere with the create→refresh restore, which always resolves a
+        // non-null chat because creator_id = auth.uid() passes RLS.)
+        _dropInstantVeil();
+        return;
       }
+
+      // Membership route guard (defense-in-depth for the RLS access boundary).
+      //
+      // A deep link like /home?chat_id=N must not drop a NON-MEMBER into a
+      // private chat's UI. Public chats are joinable-in-place, so they may
+      // render for anyone. For every other access method we require an ACTIVE
+      // participant row; if the user isn't one, send them to the join gate
+      // (or Home) instead of a half-working, un-participable chat screen.
+      //
+      // Why this matters even though `chats` RLS exists: the SELECT policy
+      // passes as long as ANY participant row exists for the user — it does
+      // NOT filter on status. So a user who LEFT or was KICKED still gets a
+      // non-null chat back from getChatById and would otherwise land inside
+      // the chat UI with no way to participate. This guard routes them to
+      // /join/<CODE> so they can (re-)request access with the name gate.
+      //
+      // This must NOT bounce legitimate members: a freshly-created host and
+      // any normally-joined participant both have an ACTIVE row, so they pass.
+      if (chat.accessMethod != AccessMethod.public) {
+        final me =
+            await ref.read(participantServiceProvider).getMyParticipant(chatId);
+        if (!mounted) return;
+        final isActiveMember = me != null &&
+            me.status == ParticipantStatus.active;
+        if (!isActiveMember) {
+          final code = chat.inviteCode;
+          if (code != null && code.isNotEmpty) {
+            context.go('/join/$code');
+          }
+          // else: no shareable code (e.g. inviteOnly/token chat) — stay on
+          // Home; there's no in-place path a non-member could take here.
+          _dropInstantVeil();
+          return;
+        }
+      }
+
+      // Drop the veil as the chat pushes — Home renders beneath it, so the
+      // user never sees it until they intentionally back out of the chat.
+      _dropInstantVeil();
+      _navigateToChat(context, ref, chat,
+          showShareDialog: widget.shareOnOpen);
     } catch (_) {
       // Chat not found or error — stay on home
+      _dropInstantVeil();
     }
   }
 
@@ -269,6 +374,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    // instantOpen: a seamless URL→chat hop is in flight — show nothing but a
+    // spinner so the visitor never sees Home flash before the chat screen.
+    if (_instantVeil) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final myChatsStateAsync = ref.watch(myChatsProvider);
     final l10n = AppLocalizations.of(context);
 
@@ -413,6 +526,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               // surfacing them on the focused queue is misleading. They
               // remain reachable via "View all my chats" → AllChatsScreen.
               final comingUp = partition.wrappingUp;
+
+              // Remote-debug: log every chat that lands in "Coming up"
+              // (= server-side has_participated == TRUE) so when a user
+              // reports "I'm in Coming up but I didn't participate," we
+              // can join this entry against rating_skips / grid_rankings
+              // to see whether they were auto-skipped via the
+              // STRANDED RATER trigger or actually completed rating.
+              // Logged once per (chat, round_number) per session.
+              for (final info in comingUp) {
+                final key =
+                    '${info.chat.id}:${info.currentRoundNumber}';
+                if (!_comingUpLogged.contains(key)) {
+                  _comingUpLogged.add(key);
+                  PerfLogger.start(
+                    'home.coming_up_entry',
+                    chatId: info.chat.id,
+                    payload: {
+                      'round_number': info.currentRoundNumber,
+                      'phase': info.currentRoundPhase?.name,
+                      'has_participated': info.hasParticipated,
+                      'is_paused': info.isPaused,
+                      'participant_count': info.participantCount,
+                    },
+                  );
+                }
+              }
 
               final shouldAnimate = !_hasPlayedEntrance;
               if (shouldAnimate) _hasPlayedEntrance = true;
@@ -823,7 +962,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     try {
       final chatService = ref.read(chatServiceProvider);
       final participantService = ref.read(participantServiceProvider);
-      final authService = ref.read(authServiceProvider);
 
       final chat = await chatService.getChatById(summary.id);
       if (chat == null) {
@@ -831,7 +969,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         return;
       }
 
-      final displayName = authService.displayName!;
+      // Name gate: stored display name, or prompt for one (names are never
+      // auto-generated). Cancelling the prompt aborts the join.
+      if (!mounted) return;
+      final displayName = await ensureDisplayNameInteractive(context, ref);
+      if (displayName == null) return;
       await participantService.joinChat(
         chatId: chat.id,
         displayName: displayName,

@@ -33,6 +33,7 @@
   "remove": "Remove",
   "clear": "Clear",
   "done": "Done",
+  "pendingTag": "Pending",
   "save": "Save",
 
   "official": "OFFICIAL",
@@ -73,6 +74,7 @@
   "enableNotificationsCta": "Enable",
   "notificationsBlockedTitle": "Notifications are blocked",
   "notificationsBlockedBody": "Unblock them in your browser's site settings to get notified.",
+  "notificationsBlockedBodyNative": "Turn them on in your device's notification settings to get notified.",
   "gotIt": "Got it",
   "notNow": "Not now",
   "installOneMindTitle": "Install OneMind",
@@ -263,6 +265,18 @@
   },
   "convergenceNumber": "Convergence #{number}",
   "@convergenceNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "winnerNumber": "Winner #{number}",
+  "@winnerNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "winnerHistory": "Winner {number} History",
+  "@winnerHistory": {
     "placeholders": {
       "number": {"type": "int"}
     }
@@ -606,6 +620,7 @@
   "gateAffirm": "Affirm",
   "gateAlternative": "Alternative",
   "gateMicrocopy": "Affirm this, or offer an alternative.",
+  "gateBetterQuestion": "Can you think of something better?",
   "gateBack": "Back",
   "alternativeMicrocopy": "Send your idea, go back, or skip your turn.",
   "alternativeMicrocopyNoSkip": "Send your idea, or go back.",
@@ -761,7 +776,9 @@
 
   "consensusSettings": "Convergence Settings",
   "confirmationRounds": "Confirmation rounds",
-  "firstWinnerConsensus": "First winner reaches convergence immediately",
+  "convergenceStepSubtitle": "How does a winning idea get locked into the chat?",
+  "instantMode": "Instant",
+  "firstWinnerConsensus": "The first winner is added immediately",
   "mustWinConsecutive": "Same proposition must win {count} rounds in a row",
   "@mustWinConsecutive": {
     "placeholders": {
@@ -1207,6 +1224,12 @@
       "number": {"type": "int"}
     }
   },
+  "deleteWinnerTitle": "Delete Winner #{number}?",
+  "@deleteWinnerTitle": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
   "deleteConsensusMessage": "This will restart the current cycle with a fresh round.",
   "deleteInitialMessageTitle": "Delete Initial Message?",
   "deleteInitialMessageMessage": "This will restart the current cycle with a fresh round.",
@@ -1392,7 +1415,98 @@
   "joinMethodScanTitle": "Scan QR Code",
   "joinMethodScanDesc": "Use your camera to scan an invite QR code",
 
+  "wizardAutoAdvanceTitle": "Advance phases early?",
+  "wizardAutoAdvanceDesc": "Choose whether a phase ends as soon as everyone has participated, or always runs for its full time.",
+  "wizardAutoAdvanceProposingTitle": "End proposing early",
+  "wizardAutoAdvanceProposingOnDesc": "Proposing ends as soon as everyone has submitted or skipped",
+  "wizardAutoAdvanceProposingOffDesc": "Proposing always runs for its full time",
+  "wizardAutoAdvanceRatingTitle": "End rating early",
+  "wizardAutoAdvanceRatingOnDesc": "Rating ends as soon as everyone has rated",
+  "wizardAutoAdvanceRatingOffDesc": "Rating always runs for its full time",
+
   "wizardScheduleTitle": "Set a schedule?",
+  "wizardScheduleConfigTitle": "Schedule details",
+  "wizardFirstDeadlineStartsNow": "Your chat starts as soon as you create it.",
+  "wizardFirstDeadlineUnavailable": "A daily rhythm needs equal phase durations of 1, 2, 3, 4, 6, 8, 12, or 24 hours. With the current pace, the first phase simply runs its full duration.",
+  "wizardFirstDeadlineLabel": "First deadline",
+  "wizardFirstDeadlineQuestion": "When should the first phase end?",
+  "wizardChipFullDuration": "Full duration",
+  "wizardChipAmPmRhythm": "3 AM / 3 PM rhythm",
+  "wizardChipDailyTime": "Same time daily…",
+  "wizardChipOnTheHour": "On the hour",
+  "wizardCadencePreviewTwo": "Phases will flip at {t1} / {t2} ({tz}) every day.",
+  "@wizardCadencePreviewTwo": {
+    "placeholders": {
+      "t1": {"type": "String"},
+      "t2": {"type": "String"},
+      "tz": {"type": "String"}
+    }
+  },
+  "wizardCadencePreviewOne": "Phases will flip at {t1} ({tz}) every day.",
+  "@wizardCadencePreviewOne": {
+    "placeholders": {
+      "t1": {"type": "String"},
+      "tz": {"type": "String"}
+    }
+  },
+  "wizardCadenceShorterNotice": "First phase will be shorter: ends in {rel}.",
+  "@wizardCadenceShorterNotice": {
+    "placeholders": {
+      "rel": {"type": "String"}
+    }
+  },
+  "wizardCadenceTimeUnavailable": "That time doesn't fit this pace — pick a time between {min} and {max}.",
+  "@wizardCadenceTimeUnavailable": {
+    "placeholders": {
+      "min": {"type": "String"},
+      "max": {"type": "String"}
+    }
+  },
+  "wizardCadenceFullDurationDesc": "The first phase runs its full {duration} — no fixed daily rhythm",
+  "@wizardCadenceFullDurationDesc": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "wizardCadenceFirstDeadlineAt": "First deadline: {time}",
+  "@wizardCadenceFirstDeadlineAt": {
+    "placeholders": {
+      "time": {"type": "String"}
+    }
+  },
+  "wizardCadenceCustomTime": "Custom time…",
+  "wizardCadencePickExactly": "Pick exactly when the first phase should end",
+  "wizardVotingStyleLabel": "Voting style",
+  "wizardVotingGridTitle": "Grid",
+  "wizardVotingGridDesc": "Place every idea on a 0–100 scale",
+  "wizardVotingMatchesTitle": "Matches",
+  "wizardVotingMatchesDesc": "Pick the better of two ideas, one pair at a time",
+  "wizardMatchObjectiveLabel": "What to find",
+  "wizardMatchWinnerTitle": "Just the winner",
+  "wizardMatchWinnerDesc": "Fewest comparisons — a quick bracket to surface the top idea",
+  "wizardMatchFullRankTitle": "See all rankings",
+  "wizardMatchFullRankDesc": "More comparisons per person — ranks every idea, not just the winner",
+  "wizardParticipationTitle": "Participation",
+  "wizardParticipationSubtitle": "Choose whether participants can skip phases",
+  "wizardAllowSkipProposingTitle": "Allow skip proposing",
+  "wizardAllowSkipProposingOnDesc": "Participants can skip submitting an idea",
+  "wizardAllowSkipProposingOffDesc": "Everyone must submit an idea",
+  "wizardAllowSkipRatingTitle": "Allow skip rating",
+  "wizardAllowSkipRatingOnDesc": "Participants can skip rating ideas",
+  "wizardAllowSkipRatingOffDesc": "Everyone must rate ideas",
+  "wizardTimingProposingQuestion": "How long for proposing?",
+  "wizardTimingCurrently": "Currently: {duration}",
+  "@wizardTimingCurrently": {
+    "placeholders": {
+      "duration": {"type": "String"}
+    }
+  },
+  "wizardTimingSameDurationQuestion": "Same duration for rating phase?",
+  "wizardTimingSameDurationYes": "Yes, rating uses the same time",
+  "wizardTimingSameDurationNo": "No, rating has a different duration",
+  "wizardTimingRatingQuestion": "How long for rating?",
+  "wizardAgentsTitle": "Add AI agents?",
+  "chatSettingsRhythmLabel": "Rhythm",
   "wizardScheduleAlwaysTitle": "Always Active",
   "wizardScheduleAlwaysDesc": "Chat runs 24/7, no time restrictions",
   "wizardScheduleOnceTitle": "Starts at a specific time",
@@ -1404,6 +1518,22 @@
   "scheduleSetEndTime": "Set an end time",
   "scheduleClearEndTime": "Remove end time",
 
+  "setYourName": "Set your name",
+  "whatsYourName": "What's your name?",
+  "nameShownToOthers": "Shown to other participants",
+  "pleaseEnterName": "Please enter your name",
+  "joiningAs": "Joining as {name}",
+  "@joiningAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "creatingAs": "Creating as {name}",
+  "@creatingAs": {
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
   "welcomeName": "Welcome, {name}",
   "@welcomeName": {
     "placeholders": {
@@ -1469,5 +1599,25 @@
   "donate": "Donate",
   "supportOneMindTitle": "Support OneMind",
   "supportOneMindBody": "OneMind is free and runs on donations. If this group just helped you reach a real decision together, would you consider chipping in to keep it going?",
-  "maybeLater": "Maybe later"
+  "maybeLater": "Maybe later",
+
+  "equal": "Equal",
+  "whichIsBetterTapOne": "Which is better? Tap one.",
+  "matchNumber": "Match {number}",
+  "@matchNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "doneWaitingForRound": "Done — waiting for the round to finish.",
+  "doneRatingQuestion": "Done rating?",
+  "doneRatingBody": "You won't be able to rate more ideas this round.",
+  "couldNotSaveChoice": "Could not save your choice — try again",
+  "couldNotSkip": "Could not skip — try again",
+  "ratersWithCount": "Raters: {count}",
+  "@ratersWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

@@ -158,17 +158,20 @@ SELECT throws_ok(
 
 -- =============================================================================
 -- MINIMUM CONSTRAINTS
--- proposing_minimum >= 3 (users can't rate their own, so need 2+ visible to each)
+-- proposing_minimum >= 2 (any 2 props are votable by everyone under
+-- conditional self-inclusion — see 20260704160000; was >= 3 before CSI)
 -- rating_minimum >= 2 (need 2 raters for meaningful alignment)
 -- =============================================================================
 
--- Test 16: proposing_minimum must be >= 3 (users can't rate own, need 2+ visible)
-SELECT throws_ok(
-  $$INSERT INTO chats (name, initial_message, creator_session_token, proposing_minimum)
-    VALUES ('Bad Chat', 'Test', gen_random_uuid(), 2)$$,
-  '23514',
-  NULL,
-  'proposing_minimum cannot be 2 (must be >= 3)'
+-- Test 16: proposing_minimum CAN be 2 (conditional self-inclusion makes a
+-- 2-prop round votable by every participant, authors included)
+INSERT INTO chats (name, initial_message, creator_session_token, proposing_minimum)
+VALUES ('Min 2 Chat', 'Test', gen_random_uuid(), 2);
+
+SELECT is(
+  (SELECT proposing_minimum FROM chats WHERE name = 'Min 2 Chat'),
+  2,
+  'proposing_minimum can be 2 (CSI floor)'
 );
 
 -- Test 17: proposing_minimum cannot be 1
@@ -282,23 +285,28 @@ SELECT is(
 -- AUTO-START COUNT CONSTRAINTS
 -- =============================================================================
 
--- Test 28: auto_start_participant_count must be >= 3 (need 3+ for proposing minimum and rating)
+-- Test 28: auto_start_participant_count floor is 1. The ambient create wizard
+-- sends EXACTLY 1 so the host's own join starts the chat immediately (AI
+-- seat-fill supplies the rest). Asserting the wizard's actual value here is the
+-- regression guard for the constraint<->client contract that mocked Flutter
+-- tests can't exercise — a 1 used to violate the old >= 3 floor and silently
+-- dead-ended every Create. (Floor relaxed 3 -> 1 in 20260630100818.)
 INSERT INTO chats (name, initial_message, creator_session_token, start_mode, auto_start_participant_count)
-VALUES ('Auto Start 3 Chat', 'Test', gen_random_uuid(), 'auto', 3);
+VALUES ('Auto Start 1 Chat', 'Test', gen_random_uuid(), 'auto', 1);
 
 SELECT is(
-  (SELECT auto_start_participant_count FROM chats WHERE name = 'Auto Start 3 Chat'),
-  3,
-  'auto_start_participant_count can be 3 (minimum)'
+  (SELECT auto_start_participant_count FROM chats WHERE name = 'Auto Start 1 Chat'),
+  1,
+  'auto_start_participant_count can be 1 (wizard value, new floor)'
 );
 
--- Test 29: auto_start_participant_count cannot be 2 (below minimum)
+-- Test 29: auto_start_participant_count cannot be 0 (below the floor)
 SELECT throws_ok(
   $$INSERT INTO chats (name, initial_message, creator_session_token, start_mode, auto_start_participant_count)
-    VALUES ('Auto Start 2 Chat', 'Test', gen_random_uuid(), 'auto', 2)$$,
+    VALUES ('Auto Start 0 Chat', 'Test', gen_random_uuid(), 'auto', 0)$$,
   '23514',  -- check constraint violation
   NULL,
-  'auto_start_participant_count cannot be 2 (requires >= 3)'
+  'auto_start_participant_count cannot be 0 (requires >= 1)'
 );
 
 -- Test 30: auto_start_participant_count can be NULL

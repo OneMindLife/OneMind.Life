@@ -1,3 +1,5 @@
+import 'seo_route_metadata.g.dart';
+
 /// Route-to-metadata mapping for SEO.
 class RouteMetadata {
   final String title;
@@ -16,11 +18,11 @@ class RouteMetadata {
 const _baseUrl = 'https://onemind.life';
 
 const _defaultMetadata = RouteMetadata(
-  title: 'OneMind – Group Consensus & Decision Making Software',
+  title: 'OneMind – Group Decision Making Tool | Stop Endless Meetings',
   description:
-      'OneMind helps teams reach real consensus through anonymous proposing and '
-      'transparent rating. No politics, no meetings required. A free facilitation '
-      'tool for group decision making and team alignment.',
+      'Get real group decisions in minutes — not meetings. OneMind runs '
+      'anonymous, structured rounds where every voice counts equally and a '
+      'clear answer emerges automatically. Free decision-making tool for teams.',
   canonicalPath: '/',
 );
 
@@ -94,42 +96,17 @@ const _metadataMap = <String, RouteMetadata>{
     canonicalPath: '/join',
     noindex: true,
   ),
-  '/decision-making-tool': RouteMetadata(
-    title: 'Group Decision Making Tool | OneMind',
-    description:
-        'OneMind is a group decision making tool that uses anonymous proposals '
-        'and transparent rating to help teams make decisions they trust. '
-        'Free, no account needed.',
-    canonicalPath: '/decision-making-tool',
-  ),
-  '/consensus-building': RouteMetadata(
-    title: 'Consensus Building Tool | OneMind',
-    description:
-        'Build real group consensus with OneMind. Structured rounds drive '
-        'convergence — not compromise. Anonymous, fair, and transparent '
-        'consensus building for any group.',
-    canonicalPath: '/consensus-building',
-  ),
-  '/facilitation-tool': RouteMetadata(
-    title: 'Online Facilitation Tool | OneMind',
-    description:
-        'OneMind is a facilitation tool that automates equal participation, '
-        'fair evaluation, and transparent outcomes. Run structured group '
-        'processes without a dedicated facilitator.',
-    canonicalPath: '/facilitation-tool',
-  ),
-  '/loomio-alternative': RouteMetadata(
-    title: 'Loomio Alternative | OneMind',
-    description:
-        'Looking for a Loomio alternative? OneMind replaces threaded discussions '
-        'with structured rounds that drive real convergence. Anonymous, fast, '
-        'and genuinely fair.',
-    canonicalPath: '/loomio-alternative',
-  ),
+  // SEO landing pages live in tools/seo_pages.json — generated entries
+  // are merged in by getMetadataForPath() below.
 };
 
 /// Returns metadata for the given [path], falling back to homepage defaults.
 RouteMetadata getMetadataForPath(String path) {
+  // SEO landing pages (generated from tools/seo_pages.json)
+  if (seoLandingMetadata.containsKey(path)) {
+    return seoLandingMetadata[path]!;
+  }
+
   // Check for exact match first
   if (_metadataMap.containsKey(path)) {
     return _metadataMap[path]!;

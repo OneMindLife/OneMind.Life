@@ -117,6 +117,187 @@ class AnalyticsService {
   }
 
   // ============================================================
+  // Create-Chat Funnel
+  // ============================================================
+  // `chat_created` (above) fires only on final submit. These track the
+  // funnel INTO it so we can see how many open the wizard and where they
+  // drop off across the 8 steps.
+
+  /// Create-chat wizard opened (reached step 1). Funnel entry point.
+  Future<void> logCreateChatOpened() async {
+    await _logEvent('create_chat_opened', {});
+  }
+
+  /// A create-chat wizard step became visible. [stepIndex] is 0-based.
+  Future<void> logCreateChatStepViewed({
+    required int stepIndex,
+    required String stepName,
+  }) async {
+    await _logEvent('create_chat_step_viewed', {
+      'step_index': stepIndex,
+      'step_name': stepName,
+    });
+  }
+
+  /// User left the create-chat wizard without completing it.
+  Future<void> logCreateChatAbandoned({
+    required int lastStepIndex,
+    required String lastStepName,
+  }) async {
+    await _logEvent('create_chat_abandoned', {
+      'last_step_index': lastStepIndex,
+      'last_step_name': lastStepName,
+    });
+  }
+
+  // ============================================================
+  // Quick-Create Funnel (landing-CTA "/create" flow)
+  // ============================================================
+  // The wizard funnel above is a SEPARATE entry point. These track the
+  // streamlined quick-create flow that "Try it free" lands on, so we can see:
+  // reached /create → picked a fork → finished creating → got a result.
+
+  /// Reached /create (the fork-choice screen). Quick-create funnel entry point.
+  Future<void> logQuickCreateOpened() async {
+    await _logEvent('quick_create_opened', {});
+  }
+
+  /// Picked an intent fork. [fork] = 'options' | 'group'.
+  Future<void> logQuickCreateForkPicked({required String fork}) async {
+    await _logEvent('quick_create_fork_picked', {'fork': fork});
+  }
+
+  /// A chat was created from the quick-create flow.
+  /// [fork] = 'options' | 'group'; [mode] = 'preview' (solo demo) | 'real'
+  /// (shareable); [source] = 'start' | 'skip_test' | 'invite_from_preview'.
+  Future<void> logQuickCreateChatCreated({
+    required String fork,
+    required String mode,
+    required String source,
+  }) async {
+    await _logEvent('quick_create_chat_created', {
+      'fork': fork,
+      'mode': mode,
+      'source': source,
+    });
+  }
+
+  /// User invoked AI option generation in quick-create — lets us see what
+  /// share of creators lean on AI vs type their own.
+  /// [source] = 'bulk' (the Generate-options button) | 'row' (per-row ✦ fill).
+  Future<void> logQuickCreateOptionsAi({required String source}) async {
+    await _logEvent('quick_create_options_ai', {'source': source});
+  }
+
+  /// Host ended voting on a quick-create chat (a result was produced).
+  Future<void> logQuickCreateVotingEnded() async {
+    await _logEvent('quick_create_voting_ended', {});
+  }
+
+  // --- Quick-chat in-chat funnel (the sealed single-use loop). Fills the gaps
+  // so we can see depth-of-engagement and the "went deeper" signals, not just
+  // creation. All gated to quick chats (maxCycles == 1) at the call site. ---
+
+  /// Host manually started a quick chat (waiting → proposing).
+  Future<void> logQuickChatStarted() async {
+    await _logEvent('quick_chat_started', {});
+  }
+
+  // --- Seed dialog (in-chat replacement for the old /create fork screen).
+  // shown → the host saw "Already have the options?"; seeded → they supplied
+  // options and the chat went straight to voting; dismissed → group ideation
+  // (proposing). seeded+dismissed should sum to shown; the split IS the old
+  // fork metric, now measured at the moment of truth instead of up front. ---
+
+  Future<void> logSeedDialogShown() async {
+    await _logEvent('seed_dialog_shown', {});
+  }
+
+  Future<void> logSeedDialogSeeded({required int optionCount}) async {
+    await _logEvent('seed_dialog_seeded', {'option_count': optionCount});
+  }
+
+  /// [method] records how the dialog was dismissed: `x` (close button),
+  /// `group_button` ("Get ideas from the group"), or `barrier_or_back`
+  /// (tapped outside / system back). Lets us tell a deliberate group-path
+  /// choice from a fast bail without reading.
+  Future<void> logSeedDialogDismissed({required String method}) async {
+    await _logEvent('seed_dialog_dismissed', {'method': method});
+  }
+
+  /// Host manually advanced a quick chat from proposing → voting.
+  Future<void> logQuickChatAdvanced() async {
+    await _logEvent('quick_chat_advanced', {});
+  }
+
+  /// A rater finished voting (matches "Done") — fills the rating-completed gap
+  /// that only existed for grid mode.
+  Future<void> logQuickChatVoteDone() async {
+    await _logEvent('quick_chat_vote_done', {});
+  }
+
+  /// "Create a new chat" tapped from a finished quick chat — the loop / went-
+  /// deeper signal (they ran the mechanism and want another).
+  Future<void> logQuickChatCreateAnother() async {
+    await _logEvent('quick_chat_create_another', {});
+  }
+
+  /// Share surface opened in a quick chat. [source] = 'invite' (app-bar, recruit
+  /// voters) | 'result' (finished chat, share the outcome).
+  Future<void> logQuickChatShare({required String source}) async {
+    await _logEvent('quick_chat_share', {'event_source': source});
+  }
+
+  /// User opened the full ranked results ("See full rankings"). This is the
+  /// aha/value-delivered moment — the group's ranked outcome is on screen. It
+  /// fires for every chat type via the single `_resolveAndOpenResults` funnel,
+  /// so [ratingMode] ('matches' | 'grid') and [isQuickChat] (maxCycles==1)
+  /// let us segment quick-chat vs full-wizard results views. [roundNumber]
+  /// distinguishes a round-1 result from a round-2+ (post-convergence-on-ramp)
+  /// result. Currently un-imported as an Ads conversion — a candidate signal
+  /// for the /try-demo paid funnel once it's marked a key event in GA4.
+  Future<void> logResultsViewed({
+    required String chatId,
+    required int roundNumber,
+    required String ratingMode,
+    required bool isQuickChat,
+  }) async {
+    await _logEvent('results_viewed', {
+      'chat_id': chatId,
+      'round_number': roundNumber,
+      'rating_mode': ratingMode,
+      'is_quick_chat': isQuickChat ? 1 : 0,
+    });
+  }
+
+  // ============================================================
+  // Demo Funnel (hardcoded value-first demo — the new landing CTA target)
+  // ============================================================
+  // Measures the hypothesis: does dropping people straight into a tap-first
+  // demo lift engagement vs. the old fork? demo_opened → voted → completed
+  // (saw convergence) → create_clicked (demo → real create flow).
+
+  /// Reached the value-first demo (new landing-CTA entry point).
+  Future<void> logDemoOpened() async {
+    await _logEvent('demo_opened', {});
+  }
+
+  /// Cast a pairwise vote in the demo. [step] = 1-based comparison number.
+  Future<void> logDemoVoted({required int step}) async {
+    await _logEvent('demo_voted', {'step': step});
+  }
+
+  /// Reached the demo's winner reveal (saw the full converge).
+  Future<void> logDemoCompleted({required String winner}) async {
+    await _logEvent('demo_completed', {'winner': winner});
+  }
+
+  /// Tapped "Run this with your own group" after the demo (demo → create).
+  Future<void> logDemoCreateClicked() async {
+    await _logEvent('demo_create_clicked', {});
+  }
+
+  // ============================================================
   // Round Events
   // ============================================================
 
@@ -194,21 +375,14 @@ class AnalyticsService {
     required double value,
     required String transactionId,
   }) async {
-    if (!_isAvailable || _analytics == null) return;
-    // Use Firebase's built-in purchase event
-    await _analytics!.logPurchase(
-      currency: 'USD',
-      value: value,
-      transactionId: transactionId,
-      items: [
-        AnalyticsEventItem(
-          itemId: 'onemind_credits',
-          itemName: 'OneMind Credits',
-          quantity: credits,
-          price: 0.01,
-        ),
-      ],
-    );
+    // Mirror Firebase's standard purchase shape so GA4 ecommerce reports
+    // still pick this up. Routed through _logEvent so web flows via gtag.
+    await _logEvent('purchase', {
+      'currency': 'USD',
+      'value': value,
+      'transaction_id': transactionId,
+      'credits': credits,
+    });
   }
 
   /// User enabled auto-refill
@@ -236,12 +410,40 @@ class AnalyticsService {
     required String chatId,
     required String shareMethod, // 'copy', 'share_sheet'
   }) async {
-    if (!_isAvailable || _analytics == null) return;
-    await _analytics!.logShare(
-      contentType: 'invite_code',
-      itemId: chatId,
-      method: shareMethod,
-    );
+    await _logEvent('share', {
+      'content_type': 'invite_code',
+      'item_id': chatId,
+      'method': shareMethod,
+    });
+  }
+
+  /// The invite-share sheet was shown (auto-opened on quick-create, or opened
+  /// from the app bar). Gives us the denominator for the make-or-break cold
+  /// funnel ratio: of everyone shown the prompt, what % actually share?
+  /// [auto] = true when it auto-popped on chat load, false when user-invoked.
+  Future<void> logInviteDialogShown({
+    required String chatId,
+    required bool auto,
+  }) async {
+    // Firebase Analytics requires string or number values, not booleans.
+    await _logEvent('invite_dialog_shown', {
+      'item_id': chatId,
+      'auto': auto ? 1 : 0,
+    });
+  }
+
+  /// The invite-share sheet was closed WITHOUT sharing/copying — the rejection
+  /// signal. [hadShared] = true if a share/copy happened earlier in this dialog
+  /// (so a dismissal after sharing isn't counted as a walk-away).
+  Future<void> logInviteDialogDismissed({
+    required String chatId,
+    required bool hadShared,
+  }) async {
+    // Firebase Analytics requires string or number values, not booleans.
+    await _logEvent('invite_dialog_dismissed', {
+      'item_id': chatId,
+      'had_shared': hadShared ? 1 : 0,
+    });
   }
 
   /// User viewed legal document
@@ -255,17 +457,17 @@ class AnalyticsService {
 
   /// User tapped the donate button (outbound click to Stripe payment link)
   Future<void> logDonateClicked({required String source}) async {
-    await _logEvent('donate_clicked', {'source': source});
+    await _logEvent('donate_clicked', {'event_source': source});
   }
 
   /// A donate prompt was shown to the user (e.g. convergence-reached dialog).
   Future<void> logDonatePromptShown({required String source}) async {
-    await _logEvent('donate_prompt_shown', {'source': source});
+    await _logEvent('donate_prompt_shown', {'event_source': source});
   }
 
   /// The user dismissed a donate prompt without donating.
   Future<void> logDonatePromptDismissed({required String source}) async {
-    await _logEvent('donate_prompt_dismissed', {'source': source});
+    await _logEvent('donate_prompt_dismissed', {'event_source': source});
   }
 
   // ============================================================
@@ -273,13 +475,19 @@ class AnalyticsService {
   // ============================================================
 
   /// Landing page was viewed (A/B test)
-  Future<void> logLandingViewed({required String variant}) async {
-    await _logEvent('landing_viewed', {'variant': variant});
+  Future<void> logLandingViewed({required String variant, String? landingRoute}) async {
+    await _logEvent('landing_viewed', {
+      'variant': variant,
+      if (landingRoute != null) 'landing_route': landingRoute,
+    });
   }
 
   /// Landing page CTA was clicked (A/B test)
-  Future<void> logLandingCtaClicked({required String variant}) async {
-    await _logEvent('landing_cta_clicked', {'variant': variant});
+  Future<void> logLandingCtaClicked({required String variant, String? landingRoute}) async {
+    await _logEvent('landing_cta_clicked', {
+      'variant': variant,
+      if (landingRoute != null) 'landing_route': landingRoute,
+    });
   }
 
   /// A landing page section scrolled into view
@@ -338,8 +546,7 @@ class AnalyticsService {
 
   /// User completed the full tutorial
   Future<void> logTutorialCompleted({required String templateKey}) async {
-    if (!_isAvailable || _analytics == null) return;
-    await _analytics!.logTutorialComplete();
+    await _logEvent('tutorial_complete', const {});
     await _logEvent('tutorial_completed', {
       'template': templateKey,
     });
@@ -401,7 +608,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_impression', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
     });
   }
@@ -416,7 +623,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_started', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'autoplay': autoplay ? 1 : 0,
       'duration_seconds': durationSeconds,
@@ -433,7 +640,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_progress', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'percent': percent,
     });
@@ -448,7 +655,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_completed', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'duration_seconds': durationSeconds,
     });
@@ -466,7 +673,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_abandoned', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'watch_time_seconds': watchTimeSeconds,
       'percent_watched': percentWatched,
@@ -483,7 +690,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_unmuted', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'at_seconds': atSeconds,
     });
@@ -498,7 +705,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_video_fullscreen', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'at_seconds': atSeconds,
     });
@@ -514,7 +721,7 @@ class AnalyticsService {
   }) async {
     await _logEvent('chat_audio_played', {
       'chat_id': chatId,
-      'source': source,
+      'event_source': source,
       if (cycleId != null) 'cycle_id': cycleId,
       'has_pre_recorded': hasPreRecorded ? 1 : 0,
     });
@@ -551,6 +758,19 @@ class AnalyticsService {
     String name,
     Map<String, Object?> parameters,
   ) async {
+    // PostHog: on web, events are forwarded to window.posthog inside the
+    // window._onemindLogEvent bridge (see sendWebEvent + web/index.html), so
+    // there's no Dart-side PostHog call here. (posthog_flutter was removed.)
+
+    // On web, always route through gtag.js. The Firebase Analytics web
+    // plugin silently dropped chat/proposition/rating events starting
+    // 2026-05-02; gtag is the verified-working pipeline (splash_shown,
+    // flutter_loaded, play_button_tapped all flow reliably through it).
+    if (kIsWeb) {
+      sendWebEvent(name, parameters);
+      return;
+    }
+
     if (!_isAvailable || _analytics == null) return;
 
     // Filter out null values

@@ -334,7 +334,7 @@ Deno.serve(async (req: Request) => {
     // Service role calls (from agent-propose) are trusted — only check active status
     const { data: participant, error: participantErr } = await supabase
       .from("participants")
-      .select("user_id, status")
+      .select("user_id, status, chats!inner(is_official)")
       .eq("id", participant_id)
       .single();
 
@@ -348,6 +348,16 @@ Deno.serve(async (req: Request) => {
       return corsErrorResponse("Participant not active", req, 403);
     }
 
+    // Official/free public chats (the advertised global room) never gate on
+    // credits — everyone participates. Funding is per-round and set at round
+    // creation, so late joiners (all the ad traffic) would otherwise hit
+    // NOT_FUNDED forever. Derived here from the participant's chat (one hop).
+    const partChat = (participant as unknown as {
+      chats?: { is_official?: boolean } | { is_official?: boolean }[];
+    }).chats;
+    const isOfficialChat =
+      (Array.isArray(partChat) ? partChat[0] : partChat)?.is_official === true;
+
     // Step 0: Check if participant is funded for this round
     const { data: isFunded, error: fundedError } = await supabase
       .rpc("is_participant_funded", { p_round_id: round_id, p_participant_id: participant_id });
@@ -359,7 +369,7 @@ Deno.serve(async (req: Request) => {
 
     // If round has funding records and participant is NOT funded, reject
     // (If no funding records exist yet, allow — backward compat for pre-credits rounds)
-    if (isFunded === false) {
+    if (isFunded === false && !isOfficialChat) {
       const { data: fundedCount } = await supabase
         .rpc("get_funded_participant_count", { p_round_id: round_id });
 

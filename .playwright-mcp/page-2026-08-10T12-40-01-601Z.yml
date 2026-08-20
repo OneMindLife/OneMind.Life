@@ -1,0 +1,457 @@
+- generic [active] [ref=f2e1]:
+  - main [ref=f2e2]:
+    - generic [ref=f2e3]:
+      - generic [ref=f2e5]:
+        - generic [ref=f2e8]:
+          - heading "Essential steps for Android 17 memory efficiency" [level=1] [ref=f2e9]
+          - paragraph [ref=f2e10]: Learn how new Android 17 memory limits work and explore practical steps to optimize code, reduce memory leaks, and prevent sudden app terminations.
+          - link "Learn more" [ref=f2e12] [cursor=pointer]:
+            - /url: https://android-developers.googleblog.com/2026/06/prioritizing-memory-efficiency-steps-for-android-17.html
+        - figure [ref=f2e14]:
+          - img "hero1.webp" [ref=f2e16]
+      - generic [ref=f2e19]:
+        - generic [ref=f2e20]:
+          - link "Go to Homepage" [ref=f2e22] [cursor=pointer]:
+            - /url: https://play.google.com/console/about/
+            - img "Google Play" [ref=f2e25]
+          - button "Open the navigation drawer" [ref=f2e26] [cursor=pointer]
+        - button "search button" [ref=f2e28] [cursor=pointer]
+      - generic [ref=f2e35]:
+        - paragraph [ref=f2e37]:
+          - generic [ref=f2e38]: Get Google Play developer updates in your inbox
+        - link "Sign up" [ref=f2e40] [cursor=pointer]:
+          - /url: https://play.google.com/console/about/newsletter/
+      - list [ref=f2e43]:
+        - listitem [ref=f2e44]:
+          - link [ref=f2e45] [cursor=pointer]:
+            - /url: http://play.google.com/sidekick-26-updates
+            - generic [ref=f2e49]:
+              - paragraph [ref=f2e50]: Play Games Sidekick
+              - paragraph [ref=f2e51]: Deliver a seamless in-game experience with Sidekick. Give players quick access to profile achievements, streaks, and exclusive Play Points offers without leaving your game.
+        - listitem [ref=f2e52]:
+          - link [ref=f2e53] [cursor=pointer]:
+            - /url: https://android-developers.googleblog.com/2026/07/optimize-galaxy-screen-sizes.html
+            - generic [ref=f2e57]:
+              - paragraph [ref=f2e58]: Optimize apps for Galaxy screen sizes
+              - paragraph [ref=f2e59]: Prepare your app for the full range of Samsung Galaxy devices. Use Jetpack WindowManager to build adaptive layouts across foldable, tablet, and desktop screens.
+        - listitem [ref=f2e60]:
+          - link [ref=f2e61] [cursor=pointer]:
+            - /url: https://google.play/the-latest/
+            - generic [ref=f2e65]:
+              - paragraph [ref=f2e66]: "The Latest from Google Play: Q2 2026"
+              - paragraph [ref=f2e67]: Catch up on last quarter’s key announcements, and learn how we’re helping developers grow with Play.
+      - list [ref=f2e70]:
+        - listitem [ref=f2e71]:
+          - link "play-console-icon-homepage Play Console Manage your apps and games" [ref=f2e72] [cursor=pointer]:
+            - /url: https://play.google.com/console/u/0/developers/
+            - generic [ref=f2e73]:
+              - img "play-console-icon-homepage" [ref=f2e76]
+              - generic [ref=f2e78]:
+                - paragraph [ref=f2e79]:
+                  - generic [ref=f2e80]: Play Console
+                - paragraph [ref=f2e81]:
+                  - generic [ref=f2e82]: Manage your apps and games
+        - listitem [ref=f2e83]:
+          - link "play-commerce-icon-homepage Play Commerce Reach your monetization goals" [ref=f2e84] [cursor=pointer]:
+            - /url: https://play.google.com/console/about/guides/play-commerce/
+            - generic [ref=f2e85]:
+              - img "play-commerce-icon-homepage" [ref=f2e88]
+              - generic [ref=f2e90]:
+                - paragraph [ref=f2e91]:
+                  - generic [ref=f2e92]: Play Commerce
+                - paragraph [ref=f2e93]:
+                  - generic [ref=f2e94]: Reach your monetization goals
+        - listitem [ref=f2e95]:
+          - link "play-developer-icon-homepage Play developer APIs Publishing and app-management tasks" [ref=f2e96] [cursor=pointer]:
+            - /url: https://developer.android.com/google/play/developer-api/
+            - generic [ref=f2e97]:
+              - img "play-developer-icon-homepage" [ref=f2e100]
+              - generic [ref=f2e102]:
+                - paragraph [ref=f2e103]:
+                  - generic [ref=f2e104]: Play developer APIs
+                - paragraph [ref=f2e105]:
+                  - generic [ref=f2e106]: Publishing and app-management tasks
+      - generic [ref=f2e107]:
+        - generic [ref=f2e109]:
+          - heading "Guidance for every goal" [level=2] [ref=f2e110]
+          - link "Copy link to this section" [ref=f2e112] [cursor=pointer]:
+            - /url: "#guidance-for-every-goal"
+        - generic [ref=f2e116]:
+          - generic [ref=f2e117]: Find the right tools and resources to accomplish your goals with Google Play.
+          - link "View all guides" [ref=f2e119] [cursor=pointer]:
+            - /url: https://play.google.com/console/about/guides/
+      - generic [ref=f2e122]:
+        - generic [ref=f2e123]:
+          - heading [level=2] [ref=f2e124]:
+            - button "Monetize with Play Commerce" [expanded] [ref=f2e125] [cursor=pointer]
+          - region "Monetize with Play Commerce" [ref=f2e130]:
+            - generic [ref=f2e131]:
+              - generic [ref=f2e134]:
+                - generic [ref=f2e135]:
+                  - paragraph [ref=f2e136]: Google Play Commerce is our platform to help you reach your monetization goals. Explore the tools and resources to monetize your app and boost your revenue.
+                  - paragraph [ref=f2e137]:
+                    - link "Learn more about monetization" [ref=f2e138] [cursor=pointer]:
+                      - /url: https://play.google.com/console/about/guides/play-commerce/
+                - img "monitize.webp" [ref=f2e142]
+              - list [ref=f2e145]:
+                - listitem [ref=f2e146]:
+                  - link "Program Grow with Google Play pass Google Play Pass is a subscription service offering access to over 1000 apps and games, completely free of ads and in-app purchases. Play Pass provides a high-quality, curated collection of titles – with new content added regularly. Learn more" [ref=f2e147] [cursor=pointer]:
+                    - /url: https://play.google.com/console/about/programs/googleplaypass/
+                    - generic [ref=f2e151]:
+                      - paragraph [ref=f2e152]: Program
+                      - paragraph [ref=f2e153]:
+                        - generic [ref=f2e154]: Grow with Google Play pass
+                      - paragraph [ref=f2e155]: Google Play Pass is a subscription service offering access to over 1000 apps and games, completely free of ads and in-app purchases. Play Pass provides a high-quality, curated collection of titles – with new content added regularly.
+                      - generic [ref=f2e156]: Learn more
+                - listitem [ref=f2e157]:
+                  - link "Console feature Sell products in-app Grow your revenue by selling products within your app using Google Play Billing Learn more" [ref=f2e158] [cursor=pointer]:
+                    - /url: https://play.google.com/console/about/in-appproductssetup/
+                    - generic [ref=f2e162]:
+                      - paragraph [ref=f2e163]: Console feature
+                      - paragraph [ref=f2e164]:
+                        - generic [ref=f2e165]: Sell products in-app
+                      - paragraph [ref=f2e166]:
+                        - generic [ref=f2e167]: Grow your revenue by selling products within your app using Google Play Billing
+                      - generic [ref=f2e168]: Learn more
+                - listitem [ref=f2e169]:
+                  - link "Console feature Set up subscriptions Grow your revenue with subscriptions and let Play take care of payment, notifications, and subscription management Learn more" [ref=f2e170] [cursor=pointer]:
+                    - /url: https://play.google.com/console/about/subscriptionsetup/
+                    - generic [ref=f2e174]:
+                      - paragraph [ref=f2e175]: Console feature
+                      - paragraph [ref=f2e176]:
+                        - generic [ref=f2e177]: Set up subscriptions
+                      - paragraph [ref=f2e178]:
+                        - generic [ref=f2e179]: Grow your revenue with subscriptions and let Play take care of payment, notifications, and subscription management
+                      - generic [ref=f2e180]: Learn more
+                - listitem [ref=f2e181]:
+                  - generic [ref=f2e183] [cursor=pointer]:
+                    - generic [ref=f2e184]: 03:27
+                    - generic [ref=f2e192]:
+                      - paragraph [ref=f2e193]: Case study
+                      - paragraph [ref=f2e194]:
+                        - generic [ref=f2e195]: Beelinguapp finds success with subscriptions
+                      - generic [ref=f2e196]: Watch video
+                - listitem [ref=f2e197]:
+                  - link "Help center Tax and compliance support Learn more" [ref=f2e198] [cursor=pointer]:
+                    - /url: https://support.google.com/googleplay/android-developer/answer/10463498?hl=en
+                    - generic [ref=f2e202]:
+                      - paragraph [ref=f2e203]: Help center
+                      - paragraph [ref=f2e204]:
+                        - generic [ref=f2e205]: Tax and compliance support
+                      - generic [ref=f2e206]: Learn more
+        - generic [ref=f2e207]:
+          - heading [level=2] [ref=f2e208]:
+            - button "Growing your audience" [ref=f2e209] [cursor=pointer]
+          - generic [ref=f2e214]:
+            - generic [ref=f2e218]:
+              - paragraph [ref=f2e219]: We offer a suite of reporting and optimization tools—including market insights exclusive to Google Play—all designed to maximize your reach.
+              - paragraph [ref=f2e220]:
+                - link [ref=f2e221] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/guides/growyouraudience/
+                  - text: Lear more about growth
+            - list [ref=f2e228]:
+              - listitem [ref=f2e229]:
+                - link [ref=f2e230] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/programs/goglobal/
+                  - generic [ref=f2e234]:
+                    - paragraph [ref=f2e235]: Insight
+                    - paragraph [ref=f2e236]:
+                      - generic [ref=f2e237]: Grow in new markets with Go Global
+                    - paragraph [ref=f2e238]:
+                      - generic [ref=f2e239]: Grow in local markets with insights and best practices from Google Play
+                    - generic [ref=f2e240]: Learn more
+              - listitem [ref=f2e241]:
+                - link [ref=f2e242] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/acquisitionreporting/
+                  - generic [ref=f2e246]:
+                    - paragraph [ref=f2e247]: Console feature
+                    - paragraph [ref=f2e248]:
+                      - generic [ref=f2e249]: Track acquisition
+                    - paragraph [ref=f2e250]:
+                      - generic [ref=f2e251]: Track acquisition trends and see which sources are driving the highest quality impressions
+                    - generic [ref=f2e252]: Learn more
+              - listitem [ref=f2e253]:
+                - link [ref=f2e254] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/store-listing-experiments/
+                  - generic [ref=f2e258]:
+                    - paragraph [ref=f2e259]: Console feature
+                    - paragraph [ref=f2e260]:
+                      - generic [ref=f2e261]: Optimize your store listing
+                    - paragraph [ref=f2e262]:
+                      - generic [ref=f2e263]: Optimize your Google Play store listing to help increase installs and retention. Run A/B tests to find the most effective graphics and localized text.
+                    - generic [ref=f2e264]: Learn more
+              - listitem [ref=f2e265]:
+                - link [ref=f2e266] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/acquisitionreporting/
+                  - generic [ref=f2e270]:
+                    - paragraph [ref=f2e271]: Console Feature
+                    - paragraph [ref=f2e272]:
+                      - generic [ref=f2e273]: Analyze metrics exclusive to Google Play
+                    - paragraph [ref=f2e274]:
+                      - generic [ref=f2e275]: Track acquisition trends and see which sources are driving the highest quality impressions
+                    - generic [ref=f2e276]: Learn more
+              - listitem [ref=f2e277]:
+                - generic [ref=f2e279] [cursor=pointer]:
+                  - generic [ref=f2e280]: 02:36
+                  - generic [ref=f2e288]:
+                    - paragraph [ref=f2e289]: Case study
+                    - paragraph [ref=f2e290]:
+                      - generic [ref=f2e291]: Analyze metrics exclusive to Google Play
+                    - generic [ref=f2e292]: Watch video
+        - generic [ref=f2e293]:
+          - heading [level=2] [ref=f2e294]:
+            - button "Improving app quality" [ref=f2e295] [cursor=pointer]
+          - generic [ref=f2e300]:
+            - generic [ref=f2e304]:
+              - paragraph [ref=f2e305]: Building a high-quality app or game can drive its success on Google Play. Increase your app’s reach by implementing these key improvements.
+              - paragraph [ref=f2e306]:
+                - link [ref=f2e307] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/guides/build-a-high-quality-app-or-game/
+                  - text: Learn more about quality
+            - list [ref=f2e314]:
+              - listitem [ref=f2e315]:
+                - link [ref=f2e316] [cursor=pointer]:
+                  - /url: https://medium.com/googleplaydev/how-to-scale-the-happiness-of-your-users-3e46ef72029f
+                  - generic [ref=f2e320]:
+                    - paragraph [ref=f2e321]: Medium
+                    - paragraph [ref=f2e322]:
+                      - generic [ref=f2e323]: Scale the happiness of your users
+                    - generic [ref=f2e324]: Learn more
+              - listitem [ref=f2e325]:
+                - link [ref=f2e326] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/vitals/
+                  - generic [ref=f2e330]:
+                    - paragraph [ref=f2e331]: Console feature
+                    - paragraph [ref=f2e332]:
+                      - generic [ref=f2e333]: Monitor quality with Android vitals
+                    - paragraph [ref=f2e334]:
+                      - generic [ref=f2e335]: Monitor and improve the technical quality of your app or game. Android vitals reports on key user-impacting issues and helps you to debug and prioritize across them
+                    - generic [ref=f2e336]: Learn more
+              - listitem [ref=f2e337]:
+                - link [ref=f2e338] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/store-listing-experiments/
+                  - generic [ref=f2e342]:
+                    - paragraph [ref=f2e343]: Help center
+                    - paragraph [ref=f2e344]:
+                      - generic [ref=f2e345]: Run store listings experiences
+                    - paragraph [ref=f2e346]:
+                      - generic [ref=f2e347]: Optimize your Google Play store listing to help increase installs and retention. Run A/B tests to find the most effective graphics and localized text.
+                    - generic [ref=f2e348]: Learn more
+              - listitem [ref=f2e349]:
+                - generic [ref=f2e351] [cursor=pointer]:
+                  - generic [ref=f2e352]: 03:07
+                  - generic [ref=f2e360]:
+                    - paragraph [ref=f2e361]: Case study
+                    - paragraph [ref=f2e362]:
+                      - generic [ref=f2e363]: SGN games increases conversions using store listings experiments
+                    - generic [ref=f2e364]: Watch video
+        - generic [ref=f2e365]:
+          - heading [level=2] [ref=f2e366]:
+            - button "Privacy and security" [ref=f2e367] [cursor=pointer]
+          - generic [ref=f2e372]:
+            - generic [ref=f2e376]:
+              - paragraph [ref=f2e377]: Our developer policy guidelines give you the resources you need to keep your app safe and reliable for users around the globe.
+              - paragraph [ref=f2e378]:
+                - link [ref=f2e379] [cursor=pointer]:
+                  - /url: https://play.google/developer-content-policy/
+                  - text: Learn more about policy
+            - list [ref=f2e386]:
+              - listitem [ref=f2e387]:
+                - link [ref=f2e388] [cursor=pointer]:
+                  - /url: https://playacademy.exceedlms.com/student/activity/18797-build-and-distribute-privacy-friendly-apps?sid=25647564&sid_i=0
+                  - generic [ref=f2e392]:
+                    - paragraph [ref=f2e393]: Play Academy
+                    - paragraph [ref=f2e394]:
+                      - generic [ref=f2e395]: Build privacy-friendly apps
+                    - generic [ref=f2e396]: Learn more
+              - listitem [ref=f2e397]:
+                - link [ref=f2e398] [cursor=pointer]:
+                  - /url: https://play.google.com/console/about/policystatus/
+                  - generic [ref=f2e402]:
+                    - paragraph [ref=f2e403]: Console feature
+                    - paragraph [ref=f2e404]:
+                      - generic [ref=f2e405]: See your policy status
+                    - paragraph [ref=f2e406]:
+                      - generic [ref=f2e407]: Manage your compliance with new and existing Google Play policies, all in one place
+                    - generic [ref=f2e408]: Learn more
+              - listitem [ref=f2e409]:
+                - link [ref=f2e410] [cursor=pointer]:
+                  - /url: https://developer.android.com/distribute/play-policies
+                  - generic [ref=f2e414]:
+                    - paragraph [ref=f2e415]: Article
+                    - paragraph [ref=f2e416]:
+                      - generic [ref=f2e417]: Upcoming Android and Google Play deadlines
+                    - generic [ref=f2e418]: Learn more
+      - generic [ref=f2e421]:
+        - generic [ref=f2e422]:
+          - generic [ref=f2e424]:
+            - heading "Programs and initiatives" [level=2] [ref=f2e425]
+            - link "Copy link to this section" [ref=f2e427] [cursor=pointer]:
+              - /url: "#programs-and-initiatives"
+          - generic [ref=f2e431]:
+            - generic [ref=f2e432]: Supporting developers of all sizes, stages of growth and business models.
+            - link "View all programs" [ref=f2e434] [cursor=pointer]:
+              - /url: https://play.google.com/console/about/programs/
+        - list [ref=f2e437]:
+          - listitem [ref=f2e438]:
+            - link "Google Play Points Connect with highly engaged users and earn incremental revenue. Learn more" [ref=f2e439] [cursor=pointer]:
+              - /url: https://play.google.com/console/about/programs/googleplaypoints/
+              - generic [ref=f2e443]:
+                - paragraph [ref=f2e444]:
+                  - generic [ref=f2e445]: Google Play Points
+                - paragraph [ref=f2e446]:
+                  - generic [ref=f2e447]: Connect with highly engaged users and earn incremental revenue.
+                - generic [ref=f2e448]: Learn more
+          - listitem [ref=f2e449]:
+            - link "Google Play Pass Get discovered and earn recurring revenue from Play Pass users. Learn more" [ref=f2e450] [cursor=pointer]:
+              - /url: https://play.google.com/console/about/programs/googleplaypass/
+              - generic [ref=f2e454]:
+                - paragraph [ref=f2e455]:
+                  - generic [ref=f2e456]: Google Play Pass
+                - paragraph [ref=f2e457]:
+                  - generic [ref=f2e458]: Get discovered and earn recurring revenue from Play Pass users.
+                - generic [ref=f2e459]: Learn more
+          - listitem [ref=f2e460]:
+            - link "Google Play Games Level Up The new Level Up program connects great gaming experiences to greater business success. Learn more" [ref=f2e461] [cursor=pointer]:
+              - /url: https://play.google.com/console/about/levelup/
+              - generic [ref=f2e465]:
+                - paragraph [ref=f2e466]:
+                  - generic [ref=f2e467]: Google Play Games Level Up
+                - paragraph [ref=f2e468]:
+                  - generic [ref=f2e469]: The new Level Up program connects great gaming experiences to greater business success.
+                - generic [ref=f2e470]: Learn more
+        - list [ref=f2e473]:
+          - listitem [ref=f2e474]:
+            - link "Google Play Academy Online training for new and seasoned app and game developers. Find courses" [ref=f2e475] [cursor=pointer]:
+              - /url: https://playacademy.withgoogle.com/
+              - generic [ref=f2e479]:
+                - paragraph [ref=f2e480]:
+                  - generic [ref=f2e481]: Google Play Academy
+                - paragraph [ref=f2e482]:
+                  - generic [ref=f2e483]: Online training for new and seasoned app and game developers.
+                - generic [ref=f2e484]: Find courses
+          - listitem [ref=f2e485]:
+            - link "Programs and initiatives See stories of real businesses thriving on Google Play. View all" [ref=f2e486] [cursor=pointer]:
+              - /url: https://play.google.com/console/about/communityspotlight/
+              - generic [ref=f2e490]:
+                - paragraph [ref=f2e491]:
+                  - generic [ref=f2e492]: Programs and initiatives
+                - paragraph [ref=f2e493]:
+                  - generic [ref=f2e494]: See stories of real businesses thriving on Google Play.
+                - generic [ref=f2e495]: View all
+      - generic [ref=f2e501]:
+        - heading "Get support in the Help Center" [level=3] [ref=f2e502]
+        - link "Copy link to this section" [ref=f2e504] [cursor=pointer]:
+          - /url: "#get-support-in-the-help-center"
+      - list [ref=f2e510]:
+        - listitem [ref=f2e511]:
+          - link "icon-help-center-guides View all Help Center guides" [ref=f2e512] [cursor=pointer]:
+            - /url: https://support.google.com/googleplay/android-developer?sjid=1986974963911544682-NA#topic=3450769
+            - generic [ref=f2e513]:
+              - img "icon-help-center-guides" [ref=f2e516]
+              - paragraph [ref=f2e519]:
+                - generic [ref=f2e520]: View all Help Center guides
+        - listitem [ref=f2e521]:
+          - link "icon-community-forums Get answers from community forums" [ref=f2e522] [cursor=pointer]:
+            - /url: https://support.google.com/googleplay/android-developer/community?hl=en&sjid=1986974963911544682-NA
+            - generic [ref=f2e523]:
+              - img "icon-community-forums" [ref=f2e526]
+              - paragraph [ref=f2e529]:
+                - generic [ref=f2e530]: Get answers from community forums
+        - listitem [ref=f2e531]:
+          - link "help-icon Ask us directly for help" [ref=f2e532] [cursor=pointer]:
+            - /url: https://support.google.com/googleplay/android-developer/gethelp?sjid=1986974963911544682-NA
+            - generic [ref=f2e533]:
+              - img "help-icon" [ref=f2e536]
+              - paragraph [ref=f2e539]:
+                - generic [ref=f2e540]: Ask us directly for help
+      - generic [ref=f2e548]:
+        - heading "Sign up for Google Play developer updates" [level=2] [ref=f2e550]
+        - link "Sign up" [ref=f2e552] [cursor=pointer]:
+          - /url: https://play.google.com/console/about/newsletter/
+  - contentinfo [ref=f2e553]:
+    - heading "Footer links" [level=2] [ref=f2e554]
+    - generic [ref=f2e556]:
+      - paragraph [ref=f2e557]: Social Module
+      - generic [ref=f2e559]:
+        - paragraph [ref=f2e560]: Connect with us
+        - list [ref=f2e561]:
+          - listitem [ref=f2e562]:
+            - link "Follow us on X external link" [ref=f2e563] [cursor=pointer]:
+              - /url: https://x.com/GooglePlayBiz
+          - listitem [ref=f2e566]:
+            - link "Follow us on LinkedIn external link" [ref=f2e567] [cursor=pointer]:
+              - /url: https://www.linkedin.com/showcase/googleplaybiz/
+          - listitem [ref=f2e570]:
+            - link "Follow us on YouTube external link" [ref=f2e571] [cursor=pointer]:
+              - /url: https://www.youtube.com/user/androiddevelopers
+    - navigation [ref=f2e574]:
+      - generic [ref=f2e575]:
+        - generic [ref=f2e576]:
+          - heading [level=3] [ref=f2e577]:
+            - button "Tools" [ref=f2e578] [cursor=pointer]
+          - list [ref=f2e582]:
+            - listitem [ref=f2e583]:
+              - link [ref=f2e584] [cursor=pointer]:
+                - /url: https://admin.google.com/ServiceNotAllowed?service=androiddeveloper&continue=https://play.google.com/console/
+                - text: Console
+            - listitem [ref=f2e585]:
+              - link [ref=f2e586] [cursor=pointer]:
+                - /url: https://developer.android.com/google/play/developer-api
+                - text: APIs
+        - generic [ref=f2e587]:
+          - heading [level=3] [ref=f2e588]:
+            - button "Learning & community resources" [ref=f2e589] [cursor=pointer]
+          - list [ref=f2e593]:
+            - listitem [ref=f2e594]:
+              - link [ref=f2e595] [cursor=pointer]:
+                - /url: https://play.google.com/console/about/guides/
+                - text: Guides
+            - listitem [ref=f2e596]:
+              - link [ref=f2e597] [cursor=pointer]:
+                - /url: https://play.google.com/console/about/communityspotlight/
+                - text: Case Studies
+            - listitem [ref=f2e598]:
+              - link [ref=f2e599] [cursor=pointer]:
+                - /url: https://play.google.com/console/about/weareplay/
+                - text: "#WeArePlay"
+            - listitem [ref=f2e600]:
+              - link [ref=f2e601] [cursor=pointer]:
+                - /url: https://play.google.com/console/about/programs/
+                - text: Programs
+            - listitem [ref=f2e602]:
+              - link [ref=f2e603] [cursor=pointer]:
+                - /url: https://android-developers.googleblog.com/search/label/Google%20Play
+                - text: Blog
+            - listitem [ref=f2e604]:
+              - link [ref=f2e605] [cursor=pointer]:
+                - /url: https://developer.android.com/podcasts/apps-games-insights
+                - text: Apps, Games, & Insights Podcast
+            - listitem [ref=f2e606]:
+              - link [ref=f2e607] [cursor=pointer]:
+                - /url: https://support.google.com/googleplay/android-developer#topic=3450769
+                - text: Google Play Help
+    - generic [ref=f2e608]:
+      - link [ref=f2e610] [cursor=pointer]:
+        - /url: https://www.google.com/
+        - img "google" [ref=f2e611]
+      - list [ref=f2e612]:
+        - listitem [ref=f2e613]:
+          - link "About Google link opens in new tab or window" [ref=f2e614] [cursor=pointer]:
+            - /url: https://about.google/
+            - text: About Google
+        - listitem [ref=f2e615]:
+          - link "Google products link opens in new tab or window" [ref=f2e616] [cursor=pointer]:
+            - /url: https://about.google/products/
+            - text: Google products
+        - listitem [ref=f2e617]:
+          - link "Privacy link opens in new tab or window" [ref=f2e618] [cursor=pointer]:
+            - /url: https://policies.google.com/privacy
+            - text: Privacy
+        - listitem [ref=f2e619]:
+          - link "Terms link opens in new tab or window" [ref=f2e620] [cursor=pointer]:
+            - /url: https://policies.google.com/terms
+            - text: Terms
+        - listitem [ref=f2e621]
+      - link "Help" [ref=f2e622] [cursor=pointer]:
+        - /url: https://support.google.com/?hl=en

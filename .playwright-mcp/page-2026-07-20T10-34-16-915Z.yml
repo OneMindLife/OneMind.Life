@@ -1,0 +1,24 @@
+- generic [active] [ref=f10e1]:
+  - main [ref=f10e2]:
+    - generic [ref=f10e3]: OneMind
+    - generic [ref=f10e10]:
+      - generic [ref=f10e11]:
+        - generic [ref=f10e12]: One anonymous room · the whole world's in it
+        - heading [level=1] [ref=f10e13]:
+          - text: Say what you
+          - emphasis [ref=f10e14]: really
+          - text: think.
+      - generic [ref=f10e15]: "One global room, everyone anonymous. Say what's actually on your mind — no name attached — then vote on what everyone else said. No followers, no algorithm: every 12 hours the room picks its best line and keeps it. Watch what the world converges on."
+      - link "Say what you think" [ref=f10e16] [cursor=pointer]:
+        - /url: /c/GLOBAL/
+      - paragraph [ref=f10e19]: Anonymous · no account · 30 seconds to your first message
+      - paragraph [ref=f10e20]:
+        - link "Or just read the room →" [ref=f10e21] [cursor=pointer]:
+          - /url: /c/GLOBAL
+      - generic [ref=f10e22]:
+        - link "Terms" [ref=f10e23] [cursor=pointer]:
+          - /url: /terms/
+        - generic [ref=f10e24]: ·
+        - link "Privacy" [ref=f10e25] [cursor=pointer]:
+          - /url: /privacy/
+  - alert [ref=f10e26]

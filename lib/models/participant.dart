@@ -10,6 +10,7 @@ class Participant extends Equatable {
   final String? sessionToken;
   final String displayName;
   final bool isHost;
+  final bool isAgent;
   final bool isAuthenticated;
   final ParticipantStatus status;
   final DateTime createdAt;
@@ -21,6 +22,7 @@ class Participant extends Equatable {
     this.sessionToken,
     required this.displayName,
     required this.isHost,
+    this.isAgent = false,
     required this.isAuthenticated,
     required this.status,
     required this.createdAt,
@@ -34,6 +36,7 @@ class Participant extends Equatable {
       sessionToken: json['session_token'] as String?,
       displayName: json['display_name'] as String,
       isHost: json['is_host'] as bool? ?? false,
+      isAgent: json['is_agent'] as bool? ?? false,
       isAuthenticated: json['is_authenticated'] as bool? ?? false,
       status: _parseStatus(json['status'] as String?),
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -66,6 +69,7 @@ class Participant extends Equatable {
       'session_token': sessionToken,
       'display_name': displayName,
       'is_host': isHost,
+      'is_agent': isAgent,
       'is_authenticated': isAuthenticated,
       'status': status.name,
     };
@@ -79,6 +83,7 @@ class Participant extends Equatable {
         sessionToken,
         displayName,
         isHost,
+        isAgent,
         isAuthenticated,
         status,
         createdAt,

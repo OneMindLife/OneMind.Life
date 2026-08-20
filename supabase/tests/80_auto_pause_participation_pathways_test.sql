@@ -1,7 +1,9 @@
 -- Tests for auto-pause across all human participation pathways.
 -- The auto-pause fires in on_round_winner_set() and checks whether any human
--- submitted a NEW proposition OR explicitly skipped proposing (round_skips).
--- Rating activity (grid_rankings, rating_skips) is NOT checked.
+-- ENGAGED this round: submitted a NEW proposition, skipped proposing
+-- (round_skips), OR cast a rating vote (grid_rankings / pairwise_comparisons).
+-- rating_skips do NOT count — they can be auto-generated for stranded raters,
+-- so they aren't genuine engagement. (Rating-vote pathway added 2026-06-05.)
 
 BEGIN;
 SELECT plan(10);
@@ -266,7 +268,7 @@ SELECT is(
 
 -- =============================================================================
 -- SCENARIO 5: Human does NOT propose, does NOT skip proposing, but RATES
---             → should auto-pause (no proposing-phase activity from human)
+--             → should NOT auto-pause (a rating vote IS engagement; fixed 2026-06-05)
 -- =============================================================================
 
 DO $$
@@ -317,8 +319,8 @@ END $$;
 
 SELECT is(
     (SELECT host_paused FROM public.chats WHERE id = current_setting('test.s5_chat_id')::INT),
-    TRUE,
-    'S5: Human only rated (no proposing activity) → PAUSED'
+    FALSE,
+    'S5: Human only rated (grid vote) → NOT paused (a rating vote = engagement)'
 );
 
 -- =============================================================================
@@ -493,16 +495,18 @@ SELECT is(
 -- SUMMARY TABLE (for readability)
 -- =============================================================================
 -- S1: Propose + skip rating          → NOT paused  (proposed)
--- S2: Skip proposing + rate          → NOT paused  (proposing skip)
+-- S2: Skip proposing + rate          → NOT paused  (proposing skip AND rated)
 -- S3: Propose + rate                 → NOT paused  (proposed)
 -- S4: Propose + silent in rating     → NOT paused  (proposed)
--- S5: Silent in proposing + rate     → PAUSED      (no proposing activity)
+-- S5: Silent in proposing + rate     → NOT paused  (rating vote = engagement)
 -- S6: No participation at all        → PAUSED      (no activity)
 -- S7: Skip proposing + skip rating   → NOT paused  (proposing skip)
--- S8: Silent in proposing + skip rating → PAUSED   (no proposing activity)
+-- S8: Silent in proposing + skip rating → PAUSED   (rating_skip alone ≠ engagement)
 --
--- Key insight: Auto-pause only checks PROPOSING-phase participation.
--- Rating-only activity (grid_rankings, rating_skips) does NOT prevent pause.
+-- Key insight: a human counts as engaged via a proposition, a proposing-skip,
+-- OR a rating VOTE (grid/pairwise). Only rating_SKIPS don't count (they can be
+-- auto-generated for stranded raters). S6 (nothing) and S8 (only a rating-skip)
+-- are the genuinely-abandoned cases that pause.
 -- =============================================================================
 
 -- Extra assertions to verify the paused chats are really paused
@@ -513,21 +517,21 @@ SELECT is(
          current_setting('test.s2_chat_id')::INT,
          current_setting('test.s3_chat_id')::INT,
          current_setting('test.s4_chat_id')::INT,
+         current_setting('test.s5_chat_id')::INT,
          current_setting('test.s7_chat_id')::INT
      ) AND host_paused = false),
-    5,
-    'All 5 non-paused scenarios confirmed unpaused'
+    6,
+    'All 6 non-paused scenarios confirmed unpaused (S5 rating-vote now engages)'
 );
 
 SELECT is(
     (SELECT COUNT(*)::INT FROM public.chats
      WHERE id IN (
-         current_setting('test.s5_chat_id')::INT,
          current_setting('test.s6_chat_id')::INT,
          current_setting('test.s8_chat_id')::INT
      ) AND host_paused = true),
-    3,
-    'All 3 paused scenarios confirmed paused'
+    2,
+    'Both genuinely-abandoned scenarios confirmed paused (S6 nothing, S8 rating-skip only)'
 );
 
 SELECT * FROM finish();

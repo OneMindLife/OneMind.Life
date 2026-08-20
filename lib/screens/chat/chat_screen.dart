@@ -1,6 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
+import '../../utils/perf_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../config/app_colors.dart';
 import '../../l10n/generated/app_localizations.dart';
@@ -11,22 +15,32 @@ import '../../providers/providers.dart';
 import '../../services/background_audio_service.dart';
 import '../../services/affirmation_service.dart';
 import '../../services/proposition_service.dart';
+import '../../services/matches/match_pair_selector.dart' show MatchObjective;
 import '../../services/remote_log_service.dart';
 import '../../widgets/error_view.dart';
+import '../../widgets/name_section.dart';
 import '../../widgets/tts_button.dart';
 import '../../core/l10n/locale_provider.dart';
 import '../../widgets/glossary_term.dart';
 import '../../widgets/proposition_content_card.dart';
+import '../../widgets/ranked_leaderboard.dart';
 import '../../widgets/round_phase_bar.dart';
 import '../../widgets/message_card.dart';
 import '../../widgets/qr_code_share.dart';
+import '../../widgets/invite_share_sheet.dart';
 import '../rating/rating_screen.dart';
+import '../rating/read_only_results_screen.dart';
 import 'cycle_history_screen.dart';
 import 'other_propositions_screen.dart';
-import 'widgets/convergence_video_card.dart';
 import 'widgets/personal_code_sheet.dart';
 import 'widgets/previous_round_display.dart';
+import 'widgets/matches_rating_panel.dart';
+import 'widgets/host_end_voting_bar.dart';
 import 'widgets/phase_panels.dart';
+import 'widgets/seed_options_dialog.dart';
+import 'widgets/tree_stack_section.dart';
+import '../../config/env_config.dart';
+import '../../config/quick_chat_guard.dart';
 
 const _languageDisplayNames = {
   'en': 'English',
@@ -35,6 +49,19 @@ const _languageDisplayNames = {
   'fr': 'Français',
   'de': 'Deutsch',
 };
+
+/// Whether tapping the round-winner card opens the just-completed round's FULL
+/// rankings (winner + losers) instead of the cycle-history (round-winners)
+/// list. True for instant chats (`confirmationRounds == 1`) AND for all quick
+/// chats (`maxCycles == 1`) — even convergence ones — because a quick chat is
+/// too short to have a multi-cycle history worth browsing; the group just
+/// wants the full results of the round they finished. Only full-wizard
+/// multi-cycle chats keep the cycle-history view on tap.
+bool winnerTapShowsRoundResults({
+  required int confirmationRounds,
+  required int? maxCycles,
+}) =>
+    confirmationRounds == 1 || maxCycles == 1;
 
 class ChatScreen extends ConsumerStatefulWidget {
   final Chat chat;
@@ -53,6 +80,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   int _currentWinnerIndex = 0;
   int? _lastAutoNavigatedRoundId; // Track to auto-navigate to rating screen once per round
   bool _isChatScreenTopmost = true; // Only auto-open rating if chat screen is visible
+  // RT-RACE-DEBUG: previous bar values, used to log only on change.
+  // Remove fields together with the call site before merge.
+  int? _rtRaceLastBarPercent;
+  RoundPhase? _rtRaceLastBarPhase;
+  int? _rtRaceLastBarRoundId;
   bool _initialPhaseRecorded = false; // Whether we've recorded the phase on first load
   RoundPhase? _phaseOnOpen; // The phase when user first opened this screen
 
@@ -70,10 +102,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   // Prevent duplicate submissions from rapid double-clicks
   bool _isSubmitting = false;
+  // Guards the host Start button against a double-fire (the cause of duplicate
+  // cycles/rounds). Set on tap, never reset on success — the waiting panel
+  // (and its button) is replaced by the proposing UI once start lands.
+  bool _isStarting = false;
+
+  /// One-shot guard for the host's seed dialog (see [_maybeShowSeedDialog]).
+  /// SESSION-GLOBAL (static, keyed by chat id), not per-State: the home
+  /// auto-open flow can mount ChatScreen more than once in quick succession,
+  /// and a second mount races the cycle creation (currentRound still null on
+  /// its first bootstrap) — a per-State flag let the dialog show twice.
+  static final Set<int> _seedPromptShownFor = <int>{};
+
+  /// Quick-chat host proposing UI: the share block is the persistent base
+  /// layer; the host's own input is behind an "Add your own idea" toggle.
+  bool _hostInputExpanded = false;
   bool _isSkipping = false;
 
   // Track if we've already navigated away (to prevent double-pop)
   bool _hasNavigatedAway = false;
+
+  // Quick-create preview "Invite others to rank these": disables the CTA
+  // while the real chat is being created so it can't double-fire.
+  bool _isCreatingRealChat = false;
+  bool _isEndingVoting = false;
+
+  /// Lazily-loaded ranking for the inline ended-state leaderboard (matches
+  /// mode). Cached so panel rebuilds don't refetch. See [_loadEndedRanking].
+  Future<List<Proposition>>? _endedRankingFuture;
 
   // Timer to refresh UI when scheduled time arrives
   Timer? _scheduledTimeTimer;
@@ -91,6 +147,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   @override
   void initState() {
     super.initState();
+    // C15 tree mode: entering the chat starts a FRESH walk from position 1.
+    // (The provider deliberately survives in-visit rebuilds — realtime
+    // refreshes must not wipe a built stack — but a new screen entry resets.)
+    if (widget.chat.branchingEnabled) {
+      Future.microtask(() {
+        if (mounted) {
+          ref.read(treeChoicesProvider(widget.chat.id).notifier).state = {};
+          ref.read(treeOpenLevelsProvider(widget.chat.id).notifier).state = {};
+        }
+      });
+    }
+    final analytics = ref.read(analyticsServiceProvider);
+    analytics.logScreenView(screenName: 'chat_detail');
+    analytics.logChatOpened(chatId: widget.chat.id.toString());
     _setupScheduledTimeTimer();
     _setupLifecycleListener();
     final bgUrl = widget.chat.backgroundAudioUrl;
@@ -99,7 +169,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       _bgAudioForDispose = service;
       service.enterChat(bgUrl);
     }
-    if (widget.showShareDialog) {
+    // Preview chats never expose share/invite — suppress the auto-show.
+    if (widget.showShareDialog && !widget.chat.isPreview) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         if (widget.chat.accessMethod == AccessMethod.personalCode) {
@@ -107,7 +178,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           final state = ref.read(chatDetailProvider(_params)).valueOrNull;
           if (state != null) _showPersonalCodeSheet(state);
         } else if (widget.chat.inviteCode != null) {
-          _showQrCode();
+          _showQrCode(auto: true);
         }
       });
     }
@@ -165,6 +236,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         chatId: widget.chat.id,
         showPreviousResults: widget.chat.showPreviousResults,
       );
+
+  /// The authoritative rating mode for this chat. `widget.chat` can be a stale
+  /// snapshot from the Home dashboard list — `get_my_chats_dashboard` returns
+  /// an explicit column list that omits `rating_mode`, so `Chat.fromJson`
+  /// defaults it to 'grid'. The bootstrap RPC (`state.chat`) carries the real
+  /// value via `to_jsonb(c.*)`, so prefer it; fall back to `widget.chat` before
+  /// the bootstrap lands. Without this, a matches chat's results render the
+  /// 0–100 grid instead of the ranked view.
+  String get _effectiveRatingMode =>
+      ref.read(chatDetailProvider(_params)).valueOrNull?.chat?.ratingMode ??
+      widget.chat.ratingMode;
 
   Future<void> _submitProposition() async {
     if (_propositionController.text.trim().isEmpty) return;
@@ -228,6 +310,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Future<void> _skipProposing() async {
     if (_isSkipping) return;
+    // Skipping proposing opts the user out of the round (no idea submitted),
+    // so confirm first — same treatment as the matches "Done" leave action.
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Skip this round?'),
+        content: const Text("You won't submit an idea this round."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
     setState(() => _isSkipping = true);
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
@@ -293,6 +395,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.skipRating();
+      // Instant-ranking chats finalize the moment the last rater is done — nudge
+      // the timer processor so the result isn't delayed to the next cron tick.
+      if (_isInstantRanking) {
+        await ref.read(chatServiceProvider).triggerProcessTimers();
+      }
     } catch (e) {
       if (mounted) {
         final l10n = AppLocalizations.of(context);
@@ -332,12 +439,404 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     });
   }
 
+  // ---- Quick-create (instant ranking) flow helpers -------------------------
+  //
+  // These are all gated by the caller on the quick-create conditions
+  // (confirmationRoundsRequired == 1, isPreview, endedAt != null). They are
+  // inert for normal grid/convergence chats.
+
+  /// True when this chat is an "instant ranking" quick-create chat:
+  /// exactly ONE round per cycle. For these, after the single round the chat
+  /// ends and we jump straight to the full rankings (skipping cycle history).
+  bool get _isInstantRanking => widget.chat.confirmationRoundsRequired == 1;
+
+  /// Tapping the round-winner card jumps straight to the just-completed
+  /// round's FULL rankings (winner + losers) instead of opening the
+  /// cycle-history (round-winners) list. See [winnerTapShowsRoundResults].
+  bool get _winnerTapShowsRoundResults => winnerTapShowsRoundResults(
+        confirmationRounds: widget.chat.confirmationRoundsRequired,
+        maxCycles: widget.chat.maxCycles,
+      );
+
+  /// Resolve the just-completed round (id + display number) from state for the
+  /// instant-ranking flow. Prefers `previousRoundWinners` (carries the winning
+  /// round's id); falls back to the current round when it's the one that just
+  /// resolved. Returns null if no completed round can be sourced from state.
+  ({int roundId, int roundNumber})? _completedRoundFromState(
+      ChatDetailState? state) {
+    if (state == null) return null;
+    final winners = state.previousRoundWinners;
+    if (winners.isNotEmpty) {
+      final roundId = winners.first.roundId;
+      // previousRoundWinners don't carry a customId; the current round's
+      // customId (if present) is the same round in the single-round case,
+      // otherwise fall back to 1 (instant chats only ever have round 1).
+      final number = state.currentRound?.customId ?? 1;
+      return (roundId: roundId, roundNumber: number);
+    }
+    // No winners list yet — fall back to a completed current round.
+    final round = state.currentRound;
+    if (round != null && round.winningPropositionId != null) {
+      return (roundId: round.id, roundNumber: round.customId);
+    }
+    return null;
+  }
+
+  /// Reusable results loader: fetches the round's propositions (pre-sorted by
+  /// finalRating desc by the service) + rater count, then pushes the
+  /// read-only full-rankings screen. Mirrors the loader in
+  /// CycleHistoryScreen._openRoundResults.
+  Future<void> _openRoundResults(int roundId, int roundNumber) async {
+    final svc = ref.read(propositionServiceProvider);
+    final lang = ref.read(localeProvider).languageCode;
+    final results = await Future.wait([
+      svc.getPropositionsWithRatings(roundId, languageCode: lang),
+      svc.getRaterCount(roundId),
+    ]);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ReadOnlyResultsScreen(
+          propositions: results[0] as List<Proposition>,
+          roundNumber: roundNumber,
+          roundId: roundId,
+          ratingMode: _effectiveRatingMode,
+          raterCount: results[1] as int,
+        ),
+      ),
+    );
+  }
+
+  /// Open the full rankings for the finished round. Resolves the round id from
+  /// state when present, else queries the DB — an ENDED chat's bootstrap is empty
+  /// (no active cycle), so state alone can't supply the completed round.
+  Future<void> _resolveAndOpenResults(ChatDetailState? state) async {
+    var completed = _completedRoundFromState(state);
+    if (completed == null) {
+      final latest =
+          await ref.read(chatServiceProvider).getLatestRoundForChat(widget.chat.id);
+      if (latest != null) {
+        completed = (roundId: latest.id, roundNumber: latest.customId);
+      }
+    }
+    if (completed == null || !mounted) return;
+    // Aha/value-delivered moment: the group's ranked outcome is about to be on
+    // screen. Fires for every chat type (quick + full wizard) through this one
+    // funnel — segmentable by rating_mode / is_quick_chat / round_number.
+    ref.read(analyticsServiceProvider).logResultsViewed(
+          chatId: widget.chat.id.toString(),
+          roundNumber: completed.roundNumber,
+          ratingMode: _effectiveRatingMode,
+          isQuickChat: widget.chat.maxCycles == 1,
+        );
+    await _openRoundResults(completed.roundId, completed.roundNumber);
+  }
+
+  /// Resolve the completed round (state → DB fallback) and fetch its
+  /// propositions, pre-sorted desc by finalRating — the data for the inline
+  /// ended-state leaderboard. Returns empty if no completed round resolves.
+  Future<List<Proposition>> _loadEndedRanking(ChatDetailState? state) async {
+    var completed = _completedRoundFromState(state);
+    if (completed == null) {
+      final latest = await ref
+          .read(chatServiceProvider)
+          .getLatestRoundForChat(widget.chat.id);
+      if (latest != null) {
+        completed = (roundId: latest.id, roundNumber: latest.customId);
+      }
+    }
+    if (completed == null) return const [];
+    final lang = ref.read(localeProvider).languageCode;
+    return ref
+        .read(propositionServiceProvider)
+        .getPropositionsWithRatings(completed.roundId, languageCode: lang);
+  }
+
+  /// Host ends the rating phase NOW (real quick-create chats): confirm the
+  /// terminal action, tally votes as they stand via host_end_voting (which
+  /// locks in the winner and ends the chat), then open the rankings — the
+  /// button promised "show results", so we deliver them, not the ended panel.
+  Future<void> _endVoting(ChatDetailState state) async {
+    if (_isEndingVoting) return;
+    // Confirm ONLY when ending EARLY — i.e. people who are present haven't
+    // finished voting and would be cut off. When everyone present is done
+    // (any count, including solo), the host's explicit tap is enough; *not*
+    // tapping is how they wait for more. We deliberately don't surface WHICH
+    // people are outstanding — naming stragglers is the social pressure
+    // OneMind avoids; the count is all the host needs to decide.
+    final eligible = state.matchesEligibleRaters;
+    final done = state.matchesDoneRaters;
+    final endingEarly = eligible > 0 && done < eligible;
+    if (endingEarly) {
+      final outstanding = eligible - done;
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('End voting early?'),
+          content: Text(
+            "$outstanding of $eligible here ${outstanding == 1 ? "hasn't" : "haven't"} "
+            'voted yet. End now and the result is final — their votes won\'t '
+            "count, and this can't be undone.",
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Keep voting open'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(ctx).pop(true),
+              child: const Text('End anyway'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    setState(() => _isEndingVoting = true);
+    try {
+      await ref.read(chatServiceProvider).hostEndVoting(widget.chat.id);
+      ref.read(analyticsServiceProvider).logQuickCreateVotingEnded();
+      if (!mounted) return;
+      // Stay in the chat — the ended-matches body already renders the ranked
+      // leaderboard (Question → results). Pushing a separate results screen on
+      // top would be redundant; just refresh into the ended state.
+      ref.read(chatDetailProvider(_params).notifier).refresh(silent: true);
+    } catch (e) {
+      if (mounted) context.showErrorMessage('Could not end voting: $e');
+    } finally {
+      if (mounted) setState(() => _isEndingVoting = false);
+    }
+  }
+
+  /// Preview "Invite others to rank these": re-creates a REAL (non-preview)
+  /// chat from the same options and seeds the same prioritization round, then
+  /// replaces the current preview screen with the real chat (which shows the
+  /// share button).
+  Future<void> _createRealChatFromPreview(ChatDetailState state) async {
+    if (_isCreatingRealChat) return;
+    setState(() => _isCreatingRealChat = true);
+    try {
+      final chatService = ref.read(chatServiceProvider);
+      final auth = ref.read(authServiceProvider);
+      await auth.ensureSignedIn();
+      // Name gate: stored display name, or prompt (never auto-generated).
+      if (!mounted) return;
+      final hostName = await ensureDisplayNameInteractive(context, ref);
+      if (hostName == null) {
+        setState(() => _isCreatingRealChat = false);
+        return;
+      }
+      final participant = ref.read(participantServiceProvider);
+
+      // GROUP path (the preview used AI agents to stand in for participants): the
+      // real run is humans-only — no agents, no seeded options. Real people propose
+      // ideas, then everyone ranks them. Starts once a few participants have joined.
+      if (widget.chat.enableAgents) {
+        final real = await chatService.createChat(
+          name: widget.chat.name,
+          initialMessage: widget.chat.initialMessage,
+          accessMethod: AccessMethod.code,
+          requireAuth: false,
+          requireApproval: false,
+          startMode: StartMode.auto,
+          autoStartParticipantCount: 3, // start when host + ~2 invitees are in
+          hostDisplayName: hostName,
+          proposingDurationSeconds: 86400,
+          ratingDurationSeconds: 86400,
+          proposingMinimum: 3,
+          ratingMinimum: 2,
+          enableAiParticipant: false,
+          confirmationRoundsRequired: 1,
+          showPreviousResults: true,
+          propositionsPerUser: 1,
+          ratingMode: 'matches',
+          matchObjective: 'winner_only',
+          allowSkipProposing: true,
+          allowSkipRating: true,
+          maxCycles: 1,
+          isPreview: false,
+        );
+        await participant.joinChat(
+            chatId: real.id, displayName: hostName, isHost: true);
+        ref.read(analyticsServiceProvider).logQuickCreateChatCreated(
+              fork: 'group', mode: 'real', source: 'invite_from_preview');
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => ChatScreen(chat: real, showShareDialog: true)),
+        );
+        return;
+      }
+
+      // OPTIONS path: clone the same option list into a fresh real chat to rank.
+      // State.propositions is populated in-session, but an ended chat's bootstrap
+      // is empty — fall back to fetching the completed round's propositions.
+      var options = state.propositions
+          .map((p) => (p.displayContent).trim())
+          .where((s) => s.isNotEmpty)
+          .toList();
+      if (options.length < 2) {
+        final latest = await chatService.getLatestRoundForChat(widget.chat.id);
+        if (latest != null) {
+          final props = await ref
+              .read(propositionServiceProvider)
+              .getPropositionsWithRatings(latest.id,
+                  languageCode: ref.read(localeProvider).languageCode);
+          options = props
+              .map((p) => p.displayContent.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
+        }
+      }
+      if (options.length < 2) {
+        throw 'Could not find the options to rank';
+      }
+
+      final real = await chatService.createChat(
+        name: widget.chat.name,
+        initialMessage: widget.chat.initialMessage,
+        accessMethod: AccessMethod.code,
+        requireAuth: false,
+        requireApproval: false,
+        startMode: StartMode.manual,
+        hostDisplayName: hostName,
+        proposingDurationSeconds: 86400,
+        ratingDurationSeconds: 86400,
+        proposingMinimum: 3,
+        ratingMinimum: 2,
+        enableAiParticipant: false,
+        confirmationRoundsRequired: 1,
+        showPreviousResults: true,
+        propositionsPerUser: 1,
+        ratingMode: 'matches',
+        matchObjective: 'full_rank',
+        allowSkipProposing: true,
+        allowSkipRating: true,
+        maxCycles: 1,
+        isPreview: false,
+      );
+      await participant.joinChat(
+        chatId: real.id,
+        displayName: hostName,
+        isHost: true,
+      );
+      await chatService.seedPrioritizationRound(
+        chatId: real.id,
+        options: options,
+        // No timer: the real shared chat shows no countdown. It finalizes when the
+        // host taps "End voting & show results" (host_end_voting). A clock would
+        // just confuse invitees ("why is this on a deadline?").
+        ratingDurationSeconds: null,
+      );
+      ref.read(analyticsServiceProvider).logQuickCreateChatCreated(
+            fork: 'options', mode: 'real', source: 'invite_from_preview');
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => ChatScreen(chat: real, showShareDialog: true)),
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isCreatingRealChat = false);
+        context.showErrorMessage('Could not create chat: $e');
+      }
+    }
+  }
+
   Future<void> _advanceToRating() async {
     try {
       final notifier = ref.read(chatDetailProvider(_params).notifier);
       await notifier.advanceToRating(widget.chat);
+      if (widget.chat.maxCycles == 1) {
+        ref.read(analyticsServiceProvider).logQuickChatAdvanced();
+      }
     } catch (e) {
       if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        context.showErrorMessage(l10n.failedToAdvancePhase(e.toString()));
+      }
+    }
+  }
+
+  /// One-time host prompt for a fresh group quick chat (no cycle yet):
+  /// "Already have the options?" Seed → seed_prioritization_round → straight
+  /// to voting. Dismiss (any path) → start the proposing phase (the group
+  /// supplies the ideas). Replaces the old /create fork screen AND the
+  /// waiting-state Start tap for quick chats — the dialog always resolves
+  /// into a started phase.
+  ///
+  /// Guarded by [_seedPromptHandled] (one shot per screen mount) and the
+  /// no-cycle condition: once resolved a cycle exists, so a refresh or
+  /// re-mount can never re-show it. A host who closed the tab mid-dialog
+  /// gets it again on return — they never answered.
+  void _maybeShowSeedDialog(ChatDetailState state) {
+    if (_seedPromptShownFor.contains(widget.chat.id)) return;
+    final chat = state.chat ?? widget.chat;
+    if (chat.maxCycles != 1 ||
+        chat.startMode != StartMode.manual ||
+        chat.isPreview) {
+      return;
+    }
+    if (state.myParticipant?.isHost != true) return;
+    if (state.currentRound != null) return; // already started or seeded
+    if ((state.chat?.endedAt ?? widget.chat.endedAt) != null) return;
+    _seedPromptShownFor.add(widget.chat.id);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final analytics = ref.read(analyticsServiceProvider);
+      analytics.logSeedDialogShown();
+      final question = (state.chat?.displayInitialMessage ??
+              widget.chat.displayInitialMessage)
+          .trim();
+      final result = await SeedOptionsDialog.show(
+        context,
+        question: question.isNotEmpty ? question : widget.chat.displayName,
+      );
+      if (!mounted) return;
+      final options = result.options;
+      if (options != null && options.length >= 2) {
+        analytics.logSeedDialogSeeded(optionCount: options.length);
+        try {
+          await ref.read(chatServiceProvider).seedPrioritizationRound(
+                chatId: widget.chat.id,
+                options: options,
+                // No timer: the real shared chat shows no countdown and
+                // finalizes via host_end_voting.
+                ratingDurationSeconds: null,
+              );
+          await ref.read(chatDetailProvider(_params).notifier).refresh();
+        } catch (e) {
+          if (!mounted) return;
+          // Most likely a cycle already exists (stale state / double fire).
+          // Refresh to whatever the server says; worst case the host types
+          // their options as ideas in proposing.
+          ref.read(chatDetailProvider(_params).notifier).refresh();
+          final l10n = AppLocalizations.of(context);
+          context.showErrorMessage(l10n.failedToAdvancePhase(e.toString()));
+        }
+      } else {
+        analytics.logSeedDialogDismissed(
+            method: result.dismissMethod ?? 'barrier_or_back');
+        await _startChat();
+      }
+    });
+  }
+
+  /// Host (manual mode) starts the chat: creates the first cycle + proposing
+  /// round with no timer. Used by the Start button in the waiting state.
+  Future<void> _startChat() async {
+    if (_isStarting) return;
+    setState(() => _isStarting = true);
+    try {
+      final notifier = ref.read(chatDetailProvider(_params).notifier);
+      await notifier.startPhase(widget.chat);
+      if (widget.chat.maxCycles == 1) {
+        ref.read(analyticsServiceProvider).logQuickChatStarted();
+      }
+      // Intentionally do NOT reset _isStarting on success: the chat is now in
+      // proposing, the waiting panel is gone, and keeping it set closes the
+      // window where a stale-state re-tap could create a second cycle.
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isStarting = false);
         final l10n = AppLocalizations.of(context);
         context.showErrorMessage(l10n.failedToAdvancePhase(e.toString()));
       }
@@ -735,14 +1234,43 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // while user is viewing the chat screen (not cycle history, results, etc.)
     if (currentRound != null &&
         currentRound.phase == RoundPhase.rating &&
+        state != null) {
+      // RT-RACE-DEBUG: log every guard evaluation while phase=rating so
+      // we can see hasSkippedRating / hasStartedRating values at the
+      // exact moment auto-nav decided. Remove with field decls before
+      // merge.
+      PerfLogger.start(
+        'rt_race.autonav_check',
+        chatId: state.chat?.id,
+        roundId: currentRound.id,
+        payload: {
+          'has_rated': state.hasRated,
+          'has_started': state.hasStartedRating,
+          'has_skipped': state.hasSkippedRating,
+          'topmost': _isChatScreenTopmost,
+          'last_nav': _lastAutoNavigatedRoundId,
+          'will_fire': !state.hasRated &&
+              !state.hasStartedRating &&
+              !state.hasSkippedRating &&
+              _isChatScreenTopmost &&
+              _lastAutoNavigatedRoundId != currentRound.id,
+        },
+      );
+    }
+    if (currentRound != null &&
+        currentRound.phase == RoundPhase.rating &&
         state != null &&
+        // Matches mode rates inline in the bottom panel — no full-screen grid.
+        state.chat?.ratingMode != 'matches' &&
         !state.hasRated &&
         !state.hasStartedRating &&
         !state.hasSkippedRating &&
         _isChatScreenTopmost &&
         _lastAutoNavigatedRoundId != currentRound.id) {
       _lastAutoNavigatedRoundId = currentRound.id;
-      // Use post-frame callback to avoid navigation during build
+      PerfLogger.start('rt_race.autonav_fire',
+          chatId: state.chat?.id, roundId: currentRound.id);
+      // Use post-frame callback to avoid navigation during build.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _openRatingScreen(state);
@@ -756,6 +1284,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         if (mounted) _showLanguagePickerDialog(state!);
       });
     }
+
+    // (No auto-open of results when an instant-ranking chat ends — the user
+    // reaches the full rankings via the explicit "See full rankings" button or
+    // by tapping the winner card. Auto-navigating away was too jarring.)
 
     // Check if chat was deleted and navigate back (only if we haven't already navigated)
     final isDeleted = stateAsync.valueOrNull?.isDeleted ?? false;
@@ -796,13 +1328,31 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         titleSpacing: 4,
-        title: Text(
-          stateAsync.valueOrNull?.chat?.displayName ?? widget.chat.displayName,
-          maxLines: 2,
-          softWrap: true,
-          overflow: TextOverflow.visible,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        // Quick chats are sealed single-use tools — no "back to my dashboard".
+        // The host's back would go to the create form; a joiner's back lands on
+        // /home (the dashboard they should never see). The forward exit is
+        // "Create another" at the end. (Browser/system back still works.)
+        automaticallyImplyLeading: widget.chat.maxCycles != 1,
+        // Quick chats (maxCycles == 1) auto-name the chat after the question,
+        // which then duplicates the question already shown in the topic card.
+        // Show the OneMind wordmark instead: de-dupes, and brands every shared
+        // / screenshotted quick chat. The question stays prominent in the card.
+        title: widget.chat.maxCycles == 1
+            ? Text(
+                'OneMind',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              )
+            : Text(
+                stateAsync.valueOrNull?.chat?.displayName ??
+                    widget.chat.displayName,
+                maxLines: 2,
+                softWrap: true,
+                overflow: TextOverflow.visible,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
         actions: stateAsync.whenOrNull(
               data: (state) {
                 final isHost = state.myParticipant?.isHost == true;
@@ -810,7 +1360,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final pendingRequestCount = state.pendingJoinRequests.length;
                 final chat = state.chat ?? widget.chat;
                 final isPersonalCode = chat.accessMethod == AccessMethod.personalCode;
-                final hasInviteCode = widget.chat.inviteCode != null && !isPersonalCode;
+                // Preview chats never show share/invite (they're solo,
+                // ephemeral). Only the real chat created via "Invite others"
+                // surfaces the share button.
+                final hasInviteCode = widget.chat.inviteCode != null &&
+                    !isPersonalCode &&
+                    !widget.chat.isPreview;
                 final hasDescription =
                     (chat.displayDescription)?.trim().isNotEmpty == true;
 
@@ -820,6 +1375,47 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 final hasLanguageChoice = availableLanguages.length > 1;
                 final currentLanguageCode = state.viewingLanguageCode ??
                     ref.read(localeProvider).languageCode;
+
+                // Quick chats (maxCycles == 1) are sealed, single-use tools:
+                // one action (Invite) + a glanceable count. No participant
+                // roster (random usernames make names meaningless — only the
+                // count is useful), and no overflow (pause/delete/leave don't
+                // apply to a throwaway chat). See the participants-sheet comment.
+                if (chat.maxCycles == 1) {
+                  final cs = Theme.of(context).colorScheme;
+                  return <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Center(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.groups,
+                                size: 20, color: cs.onSurfaceVariant),
+                            const SizedBox(width: 4),
+                            Text('${state.activeParticipantCount}',
+                                style: Theme.of(context).textTheme.titleSmall),
+                          ],
+                        ),
+                      ),
+                    ),
+                    if (hasInviteCode)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: TextButton.icon(
+                          key: const Key('share-button'),
+                          onPressed: () {
+                            ref
+                                .read(analyticsServiceProvider)
+                                .logQuickChatShare(source: 'invite');
+                            _showQrCode();
+                          },
+                          icon: const Icon(Icons.ios_share, size: 18),
+                          label: const Text('Invite'),
+                        ),
+                      ),
+                  ];
+                }
 
                 return <Widget>[
                   // Participants button — visible for all chats including
@@ -833,7 +1429,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       child: const Icon(Icons.groups),
                     ),
                     tooltip: AppLocalizations.of(context).participants,
-                    onPressed: () => _showParticipantsSheet(state),
+                    onPressed: () => _showParticipantsSheet(),
                   ),
                   // Share button — visible when chat has invite code (not for personal_code)
                   if (hasInviteCode)
@@ -995,17 +1591,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             const [],
       ),
       body: stateAsync.when(
-        data: (state) => AnimatedOpacity(
+        data: (state) {
+          _maybeShowSeedDialog(state);
+          return AnimatedOpacity(
           opacity: state.isTranslating ? 0.4 : 1.0,
           duration: const Duration(milliseconds: 200),
           child: Column(
           children: [
-            // Round status bar — sits directly under the AppBar with a
-            // phase-colored accent strip above and below. The strip's
-            // color signals the active phase on both edges of the bar.
-            PhaseAccentStrip(phase: state.currentRound?.phase),
-            _buildTopPhaseBar(state),
-            PhaseAccentStrip(phase: state.currentRound?.phase),
+            // Round status region under the AppBar. Regular chats get the full
+            // status bar (round #, phase, participation, timer) framed by
+            // phase-colored accent strips; quick-create matches chats (host-
+            // controlled, no timer) get a minimal treatment. See
+            // _buildTopStatusRegion.
+            _buildTopStatusRegion(state),
             // Note: HostPausedBanner used to render here; it now replaces the
             // bottom phase panel entirely (see _buildCurrentPhasePanel).
             // Chat History
@@ -1017,6 +1615,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                   final hasInitialMessage = initialMessage.trim().isNotEmpty;
 
                   final isHost = state.myParticipant?.isHost == true;
+                  // Matches (survey) chats that have ended: the ranked
+                  // leaderboard below is the payoff and already crowns #1, so a
+                  // consensus "Winner #1" card here would just duplicate it.
+                  final isEndedMatches =
+                      (state.chat?.endedAt ?? widget.chat.endedAt) != null &&
+                          widget.chat.ratingMode == 'matches';
+
+                  // C15 tree mode: the walkable stack REPLACES the blue
+                  // winner chain (position 1 opens as options; the user
+                  // selects forward). See TreeStackSection.
+                  final treeMode = (state.chat?.branchingEnabled ??
+                          widget.chat.branchingEnabled) &&
+                      state.myParticipant != null &&
+                      (state.consensusItems.isNotEmpty ||
+                          state.currentRound != null);
+                  // Fresh branching chat (no winners yet): the tree section
+                  // renders the live ROOT round as position 1's contest.
+                  final treeRootLive =
+                      treeMode && state.consensusItems.isEmpty;
 
                   final messageChildren = [
                       // Always show initial message as the opening prompt
@@ -1025,34 +1642,50 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         const SizedBox(height: 16),
                       ],
 
-                      // Consensus Items
-                      ...state.consensusItems.asMap().entries.expand((entry) {
+                      // Consensus Items (suppressed for ended matches surveys —
+                      // the leaderboard below already shows the winner at #1).
+                      if (!isEndedMatches && !treeMode)
+                        ...state.consensusItems.asMap().entries.expand((entry) {
                         final item = entry.value;
                         final isLastItem = entry.key == state.consensusItems.length - 1;
                         final card = GestureDetector(
-                          onTap: () => _pushScreen(
-                            MaterialPageRoute(
-                              builder: (_) => CycleHistoryScreen(
-                                cycleId: item.cycleId,
-                                convergenceContent: item.displayContent,
-                                convergenceNumber: entry.key + 1,
+                          onTap: () {
+                            // Instant / quick chats (one round per cycle, or a
+                            // single cycle) skip the cycle-history list and jump
+                            // straight to the winning round's full proposition
+                            // rankings — there's no multi-cycle history worth
+                            // browsing.
+                            if (_winnerTapShowsRoundResults) {
+                              _openRoundResults(item.proposition.roundId, 1);
+                              return;
+                            }
+                            _pushScreen(
+                              MaterialPageRoute(
+                                builder: (_) => CycleHistoryScreen(
+                                  cycleId: item.cycleId,
+                                  convergenceContent: item.displayContent,
+                                  convergenceNumber: entry.key + 1,
+                                  confirmationRoundsRequired:
+                                      widget.chat.confirmationRoundsRequired,
+                                  ratingMode: _effectiveRatingMode,
+                                  chatId: widget.chat.id,
+                                ),
                               ),
-                            ),
-                          ),
+                            );
+                          },
                           child: MessageCard(
-                            label: l10n.convergenceNumber(entry.key + 1),
+                            label: widget.chat.confirmationRoundsRequired == 1
+                                ? l10n.winnerNumber(entry.key + 1)
+                                : l10n.convergenceNumber(entry.key + 1),
                             content: item.displayContent,
                             isPrimary: true,
                             isConsensus: !item.isHostOverride,
-                            mediaAbove: item.videoUrl != null
-                                ? ConvergenceVideoCard(
-                                    videoUrl: item.videoUrl!,
-                                    chatId: widget.chat.id.toString(),
-                                    source: 'cycle_winner',
-                                    cycleId: item.cycleId,
-                                    scrubBarColor: Theme.of(bodyContext).colorScheme.primary,
-                                  )
-                                : null,
+                            // Convergence videos removed from chat display: cold
+                            // users don't expect them and the full-screen wall
+                            // buried the propose action. See activation handoff.
+                            mediaAbove: null,
+                            // Speak-aloud (TTS) button under winners — shown
+                            // EVERYWHERE (accessibility: read the winner aloud).
                             trailing: TtsButton(
                               text: item.displayContent,
                               audioUrl: item.audioUrl,
@@ -1133,12 +1766,48 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                         return widgets;
                       }),
 
-                      // Inline Current Leader (rating phase), Previous Winner, or placeholder
-                      _buildLeaderOrWinnerOrPlaceholder(state),
+                      // C15 tree mode: the walkable stack, starting at
+                      // position 1's options. While a ROOT round is still
+                      // live (transitional: it predates the branching flip),
+                      // its panel stays reachable below the stack so voting
+                      // on it isn't hidden.
+                      if (treeMode)
+                        TreeStackSection(
+                          key: ValueKey(
+                              'tree_${widget.chat.id}_${state.consensusItems.length}'),
+                          chatId: widget.chat.id,
+                          myParticipantId: state.myParticipant!.id,
+                          positions: state.consensusItems
+                              .map((item) => TreePosition(
+                                    roundId: item.proposition.roundId,
+                                    winnerId: item.proposition.id,
+                                  ))
+                              .toList(),
+                          liveRootPanel: (!treeRootLive &&
+                                  state.currentRound != null &&
+                                  state.currentRound!.completedAt == null)
+                              ? _buildLeaderOrWinnerOrPlaceholder(state)
+                              : null,
+                          liveRootRoundId: treeRootLive
+                              ? state.currentRound!.id
+                              : null,
+                          liveRootPhase: treeRootLive
+                              ? state.currentRound!.phase.name
+                              : null,
+                        )
+                      else
+                        // Inline Current Leader (rating phase), Previous Winner, or placeholder
+                        _buildLeaderOrWinnerOrPlaceholder(state),
                   ];
 
+                  // Tree mode anchors the column to the BOTTOM: the inline
+                  // composer/duel sits at the bottom of the screen on open
+                  // (chat idiom — reverse:true already handles the overflow
+                  // case; bottomCenter handles short content).
                   return Align(
-                    alignment: Alignment.topCenter,
+                    alignment: treeMode
+                        ? Alignment.bottomCenter
+                        : Alignment.topCenter,
                     child: SingleChildScrollView(
                       reverse: true,
                       padding: const EdgeInsets.all(16),
@@ -1151,10 +1820,18 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
 
-            // Bottom Action Area
-            _buildBottomArea(state),
+            // Bottom Action Area. Hidden for a fresh branching chat — the
+            // tree section renders the root round's feed/composer/duel
+            // inline, and the classic bottom panel would duplicate it.
+            if (!((state.chat?.branchingEnabled ??
+                        widget.chat.branchingEnabled) &&
+                    state.consensusItems.isEmpty &&
+                    state.myParticipant != null &&
+                    state.currentRound != null))
+              _buildBottomArea(state),
           ],
-        )),
+        ));
+        },
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => ErrorView.fromError(
           error,
@@ -1206,25 +1883,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
 
   Widget _buildInitialMessageCard(AppLocalizations l10n, String initialMessage, bool isHost) {
     final audioUrl = widget.chat.initialMessageAudioUrl;
-    final videoUrl = widget.chat.initialMessageVideoUrl;
+    // Matches (survey) mode: the question IS the content, so drop the chat-era
+    // "Initial Message" label — it reads as jargon on a one-shot survey.
+    final isMatches = widget.chat.ratingMode == 'matches';
     final Widget card = MessageCard(
-      label: l10n.initialMessageLabel,
+      label: isMatches ? null : l10n.initialMessageLabel,
       content: initialMessage,
       isPrimary: true,
-      mediaAbove: videoUrl != null
-          ? ConvergenceVideoCard(
-              key: ValueKey('initial-video-${widget.chat.id}'),
-              videoUrl: videoUrl,
+      // Convergence videos removed from chat display. See activation handoff.
+      mediaAbove: null,
+      // Quick chats (maxCycles == 1) hide the speak-aloud button — it's chat-era
+      // chrome that doesn't belong on a lean one-shot decision.
+      trailing: widget.chat.maxCycles == 1
+          ? null
+          : TtsButton(
+              text: initialMessage,
+              audioUrl: audioUrl,
               chatId: widget.chat.id.toString(),
               source: 'initial_message',
-            )
-          : null,
-      trailing: TtsButton(
-        text: initialMessage,
-        audioUrl: audioUrl,
-        chatId: widget.chat.id.toString(),
-        source: 'initial_message',
-      ),
+            ),
     );
 
     if (!isHost) return Center(child: card);
@@ -1259,7 +1936,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(l10n.deleteConsensusTitle(number)),
+        title: Text(widget.chat.confirmationRoundsRequired == 1
+            ? l10n.deleteWinnerTitle(number)
+            : l10n.deleteConsensusTitle(number)),
         content: Text(l10n.deleteConsensusMessage),
         actions: [
           TextButton(
@@ -1432,6 +2111,57 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     }
   }
 
+  /// The top status region. Quick-create matches chats (host-controlled, no
+  /// timer) are kept minimal — the round #, timer, and participation bar are
+  /// noise there (single cycle, no countdown, and completion is already on the
+  /// host's "Show results" button + the per-match counter). During PROPOSING we
+  /// show a lean "Collecting ideas" label so the group knows ideas come before
+  /// voting; RATING is self-evident from the voting panel, so nothing. Every
+  /// other chat keeps the full bar framed by phase-colored accent strips.
+  Widget _buildTopStatusRegion(ChatDetailState state) {
+    final round = state.currentRound;
+    final chat = state.chat ?? widget.chat;
+    final isMinimal = chat.ratingMode == 'matches' &&
+        round != null &&
+        round.phaseEndsAt == null &&
+        (round.phase == RoundPhase.proposing ||
+            round.phase == RoundPhase.rating);
+    if (isMinimal) {
+      return round!.phase == RoundPhase.proposing
+          ? _buildMinimalProposingLabel()
+          : const SizedBox.shrink();
+    }
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        PhaseAccentStrip(phase: round?.phase),
+        _buildTopPhaseBar(state),
+        PhaseAccentStrip(phase: round?.phase),
+      ],
+    );
+  }
+
+  /// Lean phase anchor for the quick-create group chat's proposing phase.
+  Widget _buildMinimalProposingLabel() {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lightbulb_outline,
+                size: 16, color: theme.colorScheme.onSurfaceVariant),
+            const SizedBox(width: 6),
+            Text('Collecting ideas',
+                style: theme.textTheme.labelMedium
+                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Round status bar rendered directly under the AppBar. Visible only
   /// when an active round is in proposing or rating phase. Returns an
   /// empty widget otherwise (waiting / no round / etc).
@@ -1442,35 +2172,78 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final isRating = currentRound.phase == RoundPhase.rating;
     if (!isProposing && !isRating) return const SizedBox.shrink();
     final chat = state.chat ?? widget.chat;
-    int? participationPercent;
-    if (isProposing) {
-      // A participant counts as "done" for participation % if they
-      // submitted, skipped, OR affirmed. Use a Set union so a participant
-      // who somehow appears in two paths (e.g., a server-side race) is
-      // only counted once.
-      final donePIds = <int>{
-        ...state.propositions
-            .where((p) => p.participantId != null && !p.isCarriedForward)
-            .map((p) => p.participantId!),
-        ...state.participantsWhoSkippedProposing,
-        ...state.participantsWhoAffirmed,
-      };
-      final proposingDone = donePIds.length;
-      participationPercent = state.participants.isNotEmpty
-          ? (proposingDone * 100 / state.participants.length).round()
-          : 0;
-    } else {
+    // Read directly from the server-computed denormalized column. This
+    // is maintained by triggers in 20260502170000 — the rounds row is
+    // the single source of truth, so all viewers converge to the same
+    // value as the rounds realtime payload arrives. Replaces the prior
+    // local computation which built the percent from N independently-
+    // delivered realtime streams (propositions / round_skips /
+    // rating_skips / affirmations / grid_rankings) and drifted across
+    // viewers when any one stream lagged or dropped events.
+    //
+    // Falls back to local computation only if the server hasn't sent a
+    // value yet (e.g. very old rounds pre-migration backfill, or a
+    // client that received a rounds payload missing the new column).
+    int? participationPercent = currentRound.participationPercent;
+    // Matches rating is the exception to the denormalized column: that column
+    // is grid-based (counts grid_rankings/skips) so it sits at 0 for pairwise
+    // voting AND never moves as pairwise votes/completions arrive. Use the
+    // per-rater matches progress instead — it's kept live by the
+    // rating_completions realtime subscription (no reload needed).
+    if (isRating && chat.ratingMode == 'matches') {
       participationPercent = state.ratingProgressPercent;
+    }
+    if (participationPercent == null) {
+      if (isProposing) {
+        final donePIds = <int>{
+          ...state.propositions
+              .where((p) => p.participantId != null && !p.isCarriedForward)
+              .map((p) => p.participantId!),
+          ...state.participantsWhoSkippedProposing,
+          ...state.participantsWhoAffirmed,
+        };
+        participationPercent = state.participants.isNotEmpty
+            ? (donePIds.length * 100 / state.participants.length).round()
+            : 0;
+      } else {
+        participationPercent = state.ratingProgressPercent;
+      }
+    }
+    // RT-RACE-DEBUG: log every change to the bar value, with phase + round.
+    // Compares against previous logged value to skip rebuild noise.
+    if (participationPercent != _rtRaceLastBarPercent ||
+        currentRound.phase != _rtRaceLastBarPhase ||
+        currentRound.id != _rtRaceLastBarRoundId) {
+      _rtRaceLastBarPercent = participationPercent;
+      _rtRaceLastBarPhase = currentRound.phase;
+      _rtRaceLastBarRoundId = currentRound.id;
+      PerfLogger.start(
+        'rt_race.bar_render',
+        chatId: chat.id,
+        roundId: currentRound.id,
+        payload: {
+          'percent': participationPercent,
+          'phase': currentRound.phase.name,
+          'props': state.propositions.length,
+          'participants': state.participants.length,
+          'rating_skip_count': state.ratingSkipCount,
+          'has_skipped_rating': state.hasSkippedRating,
+        },
+      );
     }
     // When the chat is host-paused mid-round, swap the timer for the
     // "Paused" indicator (matching the in-panel host-paused fallback).
     final isHostPaused = chat.hostPaused;
+    // C15 tree mode: round numbers and root-round participation are
+    // meaningless across parallel subrounds — keep phase tag + countdown.
+    final isTree = chat.branchingEnabled;
     return RoundPhaseBar(
       roundNumber: currentRound.customId,
+      showRoundNumber: !isTree,
       isProposing: isProposing,
       phaseEndsAt: isHostPaused ? null : currentRound.phaseEndsAt,
       onPhaseExpired: _onPhaseExpired,
-      participationPercent: participationPercent,
+      participationPercent: isTree ? null : participationPercent,
       isPaused: isHostPaused,
       // Both edges use phase-colored accent strips rendered by the
       // parent. The bar itself shows no plain dividers.
@@ -1498,16 +2271,34 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
         onTap: currentCycleId != null
-            ? () => _pushScreen(
+            ? () {
+                // Instant ranking / quick chats: skip cycle history, go
+                // straight to the full rankings of the just-completed round.
+                if (_winnerTapShowsRoundResults) {
+                  final state =
+                      ref.read(chatDetailProvider(_params)).valueOrNull;
+                  final completed = _completedRoundFromState(state);
+                  if (completed != null) {
+                    _openRoundResults(
+                        completed.roundId, completed.roundNumber);
+                    return;
+                  }
+                }
+                _pushScreen(
                   MaterialPageRoute(
                     builder: (_) => CycleHistoryScreen(
                       cycleId: currentCycleId,
                       convergenceContent: '...',
                       convergenceNumber: convergenceNumber,
                       showOngoingPlaceholder: false,
+                      confirmationRoundsRequired:
+                          widget.chat.confirmationRoundsRequired,
+                      ratingMode: _effectiveRatingMode,
+                      chatId: widget.chat.id,
                     ),
                   ),
-                )
+                );
+              }
             : null,
         child: UnconstrainedBox(
           child: ConstrainedBox(
@@ -1531,7 +2322,78 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   /// data (current leader, scored propositions, etc.) — exposing it would
   /// let a user who finished rating share their screen with a user who
   /// hasn't proposed/rated yet, which is a cheating vector.
+  /// Manual quick-chat host's "advance proposing -> rating" control. Quick
+  /// chats (maxCycles==1) render a custom proposing UI that doesn't use
+  /// ProposingStatePanel — where the classic advance button lives — so the
+  /// host's advance button has to be wired here, or the host has no way to
+  /// move a group-fork chat from proposing to voting. Uses a high-contrast
+  /// FilledButton (not the near-invisible disabled tonal button) and enables
+  /// once there are >=2 ideas (matches voting needs at least one pair).
+  /// Renders nothing for non-quick chats, non-hosts, auto/timer chats, or
+  /// outside the proposing phase.
+  Widget _buildQuickChatHostAdvance(ChatDetailState state) {
+    final chat = state.chat ?? widget.chat;
+    if (chat.maxCycles != 1) return const SizedBox.shrink();
+    final isHost = state.myParticipant?.isHost == true;
+    final isManual = chat.startMode == StartMode.manual && !chat.isPreview;
+    final inProposing = state.currentRound?.phase == RoundPhase.proposing;
+    if (!isHost || !isManual || !inProposing) return const SizedBox.shrink();
+
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final ideaCount =
+        state.propositions.where((p) => !p.isCarriedForward).length;
+    final ready = ideaCount >= 2;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (!ready)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              // TODO(i18n): move this hint into the arb files.
+              child: Text(
+                ideaCount == 0
+                    ? 'Add an idea, or tap Invite so the group can — 2 needed to start voting'
+                    : 'Tap Invite to get more ideas — $ideaCount so far, 2 needed to start voting',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('quick-chat-advance-to-rating-button'),
+              onPressed: ready ? () => _advanceToRating() : null,
+              icon: const Icon(Icons.how_to_vote),
+              label: Text(l10n.endProposingStartRating),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLeaderOrWinnerOrPlaceholder(ChatDetailState state) {
+    // Ended instant-ranking chat: never show the "waiting for participants"
+    // block (the chat is finished). Show the winner card when we still have it
+    // in-session; otherwise nothing — the bottom ended panel carries the
+    // "See full rankings" / "Invite others" actions.
+    final isEnded = (state.chat?.endedAt ?? widget.chat.endedAt) != null;
+    if (isEnded) {
+      // Matches mode: the full ranked leaderboard is the payoff — render it
+      // here in the body (scrolls with the page, full height for any option
+      // count). #1 carries the trophy, so the separate winner card is dropped.
+      if (widget.chat.ratingMode == 'matches') {
+        return _buildEndedLeaderboard(state);
+      }
+      return state.previousRoundWinners.isNotEmpty
+          ? _buildInlinePreviousWinner(state)
+          : const SizedBox.shrink();
+    }
     // Waiting state (no round, or round in waiting phase with no new
     // submissions yet): show the waiting message inline. The bottom panel
     // goes empty in this case so the user doesn't see two layers of "we
@@ -1547,7 +2409,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // their spectator banner.
     if (state.currentRound?.phase == RoundPhase.rating &&
         state.isMyParticipantFunded) {
-      return _buildInlineRatingAction(state);
+      // Grid mode: replace the cards with the inline Start-Rating action.
+      if (state.chat?.ratingMode != 'matches') {
+        return _buildInlineRatingAction(state);
+      }
+      // Matches mode: the pairwise voting panel lives HERE in the chat scroll
+      // (so it scrolls with the conversation, like the proposing input), and
+      // the bottom panel goes empty. This also avoids the old contradiction
+      // where the scroll showed "your proposition / Waiting for next phase"
+      // while the user was actively voting.
+      final myPid = state.myParticipant?.id;
+      if (myPid != null && !state.hasSkippedRating) {
+        return _buildMatchesRatingPanel(state, myPid);
+      }
+      // Skipped → shared skipped/waiting indicator. (hasRated stays false in
+      // matches mode, so _buildInlineRatingAction lands on the skipped branch.)
+      if (state.hasSkippedRating) {
+        return _buildInlineRatingAction(state);
+      }
+      // No participant id (edge) — show context, not the grid action.
+      if (state.previousRoundWinners.isNotEmpty) {
+        return _buildInlinePreviousWinner(state);
+      }
+      return _buildTopCandidatePlaceholder();
+    }
+    // Quick-chat host during proposing: share-first base layer. The host's
+    // job in this phase is recruiting, not typing — so the share block is
+    // the persistent primary and their own input sits behind an "Add your
+    // own idea" toggle. (H-CONVENER-UI: we used to show the convener the
+    // contributor's screen; chat 465 bailed on exactly that.)
+    {
+      final qcChat = state.chat ?? widget.chat;
+      final isQuickHostProposing = qcChat.maxCycles == 1 &&
+          qcChat.startMode == StartMode.manual &&
+          !qcChat.isPreview &&
+          state.myParticipant?.isHost == true &&
+          state.currentRound?.phase == RoundPhase.proposing;
+      if (isQuickHostProposing) {
+        return _buildQuickHostProposing(state);
+      }
     }
     if (state.previousRoundWinners.isNotEmpty) {
       return _buildInlinePreviousWinner(state);
@@ -1589,6 +2489,46 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chat = state.chat ?? widget.chat;
     if (chat.isPaused) return const SizedBox.shrink();
     return _buildTopCandidatePlaceholder();
+  }
+
+  /// Matches (pairwise) voting panel, rendered inline in the chat scroll so
+  /// it scrolls with the conversation. Self-excludes the user's own
+  /// propositions — unless that leaves fewer than 2 (conditional
+  /// self-inclusion: a 2-prop round is votable by everyone, own idea
+  /// included). On exhaustion marks the rater complete + refreshes so the
+  /// round-status bar and early-advance see them as done.
+  Widget _buildMatchesRatingPanel(ChatDetailState state, int myParticipantId) {
+    final chat = state.chat ?? widget.chat;
+    final nonOwn = state.propositions
+        .where((p) => p.participantId != myParticipantId)
+        .toList();
+    final rateable = nonOwn.length >= 2 ? nonOwn : state.propositions;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: MatchesRatingPanel(
+        key: ValueKey('matches_${state.currentRound!.id}'),
+        roundId: state.currentRound!.id,
+        participantId: myParticipantId,
+        rateable: rateable,
+        objective: chat.matchObjective == 'full_rank'
+            ? MatchObjective.fullRank
+            : MatchObjective.winnerOnly,
+        onSkip: state.canSkipRating ? _skipRating : null,
+        onDone: () async {
+          await ref.read(propositionServiceProvider).markRatingComplete(
+                roundId: state.currentRound!.id,
+                participantId: myParticipantId,
+              );
+          if (chat.maxCycles == 1) {
+            ref.read(analyticsServiceProvider).logQuickChatVoteDone();
+          }
+          // Instant finalize: nudge process-timers so a solo (or last) rater sees
+          // results immediately instead of waiting for the next 60s cron tick.
+          await ref.read(chatServiceProvider).triggerProcessTimers();
+          ref.read(chatDetailProvider(_params).notifier).refresh(silent: true);
+        },
+      ),
+    );
   }
 
   /// Inline "Skipped" chip + "Waiting for next phase" subtext used when
@@ -1650,10 +2590,19 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   Widget _buildSubmittedPropCards(ChatDetailState state) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
+    final chat = state.chat ?? widget.chat;
     final myProps = state.myPropositions
         .where((p) => !p.isCarriedForward)
         .toList();
     if (myProps.isEmpty) return const SizedBox.shrink();
+    // The manual quick-chat host controls phase transitions themselves (the
+    // advance button below is their cue), so "Waiting for next phase" is
+    // misleading for them — nothing auto-advances. Only non-host participants
+    // are genuinely waiting on the host.
+    final isManualHost = chat.maxCycles == 1 &&
+        state.myParticipant?.isHost == true &&
+        chat.startMode == StartMode.manual &&
+        !chat.isPreview;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -1666,14 +2615,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             glowColor: AppColors.consensus,
           ),
         ],
-        const SizedBox(height: 8),
-        Text(
-          l10n.waitingForNextPhase,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        if (!isManualHost) ...[
+          const SizedBox(height: 8),
+          Text(
+            l10n.waitingForNextPhase,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -1828,6 +2779,162 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
+  /// Quick-chat host proposing: persistent share block on top, then the
+  /// host's own state below it (submitted cards / skipped indicator / the
+  /// input behind an "Add your own idea" toggle).
+  Widget _buildQuickHostProposing(ChatDetailState state) {
+    final newSubs =
+        state.myPropositions.where((p) => !p.isCarriedForward).length;
+    Widget below;
+    if (newSubs > 0) {
+      below = Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width - 64),
+          child: _buildSubmittedPropCards(state),
+        ),
+      );
+    } else if (state.hasSkipped) {
+      below = _buildInlineSkippedIndicator();
+    } else if (_inputInChatScroll(state)) {
+      below = _hostInputExpanded
+          ? _buildR1InlineInput(state)
+          : Center(
+              child: TextButton.icon(
+                key: const Key('host-add-own-idea'),
+                onPressed: () => setState(() => _hostInputExpanded = true),
+                icon: const Icon(Icons.edit_note, size: 20),
+                label: const Text('Add your own idea'),
+              ),
+            );
+    } else {
+      below = const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          below,
+        ],
+      ),
+    );
+  }
+
+  /// The persistent invite block — visible link (tap = copy) + native share.
+  /// Mirrors InviteShareSheet's copy/share semantics + analytics, without the
+  /// modal: share is the base state of the host's proposing screen, so there
+  /// is nothing to interrupt.
+  Widget _quickHostShareBlock(
+    ChatDetailState state, {
+    String title = 'Invite your group to add ideas',
+  }) {
+    final chat = state.chat ?? widget.chat;
+    final code = widget.chat.inviteCode;
+    if (code == null || chat.accessMethod != AccessMethod.code) {
+      return const SizedBox.shrink();
+    }
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final url = '${EnvConfig.webAppUrl}/join/$code';
+    final analytics = ref.read(analyticsServiceProvider);
+    final chatName = state.chat?.displayName ?? widget.chat.displayName;
+
+    return Container(
+      key: const Key('quick-host-share-block'),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.primaryContainer.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.primary.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'No account needed — they just open the link.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: cs.onSurfaceVariant),
+          ),
+          const SizedBox(height: 12),
+          // Tap-to-copy link.
+          InkWell(
+            key: const Key('quick-host-copy-link'),
+            borderRadius: BorderRadius.circular(8),
+            onTap: () async {
+              analytics.logInviteShared(
+                  chatId: widget.chat.id.toString(), shareMethod: 'copy');
+              await Clipboard.setData(ClipboardData(text: url));
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Link copied')),
+                );
+              }
+            },
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: theme.dividerColor),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      url,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.copy, size: 16, color: cs.onSurfaceVariant),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              key: const Key('quick-host-share-button'),
+              onPressed: () async {
+                analytics.logInviteShared(
+                    chatId: widget.chat.id.toString(),
+                    shareMethod: 'share_sheet');
+                try {
+                  await Share.share(
+                    'Rank these with me: $chatName\n$url',
+                    subject: chatName,
+                  );
+                } catch (_) {
+                  await Clipboard.setData(ClipboardData(text: url));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Link copied')),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.ios_share, size: 18),
+              label: const Text('Share link'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// True when the chat is in a "waiting" state — either no round
   /// exists yet (pre-cycle) or the round is in waiting phase with no
   /// new propositions queued. Excludes credit-paused (handled by the
@@ -1862,9 +2969,17 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final hasShareButton = state.myParticipant?.isHost == true &&
         widget.chat.inviteCode != null &&
         widget.chat.accessMethod == AccessMethod.code;
+    final isHost = state.myParticipant?.isHost == true;
+    // Manual mode = the host starts the chat by hand (no auto-start countdown).
+    final isManual = chat.startMode == StartMode.manual;
     final autoStart = chat.autoStartParticipantCount ?? 3;
     final remaining = autoStart - state.participants.length;
     final waitingCount = remaining > 0 ? remaining : 0;
+    final String waitingMessage = isManual
+        ? (isHost
+            ? "Invite your group, then start — everyone here can add ideas."
+            : 'Waiting for the host to start.')
+        : l10n.waitingForMoreParticipants(waitingCount);
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Container(
@@ -1881,12 +2996,26 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              l10n.waitingForMoreParticipants(waitingCount),
+              waitingMessage,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
               textAlign: TextAlign.center,
             ),
+            // Manual mode: the host starts on their own schedule. (Participant
+            // count shown so they know who's in before starting.)
+            if (isManual && isHost) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('host-start-chat-button'),
+                  onPressed: _isStarting ? null : _startChat,
+                  icon: const Icon(Icons.play_arrow),
+                  label: Text('Start (${state.participants.length} here)'),
+                ),
+              ),
+            ],
             if (hasShareButton && state.participants.length <= 1) ...[
               const SizedBox(height: 12),
               Row(
@@ -2104,24 +3233,45 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final winnerCard = PreviousWinnerPanel(
       previousRoundWinners: state.previousRoundWinners,
       currentWinnerIndex: _clampedWinnerIndex(state),
+      hideTts: false, // TTS under winners shown everywhere (accessibility)
       roundNumber: (state.currentRound?.customId ?? 2) - 1,
-      labelOverride: affirmedThisRound ? l10nForLabel.yourAffirmation : null,
+      // Live chat shows "Current Leader" (status), not "Round N Winner" — the
+      // round number is noise here; it's kept in the cycle-history view where
+      // per-round progression is the point. "Your affirmation" still overrides
+      // after the user affirms.
+      labelOverride: affirmedThisRound
+          ? l10nForLabel.yourAffirmation
+          : l10nForLabel.currentLeader,
       onWinnerIndexChanged: (index) =>
           setState(() => _currentWinnerIndex = index),
-      onTap: state.currentCycle != null
-          ? () {
-              _pushScreen(
-                MaterialPageRoute(
-                  builder: (_) => CycleHistoryScreen(
-                    cycleId: state.currentCycle!.id,
-                    convergenceContent:
-                        state.previousRoundWinners.first.displayContent ??
+      // Instant ranking / quick chats: tapping the card jumps straight to the
+      // full rankings of the just-completed round (skips cycle history).
+      onTap: _winnerTapShowsRoundResults
+          ? () => _resolveAndOpenResults(state)
+          : (state.currentCycle != null
+              ? () {
+                  _pushScreen(
+                    MaterialPageRoute(
+                      builder: (_) => CycleHistoryScreen(
+                        cycleId: state.currentCycle!.id,
+                        convergenceContent: state
+                                .previousRoundWinners.first.displayContent ??
                             '',
-                    convergenceNumber: state.consensusItems.length + 1,
-                  ),
-                ),
-              );
-            }
+                        convergenceNumber: state.consensusItems.length + 1,
+                        confirmationRoundsRequired:
+                            widget.chat.confirmationRoundsRequired,
+                        ratingMode: _effectiveRatingMode,
+                        chatId: widget.chat.id,
+                      ),
+                    ),
+                  );
+                }
+              : null),
+      // "See full rankings" button under the card — for instant-ranking AND
+      // quick chats with a completed round to show.
+      onSeeRankings: (_winnerTapShowsRoundResults &&
+              state.previousRoundWinners.isNotEmpty)
+          ? () => _resolveAndOpenResults(state)
           : null,
     );
 
@@ -2199,8 +3349,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     // filled icon inside the card and acts as the primary action; both
     // buttons below are outlined.
     if (_alternativeMode) {
-      final canSkip =
-          chat.allowSkipProposing && state.canSkip && !disabledByMutation;
       return Padding(
         padding: const EdgeInsets.only(bottom: 8),
         child: Column(
@@ -2222,34 +3370,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               ),
             ),
             const SizedBox(height: 12),
+            // Only Back here — the user already chose "Yes, I have a better
+            // idea", so Skip would contradict that. Skip lives on the Yes/No
+            // question instead.
             Center(
-              child: Wrap(
-                spacing: 12,
-                runSpacing: 8,
-                alignment: WrapAlignment.center,
-                children: [
-                  OutlinedButton(
-                    key: const Key('inline-alternative-back-button'),
-                    onPressed: disabledByMutation
-                        ? null
-                        : () => setState(() => _alternativeMode = false),
-                    child: Text(l10n.gateBack),
-                  ),
-                  if (chat.allowSkipProposing)
-                    OutlinedButton(
-                      key: const Key('inline-alternative-skip-button'),
-                      onPressed: canSkip ? _skipProposing : null,
-                      child: Text(l10n.skip),
-                    ),
-                ],
+              child: OutlinedButton(
+                key: const Key('inline-alternative-back-button'),
+                onPressed: disabledByMutation
+                    ? null
+                    : () => setState(() => _alternativeMode = false),
+                child: Text(l10n.gateBack),
               ),
             ),
             const SizedBox(height: 8),
             Center(
               child: Text(
-                chat.allowSkipProposing
-                    ? l10n.alternativeMicrocopy
-                    : l10n.alternativeMicrocopyNoSkip,
+                l10n.alternativeMicrocopyNoSkip,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -2274,7 +3410,11 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         !_hasAffirmedThisRound &&
         state.myPropositions.where((p) => !p.isCarriedForward).isEmpty;
 
-    // Gate: winner card + Affirm/Alternative buttons + microcopy.
+    // Gate: winner card + "Can you think of something better?" Yes/No.
+    // Yes -> propose an alternative (textfield). No -> affirm (back the
+    // current leader). Skip (sit out the round) is de-emphasized below the
+    // question — NOT in the alternative textfield, where it would contradict
+    // having just said "yes, I have a better idea".
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Column(
@@ -2284,40 +3424,236 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           winnerCard,
           const SizedBox(height: 12),
           Center(
+            child: Text(
+              l10n.gateBetterQuestion,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Center(
             child: Wrap(
               spacing: 12,
               runSpacing: 8,
               alignment: WrapAlignment.center,
               children: [
                 OutlinedButton(
-                  key: const Key('gate-affirm-button'),
-                  onPressed: canAffirmInline && !disabledByMutation
-                      ? _affirmRound
-                      : null,
-                  child: Text(l10n.gateAffirm),
-                ),
-                OutlinedButton(
-                  key: const Key('gate-alternative-button'),
+                  key: const Key('gate-yes-button'),
                   onPressed: disabledByMutation
                       ? null
                       : () => setState(() => _alternativeMode = true),
-                  child: Text(l10n.gateAlternative),
+                  child: Text(l10n.yes),
+                ),
+                OutlinedButton(
+                  key: const Key('gate-no-button'),
+                  onPressed: canAffirmInline && !disabledByMutation
+                      ? _affirmRound
+                      : null,
+                  child: Text(l10n.no),
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 8),
-          Center(
-            child: Text(
-              l10n.gateMicrocopy,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+          if (chat.allowSkipProposing) ...[
+            const SizedBox(height: 4),
+            Center(
+              child: TextButton(
+                key: const Key('gate-skip-button'),
+                onPressed: (state.canSkip && !disabledByMutation)
+                    ? _skipProposing
+                    : null,
+                // Muted (not primary teal) so "Skip" reads as the secondary
+                // escape under Yes/No — and consistent with the matches Skip.
+                style: TextButton.styleFrom(
+                  foregroundColor:
+                      Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                child: Text(l10n.skip),
+              ),
             ),
-          ),
+          ],
         ],
       ),
+    );
+  }
+
+  /// Ended-state bottom panel for quick-create instant-ranking chats.
+  /// Grid mode: "This chat has ended" + a "See full rankings" action. Matches
+  /// mode renders the ranked leaderboard in the chat BODY (the payoff, with
+  /// room to scroll — see [_buildLeaderOrWinnerOrPlaceholder]), so the panel
+  /// only carries the preview "Create a real chat to share" CTA; a real ended
+  /// matches chat needs no bottom panel at all.
+  Widget _buildEndedStatePanel(ChatDetailState state) {
+    final theme = Theme.of(context);
+    final isPreview = widget.chat.isPreview;
+    final isMatches = widget.chat.ratingMode == 'matches';
+
+    // Real (non-preview) matches chat: the ranked leaderboard is in the body.
+    // Offer next steps so a finished decision isn't a dead end — start a new
+    // chat (loops back into /create), and share the result for anyone who
+    // wants to revisit the outcome.
+    if (isMatches && !isPreview) {
+      final hasCode = widget.chat.inviteCode != null;
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              key: const Key('ended-create-new-chat'),
+              onPressed: () {
+                ref.read(analyticsServiceProvider).logQuickChatCreateAnother();
+                // Clear the D37 sealed-loop guard FIRST — this is the one
+                // deliberate forward exit out of the quick-chat loop, so /create
+                // must not be bounced back to the finished chat.
+                activeQuickChatId.value = null;
+                context.go('/create');
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Create a new chat'),
+            ),
+            if (hasCode) ...[
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                key: const Key('ended-share-result'),
+                onPressed: () {
+                  ref
+                      .read(analyticsServiceProvider)
+                      .logQuickChatShare(source: 'result');
+                  _showQrCode();
+                },
+                icon: const Icon(Icons.ios_share),
+                label: const Text('Share result'),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    // Group path (agented preview): invitees PROPOSE ideas first, then rank — so the
+    // copy differs from the options path (where the same list is just re-ranked).
+    final isGroup = widget.chat.enableAgents;
+    // "Create a real chat to share" everywhere (matches the create-screen wording)
+    // so it's unmistakable this starts a NEW, real chat — not people joining this
+    // demo. The helper spells out "fresh chat" to kill the "same chat" confusion.
+    const inviteLabel = 'Create a real chat to share';
+    final inviteHelper = isGroup
+        ? "Starts a fresh shared chat — your group adds their own ideas, then "
+            "everyone ranks. You'll see the winner here."
+        : "Starts a fresh chat with these same options — send the link and your "
+            "group ranks them. You'll see the winner here when everyone's voted.";
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Grid mode keeps the "ended + see full rankings" affordance in the
+          // panel; matches mode shows the leaderboard in the body instead.
+          if (!isMatches) ...[
+            Text(
+              'This chat has ended',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            FilledButton.icon(
+              // Resolver falls back to a DB lookup — an ended chat's bootstrap is
+              // empty, so state alone has no completed round.
+              onPressed: () => _resolveAndOpenResults(state),
+              icon: const Icon(Icons.leaderboard),
+              label: const Text('See full rankings'),
+            ),
+          ],
+          if (isPreview) ...[
+            if (!isMatches) const SizedBox(height: 10),
+            FilledButton.tonalIcon(
+              onPressed: _isCreatingRealChat
+                  ? null
+                  : () => _createRealChatFromPreview(state),
+              icon: _isCreatingRealChat
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.group_add),
+              label: Text(_isCreatingRealChat ? 'Creating…' : inviteLabel),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              inviteHelper,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// Ended matches chat → the ranked leaderboard, rendered in the chat BODY so
+  /// it scrolls with the page and has room for any number of options (no nested
+  /// scroll, no height cap). The same payoff the /try demo ends on. Loads (and
+  /// caches) the ranking lazily; spinner while resolving, leaderboard once ready.
+  Widget _buildEndedLeaderboard(ChatDetailState state) {
+    final theme = Theme.of(context);
+    _endedRankingFuture ??= _loadEndedRanking(state);
+    return FutureBuilder<List<Proposition>>(
+      future: _endedRankingFuture,
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+        final ranked = snap.data ?? const <Proposition>[];
+        if (ranked.isEmpty) {
+          // Couldn't resolve the round from state or DB — fall back to the
+          // full-screen results loader rather than showing nothing.
+          return Center(
+            child: FilledButton.icon(
+              onPressed: () => _resolveAndOpenResults(state),
+              icon: const Icon(Icons.leaderboard),
+              label: const Text('See full rankings'),
+            ),
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 4, bottom: 12),
+              child: Text(
+                'How the group ranked them',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            RankedLeaderboard(
+              entries: [for (final p in ranked) p.displayContent],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -2326,14 +3662,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final chat = state.chat ?? widget.chat;
     final isHost = state.myParticipant?.isHost == true;
 
+    // Ended state (quick-create instant ranking): once the single round
+    // resolves and the chat ends, there's nothing left to rate or submit.
+    // Replace the rating panel / text input with an ended banner that points
+    // to the full rankings (and, for previews, an "invite others" CTA).
+    if (chat.endedAt != null) {
+      return _buildEndedStatePanel(state);
+    }
+
     // Host pause replaces the entire bottom panel — there are no actions
     // available while paused, so we don't render the misleading
     // "waiting for participants" / disabled-textfield UI underneath.
-    // If a round was in progress when pause hit, keep the RoundPhaseBar
-    // visible above the banner so users still see "Round X, Proposing"
-    // context (the bar itself shows "Paused" since phase_ends_at is null).
+    // The RoundPhaseBar already lives under the AppBar (since the May 2026
+    // redesign in 3db3946) and shows "Paused" via isPaused=true, so we
+    // just return the banner here — no duplicate bar above it.
     if (chat.hostPaused) {
-      final banner = HostPausedBanner(
+      return HostPausedBanner(
         isHost: isHost,
         onResume: isHost
             ? () => ref
@@ -2341,42 +3685,6 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 .resumeChat()
             : null,
       );
-      final activeRound = state.currentRound;
-      if (activeRound != null &&
-          (activeRound.phase == RoundPhase.proposing ||
-              activeRound.phase == RoundPhase.rating)) {
-        // Participation % is meaningful even when paused — it tracks
-        // user actions (submitted/skipped/rated), not time. Compute it
-        // the same way the live ProposingStatePanel/RatingStatePanel do.
-        int? participationPercent;
-        if (activeRound.phase == RoundPhase.proposing) {
-          final submitters = state.propositions
-              .where((p) => p.participantId != null && !p.isCarriedForward)
-              .map((p) => p.participantId)
-              .toSet()
-              .length;
-          final done = submitters + state.participantsWhoSkippedProposing.length;
-          participationPercent = state.participants.isNotEmpty
-              ? (done * 100 / state.participants.length).round()
-              : 0;
-        } else {
-          participationPercent = state.ratingProgressPercent;
-        }
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RoundPhaseBar(
-              roundNumber: activeRound.customId,
-              isProposing: activeRound.phase == RoundPhase.proposing,
-              phaseEndsAt: null, // signals Paused indicator
-              isPaused: true,
-              participationPercent: participationPercent,
-            ),
-            banner,
-          ],
-        );
-      }
-      return banner;
     }
 
     // FIRST: Check if chat has schedule and is paused (takes priority over round state)
@@ -2463,6 +3771,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           compactMode: true,
         );
       case RoundPhase.proposing:
+        // Quick-chat manual host: the advance control is bottom-anchored here
+        // (consistent with the rating-phase HostEndVotingBar) instead of inline
+        // in the scroll. The proposing INPUT stays in the scroll; the classic
+        // ProposingStatePanel is gateMode (renders nothing) for quick chats.
+        if (chat.maxCycles == 1 &&
+            isHost &&
+            chat.startMode == StartMode.manual &&
+            !chat.isPreview) {
+          return _buildQuickChatHostAdvance(state);
+        }
         final isTaskResultMode = state.isTaskResultMode;
         // Participation %: (submitters + skippers + affirmers) / total
         // participants. Set union so a single participant counted via
@@ -2500,7 +3818,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           phaseEndsAt: state.currentRound!.phaseEndsAt,
           onPhaseExpired: _onPhaseExpired,
           isHost: isHost,
-          onAdvancePhase: () => _advanceToRating(),
+          // Manual mode only: the host drives proposing→rating (no timer, no
+          // auto-advance). Null for auto/timer chats so the button stays hidden
+          // there, as before.
+          onAdvancePhase: (chat.startMode == StartMode.manual && !chat.isPreview)
+              ? () => _advanceToRating()
+              : null,
           onViewAllPropositions: isHost ? () => _showAllPropositionsSheet(state) : null,
           onViewOtherPropositions: () => _pushScreen(
             MaterialPageRoute(
@@ -2521,6 +3844,41 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
               inGateFlow || affirmedThisRound || skippedThisRound,
         );
       case RoundPhase.rating:
+        // Matches (pairwise) mode renders its voting panel in the chat scroll
+        // (see _buildLeaderOrWinnerOrPlaceholder) so it scrolls with the
+        // conversation, like the proposing input. The bottom panel stays
+        // empty so we don't duplicate the panel in a fixed footer.
+        if (chat.ratingMode == 'matches') {
+          // Real quick-create chats have no timer and don't auto-seal — the host
+          // ends voting here. Preview chats (solo/agents) auto-finalize, so no bar.
+          final isRealQuickCreate =
+              chat.maxCycles != null && !chat.isPreview;
+          if (isHost && isRealQuickCreate) {
+            // Whether the host let the group propose or seeded the options
+            // themselves, voting only matters once others arrive — so keep the
+            // invite block in front of them here, above the end-voting bar.
+            // (The seed-options path never passes through the proposing screen
+            // where the share block otherwise lives.)
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _quickHostShareBlock(
+                  state,
+                  title: 'Invite your group to vote',
+                ),
+                const SizedBox(height: 12),
+                HostEndVotingBar(
+                  done: state.matchesDoneRaters,
+                  eligible: state.matchesEligibleRaters,
+                  isEnding: _isEndingVoting,
+                  onEndVoting: () => _endVoting(state),
+                ),
+              ],
+            );
+          }
+          return const SizedBox.shrink();
+        }
         return RatingStatePanel(
           roundCustomId: state.currentRound!.customId,
           hasRated: state.hasRated,
@@ -2689,7 +4047,59 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   }
 
   /// Merged participants + join requests bottom sheet.
-  void _showParticipantsSheet(ChatDetailState state) {
+  /// Lets the user rename themselves from the participants leaderboard.
+  /// Mirrors the home-screen pencil (WelcomeHeader): updates the auth
+  /// display_name, which a DB trigger propagates to all the user's
+  /// participant rows; then refreshes the chat so the leaderboard updates.
+  void _showEditNameDialog(String currentName) {
+    final controller = TextEditingController(text: currentName);
+    final l10n = AppLocalizations.of(context);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.editName),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          textCapitalization: TextCapitalization.words,
+          decoration: InputDecoration(hintText: l10n.enterYourName),
+          onSubmitted: (value) {
+            final name = value.trim();
+            if (name.isNotEmpty) {
+              _saveDisplayName(name);
+              Navigator.pop(dialogContext);
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
+          ),
+          FilledButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                _saveDisplayName(name);
+                Navigator.pop(dialogContext);
+              }
+            },
+            child: Text(l10n.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _saveDisplayName(String name) async {
+    await ref.read(authServiceProvider).setDisplayName(name);
+    ref.invalidate(authDisplayNameProvider);
+    // Reload the chat so the leaderboard reflects the DB-synced name.
+    await ref.read(chatDetailProvider(_params).notifier).refresh(silent: true);
+  }
+
+  void _showParticipantsSheet() {
     final leaderboardFuture = ref.read(chatServiceProvider).getChatLeaderboard(widget.chat.id);
     showModalBottomSheet(
       context: context,
@@ -2811,11 +4221,15 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                       const Divider(height: 1),
                     ],
                     // Participants list. Per-user "Done" state was
-                    // intentionally removed: the round status bar's
-                    // progress % already shows how close the round is
-                    // to closing, and naming individual stragglers
-                    // creates social pressure that works against
-                    // letting each voice contribute at its own pace.
+                    // intentionally removed: naming individual stragglers
+                    // creates social pressure that works against letting
+                    // each voice contribute at its own pace.
+                    // RECONSIDERED 2026-06 for the host's "when do I end
+                    // voting?" decision and kept OUT on purpose: the host
+                    // needs the COUNT ("3 of 5 voted", shown on the
+                    // end-voting bar), not WHO — which two people are
+                    // outstanding only matters for nudging, which is the
+                    // pressure we avoid. Do not add a who's-done roster.
                     // Host badge is gone (every participant reads as
                     // an equal voice); kick lives on long-press.
                     Expanded(
@@ -2828,9 +4242,100 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           final position = rankings[p.id];
                           final rankText = position != null ? '#$position' : '—';
                           final canKick = isHost && !p.isHost;
+                          final isMe =
+                              p.id == currentState?.myParticipant?.id;
+                          // "Done" tag: who has acted this phase — rated or
+                          // skipped during rating, proposed or skipped or
+                          // affirmed during proposing. Restored per request
+                          // (helps see who still needs to act, esp. during
+                          // voting). Must stay in sync with the proposing
+                          // participation-percent sets above. Reads the
+                          // watched currentState (not a sheet-open snapshot)
+                          // so chips update live while the sheet is open.
+                          final phase = currentState?.currentRound?.phase;
+                          final bool isDone = currentState != null &&
+                              (phase == RoundPhase.rating
+                                  ? (currentState.participantsWhoRated
+                                          .contains(p.id) ||
+                                      currentState.participantsWhoSkippedRating
+                                          .contains(p.id))
+                                  : phase == RoundPhase.proposing
+                                      ? (currentState.participantsWhoProposed
+                                              .contains(p.id) ||
+                                          currentState
+                                              .participantsWhoSkippedProposing
+                                              .contains(p.id) ||
+                                          currentState.participantsWhoAffirmed
+                                              .contains(p.id))
+                                      : false);
                           return ListTile(
                             leading: CircleAvatar(child: Text(rankText)),
-                            title: Text(p.displayName),
+                            title: isMe
+                                ? Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Flexible(
+                                        child: Text(p.displayName,
+                                            overflow: TextOverflow.ellipsis),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.edit, size: 16),
+                                        tooltip: l10n.editName,
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(
+                                            minWidth: 32, minHeight: 32),
+                                        onPressed: () =>
+                                            _showEditNameDialog(p.displayName),
+                                      ),
+                                    ],
+                                  )
+                                : Text(p.displayName),
+                            // Explicit two-state status: filled "Done" vs a
+                            // quiet hollow "Pending" in the same slot, so
+                            // not-done is visible information rather than an
+                            // absent tag (and rows don't shift on completion).
+                            // No chip at all outside an active phase —
+                            // "Pending" is meaningless in waiting/ended.
+                            trailing: isDone
+                                ? Chip(
+                                    avatar: Icon(Icons.check_circle,
+                                        size: 16,
+                                        color: theme.colorScheme.primary),
+                                    label: Text(l10n.done),
+                                    visualDensity: VisualDensity.compact,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    labelStyle: theme.textTheme.labelSmall
+                                        ?.copyWith(
+                                      color: theme.colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    backgroundColor: theme.colorScheme.primary
+                                        .withValues(alpha: 0.12),
+                                    side: BorderSide.none,
+                                  )
+                                : (phase == RoundPhase.proposing ||
+                                        phase == RoundPhase.rating)
+                                    ? Chip(
+                                        avatar: Icon(
+                                            Icons.radio_button_unchecked,
+                                            size: 16,
+                                            color: theme.colorScheme.outline),
+                                        label: Text(l10n.pendingTag),
+                                        visualDensity: VisualDensity.compact,
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        labelStyle: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                          color: theme.colorScheme.outline,
+                                        ),
+                                        backgroundColor: Colors.transparent,
+                                        side: BorderSide(
+                                            color: theme
+                                                .colorScheme.outlineVariant),
+                                      )
+                                    : null,
                             onLongPress: canKick
                                 ? () {
                                     Navigator.pop(modalContext);
@@ -2851,9 +4356,22 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     );
   }
 
-  void _showQrCode() {
+  void _showQrCode({bool auto = false}) {
     if (widget.chat.inviteCode == null) return;
     final chatName = ref.read(chatDetailProvider(_params)).valueOrNull?.chat?.displayName ?? widget.chat.displayName;
+
+    // Quick-create chats (maxCycles == 1) get the conversion-focused link-first
+    // sheet; other chats keep the QR dialog (useful for in-person demos).
+    if (widget.chat.maxCycles == 1) {
+      InviteShareSheet.show(
+        context,
+        chatName: chatName,
+        inviteCode: widget.chat.inviteCode!,
+        chatId: widget.chat.id.toString(),
+        auto: auto,
+      );
+      return;
+    }
 
     QrCodeShareDialog.show(
       context,

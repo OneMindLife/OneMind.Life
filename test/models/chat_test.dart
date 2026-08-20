@@ -891,5 +891,119 @@ void main() {
         expect(a, isNot(equals(b)));
       });
     });
+
+    group('copyWith', () {
+      test('non-nullable scalar replacement (host_paused, schedule_paused)', () {
+        final chat = ChatFixtures.model(hostPaused: false);
+        final flipped = chat.copyWith(hostPaused: true, schedulePaused: true);
+        expect(flipped.hostPaused, isTrue);
+        expect(flipped.schedulePaused, isTrue);
+        expect(flipped.id, chat.id);
+        expect(flipped.name, chat.name);
+      });
+
+      test('omitting a param leaves the field unchanged', () {
+        final chat = ChatFixtures.model(initialMessage: 'original');
+        final patched = chat.copyWith(hostPaused: true);
+        expect(patched.initialMessage, 'original');
+      });
+
+      test('nullable Function override clears a field', () {
+        final chat = Chat.fromJson(ChatFixtures.json(
+          scheduledStartAt: DateTime.utc(2026, 1, 1),
+        ));
+        final cleared = chat.copyWith(scheduledStartAt: () => null);
+        expect(cleared.scheduledStartAt, isNull);
+      });
+
+      test('nullable Function override sets a new value', () {
+        final chat = ChatFixtures.model();
+        final updated = chat.copyWith(
+          lastActivityAt: () => DateTime.utc(2027, 6, 15, 12),
+        );
+        expect(updated.lastActivityAt, DateTime.utc(2027, 6, 15, 12));
+      });
+
+      test('translation fields can be cleared via Function override', () {
+        final chat = Chat.fromJson({
+          ...ChatFixtures.json(),
+          'name_translated': 'Nombre',
+          'translation_language': 'es',
+        });
+        final cleared = chat.copyWith(
+          nameTranslated: () => null,
+          translationLanguage: () => null,
+        );
+        expect(cleared.nameTranslated, isNull);
+        expect(cleared.translationLanguage, isNull);
+      });
+
+      test('list / enum replacements work', () {
+        final chat =
+            Chat.fromJson(ChatFixtures.json(accessMethod: 'code'));
+        final updated = chat.copyWith(
+          accessMethod: AccessMethod.public,
+          translationLanguages: const ['en', 'fr'],
+        );
+        expect(updated.accessMethod, AccessMethod.public);
+        expect(updated.translationLanguages, const ['en', 'fr']);
+      });
+    });
+
+    group('mergeRealtimePayload', () {
+      test('merges only the changed columns and preserves translations', () {
+        final chat = Chat.fromJson({
+          ...ChatFixtures.json(name: 'Original'),
+          'name_translated': 'Original (es)',
+          'description_translated': 'Desc ES',
+          'initial_message_translated': 'Init ES',
+          'translation_language': 'es',
+        });
+
+        // Realtime payload: only host_paused and last_activity_at changed.
+        // (id is always present in postgres-changes payloads.)
+        final newRecord = <String, dynamic>{
+          ...chat.toRealtimeMap(),
+          'host_paused': true,
+          'last_activity_at': '2027-01-02T03:04:05Z',
+        };
+
+        final merged = chat.mergeRealtimePayload(newRecord);
+        expect(merged.hostPaused, isTrue);
+        expect(merged.lastActivityAt, DateTime.utc(2027, 1, 2, 3, 4, 5));
+        // Untouched columns stay as before
+        expect(merged.name, 'Original');
+        // Translations survive — Realtime payload doesn't carry them
+        expect(merged.nameTranslated, 'Original (es)');
+        expect(merged.descriptionTranslated, 'Desc ES');
+        expect(merged.initialMessageTranslated, 'Init ES');
+        expect(merged.translationLanguage, 'es');
+      });
+
+      test('partial payload (Supabase only sends changed cols) still parses', () {
+        final chat = ChatFixtures.model();
+        // Simulate Supabase sending only the changed column (rare but legal).
+        final partial = <String, dynamic>{
+          ...chat.toRealtimeMap(),
+          'host_paused': true,
+        };
+        final merged = chat.mergeRealtimePayload(partial);
+        expect(merged.hostPaused, isTrue);
+        expect(merged.id, chat.id);
+        expect(merged.name, chat.name);
+      });
+
+      test('toRealtimeMap omits translation columns', () {
+        final chat = Chat.fromJson({
+          ...ChatFixtures.json(),
+          'name_translated': 'Translated',
+        });
+        final map = chat.toRealtimeMap();
+        expect(map.containsKey('name_translated'), isFalse);
+        expect(map.containsKey('description_translated'), isFalse);
+        expect(map.containsKey('initial_message_translated'), isFalse);
+        expect(map.containsKey('translation_language'), isFalse);
+      });
+    });
   });
 }

@@ -26,7 +26,7 @@
 
 BEGIN;
 SET search_path TO public, extensions;
-SELECT plan(18);
+SELECT plan(19);
 
 -- -----------------------------------------------------------------------------
 -- SETUP: shared state used across tests via current_setting('test.*')

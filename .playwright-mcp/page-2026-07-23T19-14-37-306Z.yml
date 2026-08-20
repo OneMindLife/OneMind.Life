@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]: OneMind
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - generic [ref=e12]: The world's group chat
+        - heading [level=1] [ref=e13]:
+          - text: One room.
+          - emphasis [ref=e14]: The whole world.
+      - generic [ref=e15]: One chat the whole world is in. Post what's actually on your mind, see what everyone else is saying, and vote the best lines up. No followers, no algorithm — every round the room picks its best line and keeps it. The world, talking as one.
+      - link "Join the chat" [ref=e16] [cursor=pointer]:
+        - /url: /c/GLOBAL/
+      - paragraph [ref=e19]: Free · no account · 30 seconds to your first message
+      - paragraph [ref=e20]:
+        - link "Or just read the room →" [ref=e21] [cursor=pointer]:
+          - /url: /c/GLOBAL
+      - generic [ref=e22]:
+        - link "Terms" [ref=e23] [cursor=pointer]:
+          - /url: /terms/
+        - generic [ref=e24]: ·
+        - link "Privacy" [ref=e25] [cursor=pointer]:
+          - /url: /privacy/
+  - alert [ref=e26]

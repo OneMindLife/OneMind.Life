@@ -12,6 +12,7 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 import '../../providers/chat_providers.dart';
 import '../../widgets/chat_dashboard_card.dart';
+import '../../widgets/name_section.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -60,7 +61,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     try {
       final chatService = ref.read(chatServiceProvider);
       final participantService = ref.read(participantServiceProvider);
-      final authService = ref.read(authServiceProvider);
 
       // Get the full chat details
       final chat = await chatService.getChatById(chatSummary.id);
@@ -71,8 +71,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         return;
       }
 
-      // Use stored display name (always available via ensureDisplayName at startup)
-      final displayName = authService.displayName!;
+      // Name gate: stored display name, or prompt for one (names are never
+      // auto-generated). Cancelling the prompt aborts the join.
+      if (!mounted) return;
+      final displayName = await ensureDisplayNameInteractive(context, ref);
+      if (displayName == null) return;
 
       // Join the chat (auth.uid() is used automatically)
       await participantService.joinChat(
@@ -83,9 +86,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
       // Reset the nav stack to Home with ?chat_id=N — HomeScreen auto-opens
       // the chat on top of Home, so the back arrow lands the user on Home
-      // (not back on Discover, which would feel like a dead end).
+      // (not back on Discover, which would feel like a dead end). Must be
+      // /home: the '/' route is the marketing LandingScreen and ignores
+      // chat_id, so '/?chat_id=' would dump the user on the hero page.
       if (mounted) {
-        context.go('/?chat_id=${chat.id}');
+        context.go('/home?chat_id=${chat.id}');
       }
     } catch (e) {
       if (mounted) {

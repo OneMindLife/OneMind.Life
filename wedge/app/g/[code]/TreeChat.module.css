@@ -1,0 +1,2683 @@
+/* ── Design tokens — "The Public Record". Every themeable color routes through
+   these; dark mode ("Voting Booth") just redefines them. See design memory
+   design_public_record_2026_07_18. ── */
+.page {
+  --paper: #f1f0ea;        /* main screen ground (ballot bone) */
+  --surface: #f4f2ec;      /* cards, panels, appbar */
+  --surface-2: #ece9e2;    /* hover / raised warm */
+  --sunken: #e6e2d7;       /* pressed / deeper wells */
+  --ink: #211f1b;          /* primary text */
+  --opinion: #26241f;      /* the human voices */
+  --ink-muted: #524c40;    /* strong-muted text */
+  --muted: #837d70;        /* dominant machinery grey */
+  --muted-2: #948e82;      /* lighter muted */
+  --muted-strong: #6c6559; /* darker muted */
+  --faint: #a49c8c;        /* faint labels */
+  --faint-2: #b3ab9b;      /* faintest */
+  --hairline: #d7d2c6;     /* dominant border */
+  --rule: #ded9cd;         /* lighter rule */
+  --accent: #1c3a5e;       /* civic ink-blue — EARNED, consensus only */
+  --accent-strong: #15304d;/* accent hover */
+  --accent-rgb: 28, 58, 94;/* accent tints via rgba(var(--accent-rgb), a) */
+  --ok: #0b453a;           /* success / done */
+  --ok-bg: #dcefe9;        /* success wash */
+  --danger: #9e4a3a;       /* error / warning */
+  --overlay-rgb: 33, 31, 27; /* warm-black backdrops & shadows */
+}
+/* ── Voting Booth (night) — same bones, world dimmed, civic blue glows ── */
+.page[data-theme="dark"] {
+  --paper: #14181f;
+  --surface: #1a1f28;
+  --surface-2: #222834;
+  --sunken: #10141a;
+  --ink: #e8e5db;
+  --opinion: #e9e6dd;
+  --ink-muted: #c3bfb2;
+  --muted: #8a8f9a;
+  --muted-2: #767c88;
+  --muted-strong: #a2a7b0;
+  --faint: #6d7581;
+  --faint-2: #5c6470;
+  --hairline: #2a3340;
+  --rule: #262c36;
+  --accent: #7aa7d6;
+  --accent-strong: #9cc0e6;
+  --accent-rgb: 122, 167, 214;
+  --ok: #6fc0a0;
+  --ok-bg: #16302a;
+  --danger: #d98f78;
+  --overlay-rgb: 0, 0, 0;
+}
+
+/* /g/<code> — the wedge rendering of the Flutter chat UI, synced 1:1 with:
+   - lib/screens/chat/widgets/tree_stack_section.dart (feed/composer/headers)
+   - lib/screens/chat/widgets/matches_rating_panel.dart (duel)
+   - lib/widgets/proposition_content_card.dart (cards: r12, 16x12 padding)
+   - lib/widgets/round_phase_bar.dart (chip + divider + timer)
+   Palette: lib/config/app_colors.dart — teal var(--accent), amber var(--accent),
+   cyan var(--muted) (proposing), indigo var(--accent) (rating), warm neutrals. */
+
+.page {
+  min-height: 100dvh;
+  overflow-x: hidden; /* the level slide-in offset must not spawn an x-scrollbar */
+  background: var(--surface-2);
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: Roboto, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 14px; /* Flutter bodyMedium */
+  line-height: 1.43;
+}
+
+/* The level region. NO enter animation — navigating used to slide the list in
+   from the side on every tap, which read as jitter and bought nothing (the spine
+   and breadcrumb already show you where you moved). The slide classes and their
+   keyframes are gone; only the layout wrapper remains. */
+.slideRegion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.col {
+  width: 100%;
+  max-width: 560px;
+  /* Bottom pad clears the fixed composer dock — now taller (composer + the
+     Vote toggle beneath it), so the last opinion isn't hidden behind it. */
+  padding: 0 16px 148px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── App bar: chat name (Flutter AppBar) ─────────────────────────────── */
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  width: 100%;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  justify-content: center;
+}
+.appbarInner {
+  width: 100%;
+  max-width: 560px;
+  padding: 14px 16px 10px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* App bar with a leading back arrow (the full-list screen). */
+.appbarRow {
+  width: 100%;
+  max-width: 560px;
+  padding: 8px 8px 6px;
+  display: flex;
+  align-items: center;
+}
+.appbarTitle {
+  flex: 1;
+  text-align: center;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo,
+    Consolas, monospace;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+/* Trust strip — a thin, mono, machine-voice reassurance under the appbar. The
+   fair apparatus stating it's fair (see TreeChatClient). */
+.trustStrip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 12px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--rule);
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo,
+    Consolas, monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.trustStrip svg {
+  width: 11px;
+  height: 11px;
+  fill: var(--faint);
+  flex: none;
+}
+/* Live "who's here now" for the current node — a small mono pill in the appbar,
+   right of the title. Green = the universal "live" signal; kept tiny + muted so
+   it reads as machinery, not a second accent. */
+.livePresence {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: none;
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", "IBM Plex Mono", Menlo,
+    Consolas, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  white-space: nowrap;
+  padding: 0 2px;
+}
+.liveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #2f9e6f;
+  flex: none;
+  animation: livePulse 2.2s ease-out infinite;
+}
+.page[data-theme="dark"] .liveDot { background: #48c78e; }
+@keyframes livePulse {
+  0% { box-shadow: 0 0 0 0 rgba(47, 158, 111, 0.45); }
+  70% { box-shadow: 0 0 0 5px rgba(47, 158, 111, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 158, 111, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveDot { animation: none; }
+}
+.backBtn {
+  border: none;
+  background: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--ink);
+  display: flex;
+}
+.backBtn svg { width: 22px; height: 22px; fill: currentColor; }
+.backSpacer { width: 38px; }
+.shareBtn {
+  position: relative; /* anchors the tutorial finger */
+  overflow: visible;
+  border: none;
+  background: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--accent);
+  display: flex;
+}
+
+/* ── Appbar overflow (⋮) menu ─────────────────────────────────────────────── */
+.menuWrap {
+  position: relative;
+}
+/* Keeps the centered title balanced against the ⋮ button on the right. */
+.appbarSpacer {
+  width: 35px;
+  flex: none;
+}
+/* The left notification cluster: the watched-inbox bell + (inside a thread) the
+   watch-this eye, sitting together so they read as one family. */
+.appbarLeft {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+/* Watch-this-thread eye, styled to match the bell it sits beside. Muted when
+   off, pine when watching — same on/off language the crumb-row eye used. */
+.appbarEye {
+  /* Fixed box so the empty root placeholder reserves the exact same width as
+     the real button — no title jump crossing root↔thread. */
+  width: 36px;
+  height: 36px;
+  box-sizing: border-box;
+  flex: none;
+  border: none;
+  background: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: color 140ms ease, background 140ms ease;
+}
+.appbarEye svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.appbarEye:hover,
+.appbarEye:focus-visible {
+  background: rgba(var(--accent-rgb), 0.1);
+}
+.appbarEyeOn {
+  color: var(--accent);
+}
+
+/* Share, pinned to the right of the (scrolling) path on the crumb row. Same
+   size/rhythm as the pinned ⌂ so the row's two location controls balance. */
+.crumbShare {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.crumbShare:hover,
+.crumbShare:focus-visible {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+}
+.crumbShare svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+.menuBtn {
+  position: relative;
+  overflow: visible; /* anchors the tutorial finger */
+  color: var(--ink-muted);
+}
+.menuSheet {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 4px;
+  z-index: 30;
+  min-width: 190px;
+  padding: 6px;
+  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(var(--overlay-rgb), 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.menuItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.menuItem svg {
+  width: 19px;
+  height: 19px;
+  flex: none;
+  fill: var(--muted-strong);
+}
+.menuItem:hover {
+  background: var(--surface-2);
+}
+.menuItem:active {
+  background: var(--sunken);
+}
+.menuItemShare {
+  position: relative;
+  overflow: visible; /* anchors the tutorial finger */
+  color: var(--accent);
+  font-weight: 600;
+}
+.menuItemShare svg {
+  fill: var(--accent);
+}
+.menuItemPulse {
+  animation: crumbPulse 1.4s ease-in-out infinite;
+}
+.shareBtn svg { width: 20px; height: 20px; fill: currentColor; }
+.ghBtn {
+  border: none;
+  background: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--muted-2); /* muted: open-source is secondary to Share (teal) */
+  display: flex;
+}
+.ghBtn:hover { color: var(--ink); }
+.ghBtn svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* ── RoundPhaseBar: [chip] | timer, hairline top+bottom ──────────────── */
+.phaseBar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  width: 100%;
+  background: rgba(236, 233, 226, 0.93);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  display: flex;
+  justify-content: center;
+}
+.phaseBarInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px;
+  gap: 0;
+}
+.phaseChip {
+  font-size: 12px; /* labelMedium */
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: var(--surface);
+}
+.phaseProposing {
+  background: var(--muted); /* cyan-700: white text passes contrast */
+  border: 1px solid var(--muted);
+}
+.phaseVoting {
+  background: var(--accent); /* indigo-600 */
+  border: 1px solid var(--accent);
+}
+.vrule {
+  width: 1px;
+  height: 16px;
+  margin: 0 12px;
+  background: var(--rule);
+}
+.clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px; /* bodyMedium */
+  color: var(--muted);
+}
+.pcount {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.pcount svg { width: 15px; height: 15px; fill: var(--muted); }
+
+/* ── Committed spine (MessageCard: r12, teal border + glow, centered) ── */
+/* Cumulative social-proof header — "N people have weighed in · N ideas · N
+   votes". Quiet, alive, never a ghost town (cumulative, only grows). */
+.socialProof {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 8px 7px;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-align: center;
+}
+.socialProof b {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.spDot {
+  color: var(--faint-2);
+}
+/* Per-level metric attached to the top of the composer — describes only the
+   content inside THIS node ("N opinions/replies · M votes"). Textfield mode
+   only (no metric while voting). */
+.composerMetric {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 4px 8px 6px;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+.composerMetric b {
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Replies | Vote tab bar — segmented control; the Vote tab carries a
+   notification badge with the count of matches waiting for this user. */
+.chatTabs {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0 12px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 10px;
+}
+.chatTab {
+  position: relative; /* anchors the tutorial finger */
+  overflow: visible;
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 9px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 7px;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 120ms, color 120ms;
+}
+.chatTab:hover {
+  color: var(--ink);
+}
+.chatTabOn,
+.chatTabOn:hover {
+  background: var(--accent);
+  color: var(--surface);
+}
+.tabCount {
+  font-weight: 400;
+  opacity: 0.65;
+}
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--danger); /* warm signal — "new, act on this" */
+  color: var(--surface);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.chatTabOn .tabBadge {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--accent);
+}
+/* Per-idea social proof: how many people judged this idea head-to-head. */
+.rankedBy {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.rankedBy svg {
+  width: 13px;
+  height: 13px;
+  fill: var(--accent);
+  flex: none;
+}
+/* Per-option "content inside" badge — a quiet notification that this thread has
+   replies to explore/vote on. */
+/* The opinion text + its notification badge stack vertically; the badge sits
+   BELOW the text (left-aligned), the chevron/tags stay in the row to the right. */
+.optionMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.threadBadge {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 7px 1px 5px;
+  border-radius: 999px;
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.threadBadge svg {
+  width: 12px;
+  height: 12px;
+  fill: var(--accent);
+  flex: none;
+}
+
+/* Merged attention variant: this thread still has pairs waiting for the voter's
+   judgment. Warm "act on this" signal (same hue as the Vote-tab badge),
+   overriding the muted pine of the reply-count badge it replaces. Must follow
+   .threadBadge in source order to win at equal specificity. */
+.voteBadge {
+  background: var(--danger);
+  color: var(--surface);
+}
+
+.voteBadge svg {
+  fill: var(--surface);
+}
+
+/* Votes-waiting SLOT (right of each opinion). Always rendered so cards never
+   reflow: empty = a dim, hollow dashed capsule ("votes will collect here"),
+   full = a solid pine capsule with the subtree match count. The background/
+   color transition makes it visibly "fill up" the moment votes are ready. The
+   count is per-user and depletes as you vote, so a lit slot is a personal todo. */
+.voteSlot {
+  flex: none;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 26px;
+  height: 23px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  transition: background 260ms ease, color 260ms ease, border-color 260ms ease,
+    box-shadow 260ms ease;
+}
+.voteSlot svg {
+  width: 13px;
+  height: 13px;
+  flex: none;
+}
+.voteSlotEmpty {
+  background: transparent;
+  border: 1px dashed var(--hairline);
+  color: var(--faint-2);
+}
+.voteSlotEmpty svg {
+  fill: var(--faint-2);
+}
+.voteSlotFull {
+  background: var(--accent);
+  border: 1px solid var(--ok);
+  color: var(--surface);
+  box-shadow: 0 1px 4px rgba(var(--accent-rgb), 0.32);
+}
+.voteSlotFull svg {
+  fill: var(--surface);
+}
+.voteSlotNum {
+  line-height: 1;
+}
+
+/* Ranking header + its opt-in 🔍. Search is deliberate (default action is to
+   scroll), so it hides behind one small icon on the thing it filters. Fixed
+   height so opening/closing the field never shifts the list. */
+.rankHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 34px;
+  margin: 8px 0 6px;
+}
+.rankHeaderText {
+  flex: 1;
+  text-align: center;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+/* Provenance line under the RANKED BY VOTES header (root only). Plain readable
+   sans — a human explanation under the mono data-label — so the differentiation
+   ("no algorithm") lands on a newcomer instead of hiding in a numbered list. */
+.rankProvenance {
+  margin: -2px auto 8px;
+  max-width: 42ch;
+  padding: 0 12px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted-strong);
+}
+/* Status line — the record's live totals, calm mono. */
+.statusLine {
+  text-align: center;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--muted-2);
+  font-variant-numeric: tabular-nums;
+  margin: 0 0 10px;
+}
+/* Column header labels — aligned to the record row's columns below. (No rank
+   column: scores cluster after shrinkage, so ordinals asserted a strict order
+   the data doesn't support — ties now read as ties. #1 is marked by the earned
+   accent rule on the top row.) */
+.colOp,
+.colVotes {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 9px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.colOp {
+  flex: 1;
+  min-width: 0;
+}
+.colVotes {
+  flex: none;
+  text-align: right;
+}
+.searchBtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 140ms ease, color 140ms ease;
+}
+.searchBtn:hover,
+.searchBtn:focus-visible {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--accent);
+}
+.searchBtn svg {
+  width: 17px;
+  height: 17px;
+  fill: currentColor;
+}
+.searchGlyph {
+  flex: none;
+  display: inline-flex;
+  color: var(--muted);
+}
+.searchGlyph svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 4px 0;
+}
+.searchInput::placeholder {
+  color: var(--faint);
+}
+
+/* The opinion composer at the TOP of every list — the same UI at every depth.
+   It leads the feed so "add yours to this list" is the first thing you read,
+   and the ranking below is visibly the thing you'd be joining. */
+.topComposer {
+  margin: 2px 0 12px;
+}
+
+/* "Where you're needed" pull-banner on the unlocked list. Quiet pine tint (same
+   language as the votes-waiting slots), not a loud alert — a steady nudge that
+   keeps the vote-everywhere loop going. */
+/* First-tap onboarding: teach opinions → tap → replies by DOING. */
+.tapHint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  /* Breathing scale draws the eye to the instruction while keeping the text at
+     full opacity (a fade would hurt legibility). Every tutorial step shows one
+     of these somewhere, so the animation is the shared "read me" signal. */
+  transform-origin: center;
+  animation: hintBreathe 1.7s ease-in-out infinite;
+}
+@keyframes hintBreathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.07);
+  }
+}
+.tapFinger {
+  display: inline-block;
+  animation: tapNudge 1.15s ease-in-out infinite;
+}
+@keyframes tapNudge {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+.pulseCard {
+  animation: cardPulse 1.6s ease-in-out infinite;
+}
+@keyframes cardPulse {
+  0%, 100% {
+    box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.22);
+    border-color: var(--accent);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.35), 0 2px 10px rgba(var(--accent-rgb), 0.4);
+    border-color: var(--ok);
+  }
+}
+/* Animated finger tapping the first opinion — unambiguous "tap THIS one"
+   (a static hint above the list read as "tap something above me"). */
+.tapDemoCard {
+  position: relative;
+  overflow: visible;
+  z-index: 1;
+}
+.tapDemoFinger {
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  font-size: 32px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 6;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.45));
+  animation: fingerTap 1.5s ease-in-out infinite;
+}
+@keyframes fingerTap {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(9px) scale(1);
+  }
+  45% {
+    transform: translateX(-50%) translateY(-3px) scale(0.84);
+  }
+  62% {
+    transform: translateX(-50%) translateY(9px) scale(1);
+  }
+}
+.tapRipple {
+  position: absolute;
+  left: 50%;
+  top: 56%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  pointer-events: none;
+  z-index: 5;
+  animation: tapRipple 1.5s ease-out infinite;
+}
+@keyframes tapRipple {
+  0% {
+    transform: translate(-50%, -50%) scale(0.2);
+    opacity: 0.7;
+  }
+  55%,
+  100% {
+    transform: translate(-50%, -50%) scale(1.7);
+    opacity: 0;
+  }
+}
+/* Traveling tutorial pointer: appears at screen center, travels to the target,
+   then holds there tapping. Leads the eye from where it is to an off-focus
+   target (e.g. the composer at the bottom). */
+.tutFinger {
+  position: fixed;
+  left: var(--to-x);
+  top: var(--to-y);
+  z-index: 60;
+  pointer-events: none;
+  animation: tutTravel 0.68s cubic-bezier(0.34, 0.02, 0.2, 1) forwards;
+}
+.tutFingerTip {
+  display: block;
+  transform: translate(-50%, -38%);
+  font-size: 42px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.45));
+  animation: tutTap 1.1s ease-in-out infinite;
+  animation-delay: 0.68s; /* start tapping only after it settles */
+}
+@keyframes tutTravel {
+  0% {
+    left: calc(var(--to-x) + var(--fx, 0px));
+    top: calc(var(--to-y) + var(--fy, -54px));
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    left: var(--to-x);
+    top: var(--to-y);
+    opacity: 1;
+  }
+}
+@keyframes tutTap {
+  0%,
+  100% {
+    transform: translate(-50%, -38%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -38%) scale(0.82);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tapFinger,
+  .pulseCard,
+  .tapDemoFinger,
+  .tapRipple,
+  .tapHint,
+  .tutFingerTip {
+    animation: none;
+  }
+  .tutFinger {
+    animation: none;
+    left: var(--to-x);
+    top: var(--to-y);
+  }
+}
+
+/* The "Your chain · N" share bar — sits at the seam between the descended stack
+   and the live content. Names the stack as a shareable artifact (tells the UI's
+   story) and is easy to locate. */
+.chainBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 2px;
+  padding: 9px 2px;
+  border-top: 1px dashed var(--hairline);
+  border-bottom: 1px dashed var(--hairline);
+}
+.chainBarLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-strong);
+}
+.chainGlyph {
+  color: var(--accent);
+  font-size: 15px;
+}
+/* Full-width Share button, sitting below the stack and above the tab bar —
+   spans the column like .chatTabs (matching margin + radius). */
+.chainShareBtn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin: 10px 0 12px;
+  background: rgba(var(--accent-rgb), 0.1);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.chainShareBtn:hover {
+  background: rgba(var(--accent-rgb), 0.16);
+}
+.chainShareBtn:hover {
+  background: rgba(var(--accent-rgb), 0.2);
+}
+.chainShareBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.chainShareBtn svg {
+  width: 15px;
+  height: 15px;
+}
+/* Descended navigation: a single Back button (walk up one level) + the opinion
+   whose thread you're in. Replaces the old multi-card committed breadcrumb. */
+/* Path breadcrumb: root → … → here, each segment tappable to jump back to
+   that level. One line only — overflows horizontally (scrolls) instead of
+   wrapping to many lines. */
+/* Row = the scrolling path (flex:1) + the pinned watch toggle. */
+.crumbRow {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.crumbBar {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  /* Fixed height (matches the pinned ⌂/share) so the row can't grow when the
+     nav goes from empty (root) to holding crumbs — that 6px growth was the
+     vertical jitter crossing root↔thread. Crumbs center within it. */
+  height: 32px;
+  padding: 0;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none; /* Firefox */
+  -webkit-overflow-scrolling: touch;
+}
+.crumbBar::-webkit-scrollbar {
+  display: none;
+}
+.crumb {
+  flex: none;
+  padding: 3px 4px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 120ms, color 120ms;
+}
+.crumb:hover {
+  background: var(--surface-2);
+  text-decoration: underline;
+}
+.crumb:active {
+  transform: scale(0.98);
+}
+.crumb:disabled {
+  color: var(--faint-2);
+  cursor: default;
+}
+.crumb:disabled:hover {
+  background: none;
+  text-decoration: none;
+}
+/* The opinion you're replying to — shown above the composer inside a thread.
+   Same card language as the ranked list (serif body, r12, same padding) so a
+   node looks like a node everywhere; pine-tinted + labelled so it reads as
+   CONTEXT ("this is the thing above you"), not as another row you could open
+   or vote on. */
+.parentCard {
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-left-width: 3px;
+  border-radius: 12px;
+  padding: 10px 12px 12px;
+  margin: 2px 0 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 1px 4px rgba(var(--accent-rgb), 0.12);
+}
+.parentLabel {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.parentCard .text {
+  overflow-wrap: anywhere;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* THE SPINE — the committed path, stacked one under the other as you descend,
+   so all the context stays on screen. Same card language as the ranked list
+   (serif body, r12) because a node should look like a node everywhere; pine
+   left-edge so it reads as "the path you took", and tappable to jump back to
+   that level (the breadcrumb does the same in one line — both work). */
+/* The spine/context card — the opinion you're currently inside. NEUTRAL rule,
+   NOT the consensus accent (civic blue is reserved for #1 only, or "you are
+   here" reads as "this won"). A quiet "context/quote" frame. */
+.spineCard {
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--muted-2);
+  border-radius: 10px;
+  padding: 11px 12px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font: inherit;
+  display: flex;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+.spineCard:hover,
+.spineCard:focus-visible {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.spineCard .text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+/* The deepest card = where you are now — what the composer below replies to. */
+.spineCurrent {
+  background: var(--paper);
+  box-shadow: 0 1px 5px rgba(var(--overlay-rgb), 0.08);
+}
+
+/* (.shareBlock removed — the end-of-stack share block was reverted; share is a
+   32px icon on the crumb row again, see .crumbShare above and CrumbShare.tsx.) */
+
+/* The home (root) crumb — ⌂ back to the top-level list. It's the most-used
+   escape in the whole tree, so it gets a real tap target (was a 15px glyph in a
+   ~21px box — under every touch-target guideline and easy to miss). */
+.crumbHome {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 32px;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 1;
+  padding: 0 6px;
+  margin-right: 2px;
+}
+/* Enabled = you're deep in the tree and this is the way out: make it look like
+   an affordance, not decoration. */
+.crumbHome:not(:disabled) {
+  background: rgba(var(--accent-rgb), 0.08);
+}
+.crumbHome:not(:disabled):hover {
+  background: rgba(var(--accent-rgb), 0.16);
+  text-decoration: none;
+}
+/* The last segment — where you already are. Not a link. */
+.crumbCurrent {
+  flex: none;
+  padding: 3px 4px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-muted);
+}
+.crumbSep {
+  flex: none;
+  color: var(--faint-2);
+  font-size: 13px;
+  user-select: none;
+}
+/* Tutorial completion payoff — a brief centered toast. */
+.tutDoneToast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--kb-bottom, 0px) + 92px);
+  transform: translateX(-50%);
+  z-index: 45;
+  width: min(90vw, 380px);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 14px 18px;
+  background: var(--accent);
+  color: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(var(--accent-rgb), 0.4);
+  text-align: center;
+  animation: tutDoneIn 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes tutDoneIn {
+  from {
+    transform: translate(-50%, 12px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+.tutDoneTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+.tutDoneSub {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--ok-bg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .tutDoneToast {
+    animation: none;
+  }
+}
+
+/* Tutorial nudge for the home crumb — a background pulse (not a box-shadow ring,
+   which the bar's overflow would clip). */
+.crumbPulse {
+  animation: crumbPulse 1.4s ease-in-out infinite;
+}
+@keyframes crumbPulse {
+  0%,
+  100% {
+    background: var(--ok-bg);
+  }
+  50% {
+    background: var(--ok-bg);
+  }
+}
+
+.spine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Match the opinions-so-far rhythm: 6px between stacked cards (the feed cards
+     below use margin-bottom: 6px). The stack cards carry no bottom margin, so
+     this top pad is the whole inter-card gap. */
+  padding-top: 6px;
+}
+.winnerCard {
+  position: relative;
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 34px 12px 16px; /* room for the unfold glyph */
+  text-align: center;
+  margin-bottom: 0;
+  /* Committed cards are tappable (reopen the level): SECONDARY affordance —
+     soft teal elevation + an explicit unfold glyph, quieter than the raised
+     orange action buttons. */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(var(--accent-rgb), 0.18);
+  transition: background 120ms, transform 120ms, box-shadow 120ms;
+}
+.winnerCard:hover {
+  background: rgba(var(--accent-rgb), 0.05);
+  box-shadow: 0 2px 7px rgba(var(--accent-rgb), 0.24);
+}
+.winnerCard:active { transform: scale(0.99); }
+.unfold {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  color: rgba(var(--accent-rgb), 0.55);
+}
+.unfold svg { width: 16px; height: 16px; fill: currentColor; }
+/* A PICK-ONE option: the read-only card language, but pressable.
+   Doubled class selector so these ACTION styles beat .feedCard's neutral
+   structure styles regardless of declaration order. */
+.optionCard.optionCard {
+  width: 100%;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  background: var(--surface);
+  /* Neutral by default — the accent is EARNED by #1 only (see .optionWin). A
+     blue border on every card made the accent meaningless. */
+  border: 1px solid var(--hairline);
+  box-shadow: 0 1px 3px rgba(var(--overlay-rgb), 0.05);
+  transition: transform 120ms, box-shadow 120ms, background 120ms,
+    border-color 120ms;
+}
+/* #1 = consensus, marked: civic-blue left rule + a faint accent wash. This is
+   the one place the accent appears, so it reads as "the crowd chose this". */
+.optionWin.optionWin {
+  border-color: var(--hairline);
+  border-left: 3px solid var(--accent);
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+  box-shadow: 0 1px 5px rgba(var(--accent-rgb), 0.16);
+}
+/* THE RECORD: the ranked browse list is a flat, dense register — hairline
+   dividers, no card chrome, no gaps between opinions — like a printed index,
+   not a feed of floating cards (matches the design mock). */
+.recordRow.recordRow {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 13px 6px;
+  /* Column: top line (rank·opinion·votes) then the centered pending pill. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+/* Top line of a record row — the flex row that holds rank, opinion, votes, chev. */
+.rowTop {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+/* Pending pill docked to the BOTTOM-CENTER of the row. */
+.pendingBottom {
+  align-self: center;
+  margin-top: 9px;
+}
+.recordRow.recordRow:hover {
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  transform: none;
+}
+/* #1 in the flat register: keep the earned left rule + faint wash, still no
+   card. Extra specificity so it wins over .recordRow's reset. */
+.recordRow.optionWin.optionWin {
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  border-left: 3px solid var(--accent);
+  border-radius: 0;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  padding-left: 12px;
+}
+.optionCard.optionCard:hover {
+  background: var(--sunken);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.28);
+}
+.optionCard.optionCard:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(var(--accent-rgb), 0.25);
+}
+.questionCard {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid rgba(120, 113, 100, 0.32);
+  border-radius: 12px;
+  padding: 12px 16px;
+  text-align: center;
+  color: var(--opinion);
+  margin-bottom: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* ── Level header (orange divider label — labelSmall, ls 1.2px) ──────── */
+.levelHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 6px;
+}
+.levelHeader::before,
+.levelHeader::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--hairline);
+}
+.actionHeader::before,
+.actionHeader::after {
+  background: rgba(var(--accent-rgb), 0.45);
+}
+.levelHeaderText {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  font-size: 10.5px; /* labelSmall */
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  color: var(--muted); /* STATUS labels: quiet but WCAG-readable gray */
+  white-space: nowrap;
+}
+/* ACTION headers: orange + a gentle breath — "this is where you act". */
+.actionHeader .levelHeaderText,
+.actionHeaderText {
+  color: var(--accent);
+  animation: breathe 2s ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.65; }
+}
+
+/* ── Follow-up context ───────────────────────────────────────────────── */
+.followUp {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.followUp b { color: var(--accent); }
+
+/* ── Proposing feed (read-only cards: r12, orange .7 border, LEFT text) ─ */
+.feedCard {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.feedCard .text {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  /* Opinions read as considered statements, not chat lines — set in serif. */
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.42;
+  color: var(--ink);
+}
+.centerText .text { text-align: center; }
+.rank {
+  /* Mono, muted — an index numeral (the machine register), not decoration.
+     Only #1's rank takes the accent (.optionWin .rank). */
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  color: var(--muted-2);
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+  padding-top: 1px;
+}
+.optionWin .rank {
+  color: var(--accent);
+}
+/* Pending pill relocated under the opinion: left-aligned (override .voteSlot's
+   center), with a short "to vote" label since there's room here. */
+.pendingUnder {
+  align-self: flex-start;
+}
+.pendingLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  margin-left: 1px;
+}
+/* Total votes — the ranking's evidence, on the right. Calm mono; the number is
+   ink, the unit muted. #1's number takes the accent. */
+.votesTally {
+  flex: none;
+  align-self: flex-start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding-top: 1px;
+  min-width: 38px;
+}
+.votesNum {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.votesUnit {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+}
+.optionWin .votesNum {
+  color: var(--accent);
+}
+.hl { color: var(--accent); font-weight: 700; } /* informational, not actionable */
+.aiTag {
+  font-size: 11px; /* labelSmall */
+  font-weight: 400;
+  color: var(--muted);
+}
+.emptyNote {
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px; /* bodySmall */
+  padding: 12px 0;
+}
+/* "Your take is live · share it" — shown on the thread of an opinion you JUST
+   posted. Share is the hero (accent-filled), notify secondary. The peak-intent
+   moment for the share loop. */
+.postedCard {
+  margin: 16px 0 8px;
+  padding: 22px 20px 20px;
+  border: 1px solid var(--rule);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.postedTitle {
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.postedSub {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--muted);
+  max-width: 40ch;
+}
+.postedShare {
+  margin-top: 6px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  padding: 15px 26px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.32);
+  transition: transform 0.1s, box-shadow 160ms;
+}
+.postedShare:active {
+  transform: scale(0.98);
+}
+.postedShare svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+.postedNotify {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+}
+.postedNotifyDone {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+/* Small action link (NOT a header): right-aligned, quiet, chevroned. */
+.moreBtn {
+  display: block;
+  margin: -2px 0 6px auto;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+/* ── Composer card: SAME shape as a proposition card — on send it morphs
+   in place into the user's entry (.mineCard). ─────────────────────────── */
+/* Repository mode: the "N to place" pull — an unread-notification-style banner. */
+.placePull {
+  position: relative; /* anchors the tutorial finger */
+  overflow: visible;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid var(--ok);
+  background: var(--surface-2);
+  border-radius: 13px;
+  padding: 11px 13px;
+  margin: 4px 0 10px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: box-shadow 0.2s, transform 0.12s;
+}
+.placePull:hover { box-shadow: 0 0 0 3px var(--surface-2); transform: translateY(-1px); }
+.placeBadge {
+  background: var(--accent);
+  color: var(--surface);
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 999px;
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.placeText { flex: 1; min-width: 0; }
+.placeText b { display: block; color: var(--ok); font-weight: 700; font-size: 13.5px; }
+.placeText small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.placeGo { color: var(--accent); font-size: 20px; line-height: 1; flex: none; }
+
+/* The Vote toggle — one control that swaps the surface between the opinions
+   list (+ composer) and the head-to-head duel. Sits under the composer in list
+   mode; standalone in the fixed dock while voting (pressed/inset = "on"). */
+.voteToggle {
+  position: relative;
+  overflow: visible;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 11px;
+  border: 1px solid var(--ok);
+  background: var(--accent);
+  color: var(--surface);
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 14.5px;
+  cursor: pointer;
+  transition: background 120ms, transform 0.1s, box-shadow 120ms;
+}
+.voteToggle svg { width: 18px; height: 18px; fill: var(--surface); flex: none; }
+.voteToggle:active { transform: scale(0.99); }
+/* Shown but inert in threads with <2 opinions — keeps the dock height constant
+   so the textfield never shifts between levels. Muted stone, not pine. */
+.voteToggle:disabled {
+  background: var(--surface-2);
+  border-color: var(--hairline);
+  color: var(--faint);
+  cursor: default;
+}
+.voteToggle:disabled svg { fill: var(--faint); }
+.voteToggle:disabled:active { transform: none; }
+.voteToggleOn {
+  background: var(--ok);
+  box-shadow: inset 0 2px 7px rgba(0, 0, 0, 0.4);
+}
+.voteToggleBadge {
+  /* Pinned to the button's right edge (absolute) so appearing / changing the
+     count never reflows the centered icon+label — no layout flicker. */
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--surface);
+  color: var(--accent);
+  border-radius: 999px;
+  min-width: 21px;
+  height: 21px;
+  padding: 0 6px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Back-to-list controls in the place (ranking) flow. */
+.placeBack {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 0 8px;
+  cursor: pointer;
+}
+.placeBackBtn {
+  border: 1px solid var(--ok);
+  background: var(--surface);
+  color: var(--ok);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  border-radius: 11px;
+  padding: 9px 18px;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+/* Open-thread affordance on a browsable opinion card. */
+.openChev {
+  margin-left: auto;
+  align-self: center;
+  flex: none;
+  color: var(--muted-2);
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* The action dock: pins the composer to the viewport bottom while the replies
+   scroll behind it; when the list is short it just sits in place (sticky only
+   engages once content would push it off-screen). The solid page-colored
+   background hides the replies scrolling underneath. */
+/* ── Action FABs (stacked, bottom-right) ──────────────────────────────────── */
+/* Vote action as a docked BOTTOM BAR — a full-width button the width of the
+   list rows, so it reads as "vote on THIS list", not a floating corner action.
+   (Replaces the old corner Vote FAB.) */
+.voteBar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 17;
+  margin: 0 auto;
+  width: 100%;
+  max-width: 560px;
+  padding: 9px 16px calc(var(--kb-bottom, 0px) + 12px);
+  background: var(--paper);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -6px 20px rgba(var(--overlay-rgb), 0.12);
+}
+.voteBarBtn {
+  width: 100%;
+  height: 52px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background 160ms, box-shadow 160ms, opacity 160ms, transform 0.1s;
+}
+.voteBarBtn:active {
+  transform: scale(0.99);
+}
+.voteBarBtn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.voteBarLabel {
+  line-height: 1;
+}
+.voteBarCount {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.voteBarReady {
+  background: var(--accent);
+  color: var(--surface);
+  border: 1.5px solid var(--ok);
+  box-shadow: 0 3px 14px rgba(var(--accent-rgb), 0.4);
+  animation: voteReadyGlow 1.8s ease-in-out infinite;
+}
+.voteBarActive {
+  background: var(--ok);
+  color: var(--surface);
+  border: 1.5px solid var(--ok);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.voteBarDisabled {
+  background: var(--surface-2);
+  color: var(--faint-2);
+  border: 1.5px dashed var(--hairline);
+  box-shadow: none;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voteBarReady {
+    animation: none;
+  }
+}
+
+.fabStack {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--kb-bottom, 0px) + 18px);
+  z-index: 18;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+/* One FAB + its optional tutorial hint label, right-aligned so the label sits
+   to the LEFT of the button. */
+.fabRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+.fabHint {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 7px 12px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(var(--overlay-rgb), 0.28);
+  animation: fabHintBob 1.4s ease-in-out infinite;
+}
+@keyframes fabHintBob {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-3px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fabHint {
+    animation: none;
+  }
+}
+.fab {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  border: none;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  position: relative;
+  overflow: visible; /* anchors the tutorial finger */
+  transition: background 160ms, transform 0.1s, box-shadow 160ms, opacity 160ms;
+}
+.fab:active {
+  transform: scale(0.94);
+}
+/* Extended FAB: icon + word. A ballot glyph isn't a universally-read icon, so
+   the label carries the meaning and roughly doubles the tap target — without
+   spending a permanent full-width bar on a browse-first screen. */
+.fabExtended {
+  width: auto;
+  min-width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+.fabLabel {
+  font-size: 15.5px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1;
+}
+.fabCountInline {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(244, 242, 236, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.fab svg {
+  width: 25px;
+  height: 25px;
+}
+.postFab {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  box-shadow: 0 3px 10px rgba(var(--accent-rgb), 0.28);
+}
+.postFab svg {
+  fill: var(--accent);
+}
+/* Vote FAB — the "hunt here" notification. */
+.voteFab svg {
+  fill: currentColor;
+}
+.fabDisabled {
+  background: var(--surface-2);
+  border: 1.5px dashed var(--hairline);
+  color: var(--faint-2);
+  box-shadow: none;
+  cursor: default;
+}
+.voteFabReady {
+  background: var(--accent);
+  border: 1.5px solid var(--ok);
+  color: var(--surface);
+  box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.4);
+  animation: voteReadyGlow 1.8s ease-in-out infinite;
+}
+@keyframes voteReadyGlow {
+  0%,
+  100% {
+    box-shadow: 0 3px 12px rgba(var(--accent-rgb), 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(var(--accent-rgb), 0.22),
+      0 3px 14px rgba(var(--accent-rgb), 0.5);
+  }
+}
+.voteFabActive {
+  background: var(--ok);
+  border: 1.5px solid var(--ok);
+  color: var(--surface);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+@media (prefers-reduced-motion: reduce) {
+  .voteFabReady {
+    animation: none;
+  }
+}
+/* Count badge on the Vote FAB — how many duels you can clear right here, right
+   now. Bounded/small (current level only), so it doesn't saturate like the
+   per-card subtree slots. Warm "act on this" pill, top-right corner. */
+.fabCount {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--surface);
+  border: 2px solid var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 1px 3px rgba(var(--overlay-rgb), 0.3);
+  pointer-events: none;
+}
+
+/* ── Compose bottom-sheet ─────────────────────────────────────────────────── */
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(var(--overlay-rgb), 0.38);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  animation: fadeIn 160ms ease;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.sheet {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  background: var(--paper);
+  border-radius: 18px 18px 0 0;
+  border-top: 1px solid var(--hairline);
+  padding: 8px 16px calc(var(--kb-bottom, 0px) + 18px);
+  box-shadow: 0 -8px 28px rgba(var(--overlay-rgb), 0.2);
+  animation: sheetUp 220ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes sheetUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0.5;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.sheetHandle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--hairline);
+  margin: 4px auto 10px;
+}
+.sheetTitle {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 2px 8px;
+}
+/* Just-in-time concept reveal — see ConceptReveal.tsx. An in-flow one-idea card
+   that heads the view you just landed on the first time you hit a moment (duel,
+   branch). Pine hairline + stone fill so it reads as a quiet aside, not an
+   alert. In-flow (not floating) so it never covers the bottom dock/FAB. */
+.revealWrap {
+  margin-bottom: 10px;
+  animation: fadeIn 200ms ease;
+}
+.revealCard {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--paper);
+  border: 1px solid var(--accent);
+  border-left: 3px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(var(--overlay-rgb), 0.1);
+}
+.revealText {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+.revealDismiss {
+  flex: none;
+  align-self: center;
+  padding: 7px 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.revealDismiss:hover,
+.revealDismiss:focus-visible {
+  background: var(--accent-strong);
+}
+
+/* "What is OneMind?" concept sheet — see ConceptSheet.tsx. Numbered beats:
+   pine numeral (the accent), serif lead line (an opinion's voice), stone body. */
+.conceptList {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.conceptBeat {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.conceptNum {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--paper);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 1px;
+}
+.conceptText {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.conceptLead {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.conceptBody {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-strong);
+}
+.conceptDone {
+  width: 100%;
+  margin-top: 20px;
+  padding: 12px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+.conceptDone:hover,
+.conceptDone:focus-visible {
+  background: var(--accent-strong);
+}
+
+.similarBox {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-radius: 10px;
+}
+.similarLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted-2);
+  margin-bottom: 5px;
+}
+/* A match is a DESTINATION (tap to open that thread), not just a warning — so
+   it has to read as tappable, not as static text. */
+.similarItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 4px;
+  cursor: pointer;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+  transition: background 140ms ease, color 140ms ease;
+}
+.similarItem:hover:not(:disabled),
+.similarItem:focus-visible {
+  background: rgba(var(--accent-rgb), 0.09);
+  color: var(--accent);
+}
+.similarItem:disabled {
+  cursor: default;
+}
+.similarText {
+  flex: 1;
+  min-width: 0;
+}
+.similarGo {
+  flex: none;
+  color: var(--accent);
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* ── Watch bell + inbox ───────────────────────────────────────────────────── */
+.bellBtn {
+  position: relative;
+  overflow: visible;
+  border: none;
+  background: none;
+  padding: 8px;
+  cursor: pointer;
+  color: var(--ink-muted);
+  display: flex;
+}
+.bellBtn svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+.bellBadge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--surface);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.watchList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+.watchRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 12px;
+  border: 1px solid var(--rule);
+  border-radius: 12px;
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+}
+.watchRow:active {
+  background: var(--surface-2);
+}
+.watchRowText {
+  flex: 1;
+  min-width: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.watchRowBadge {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 12.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.watchRowBadge svg {
+  width: 13px;
+  height: 13px;
+  fill: var(--surface);
+}
+/* A quiet watch — no votes waiting right now. */
+.watchRowQuiet {
+  flex: none;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--faint-2);
+  white-space: nowrap;
+}
+.watchEmpty {
+  padding: 14px 6px 8px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted-strong);
+}
+/* (.watchToggle removed — the watch eye moved from the crumb row to the appbar
+   next to the bell; see .appbarEye.) */
+
+.composerDock {
+  position: fixed;
+  bottom: var(--kb-bottom, 0px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
+  max-width: 560px;
+  z-index: 15;
+  background: var(--surface-2);
+  border-top: 1px solid var(--hairline);
+  padding: 10px 16px 14px;
+}
+.composerCard {
+  display: flex;
+  align-items: flex-end; /* keep send button pinned to bottom as the field grows */
+  background: var(--surface);
+  /* Neutral hairline (accent is reserved for #1). Calm input. */
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
+  padding: 0 0 0 10px;
+  margin-bottom: 6px;
+}
+.composerLock {
+  align-self: center;
+  flex: none;
+  display: inline-flex;
+  margin-right: 6px;
+  color: var(--muted-2);
+}
+.composerLock svg {
+  width: 15px;
+  height: 15px;
+}
+/* Matches .composerInput's box exactly (font 16/22 + 12px vertical padding =
+   46px) so the skeleton dock is the same height as the real composer — the swap
+   between them is invisible. Single-line, muted placeholder. */
+.skeletonField {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 22px;
+  padding: 12px 0;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.composerInput {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px; /* ≥16px stops iOS zoom-on-focus */
+  line-height: 22px;
+  padding: 12px 0;
+  color: var(--ink);
+  /* Auto-grows with content (height set in JS) up to max-height, then scrolls
+     so long takes stay readable without a single horizontally-scrolling line. */
+  resize: none;
+  overflow-y: auto;
+  max-height: 156px; /* ~6 lines, then scroll */
+  display: block;
+}
+.composerInput::placeholder {
+  color: var(--muted-2);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-style: italic;
+}
+.mineCard {
+  animation: settleIn 600ms ease;
+}
+@keyframes settleIn {
+  from { background: var(--surface-2); }
+  to { background: var(--surface); }
+}
+.youTag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--accent);
+}
+.sendBtn {
+  border: none;
+  background: transparent;
+  color: var(--accent);
+  padding: 10px 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+.sendBtn:disabled { opacity: 0.45; cursor: default; }
+.sendBtn svg { width: 22px; height: 22px; fill: currentColor; }
+/* Sending: the arrow becomes a circular progress indicator IN PLACE. Sized to
+   the icon (22px) so the button never changes width. A sending button is also
+   disabled, and the dimming above would fade the spinner to near-invisible —
+   so a busy button stays at full opacity. */
+.sendBtn[aria-busy="true"]:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.sendSpinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid rgba(var(--accent-rgb), 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sendSpinner { animation-duration: 2.4s; }
+}
+.errNote {
+  margin: 2px 0 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--danger);
+}
+/* Deadline-with-consequence note at the point of action. */
+.deadlineNote {
+  margin: 6px 0 10px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* ── Duel (MatchesRatingPanel, accent = consensus orange) ────────────── */
+.duelWrap {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.duelPrompt {
+  text-align: center;
+  font-size: 12px; /* bodySmall */
+  color: var(--muted);
+}
+.matchCounter {
+  text-align: center;
+  font-size: 11px; /* labelSmall */
+  color: var(--muted);
+  margin-top: 8px;
+  margin-bottom: 10px;
+}
+.duelCol {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.duelOption {
+  background: var(--surface);
+  border: 1.5px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 15px;
+  line-height: 1.4;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.22);
+  transition: transform 120ms, box-shadow 120ms, background 120ms;
+}
+.duelOption:hover {
+  background: var(--sunken);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(var(--accent-rgb), 0.28);
+}
+.duelOption:active {
+  transform: scale(0.98);
+  box-shadow: 0 1px 3px rgba(var(--accent-rgb), 0.25);
+}
+.duelOption:disabled { opacity: 0.6; cursor: default; }
+/* New pair slides in — motion marks the fresh decision. */
+.duelCol { animation: pairIn 200ms ease-out; }
+@keyframes pairIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.equalRow {
+  display: flex;
+  align-items: center;
+  margin: 8px 0;
+}
+.equalRow::before {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+  margin-right: 10px;
+}
+.equalRow::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--rule);
+  margin-left: 10px;
+}
+.equalPill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: inherit;
+  cursor: pointer;
+}
+.equalPill:disabled { opacity: 0.6; cursor: default; }
+.equalPill svg { width: 16px; height: 16px; fill: currentColor; }
+/* The 3s read-gate lives in this pill (dead centre, where you're already
+   looking) instead of swapping the header text. Fixed min box so swapping
+   "⚖ Equal" ↔ a digit never resizes the pill or shifts the two options. */
+.equalPill {
+  min-width: 78px;
+  min-height: 52px;
+  justify-content: center;
+  transition: border-color 200ms ease, color 200ms ease;
+}
+.equalPillCounting {
+  /* Reads as "wait", not as a button you failed to press. */
+  border-style: dashed;
+  border-color: var(--hairline);
+  color: var(--accent);
+}
+/* A counting pill is always disabled, and `.equalPill:disabled` (0,2,0) would
+   otherwise out-specify this and fade the countdown to 60%. Match specificity
+   and win on source order — a countdown must stay fully legible. */
+.equalPillCounting:disabled {
+  opacity: 1;
+  cursor: progress;
+}
+.equalCount {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.skipBtn {
+  display: block;
+  margin: 6px auto 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--muted-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.skipBtn:disabled { opacity: 0.5; cursor: default; }
+.doneBox {
+  text-align: center;
+  padding: 16px;
+}
+.doneBig { font-size: 16px; font-weight: 700; color: var(--accent); }
+.doneSmall { font-size: 13px; color: var(--muted); margin-top: 6px; }
+/* Impact beat: the opinion that's on top now, thanks to votes like theirs —
+   connects the judgment they just cast to the visible outcome. */
+.doneTop {
+  margin: 10px auto 2px;
+  max-width: 440px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.18);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+.doneTopLabel {
+  font-family: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas,
+    monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+}
+.doneTopText {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.busyDim { opacity: 0.6; pointer-events: none; }
+/* 3s consideration gate: the options are UNTAPPABLE until the countdown ends.
+   Keep the TEXT fully legible (reading both is the whole point of the wait), but
+   strip the button affordances — muted border, no lift/shadow, no pointer — so
+   the cards clearly read as "not yet," not as live buttons you can tap. */
+.duelLocked .duelOption:disabled,
+.duelLocked .equalPill:disabled {
+  opacity: 1;
+  cursor: default;
+  border-color: var(--hairline);
+  background: var(--surface);
+  box-shadow: none;
+  color: var(--ink-muted);
+}
+.duelLocked .duelOption:disabled {
+  transform: none;
+}
+.voterCount {
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin: 10px 0 2px;
+}
+
+/* ── Post-vote push opt-in (amber callout: re-engagement, an ACTION) ───── */
+.pushCard {
+  margin: 10px 0 4px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent);
+  background: var(--sunken); /* amber-50 wash — reads as an invitation, not chrome */
+  border-radius: 12px;
+  text-align: center;
+}
+.pushText {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.pushDone {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.pushBtns {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+.pushYes {
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--surface);
+  background: var(--accent);
+  border: none;
+  border-radius: 999px;
+  padding: 7px 18px;
+  cursor: pointer;
+}
+.pushYes:disabled { opacity: 0.6; cursor: default; }
+.pushNo {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--muted-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 7px 10px;
+}
+.pushNo:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Boot / error ────────────────────────────────────────────────────── */
+.boot {
+  min-height: 55dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid rgba(var(--accent-rgb), 0.25);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.bootErr {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 0 24px;
+}

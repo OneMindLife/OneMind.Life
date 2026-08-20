@@ -125,23 +125,6 @@ void main() {
       });
     });
 
-    group('isInviteOnly', () {
-      test('returns true for invite_only access method', () {
-        const accessMethod = 'invite_only';
-        expect(accessMethod == 'invite_only', isTrue);
-      });
-
-      test('returns false for public access method', () {
-        const accessMethod = 'public';
-        expect(accessMethod == 'invite_only', isFalse);
-      });
-
-      test('returns false for code access method', () {
-        const accessMethod = 'code';
-        expect(accessMethod == 'invite_only', isFalse);
-      });
-    });
-
     group('Email Normalization', () {
       test('handles various email formats', () {
         final testCases = {

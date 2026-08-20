@@ -1,0 +1,30 @@
+name: List Google Ads Accounts
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list-accounts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install google-ads
+
+      - name: List Google Ads accounts
+        env:
+          GOOGLE_ADS_DEVELOPER_TOKEN: ${{ secrets.GOOGLE_ADS_DEVELOPER_TOKEN }}
+          GOOGLE_ADS_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_ADS_OAUTH_CLIENT_ID }}
+          GOOGLE_ADS_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_ADS_OAUTH_CLIENT_SECRET }}
+          GOOGLE_ADS_OAUTH_REFRESH_TOKEN: ${{ secrets.GOOGLE_ADS_OAUTH_REFRESH_TOKEN }}
+        run: python3 scripts/list-ads-accounts.py

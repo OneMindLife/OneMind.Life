@@ -62,6 +62,19 @@ extension MockChatServiceSetup on MockChatService {
     when(() => getChatById(id)).thenAnswer((_) async => chat);
   }
 
+  /// Setup getChatDetailBootstrap to return a single bootstrap snapshot.
+  /// Use [ChatDetailBootstrapBuilder] for terse fixtures.
+  void setupGetChatDetailBootstrap(
+    int chatId,
+    ChatDetailBootstrap? bootstrap,
+  ) {
+    when(() => getChatDetailBootstrap(
+          chatId,
+          languageCode: any(named: 'languageCode'),
+          includePreviousResults: any(named: 'includePreviousResults'),
+        )).thenAnswer((_) async => bootstrap);
+  }
+
   /// Setup createChat to return a chat
   void setupCreateChat(Chat chat) {
     when(() => createChat(

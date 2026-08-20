@@ -298,7 +298,11 @@ void main() {
         // Verify channels were created for participants, join_requests, and rounds
         verify(() => mockSupabase.channel('my_participants')).called(1);
         verify(() => mockSupabase.channel('my_join_requests')).called(1);
-        verify(() => mockSupabase.channel('dashboard_rounds')).called(1);
+        // No 'dashboard_rounds' channel — that pattern was an unfiltered
+        // global subscription. Replaced by per-cycle filtered channels
+        // ('dashboard_rounds:<cycleId>') reconciled from dashboard state.
+        verifyNever(() =>
+            mockSupabase.channel(any(that: startsWith('dashboard_rounds'))));
       });
 
       test('does not set up subscriptions when currentUser is null on init', () async {
@@ -344,7 +348,11 @@ void main() {
         // Now verify channels WERE created after auth state change
         verify(() => mockSupabase.channel('my_participants')).called(1);
         verify(() => mockSupabase.channel('my_join_requests')).called(1);
-        verify(() => mockSupabase.channel('dashboard_rounds')).called(1);
+        // No 'dashboard_rounds' channel — that pattern was an unfiltered
+        // global subscription. Replaced by per-cycle filtered channels
+        // ('dashboard_rounds:<cycleId>') reconciled from dashboard state.
+        verifyNever(() =>
+            mockSupabase.channel(any(that: startsWith('dashboard_rounds'))));
       });
 
       test('does not duplicate subscriptions on subsequent auth events', () async {
@@ -358,7 +366,11 @@ void main() {
         // Channels created on init
         verify(() => mockSupabase.channel('my_participants')).called(1);
         verify(() => mockSupabase.channel('my_join_requests')).called(1);
-        verify(() => mockSupabase.channel('dashboard_rounds')).called(1);
+        // No 'dashboard_rounds' channel — that pattern was an unfiltered
+        // global subscription. Replaced by per-cycle filtered channels
+        // ('dashboard_rounds:<cycleId>') reconciled from dashboard state.
+        verifyNever(() =>
+            mockSupabase.channel(any(that: startsWith('dashboard_rounds'))));
 
         // Emit another auth event (e.g., token refresh)
         authStateController.add(AuthState(
@@ -371,7 +383,47 @@ void main() {
         // Should NOT create additional channels (no new calls after the auth event)
         verifyNever(() => mockSupabase.channel('my_participants'));
         verifyNever(() => mockSupabase.channel('my_join_requests'));
-        verifyNever(() => mockSupabase.channel('dashboard_rounds'));
+        verifyNever(() =>
+            mockSupabase.channel(any(that: startsWith('dashboard_rounds'))));
+      });
+
+      test('opens one filtered rounds channel per cycle in dashboard',
+          () async {
+        // Two chats, each on a different cycle. The notifier should
+        // open 2 filtered subscriptions, not 1 unfiltered one — that
+        // unfiltered global subscription was the P0 cascade source.
+        when(() => mockChatService.getMyDashboard(
+                languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => [
+                  ChatDashboardInfo(
+                    chat: ChatFixtures.model(id: 1, name: 'A'),
+                    participantCount: 3,
+                    currentCycleId: 100,
+                  ),
+                  ChatDashboardInfo(
+                    chat: ChatFixtures.model(id: 2, name: 'B'),
+                    participantCount: 4,
+                    currentCycleId: 200,
+                  ),
+                ]);
+
+        container = createContainer();
+        await waitForData(container);
+
+        verify(() => mockSupabase.channel('dashboard_rounds:100')).called(1);
+        verify(() => mockSupabase.channel('dashboard_rounds:200')).called(1);
+      });
+
+      test('does not open rounds channels when dashboard is empty', () async {
+        when(() => mockChatService.getMyDashboard(
+                languageCode: any(named: 'languageCode')))
+            .thenAnswer((_) async => []);
+
+        container = createContainer();
+        await waitForData(container);
+
+        verifyNever(() =>
+            mockSupabase.channel(any(that: startsWith('dashboard_rounds'))));
       });
     });
 

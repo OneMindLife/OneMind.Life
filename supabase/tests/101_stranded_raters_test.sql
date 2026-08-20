@@ -1,13 +1,21 @@
 -- =============================================================================
--- TESTS: Auto-skip stranded raters when a round enters rating phase
---   Migration: supabase/migrations/20260501050000_auto_skip_stranded_raters.sql
+-- TESTS: Stranded-rater auto-skip under conditional self-inclusion
+--   Migrations: 20260501050000_auto_skip_stranded_raters.sql (original)
+--               20260705150000_stranded_raters_csi.sql (CSI rewrite)
+--
+-- Under CSI, any participant can rate a round with >= 2 propositions (their
+-- own props are served when excluding them would leave fewer than 2), so
+-- NOBODY is stranded in a normal round — the pre-CSI version auto-skipped
+-- multi-prop authors, and in 2-prop/2-author rounds skipped EVERYONE, which
+-- drove active_raters to 0 and completed the round with zero votes (observed
+-- on prod chat 1179 round 3594, 2026-07-05).
 --
 -- Coverage:
---   T1  Carry author (also submitted fresh) auto-skipped when their rateable
---       count is below rating_minimum
---   T2  Non-carry-author submitters NOT auto-skipped
+--   T1  Carry author (also submitted fresh, non-own=1) is NOT auto-skipped —
+--       CSI serves them their own props
+--   T2  Other participants NOT auto-skipped either
 --   T3  Trigger does not fire on phases other than rating
---   T4  Trigger is idempotent — re-running phase-update is safe
+--   T4  Re-running the phase update stays skip-free (idempotent no-op)
 -- =============================================================================
 
 BEGIN;
@@ -96,8 +104,8 @@ SELECT is(
 );
 
 -- -----------------------------------------------------------------------------
--- Transition R2 to rating. The trigger should now run and mark P1 as
--- stranded.
+-- Transition R2 to rating. Round has 3 props (>= 2), so under CSI the
+-- trigger must mark NOBODY as stranded — P1's own props are votable for them.
 -- -----------------------------------------------------------------------------
 UPDATE rounds SET phase = 'rating',
                   phase_started_at = NOW(),
@@ -105,14 +113,15 @@ UPDATE rounds SET phase = 'rating',
 WHERE id = current_setting('test.r2_id')::INT;
 
 -- -----------------------------------------------------------------------------
--- T1: P1 (carry author + fresh-submitter) was auto-skipped.
+-- T1: P1 (carry author + fresh-submitter, non-own = 1) is NOT auto-skipped:
+-- under CSI their own props join their votable set (votable = 3 >= 2).
 -- -----------------------------------------------------------------------------
 SELECT is(
   (SELECT COUNT(*)::INT FROM rating_skips
     WHERE round_id = current_setting('test.r2_id')::INT
       AND participant_id = current_setting('test.p1')::INT),
-  1,
-  'T1 carry author with insufficient rateable props is auto-skipped'
+  0,
+  'T1 carry author is NOT auto-skipped — CSI makes their own props votable'
 );
 
 -- -----------------------------------------------------------------------------
@@ -137,8 +146,8 @@ WHERE id = current_setting('test.r2_id')::INT;
 SELECT is(
   (SELECT COUNT(*)::INT FROM rating_skips
     WHERE round_id = current_setting('test.r2_id')::INT),
-  1,
-  'T4 trigger is idempotent — no duplicate rating_skips for stranded user'
+  0,
+  'T4 re-running the phase update stays skip-free (idempotent no-op)'
 );
 
 SELECT * FROM finish();

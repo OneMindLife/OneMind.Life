@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/l10n/language_service.dart';
 import '../../core/l10n/locale_provider.dart';
-import '../../models/chat_credits.dart';
 import '../../models/models.dart';
 import '../../services/affirmation_service.dart';
 import '../../services/chat_service.dart';
@@ -14,6 +13,43 @@ import '../../services/proposition_service.dart';
 import '../../utils/perf_logger.dart';
 import '../mixins/language_aware_mixin.dart';
 import '../providers.dart';
+
+/// REALTIME-RACE-DEBUG (2026-05-02): emit events to perf_logs from
+/// every realtime handler so we can reconstruct each client's
+/// arrival timeline + resulting state. Tag is `rt_race.<event>`.
+/// Remove with the call sites before merge.
+void _rtRaceLog(String event, {int? chatId, int? roundId,
+    Map<String, dynamic>? payload}) {
+  PerfLogger.start('rt_race.$event',
+      chatId: chatId, roundId: roundId, payload: payload);
+}
+
+void _rtRaceSnapshot(String trigger, ChatDetailState s) {
+  final r = s.currentRound;
+  PerfLogger.start(
+    'rt_race.snapshot',
+    chatId: s.chat?.id,
+    roundId: r?.id,
+    payload: {
+      'trigger': trigger,
+      'phase': r?.phase.name,
+      'phase_ends_at': r?.phaseEndsAt?.toIso8601String(),
+      'rating_progress_percent': s.ratingProgressPercent,
+      'rating_skip_count': s.ratingSkipCount,
+      'skip_count': s.skipCount,
+      'has_skipped': s.hasSkipped,
+      'has_skipped_rating': s.hasSkippedRating,
+      'has_started_rating': s.hasStartedRating,
+      'has_rated': s.hasRated,
+      'props': s.propositions.length,
+      'my_props': s.myPropositions.length,
+      'participants': s.participants.length,
+      'skipped_proposing': s.participantsWhoSkippedProposing.length,
+      'skipped_rating': s.participantsWhoSkippedRating.length,
+      'affirmed': s.participantsWhoAffirmed.length,
+    },
+  );
+}
 
 /// Complete state for the ChatScreen
 class ChatDetailState extends Equatable {
@@ -47,6 +83,12 @@ class ChatDetailState extends Equatable {
   final bool hasAffirmed;
   // Participants who have submitted ratings in the current round
   final Set<int> participantsWhoRated;
+  // Participants who have submitted a NEW proposition in the current round.
+  // Drives the proposing-phase "Done" tag on the participants leaderboard —
+  // proposition authorship is hidden client-side during proposing, so this
+  // set (from the SECURITY DEFINER bootstrap RPC) is the only who-proposed
+  // signal. Exposes participation only, never idea content.
+  final Set<int> participantsWhoProposed;
   // Participants who have skipped proposing in the current round
   final Set<int> participantsWhoSkippedProposing;
   // Participants who have skipped rating in the current round
@@ -59,6 +101,12 @@ class ChatDetailState extends Equatable {
   // Used to gate the "Skip Rating" UI — skip is only available when this is 0.
   // Kept fresh by the existing grid_rankings realtime subscription.
   final int myCurrentRoundRatingCount;
+  // Matches (pairwise) mode group progress. Populated only when
+  // chat.ratingMode == 'matches' (via get_matches_rating_progress). done =
+  // raters finished (completion marker / grid coverage / skip); eligible =
+  // get_rating_eligible_count. Drives the round-status bar in matches mode.
+  final int matchesDoneRaters;
+  final int matchesEligibleRaters;
   // Credit state
   final ChatCredits? chatCredits;
   final bool isMyParticipantFunded;
@@ -102,11 +150,14 @@ class ChatDetailState extends Equatable {
     this.affirmationCount = 0,
     this.hasAffirmed = false,
     this.participantsWhoRated = const {},
+    this.participantsWhoProposed = const {},
     this.participantsWhoSkippedProposing = const {},
     this.participantsWhoSkippedRating = const {},
     this.participantsWhoAffirmed = const {},
     this.minRatingsPerProp = 0,
     this.myCurrentRoundRatingCount = 0,
+    this.matchesDoneRaters = 0,
+    this.matchesEligibleRaters = 0,
     this.chatCredits,
     this.isMyParticipantFunded = true,
     this.allowedCategories = const [],
@@ -144,17 +195,30 @@ class ChatDetailState extends Equatable {
   }
 
   /// Per-proposition advance threshold for rating phase.
-  /// min(10, max(active_raters - 1, 1)) where active_raters excludes skippers.
+  /// min(10, max(active_raters - selfExcl, 1)) where active_raters excludes
+  /// skippers. selfExcl is 1 (a prop's author can't rate it) except in
+  /// conditional-self-inclusion rounds (<= 2 props: authors rate their own
+  /// too, so every prop's audience is the full rater set). Keep in sync with
+  /// recompute_round_participation_percent / check_early_advance_on_rating.
   int get ratingAdvanceThreshold {
     final activeRaters = activeParticipantCount - ratingSkipCount;
     if (activeRaters <= 0) return 1;
-    final raw = activeRaters - 1;
+    final selfExcl = propositions.length <= 2 ? 0 : 1;
+    final raw = activeRaters - selfExcl;
     return raw < 1 ? 1 : (raw > 10 ? 10 : raw);
   }
 
-  /// Rating progress percentage (0-100) based on per-proposition coverage.
-  /// min(ratings per prop) / threshold × 100.
+  /// Rating progress percentage (0-100).
+  /// Matches mode: per-RATER completion (done / eligible) — pairwise votes
+  /// never touch grid_rankings, so the grid coverage formula would read 0.
+  /// Grid mode: per-proposition coverage, min(ratings per prop) / threshold.
   int get ratingProgressPercent {
+    if (chat?.ratingMode == 'matches') {
+      if (matchesEligibleRaters <= 0) return 0;
+      return ((matchesDoneRaters / matchesEligibleRaters) * 100)
+          .round()
+          .clamp(0, 100);
+    }
     final threshold = ratingAdvanceThreshold;
     if (threshold <= 0) return 100;
     return ((minRatingsPerProp / threshold) * 100).round().clamp(0, 100);
@@ -208,11 +272,14 @@ class ChatDetailState extends Equatable {
     int? affirmationCount,
     bool? hasAffirmed,
     Set<int>? participantsWhoRated,
+    Set<int>? participantsWhoProposed,
     Set<int>? participantsWhoSkippedProposing,
     Set<int>? participantsWhoSkippedRating,
     Set<int>? participantsWhoAffirmed,
     int? minRatingsPerProp,
     int? myCurrentRoundRatingCount,
+    int? matchesDoneRaters,
+    int? matchesEligibleRaters,
     ChatCredits? chatCredits,
     bool? isMyParticipantFunded,
     List<String>? allowedCategories,
@@ -245,12 +312,16 @@ class ChatDetailState extends Equatable {
       affirmationCount: affirmationCount ?? this.affirmationCount,
       hasAffirmed: hasAffirmed ?? this.hasAffirmed,
       participantsWhoRated: participantsWhoRated ?? this.participantsWhoRated,
+      participantsWhoProposed: participantsWhoProposed ?? this.participantsWhoProposed,
       participantsWhoSkippedProposing: participantsWhoSkippedProposing ?? this.participantsWhoSkippedProposing,
       participantsWhoSkippedRating: participantsWhoSkippedRating ?? this.participantsWhoSkippedRating,
       participantsWhoAffirmed: participantsWhoAffirmed ?? this.participantsWhoAffirmed,
       minRatingsPerProp: minRatingsPerProp ?? this.minRatingsPerProp,
       myCurrentRoundRatingCount:
           myCurrentRoundRatingCount ?? this.myCurrentRoundRatingCount,
+      matchesDoneRaters: matchesDoneRaters ?? this.matchesDoneRaters,
+      matchesEligibleRaters:
+          matchesEligibleRaters ?? this.matchesEligibleRaters,
       chatCredits: chatCredits ?? this.chatCredits,
       isMyParticipantFunded: isMyParticipantFunded ?? this.isMyParticipantFunded,
       allowedCategories: allowedCategories ?? this.allowedCategories,
@@ -286,11 +357,14 @@ class ChatDetailState extends Equatable {
         affirmationCount,
         hasAffirmed,
         participantsWhoRated,
+        participantsWhoProposed,
         participantsWhoSkippedProposing,
         participantsWhoSkippedRating,
         participantsWhoAffirmed,
         minRatingsPerProp,
         myCurrentRoundRatingCount,
+        matchesDoneRaters,
+        matchesEligibleRaters,
         chatCredits,
         isMyParticipantFunded,
         allowedCategories,
@@ -372,6 +446,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   RealtimeChannel? _skipChannel;
   RealtimeChannel? _ratingSkipChannel;
   RealtimeChannel? _gridRankingChannel;
+  RealtimeChannel? _ratingCompletionChannel;
   RealtimeChannel? _creditChannel;
   RealtimeChannel? _affirmationChannel;
 
@@ -383,13 +458,11 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
   Timer? _ratingSkipDebounce;
   Timer? _affirmationDebounce;
 
-  // Rate limiting
+  // Rate limiting (only the full-refresh + join-request paths still need
+  // dedicated rate limiters; the skip/affirm/proposition paths now patch
+  // realtime events directly so a per-event timestamp would be overkill).
   DateTime? _lastRefreshTime;
-  DateTime? _lastPropositionRefreshTime;
   DateTime? _lastJoinRequestRefreshTime;
-  DateTime? _lastSkipRefreshTime;
-  DateTime? _lastRatingSkipRefreshTime;
-  DateTime? _lastAffirmationRefreshTime;
 
   // Cache last known state for use during loading
   ChatDetailState? _cachedState;
@@ -531,6 +604,7 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _ratingSkipChannel?.unsubscribe();
     _affirmationChannel?.unsubscribe();
     _gridRankingChannel?.unsubscribe();
+    _ratingCompletionChannel?.unsubscribe();
     _creditChannel?.unsubscribe();
   }
 
@@ -556,184 +630,66 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
       payload: {'setup_subscriptions': setupSubscriptions},
     );
     try {
-      // Load all data in parallel (including fresh chat data for schedulePaused, etc.)
-      final results = await Future.wait([
-        _chatService.getChatById(chatId, languageCode: contentLanguageCode),
-        _chatService.getCurrentCycle(chatId),
-        _chatService.getConsensusItems(chatId, languageCode: contentLanguageCode),
-        _participantService.getParticipants(chatId),
-        _participantService.getMyParticipant(chatId),
-      ]);
-      final chat = results[0] as Chat?;
-      final currentCycle = results[1] as Cycle?;
-      final consensusItems = results[2] as List<ConsensusItem>;
-      var participants = results[3] as List<Participant>;
-      var myParticipant = results[4] as Participant?;
+      // One round-trip replaces the 18 parallel queries this method used
+      // to fire. The bootstrap RPC does the joins/aggregations server-side
+      // and returns one JSONB payload — at NCDD demo scale this avoids the
+      // connection-pool stampede where queue depth grew faster than the
+      // server could drain it (~13s pause→render lag).
+      final boot = await _chatService.getChatDetailBootstrap(
+        chatId,
+        languageCode: contentLanguageCode,
+        includePreviousResults: showPreviousResults,
+      );
 
-      // (Auto-join into the official chat now lives on the Home screen,
-      // gated by the official_chat_auto_joined flag in TutorialService.
-      // We deliberately do NOT silently re-add the user here, so an
-      // explicit "Leave Chat" sticks.)
-
-      // Fetch pending join requests if user is host
-      List<Map<String, dynamic>> pendingJoinRequests = [];
-      if (myParticipant?.isHost == true) {
-        pendingJoinRequests =
-            await _participantService.getPendingRequests(chatId);
+      if (boot == null) {
+        // Caller can't view this chat (deleted, kicked, etc). Mirror the
+        // null-state the old query path would produce so downstream UI
+        // sees a "chat is gone" outcome rather than spinning forever.
+        final newState = ChatDetailState(
+          chat: null,
+          currentCycle: null,
+          currentRound: null,
+          consensusItems: const [],
+          propositions: const [],
+          participants: const [],
+          myParticipant: null,
+          myPropositions: const [],
+          hasRated: false,
+          hasStartedRating: false,
+          previousRoundWinners: const [],
+          isSoleWinner: false,
+          consecutiveSoleWins: 0,
+          previousRoundId: null,
+          previousRoundResults: const [],
+          pendingJoinRequests: const [],
+          skipCount: 0,
+          hasSkipped: false,
+          ratingSkipCount: 0,
+          hasSkippedRating: false,
+          affirmationCount: 0,
+          hasAffirmed: false,
+          participantsWhoRated: const {},
+          participantsWhoProposed: const {},
+          participantsWhoSkippedProposing: const {},
+          participantsWhoSkippedRating: const {},
+          participantsWhoAffirmed: const {},
+          minRatingsPerProp: 0,
+          myCurrentRoundRatingCount: 0,
+          chatCredits: null,
+          isMyParticipantFunded: true,
+          allowedCategories: const [],
+          viewingLanguageCode: state.valueOrNull?.viewingLanguageCode,
+          needsLanguageSelection:
+              state.valueOrNull?.needsLanguageSelection ?? false,
+        );
+        state = AsyncData(newState);
+        _cachedState = newState;
+        PerfLogger.end(perfCorr,
+            action: 'chat_detail_load', chatId: chatId);
+        return;
       }
 
-      // Fetch chat credits
-      ChatCredits? chatCredits;
-      try {
-        final creditData = await _supabase
-            .from('chat_credits')
-            .select()
-            .eq('chat_id', chatId)
-            .maybeSingle();
-        if (creditData != null) {
-          chatCredits = ChatCredits.fromJson(creditData);
-        }
-      } catch (e) {
-        // Error fetching chat credits - continue without them
-      }
-
-      Round? currentRound;
-      List<RoundWinner> previousRoundWinners = [];
-      bool isSoleWinner = false;
-      int consecutiveSoleWins = 0;
-      int? previousRoundId;
-      List<Proposition> previousRoundResults = [];
-      List<Proposition> propositions = [];
-      List<Proposition> myPropositions = [];
-      bool hasRated = false;
-      bool hasStartedRating = false;
-      int skipCount = 0;
-      bool hasSkipped = false;
-      int ratingSkipCount = 0;
-      bool hasSkippedRating = false;
-      int affirmationCount = 0;
-      bool hasAffirmed = false;
-      Set<int> participantsWhoRated = {};
-      Set<int> participantsWhoSkippedProposing = {};
-      Set<int> participantsWhoSkippedRating = {};
-      Set<int> participantsWhoAffirmed = {};
-      int minRatingsPerProp = 0;
-      int myCurrentRoundRatingCount = 0;
-      bool isMyParticipantFunded = true;
-      List<String> allowedCategories = [];
-
-      if (currentCycle != null) {
-        currentRound = await _chatService.getCurrentRound(currentCycle.id);
-
-        // Fetch previous round winners
-        final previousWinnersData =
-            await _chatService.getPreviousRoundWinners(
-              currentCycle.id,
-              languageCode: contentLanguageCode,
-            );
-        previousRoundWinners =
-            previousWinnersData['winners'] as List<RoundWinner>;
-        isSoleWinner = previousWinnersData['isSoleWinner'] as bool;
-        consecutiveSoleWins =
-            previousWinnersData['consecutiveSoleWins'] as int;
-        previousRoundId = previousWinnersData['previousRoundId'] as int?;
-
-        // Load full previous round results if enabled
-        if (showPreviousResults && previousRoundId != null) {
-          previousRoundResults = await _propositionService
-              .getPropositionsWithRatings(
-                previousRoundId,
-                languageCode: contentLanguageCode,
-              );
-        }
-
-        if (currentRound != null && myParticipant != null) {
-          final roundResults = await Future.wait([
-            _propositionService.getPropositions(
-              currentRound.id,
-              languageCode: contentLanguageCode,
-            ),
-            _propositionService.getMyPropositions(
-              currentRound.id,
-              myParticipant.id,
-            ),
-            _propositionService.getRatingProgress(
-              currentRound.id,
-              myParticipant.id,
-            ),
-            _propositionService.getSkipCount(currentRound.id),
-            _propositionService.hasSkipped(currentRound.id, myParticipant.id),
-            _propositionService.getRatingSkipCount(currentRound.id),
-            _propositionService.hasSkippedRating(currentRound.id, myParticipant.id),
-            _propositionService.getParticipantsWhoRated(currentRound.id),
-            _propositionService.getParticipantsWhoSkippedProposing(currentRound.id),
-            _propositionService.getParticipantsWhoSkippedRating(currentRound.id),
-            _propositionService.getMinRatingsPerProposition(currentRound.id),
-            _propositionService.getMyRatingCount(
-              roundId: currentRound.id,
-              participantId: myParticipant.id,
-            ),
-            _affirmationService.getAffirmationCount(currentRound.id),
-            _affirmationService.hasAffirmed(
-              roundId: currentRound.id,
-              participantId: myParticipant.id,
-            ),
-            _affirmationService.getParticipantsWhoAffirmed(currentRound.id),
-          ]);
-
-          propositions = roundResults[0] as List<Proposition>;
-          myPropositions = roundResults[1] as List<Proposition>;
-          final ratingProgress = roundResults[2] as Map<String, dynamic>;
-          hasRated = ratingProgress['completed'] as bool;
-          hasStartedRating = ratingProgress['started'] as bool;
-          skipCount = roundResults[3] as int;
-          hasSkipped = roundResults[4] as bool;
-          ratingSkipCount = roundResults[5] as int;
-          hasSkippedRating = roundResults[6] as bool;
-          participantsWhoRated = roundResults[7] as Set<int>;
-          participantsWhoSkippedProposing = roundResults[8] as Set<int>;
-          participantsWhoSkippedRating = roundResults[9] as Set<int>;
-          minRatingsPerProp = roundResults[10] as int;
-          myCurrentRoundRatingCount = roundResults[11] as int;
-          affirmationCount = roundResults[12] as int;
-          hasAffirmed = roundResults[13] as bool;
-          participantsWhoAffirmed = roundResults[14] as Set<int>;
-
-          // Check if my participant is funded for this round
-          try {
-            final fundingData = await _supabase
-                .from('round_funding')
-                .select('id')
-                .eq('round_id', currentRound.id)
-                .eq('participant_id', myParticipant.id)
-                .maybeSingle();
-            // If round has any funding records, check if we're funded
-            // If no funding exists yet, assume funded (backward compat)
-            if (fundingData != null) {
-              isMyParticipantFunded = true;
-            } else {
-              final countData = await _supabase.rpc(
-                'get_funded_participant_count',
-                params: {'p_round_id': currentRound.id},
-              );
-              isMyParticipantFunded = (countData as int? ?? 0) == 0;
-            }
-          } catch (e) {
-            // Error checking funding - assume funded
-          }
-        }
-
-        // Fetch allowed proposition categories for current cycle
-        try {
-          final catData = await _supabase.rpc(
-            'get_chat_allowed_categories',
-            params: {'p_chat_id': chatId},
-          );
-          allowedCategories = (catData as List).cast<String>();
-        } catch (e) {
-          // Error fetching allowed categories - continue with empty list
-        }
-      }
+      Round? currentRound = boot.currentRound;
 
       // Guard against stale API data reverting a phase that Realtime already
       // advanced. Realtime events can fire before the DB transaction commits,
@@ -753,49 +709,58 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
       // Preserve per-chat viewing language across reloads
       final existingViewingLang = state.valueOrNull?.viewingLanguageCode;
-      final existingNeedsLangSelection = state.valueOrNull?.needsLanguageSelection ?? false;
+      final existingNeedsLangSelection =
+          state.valueOrNull?.needsLanguageSelection ?? false;
 
       final newState = ChatDetailState(
-        chat: chat,
-        currentCycle: currentCycle,
+        chat: boot.chat,
+        currentCycle: boot.currentCycle,
         currentRound: currentRound,
-        consensusItems: consensusItems,
-        propositions: propositions,
-        participants: participants,
-        myParticipant: myParticipant,
-        myPropositions: myPropositions,
-        hasRated: hasRated,
-        hasStartedRating: hasStartedRating,
-        previousRoundWinners: previousRoundWinners,
-        isSoleWinner: isSoleWinner,
-        consecutiveSoleWins: consecutiveSoleWins,
-        previousRoundId: previousRoundId,
-        previousRoundResults: previousRoundResults,
-        pendingJoinRequests: pendingJoinRequests,
-        skipCount: skipCount,
-        hasSkipped: hasSkipped,
-        ratingSkipCount: ratingSkipCount,
-        hasSkippedRating: hasSkippedRating,
-        affirmationCount: affirmationCount,
-        hasAffirmed: hasAffirmed,
-        participantsWhoRated: participantsWhoRated,
-        participantsWhoSkippedProposing: participantsWhoSkippedProposing,
-        participantsWhoSkippedRating: participantsWhoSkippedRating,
-        participantsWhoAffirmed: participantsWhoAffirmed,
-        minRatingsPerProp: minRatingsPerProp,
-        myCurrentRoundRatingCount: myCurrentRoundRatingCount,
-        chatCredits: chatCredits,
-        isMyParticipantFunded: isMyParticipantFunded,
-        allowedCategories: allowedCategories,
+        consensusItems: boot.consensusItems,
+        propositions: boot.propositions,
+        participants: boot.participants,
+        myParticipant: boot.myParticipant,
+        myPropositions: boot.myPropositions,
+        hasRated: boot.hasRated,
+        hasStartedRating: boot.hasStartedRating,
+        previousRoundWinners: boot.previousRoundWinners,
+        isSoleWinner: boot.isSoleWinner,
+        consecutiveSoleWins: boot.consecutiveSoleWins,
+        previousRoundId: boot.previousRoundId,
+        previousRoundResults: boot.previousRoundResults,
+        pendingJoinRequests: boot.pendingJoinRequests,
+        skipCount: boot.skipCount,
+        hasSkipped: boot.hasSkipped,
+        ratingSkipCount: boot.ratingSkipCount,
+        hasSkippedRating: boot.hasSkippedRating,
+        affirmationCount: boot.affirmationCount,
+        hasAffirmed: boot.hasAffirmed,
+        participantsWhoRated: boot.participantsWhoRated,
+        participantsWhoProposed: boot.participantsWhoProposed,
+        participantsWhoSkippedProposing: boot.participantsWhoSkippedProposing,
+        participantsWhoSkippedRating: boot.participantsWhoSkippedRating,
+        participantsWhoAffirmed: boot.participantsWhoAffirmed,
+        minRatingsPerProp: boot.minRatingsPerProp,
+        myCurrentRoundRatingCount: boot.myCurrentRoundRatingCount,
+        chatCredits: boot.chatCredits,
+        isMyParticipantFunded: boot.isMyParticipantFunded,
+        allowedCategories: boot.allowedCategories,
         viewingLanguageCode: existingViewingLang,
         needsLanguageSelection: existingNeedsLangSelection,
       );
       state = AsyncData(newState);
       _cachedState = newState;
 
+      // Matches mode: the round-status bar reads done/eligible raters
+      // (pairwise votes never touch grid_rankings, so minRatingsPerProp stays
+      // 0). Patch it in after the fast bootstrap so grid chats pay nothing.
+      if (boot.chat?.ratingMode == 'matches' && currentRound != null) {
+        await _refreshMatchesProgress(currentRound.id);
+      }
+
       // On first load, resolve which content language to use
       if (existingViewingLang == null && !existingNeedsLangSelection) {
-        _resolveViewingLanguage(chat);
+        _resolveViewingLanguage(boot.chat);
       }
 
       if (setupSubscriptions) {
@@ -824,15 +789,47 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     }
   }
 
+  /// Matches mode only: fetch group rating progress (done / eligible raters)
+  /// and patch it into state. Best-effort — never breaks the load.
+  Future<void> _refreshMatchesProgress(int roundId) async {
+    try {
+      final res = await _supabase.rpc(
+        'get_matches_rating_progress',
+        params: {'p_round_id': roundId, 'p_chat_id': chatId},
+      );
+      if (res is List && res.isNotEmpty) {
+        final row = res.first as Map<String, dynamic>;
+        final done = (row['done'] as num?)?.toInt() ?? 0;
+        final eligible = (row['eligible'] as num?)?.toInt() ?? 0;
+        final cur = state.valueOrNull;
+        if (cur != null) {
+          final patched = cur.copyWith(
+            matchesDoneRaters: done,
+            matchesEligibleRaters: eligible,
+          );
+          state = AsyncData(patched);
+          _cachedState = patched;
+        }
+      }
+    } catch (_) {
+      // Progress bar is best-effort; a failure here must not break the chat.
+    }
+  }
+
   void _setupSubscriptions() {
     _unsubscribeAll();
 
-    // Subscribe to chat changes (including delete)
+    // Subscribe to chat changes (including delete).
+    //
+    // Most `chats` UPDATE events are operational ticks — host_paused,
+    // schedule_paused, last_activity_at — which we can merge into the
+    // current Chat without refetching. The full bootstrap is only needed
+    // when something structural changed that the Realtime payload doesn't
+    // cover (notably translated columns, which live in a separate table).
+    // _onChatUpdate handles the patch-vs-refresh decision.
     _chatChannel = _chatService.subscribeToChatChanges(
       chatId,
-      onUpdate: (_) {
-        _scheduleRefresh();
-      },
+      onUpdate: _onChatUpdate,
       onDelete: _onChatDeleted,
     );
 
@@ -939,50 +936,67 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     } else {
     }
 
-    // Update proposition subscription if round exists
+    // Update proposition subscription if round exists. Each subscription
+    // here uses payload-aware callbacks so we can merge state in place
+    // and avoid the cross-client cascade — when one user submits, all
+    // 20 subscribers used to fan out 3 queries each. Now they merge
+    // the payload locally and only refetch on edge cases.
     if (currentState.currentRound != null) {
+      final roundId = currentState.currentRound!.id;
+
+      // DEBUG (perflog): record every (re)bind of the proposition channel and
+      // which round/phase it bound to — pinpoints whether the host actually
+      // re-subscribes to the new round after Start (the live-count bug).
+      _rtRaceLog('dyn_subs.bind_props', roundId: roundId, payload: {
+        'phase': currentState.currentRound!.phase.name,
+        'cycle': currentState.currentCycle?.id,
+        'props_in_state': currentState.propositions.length,
+      });
+
       _propositionChannel?.unsubscribe();
       _propositionChannel = _propositionService.subscribeToPropositions(
-        currentState.currentRound!.id,
-        () {
-          _schedulePropositionRefresh();
-        },
+        roundId,
+        _onPropositionRealtime,
       );
 
-      // Update skip subscription for current round
       _skipChannel?.unsubscribe();
       _skipChannel = _propositionService.subscribeToSkips(
-        currentState.currentRound!.id,
-        () {
-          _scheduleSkipRefresh();
-        },
+        roundId,
+        _onRoundSkipRealtime,
       );
 
-      // Update affirmation subscription for current round
       _affirmationChannel?.unsubscribe();
       _affirmationChannel = _affirmationService.subscribeToAffirmations(
-        currentState.currentRound!.id,
-        () {
-          _scheduleAffirmationRefresh();
-        },
+        roundId,
+        _onAffirmationRealtime,
       );
 
-      // Update rating skip subscription for current round
       _ratingSkipChannel?.unsubscribe();
       _ratingSkipChannel = _propositionService.subscribeToRatingSkips(
-        currentState.currentRound!.id,
-        () {
-          _scheduleRatingSkipRefresh();
-        },
+        roundId,
+        _onRatingSkipRealtime,
       );
 
-      // Update grid ranking subscription for rating participation tracking
+      // Grid rankings drive the participants_who_rated set, which is
+      // computed across all rows via the rating-cap rule. Patching it
+      // in place is much trickier (need access to all per-participant
+      // rated counts to recompute "is done"). Defer to a focused
+      // refetch via _scheduleRefresh; cheap because it's debounced.
       _gridRankingChannel?.unsubscribe();
       _gridRankingChannel = _propositionService.subscribeToGridRankings(
-        currentState.currentRound!.id,
-        () {
-          _scheduleRefresh();
-        },
+        roundId,
+        () => _scheduleRefresh(),
+      );
+
+      // All modes: one event per rater when they finish rating (grid batch
+      // submit or matches pair-exhaustion). Patches participantsWhoRated in
+      // place so Done tags flip live — the only per-rater grid signal we
+      // get, since grid_rankings is deliberately not in the publication.
+      _ratingCompletionChannel?.unsubscribe();
+      _ratingCompletionChannel =
+          _propositionService.subscribeToRatingCompletions(
+        roundId,
+        _onRatingCompletionRealtime,
       );
     } else {
     }
@@ -993,77 +1007,118 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
 
   /// Handle round changes from realtime subscription
   ///
-  /// Uses the payload directly for phase updates to avoid rate limiting issues.
-  /// Only does full refresh for new rounds (INSERT) or when payload is incomplete.
+  /// Phase changes (and new-round INSERTs) trigger a full bootstrap
+  /// refetch — bootstrap is the source of truth on those, because a
+  /// single logical change ("round advanced to rating") is split across
+  /// multiple Postgres realtime events on independent subscriptions
+  /// (rounds UPDATE + rating_skips INSERTs from the stranded-rater
+  /// trigger + carried-forward propositions from on_round_winner_set,
+  /// etc.). Patching state from each event individually means arrival
+  /// order changes local state, which produced the May 2026 bugs:
+  /// auto-nav guard racing the rating_skips realtime, participation bar
+  /// lagging 5–11s across viewers for the same underlying event,
+  /// stranded users bouncing through the rating screen with "not enough
+  /// propositions."
+  ///
+  /// Timer-only updates (phase_ends_at changing while phase stays the
+  /// same — process-timers cron extends every 30s while below minimum)
+  /// patch in place. These are frequent and consistency-safe:
+  /// phase_ends_at is independent of any other state, and the timer
+  /// widget reads it directly.
   void _onRoundChange(
     PostgresChangeEvent event,
     Map<String, dynamic>? newRecord,
   ) {
-
-    // Use cached state if current state is loading
+    _rtRaceLog('round_${event.name}',
+        roundId: newRecord?['id'] as int?,
+        payload: {
+          'phase': newRecord?['phase'],
+          'phase_ends_at': newRecord?['phase_ends_at'],
+        });
     final currentState = state.valueOrNull ?? _cachedState;
     if (currentState == null) {
+      _rtRaceLog('round_${event.name}.bail_no_state');
       return;
     }
 
-    // For INSERT (new round), do a full refresh
     if (event == PostgresChangeEvent.insert) {
+      _rtRaceLog('round_insert.refetch_scheduled',
+          roundId: newRecord?['id'] as int?);
       _scheduleRefresh();
       return;
     }
 
-    // For UPDATE, try to update state directly from payload
     if (event == PostgresChangeEvent.update && newRecord != null) {
       final roundId = newRecord['id'] as int?;
       final phaseStr = newRecord['phase'] as String?;
-
-
-      // If this is our current round and we have phase info, update directly
-      if (roundId == currentState.currentRound?.id && phaseStr != null) {
-        final newPhase = RoundPhase.values.firstWhere(
-          (p) => p.name == phaseStr,
-          orElse: () => currentState.currentRound!.phase,
-        );
-
-        // Parse the new phaseEndsAt from payload
-        final newPhaseEndsAt = newRecord['phase_ends_at'] != null
-            ? DateTime.parse(newRecord['phase_ends_at'] as String)
-            : null;
-
-        // Check if phase or timer changed
-        final phaseChanged = newPhase != currentState.currentRound!.phase;
-        final currentTimer = currentState.currentRound!.phaseEndsAt;
-        final timerChanged = newPhaseEndsAt?.toUtc() != currentTimer?.toUtc();
-
-        if (phaseChanged || timerChanged) {
-          final updatedRound = currentState.currentRound!.copyWith(
-            phase: newPhase,
-            phaseStartedAt: newRecord['phase_started_at'] != null
-                ? DateTime.parse(newRecord['phase_started_at'] as String)
-                : null,
-            phaseEndsAt: newPhaseEndsAt,
-          );
-
-          final updatedState = currentState.copyWith(currentRound: updatedRound);
-          state = AsyncData(updatedState);
-          _cachedState = updatedState;
-
-          // Schedule a full refresh after a short delay to get any other data
-          // that might have changed (e.g., propositions when entering rating)
-          if (phaseChanged) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              _lastRefreshTime = null; // Reset rate limiter for this refresh
-              _scheduleRefresh();
-            });
-          }
-          return;
-        } else {
-        }
-      } else {
+      if (roundId != currentState.currentRound?.id || phaseStr == null) {
+        _rtRaceLog('round_update.refetch_other_round',
+            roundId: roundId,
+            payload: {'current_round': currentState.currentRound?.id});
+        _scheduleRefresh();
+        return;
       }
+
+      final newPhase = RoundPhase.values.firstWhere(
+        (p) => p.name == phaseStr,
+        orElse: () => currentState.currentRound!.phase,
+      );
+      final phaseChanged = newPhase != currentState.currentRound!.phase;
+
+      if (phaseChanged) {
+        // Full refetch so rating_skips, carried-forward propositions,
+        // and any other side-effects of the phase transition arrive in
+        // one consistent snapshot before the UI reacts.
+        _rtRaceLog('round_update.phase_change_refetch',
+            roundId: roundId,
+            payload: {
+              'from': currentState.currentRound!.phase.name,
+              'to': newPhase.name,
+            });
+        _scheduleRefresh();
+        return;
+      }
+
+      // Non-phase-change UPDATE: patch participation_percent and timer
+      // from the realtime payload in place. participation_percent is
+      // server-computed by the trigger chain on every prop / skip /
+      // affirm / rating event for this round (see migration
+      // 20260502170000), so the rounds row itself becomes the single
+      // delivery surface for the bar value — even when individual
+      // propositions/round_skips events are dropped on this client.
+      final newPhaseEndsAt = newRecord['phase_ends_at'] != null
+          ? DateTime.parse(newRecord['phase_ends_at'] as String)
+          : null;
+      final currentTimer = currentState.currentRound!.phaseEndsAt;
+      final timerChanged = newPhaseEndsAt?.toUtc() != currentTimer?.toUtc();
+      final newParticipation =
+          (newRecord['participation_percent'] as num?)?.toInt();
+      final participationChanged =
+          newParticipation != currentState.currentRound!.participationPercent;
+      if (timerChanged || participationChanged) {
+        final updatedRound = currentState.currentRound!.copyWith(
+          phase: newPhase,
+          phaseStartedAt: newRecord['phase_started_at'] != null
+              ? DateTime.parse(newRecord['phase_started_at'] as String)
+              : null,
+          phaseEndsAt: newPhaseEndsAt,
+          participationPercent: newParticipation,
+        );
+        final updatedState = currentState.copyWith(currentRound: updatedRound);
+        state = AsyncData(updatedState);
+        _cachedState = updatedState;
+        _rtRaceSnapshot(
+            participationChanged ? 'round_update_participation'
+                                 : 'round_update_timer',
+            updatedState);
+      } else {
+        _rtRaceLog('round_update.no_change',
+            roundId: roundId);
+      }
+      return;
     }
 
-    // Fallback to full refresh for other cases
+    _rtRaceLog('round_${event.name}.fallback_refetch');
     _scheduleRefresh();
   }
 
@@ -1091,28 +1146,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     });
   }
 
-  void _schedulePropositionRefresh() {
-    final now = DateTime.now();
-    if (_lastPropositionRefreshTime != null &&
-        now.difference(_lastPropositionRefreshTime!) < _minRefreshInterval) {
-      // Defer instead of drop
-      final timeSinceLastRefresh = now.difference(_lastPropositionRefreshTime!);
-      final delay = _minRefreshInterval - timeSinceLastRefresh;
-      _propositionDebounce?.cancel();
-      _propositionDebounce = Timer(delay + _debounceDuration, () {
-        _lastPropositionRefreshTime = DateTime.now();
-        _refreshPropositions();
-      });
-      return;
-    }
-
-    _propositionDebounce?.cancel();
-    _propositionDebounce = Timer(_debounceDuration, () {
-      _lastPropositionRefreshTime = DateTime.now();
-      _refreshPropositions();
-    });
-  }
-
   void _scheduleJoinRequestRefresh() {
     final now = DateTime.now();
     if (_lastJoinRequestRefreshTime != null &&
@@ -1124,28 +1157,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     _joinRequestDebounce = Timer(_debounceDuration, () {
       _lastJoinRequestRefreshTime = DateTime.now();
       _refreshJoinRequests();
-    });
-  }
-
-  void _scheduleSkipRefresh() {
-    final now = DateTime.now();
-    if (_lastSkipRefreshTime != null &&
-        now.difference(_lastSkipRefreshTime!) < _minRefreshInterval) {
-      // Defer instead of drop
-      final timeSinceLastRefresh = now.difference(_lastSkipRefreshTime!);
-      final delay = _minRefreshInterval - timeSinceLastRefresh;
-      _skipDebounce?.cancel();
-      _skipDebounce = Timer(delay + _debounceDuration, () {
-        _lastSkipRefreshTime = DateTime.now();
-        _refreshSkips();
-      });
-      return;
-    }
-
-    _skipDebounce?.cancel();
-    _skipDebounce = Timer(_debounceDuration, () {
-      _lastSkipRefreshTime = DateTime.now();
-      _refreshSkips();
     });
   }
 
@@ -1211,82 +1222,6 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     } catch (e) {
       // Log but don't fail - next event will retry
     }
-  }
-
-  void _scheduleAffirmationRefresh() {
-    final now = DateTime.now();
-    if (_lastAffirmationRefreshTime != null &&
-        now.difference(_lastAffirmationRefreshTime!) < _minRefreshInterval) {
-      final timeSinceLastRefresh =
-          now.difference(_lastAffirmationRefreshTime!);
-      final delay = _minRefreshInterval - timeSinceLastRefresh;
-      _affirmationDebounce?.cancel();
-      _affirmationDebounce = Timer(delay + _debounceDuration, () {
-        _lastAffirmationRefreshTime = DateTime.now();
-        _refreshAffirmations();
-      });
-      return;
-    }
-    _affirmationDebounce?.cancel();
-    _affirmationDebounce = Timer(_debounceDuration, () {
-      _lastAffirmationRefreshTime = DateTime.now();
-      _refreshAffirmations();
-    });
-  }
-
-  Future<void> _refreshAffirmations() async {
-    final currentState = state.valueOrNull;
-    if (currentState?.currentRound == null ||
-        currentState?.myParticipant == null) {
-      return;
-    }
-    try {
-      final results = await Future.wait([
-        _affirmationService.getAffirmationCount(currentState!.currentRound!.id),
-        _affirmationService.hasAffirmed(
-          roundId: currentState.currentRound!.id,
-          participantId: currentState.myParticipant!.id,
-        ),
-        _affirmationService
-            .getParticipantsWhoAffirmed(currentState.currentRound!.id),
-      ]);
-
-      final affirmationCount = results[0] as int;
-      final hasAffirmed = results[1] as bool;
-      final participantsWhoAffirmed = results[2] as Set<int>;
-
-      final updatedState = currentState.copyWith(
-        affirmationCount: affirmationCount,
-        hasAffirmed: hasAffirmed,
-        participantsWhoAffirmed: participantsWhoAffirmed,
-      );
-      state = AsyncData(updatedState);
-      _cachedState = updatedState;
-    } catch (e) {
-      // Log but don't fail - next event will retry
-    }
-  }
-
-  void _scheduleRatingSkipRefresh() {
-    final now = DateTime.now();
-    if (_lastRatingSkipRefreshTime != null &&
-        now.difference(_lastRatingSkipRefreshTime!) < _minRefreshInterval) {
-      // Defer instead of drop
-      final timeSinceLastRefresh = now.difference(_lastRatingSkipRefreshTime!);
-      final delay = _minRefreshInterval - timeSinceLastRefresh;
-      _ratingSkipDebounce?.cancel();
-      _ratingSkipDebounce = Timer(delay + _debounceDuration, () {
-        _lastRatingSkipRefreshTime = DateTime.now();
-        _refreshRatingSkips();
-      });
-      return;
-    }
-
-    _ratingSkipDebounce?.cancel();
-    _ratingSkipDebounce = Timer(_debounceDuration, () {
-      _lastRatingSkipRefreshTime = DateTime.now();
-      _refreshRatingSkips();
-    });
   }
 
   Future<void> _refreshRatingSkips() async {
@@ -1545,8 +1480,9 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     // Realtime will trigger refresh
   }
 
-  /// Manual refresh (pull-to-refresh)
-  /// If [silent] is true, keeps current data visible while fetching (no loading spinner)
+  /// Force a fresh _loadData(). Called from chat_screen on app resume
+  /// (silent) and phase-timer expiry (non-silent). If [silent] is true,
+  /// keeps current data visible while fetching (no loading spinner).
   Future<void> refresh({bool silent = false}) async {
     _refreshDebounce?.cancel();
     if (!silent) {
@@ -1563,6 +1499,408 @@ class ChatDetailNotifier extends StateNotifier<AsyncValue<ChatDetailState>>
     } else {
       state = const AsyncData(ChatDetailState(isDeleted: true));
     }
+  }
+
+  /// Realtime UPDATE handler for the `chats` row.
+  ///
+  /// Strategy:
+  /// - Default to merging the payload into the current Chat — operational
+  ///   ticks like host_paused, schedule_paused, last_activity_at land
+  ///   here and don't justify the bootstrap RPC.
+  /// - Schedule a full refetch only if the payload changed a translated
+  ///   field source (name / description / initial_message). The Realtime
+  ///   payload doesn't carry the translated_* columns; only the bootstrap
+  ///   RPC re-derives them via the translations table.
+  /// - If we don't have a prior Chat (cold start race), fall back to a
+  ///   refresh — there's nothing to merge into.
+  void _onChatUpdate(Map<String, dynamic> newRecord) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    final existingChat = currentState?.chat;
+    if (currentState == null || existingChat == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    if (_payloadTouchesTranslatableFields(existingChat, newRecord)) {
+      // Translation source changed — refresh so translated_* fields
+      // stay coherent with the new source text.
+      _scheduleRefresh();
+      return;
+    }
+
+    final mergedChat = existingChat.mergeRealtimePayload(newRecord);
+    if (mergedChat == existingChat) return; // no-op merge
+
+    final updated = currentState.copyWith(chat: mergedChat);
+    state = AsyncData(updated);
+    _cachedState = updated;
+  }
+
+  /// Translated columns aren't in the Realtime payload (they live in a
+  /// separate `translations` table). If the source text moved, the
+  /// translated_* fields on local state are stale; trigger a refetch so
+  /// the bootstrap RPC re-derives them.
+  bool _payloadTouchesTranslatableFields(
+    Chat existing,
+    Map<String, dynamic> newRecord,
+  ) {
+    final newName = newRecord['name'];
+    if (newName != null && newName != existing.name) return true;
+    if (newRecord.containsKey('description') &&
+        newRecord['description'] != existing.description) {
+      return true;
+    }
+    if (newRecord.containsKey('initial_message') &&
+        newRecord['initial_message'] != existing.initialMessage) {
+      return true;
+    }
+    return false;
+  }
+
+  // ===========================================================================
+  // Targeted Realtime patching — propositions / skips / rating_skips /
+  // affirmations.
+  //
+  // Before this refactor each subscription handler did a 3-way Future.wait
+  // refetch on every event, which is fine at 1 user but at 20 simultaneous
+  // raters means 60 round-trips per submit. The patch path collapses the
+  // common cases (INSERT, DELETE) into local state mutation; we only fall
+  // back to _scheduleRefresh when the payload is missing or we see an
+  // event we don't know how to merge cleanly.
+  // ===========================================================================
+
+  void _onPropositionRealtime(
+    PostgresChangeEvent event,
+    Map<String, dynamic>? newRecord,
+    Map<String, dynamic>? oldRecord,
+  ) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    final myParticipantId = currentState?.myParticipant?.id;
+    if (currentState == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    if (event == PostgresChangeEvent.delete && oldRecord != null) {
+      final deletedId = oldRecord['id'] as int?;
+      if (deletedId == null) {
+        _scheduleRefresh();
+        return;
+      }
+      final newProps = currentState.propositions
+          .where((p) => p.id != deletedId)
+          .toList(growable: false);
+      final newMine = currentState.myPropositions
+          .where((p) => p.id != deletedId)
+          .toList(growable: false);
+      final updated = currentState.copyWith(
+        propositions: newProps,
+        myPropositions: newMine,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      return;
+    }
+
+    if (newRecord == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final Proposition incoming;
+    try {
+      incoming = Proposition.fromJson(newRecord);
+    } catch (_) {
+      // Malformed payload — fall back to refresh rather than corrupt state.
+      _scheduleRefresh();
+      return;
+    }
+
+    // Translated content lives in a separate table; the propositions
+    // payload doesn't include it. If the user picked a content language
+    // for this chat, schedule a refresh so the bootstrap RPC can attach
+    // translations onto the freshly merged proposition.
+    final needsTranslations = currentState.viewingLanguageCode != null;
+
+    _rtRaceLog('prop_${event.name}',
+        roundId: incoming.roundId,
+        payload: {'prop_id': incoming.id,
+                  'participant_id': incoming.participantId,
+                  'carried': incoming.carriedFromId != null});
+
+    if (event == PostgresChangeEvent.insert) {
+      // Append, dedup by id (Realtime can deliver duplicates on resubscribe).
+      final existing = currentState.propositions;
+      if (existing.any((p) => p.id == incoming.id)) {
+        _rtRaceLog('prop_insert.dedup', roundId: incoming.roundId,
+            payload: {'prop_id': incoming.id});
+        return; // already known, no-op
+      }
+      final newProps = [...existing, incoming];
+      final newMine = (incoming.participantId != null &&
+              incoming.participantId == myParticipantId)
+          ? [...currentState.myPropositions, incoming]
+          : currentState.myPropositions;
+      // Patch the proposing-phase "Done" set in place for a NEW (non-carried)
+      // proposition. Trivially safe — just adds the author's id. The Done tag
+      // also self-corrects on the next bootstrap refresh during proposing.
+      final newProposers = (incoming.carriedFromId == null &&
+              incoming.participantId != null)
+          ? {...currentState.participantsWhoProposed, incoming.participantId!}
+          : currentState.participantsWhoProposed;
+      final updated = currentState.copyWith(
+        propositions: newProps,
+        myPropositions: newMine,
+        participantsWhoProposed: newProposers,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('prop_insert', updated);
+      if (needsTranslations) _scheduleRefresh();
+      return;
+    }
+
+    if (event == PostgresChangeEvent.update) {
+      final newProps = currentState.propositions
+          .map((p) => p.id == incoming.id ? incoming : p)
+          .toList(growable: false);
+      final newMine = currentState.myPropositions
+          .map((p) => p.id == incoming.id ? incoming : p)
+          .toList(growable: false);
+      final updated = currentState.copyWith(
+        propositions: newProps,
+        myPropositions: newMine,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('prop_update', updated);
+      if (needsTranslations) _scheduleRefresh();
+      return;
+    }
+
+    // Unknown event — be safe.
+    _rtRaceLog('prop_${event.name}.fallback_refetch');
+    _scheduleRefresh();
+  }
+
+  void _onRoundSkipRealtime(
+    PostgresChangeEvent event,
+    Map<String, dynamic>? newRecord,
+    Map<String, dynamic>? oldRecord,
+  ) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    final myParticipantId = currentState?.myParticipant?.id;
+    if (currentState == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final record = newRecord ?? oldRecord;
+    final participantId = (record?['participant_id'] as int?);
+    if (participantId == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final mine = participantId == myParticipantId;
+    _rtRaceLog('round_skip_${event.name}',
+        payload: {'pid': participantId, 'mine': mine});
+
+    if (event == PostgresChangeEvent.insert) {
+      final newSet = {...currentState.participantsWhoSkippedProposing,
+        participantId};
+      final updated = currentState.copyWith(
+        skipCount: currentState.skipCount + 1,
+        hasSkipped: mine ? true : currentState.hasSkipped,
+        participantsWhoSkippedProposing: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('round_skip_insert', updated);
+      return;
+    }
+
+    if (event == PostgresChangeEvent.delete) {
+      final newSet =
+          {...currentState.participantsWhoSkippedProposing}..remove(participantId);
+      final updated = currentState.copyWith(
+        skipCount: (currentState.skipCount - 1).clamp(0, 1 << 30),
+        hasSkipped: mine ? false : currentState.hasSkipped,
+        participantsWhoSkippedProposing: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('round_skip_delete', updated);
+      return;
+    }
+
+    _rtRaceLog('round_skip_${event.name}.fallback_refetch');
+    _scheduleRefresh();
+  }
+
+  void _onRatingSkipRealtime(
+    PostgresChangeEvent event,
+    Map<String, dynamic>? newRecord,
+    Map<String, dynamic>? oldRecord,
+  ) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    final myParticipantId = currentState?.myParticipant?.id;
+    if (currentState == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final record = newRecord ?? oldRecord;
+    final participantId = record?['participant_id'] as int?;
+    if (participantId == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final mine = participantId == myParticipantId;
+    _rtRaceLog('rating_skip_${event.name}',
+        payload: {'pid': participantId, 'mine': mine});
+
+    if (event == PostgresChangeEvent.insert) {
+      final newSet = {...currentState.participantsWhoSkippedRating,
+        participantId};
+      final updated = currentState.copyWith(
+        ratingSkipCount: currentState.ratingSkipCount + 1,
+        hasSkippedRating: mine ? true : currentState.hasSkippedRating,
+        participantsWhoSkippedRating: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('rating_skip_insert', updated);
+      return;
+    }
+
+    if (event == PostgresChangeEvent.delete) {
+      final newSet =
+          {...currentState.participantsWhoSkippedRating}..remove(participantId);
+      final updated = currentState.copyWith(
+        ratingSkipCount: (currentState.ratingSkipCount - 1).clamp(0, 1 << 30),
+        hasSkippedRating: mine ? false : currentState.hasSkippedRating,
+        participantsWhoSkippedRating: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('rating_skip_delete', updated);
+      return;
+    }
+
+    _rtRaceLog('rating_skip_${event.name}.fallback_refetch');
+    _scheduleRefresh();
+  }
+
+  /// A rater finished (or un-finished) rating this round: patch
+  /// participantsWhoRated in place. Fires at most once per rater per round,
+  /// so this stays cheap at any viewer count. Matches mode additionally
+  /// refreshes the done/eligible counts that drive the round-status bar
+  /// (kept as the authoritative RPC rather than derived incrementally).
+  void _onRatingCompletionRealtime(
+    PostgresChangeEvent event,
+    Map<String, dynamic>? newRecord,
+    Map<String, dynamic>? oldRecord,
+  ) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    if (currentState == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final record = newRecord ?? oldRecord;
+    final roundId = record?['round_id'] as int?;
+    if (roundId != null && roundId != currentState.currentRound?.id) {
+      // Stale event from a previous round's channel — ignore.
+      return;
+    }
+
+    // Anonymous session raters (session_token, no participant row) aren't in
+    // the roster, so they can't carry a Done tag — nothing to patch.
+    final participantId = record?['participant_id'] as int?;
+    if (participantId != null) {
+      _rtRaceLog('rating_completion_${event.name}',
+          payload: {'pid': participantId});
+
+      if (event == PostgresChangeEvent.insert) {
+        final updated = currentState.copyWith(
+          participantsWhoRated: {
+            ...currentState.participantsWhoRated,
+            participantId,
+          },
+        );
+        state = AsyncData(updated);
+        _cachedState = updated;
+        _rtRaceSnapshot('rating_completion_insert', updated);
+      } else if (event == PostgresChangeEvent.delete) {
+        final updated = currentState.copyWith(
+          participantsWhoRated: {...currentState.participantsWhoRated}
+            ..remove(participantId),
+        );
+        state = AsyncData(updated);
+        _cachedState = updated;
+        _rtRaceSnapshot('rating_completion_delete', updated);
+      }
+    }
+
+    if (currentState.chat?.ratingMode == 'matches' &&
+        currentState.currentRound != null) {
+      _refreshMatchesProgress(currentState.currentRound!.id);
+    }
+  }
+
+  void _onAffirmationRealtime(
+    PostgresChangeEvent event,
+    Map<String, dynamic>? newRecord,
+    Map<String, dynamic>? oldRecord,
+  ) {
+    final currentState = state.valueOrNull ?? _cachedState;
+    final myParticipantId = currentState?.myParticipant?.id;
+    if (currentState == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final record = newRecord ?? oldRecord;
+    final participantId = record?['participant_id'] as int?;
+    if (participantId == null) {
+      _scheduleRefresh();
+      return;
+    }
+
+    final mine = participantId == myParticipantId;
+    _rtRaceLog('affirm_${event.name}',
+        payload: {'pid': participantId, 'mine': mine});
+
+    if (event == PostgresChangeEvent.insert) {
+      final newSet = {...currentState.participantsWhoAffirmed, participantId};
+      final updated = currentState.copyWith(
+        affirmationCount: currentState.affirmationCount + 1,
+        hasAffirmed: mine ? true : currentState.hasAffirmed,
+        participantsWhoAffirmed: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      _rtRaceSnapshot('affirm_insert', updated);
+      return;
+    }
+
+    if (event == PostgresChangeEvent.delete) {
+      final newSet =
+          {...currentState.participantsWhoAffirmed}..remove(participantId);
+      final updated = currentState.copyWith(
+        affirmationCount:
+            (currentState.affirmationCount - 1).clamp(0, 1 << 30),
+        hasAffirmed: mine ? false : currentState.hasAffirmed,
+        participantsWhoAffirmed: newSet,
+      );
+      state = AsyncData(updated);
+      _cachedState = updated;
+      return;
+    }
+
+    _scheduleRefresh();
   }
 
   /// Called after rating to mark hasRated as true

@@ -272,6 +272,12 @@ abstract class AppLocalizations {
   /// **'Done'**
   String get done;
 
+  /// No description provided for @pendingTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get pendingTag;
+
   /// No description provided for @save.
   ///
   /// In en, this message translates to:
@@ -385,6 +391,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unblock them in your browser\'s site settings to get notified.'**
   String get notificationsBlockedBody;
+
+  /// No description provided for @notificationsBlockedBodyNative.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn them on in your device\'s notification settings to get notified.'**
+  String get notificationsBlockedBodyNative;
 
   /// No description provided for @gotIt.
   ///
@@ -961,6 +973,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Convergence #{number}'**
   String convergenceNumber(int number);
+
+  /// No description provided for @winnerNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Winner #{number}'**
+  String winnerNumber(int number);
+
+  /// No description provided for @winnerHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'Winner {number} History'**
+  String winnerHistory(int number);
 
   /// No description provided for @noPropositionsToDisplay.
   ///
@@ -1910,6 +1934,12 @@ abstract class AppLocalizations {
   /// **'Affirm this, or offer an alternative.'**
   String get gateMicrocopy;
 
+  /// No description provided for @gateBetterQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Can you think of something better?'**
+  String get gateBetterQuestion;
+
   /// No description provided for @gateBack.
   ///
   /// In en, this message translates to:
@@ -2454,10 +2484,22 @@ abstract class AppLocalizations {
   /// **'Confirmation rounds'**
   String get confirmationRounds;
 
+  /// No description provided for @convergenceStepSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How does a winning idea get locked into the chat?'**
+  String get convergenceStepSubtitle;
+
+  /// No description provided for @instantMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Instant'**
+  String get instantMode;
+
   /// No description provided for @firstWinnerConsensus.
   ///
   /// In en, this message translates to:
-  /// **'First winner reaches convergence immediately'**
+  /// **'The first winner is added immediately'**
   String get firstWinnerConsensus;
 
   /// No description provided for @mustWinConsecutive.
@@ -4020,6 +4062,12 @@ abstract class AppLocalizations {
   /// **'Delete Convergence #{number}?'**
   String deleteConsensusTitle(int number);
 
+  /// No description provided for @deleteWinnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Winner #{number}?'**
+  String deleteWinnerTitle(int number);
+
   /// No description provided for @deleteConsensusMessage.
   ///
   /// In en, this message translates to:
@@ -4788,11 +4836,317 @@ abstract class AppLocalizations {
   /// **'Use your camera to scan an invite QR code'**
   String get joinMethodScanDesc;
 
+  /// No description provided for @wizardAutoAdvanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Advance phases early?'**
+  String get wizardAutoAdvanceTitle;
+
+  /// No description provided for @wizardAutoAdvanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether a phase ends as soon as everyone has participated, or always runs for its full time.'**
+  String get wizardAutoAdvanceDesc;
+
+  /// No description provided for @wizardAutoAdvanceProposingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End proposing early'**
+  String get wizardAutoAdvanceProposingTitle;
+
+  /// No description provided for @wizardAutoAdvanceProposingOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposing ends as soon as everyone has submitted or skipped'**
+  String get wizardAutoAdvanceProposingOnDesc;
+
+  /// No description provided for @wizardAutoAdvanceProposingOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposing always runs for its full time'**
+  String get wizardAutoAdvanceProposingOffDesc;
+
+  /// No description provided for @wizardAutoAdvanceRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'End rating early'**
+  String get wizardAutoAdvanceRatingTitle;
+
+  /// No description provided for @wizardAutoAdvanceRatingOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating ends as soon as everyone has rated'**
+  String get wizardAutoAdvanceRatingOnDesc;
+
+  /// No description provided for @wizardAutoAdvanceRatingOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating always runs for its full time'**
+  String get wizardAutoAdvanceRatingOffDesc;
+
   /// No description provided for @wizardScheduleTitle.
   ///
   /// In en, this message translates to:
   /// **'Set a schedule?'**
   String get wizardScheduleTitle;
+
+  /// No description provided for @wizardScheduleConfigTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule details'**
+  String get wizardScheduleConfigTitle;
+
+  /// No description provided for @wizardFirstDeadlineStartsNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Your chat starts as soon as you create it.'**
+  String get wizardFirstDeadlineStartsNow;
+
+  /// No description provided for @wizardFirstDeadlineUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'A daily rhythm needs equal phase durations of 1, 2, 3, 4, 6, 8, 12, or 24 hours. With the current pace, the first phase simply runs its full duration.'**
+  String get wizardFirstDeadlineUnavailable;
+
+  /// No description provided for @wizardFirstDeadlineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'First deadline'**
+  String get wizardFirstDeadlineLabel;
+
+  /// No description provided for @wizardFirstDeadlineQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'When should the first phase end?'**
+  String get wizardFirstDeadlineQuestion;
+
+  /// No description provided for @wizardChipFullDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Full duration'**
+  String get wizardChipFullDuration;
+
+  /// No description provided for @wizardChipAmPmRhythm.
+  ///
+  /// In en, this message translates to:
+  /// **'3 AM / 3 PM rhythm'**
+  String get wizardChipAmPmRhythm;
+
+  /// No description provided for @wizardChipDailyTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Same time daily…'**
+  String get wizardChipDailyTime;
+
+  /// No description provided for @wizardChipOnTheHour.
+  ///
+  /// In en, this message translates to:
+  /// **'On the hour'**
+  String get wizardChipOnTheHour;
+
+  /// No description provided for @wizardCadencePreviewTwo.
+  ///
+  /// In en, this message translates to:
+  /// **'Phases will flip at {t1} / {t2} ({tz}) every day.'**
+  String wizardCadencePreviewTwo(String t1, String t2, String tz);
+
+  /// No description provided for @wizardCadencePreviewOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Phases will flip at {t1} ({tz}) every day.'**
+  String wizardCadencePreviewOne(String t1, String tz);
+
+  /// No description provided for @wizardCadenceShorterNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'First phase will be shorter: ends in {rel}.'**
+  String wizardCadenceShorterNotice(String rel);
+
+  /// No description provided for @wizardCadenceTimeUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'That time doesn\'t fit this pace — pick a time between {min} and {max}.'**
+  String wizardCadenceTimeUnavailable(String min, String max);
+
+  /// No description provided for @wizardCadenceFullDurationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'The first phase runs its full {duration} — no fixed daily rhythm'**
+  String wizardCadenceFullDurationDesc(String duration);
+
+  /// No description provided for @wizardCadenceFirstDeadlineAt.
+  ///
+  /// In en, this message translates to:
+  /// **'First deadline: {time}'**
+  String wizardCadenceFirstDeadlineAt(String time);
+
+  /// No description provided for @wizardCadenceCustomTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom time…'**
+  String get wizardCadenceCustomTime;
+
+  /// No description provided for @wizardCadencePickExactly.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick exactly when the first phase should end'**
+  String get wizardCadencePickExactly;
+
+  /// No description provided for @wizardVotingStyleLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voting style'**
+  String get wizardVotingStyleLabel;
+
+  /// No description provided for @wizardVotingGridTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Grid'**
+  String get wizardVotingGridTitle;
+
+  /// No description provided for @wizardVotingGridDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Place every idea on a 0–100 scale'**
+  String get wizardVotingGridDesc;
+
+  /// No description provided for @wizardVotingMatchesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Matches'**
+  String get wizardVotingMatchesTitle;
+
+  /// No description provided for @wizardVotingMatchesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the better of two ideas, one pair at a time'**
+  String get wizardVotingMatchesDesc;
+
+  /// No description provided for @wizardMatchObjectiveLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'What to find'**
+  String get wizardMatchObjectiveLabel;
+
+  /// No description provided for @wizardMatchWinnerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Just the winner'**
+  String get wizardMatchWinnerTitle;
+
+  /// No description provided for @wizardMatchWinnerDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Fewest comparisons — a quick bracket to surface the top idea'**
+  String get wizardMatchWinnerDesc;
+
+  /// No description provided for @wizardMatchFullRankTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'See all rankings'**
+  String get wizardMatchFullRankTitle;
+
+  /// No description provided for @wizardMatchFullRankDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'More comparisons per person — ranks every idea, not just the winner'**
+  String get wizardMatchFullRankDesc;
+
+  /// No description provided for @wizardParticipationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Participation'**
+  String get wizardParticipationTitle;
+
+  /// No description provided for @wizardParticipationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose whether participants can skip phases'**
+  String get wizardParticipationSubtitle;
+
+  /// No description provided for @wizardAllowSkipProposingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow skip proposing'**
+  String get wizardAllowSkipProposingTitle;
+
+  /// No description provided for @wizardAllowSkipProposingOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants can skip submitting an idea'**
+  String get wizardAllowSkipProposingOnDesc;
+
+  /// No description provided for @wizardAllowSkipProposingOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone must submit an idea'**
+  String get wizardAllowSkipProposingOffDesc;
+
+  /// No description provided for @wizardAllowSkipRatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow skip rating'**
+  String get wizardAllowSkipRatingTitle;
+
+  /// No description provided for @wizardAllowSkipRatingOnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Participants can skip rating ideas'**
+  String get wizardAllowSkipRatingOnDesc;
+
+  /// No description provided for @wizardAllowSkipRatingOffDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Everyone must rate ideas'**
+  String get wizardAllowSkipRatingOffDesc;
+
+  /// No description provided for @wizardTimingProposingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How long for proposing?'**
+  String get wizardTimingProposingQuestion;
+
+  /// No description provided for @wizardTimingCurrently.
+  ///
+  /// In en, this message translates to:
+  /// **'Currently: {duration}'**
+  String wizardTimingCurrently(String duration);
+
+  /// No description provided for @wizardTimingSameDurationQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Same duration for rating phase?'**
+  String get wizardTimingSameDurationQuestion;
+
+  /// No description provided for @wizardTimingSameDurationYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, rating uses the same time'**
+  String get wizardTimingSameDurationYes;
+
+  /// No description provided for @wizardTimingSameDurationNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No, rating has a different duration'**
+  String get wizardTimingSameDurationNo;
+
+  /// No description provided for @wizardTimingRatingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How long for rating?'**
+  String get wizardTimingRatingQuestion;
+
+  /// No description provided for @wizardAgentsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Add AI agents?'**
+  String get wizardAgentsTitle;
+
+  /// No description provided for @chatSettingsRhythmLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Rhythm'**
+  String get chatSettingsRhythmLabel;
 
   /// No description provided for @wizardScheduleAlwaysTitle.
   ///
@@ -4853,6 +5207,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Remove end time'**
   String get scheduleClearEndTime;
+
+  /// No description provided for @setYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'Set your name'**
+  String get setYourName;
+
+  /// No description provided for @whatsYourName.
+  ///
+  /// In en, this message translates to:
+  /// **'What\'s your name?'**
+  String get whatsYourName;
+
+  /// No description provided for @nameShownToOthers.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown to other participants'**
+  String get nameShownToOthers;
+
+  /// No description provided for @pleaseEnterName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get pleaseEnterName;
+
+  /// No description provided for @joiningAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Joining as {name}'**
+  String joiningAs(String name);
+
+  /// No description provided for @creatingAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Creating as {name}'**
+  String creatingAs(String name);
 
   /// No description provided for @welcomeName.
   ///
@@ -5201,6 +5591,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Maybe later'**
   String get maybeLater;
+
+  /// No description provided for @equal.
+  ///
+  /// In en, this message translates to:
+  /// **'Equal'**
+  String get equal;
+
+  /// No description provided for @whichIsBetterTapOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Which is better? Tap one.'**
+  String get whichIsBetterTapOne;
+
+  /// No description provided for @matchNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Match {number}'**
+  String matchNumber(int number);
+
+  /// No description provided for @doneWaitingForRound.
+  ///
+  /// In en, this message translates to:
+  /// **'Done — waiting for the round to finish.'**
+  String get doneWaitingForRound;
+
+  /// No description provided for @doneRatingQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'Done rating?'**
+  String get doneRatingQuestion;
+
+  /// No description provided for @doneRatingBody.
+  ///
+  /// In en, this message translates to:
+  /// **'You won\'t be able to rate more ideas this round.'**
+  String get doneRatingBody;
+
+  /// No description provided for @couldNotSaveChoice.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save your choice — try again'**
+  String get couldNotSaveChoice;
+
+  /// No description provided for @couldNotSkip.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not skip — try again'**
+  String get couldNotSkip;
+
+  /// No description provided for @ratersWithCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Raters: {count}'**
+  String ratersWithCount(int count);
 }
 
 class _AppLocalizationsDelegate

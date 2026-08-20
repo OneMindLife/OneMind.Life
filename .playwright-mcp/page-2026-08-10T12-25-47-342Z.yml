@@ -1,0 +1,9 @@
+- generic [active] [ref=f1e1]:
+  - main [ref=f1e2]:
+    - generic [ref=f1e3]:
+      - generic [ref=f1e4]: OneMind
+      - group "Language" [ref=f1e10]:
+        - button "en" [pressed] [ref=f1e11] [cursor=pointer]
+        - button "es" [ref=f1e12] [cursor=pointer]
+    - generic [ref=f1e13]: Loading…
+  - alert [ref=f1e15]

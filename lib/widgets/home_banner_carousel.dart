@@ -37,10 +37,11 @@ enum HomeBannerSlide { install, notifications }
 /// Rules:
 /// - Install slide appears on **mobile web** when the app isn't already
 ///   running as an installed PWA. Desktop (`isMobile=false`) never sees it.
-/// - Notifications slide appears on **web** when permission is
+/// - Notifications slide appears when permission is
 ///   [AuthorizationStatus.notDetermined] and the user hasn't dismissed
-///   the prompt. iOS outside of an installed PWA can't request web push,
-///   so it's suppressed there (Apple restriction).
+///   the prompt. On web, iOS outside of an installed PWA can't request web
+///   push, so it's suppressed there (Apple restriction). Native Android/iOS
+///   builds are always eligible.
 List<HomeBannerSlide> computeHomeBannerSlides({
   required bool isWeb,
   required bool isMobile,
@@ -60,7 +61,7 @@ List<HomeBannerSlide> computeHomeBannerSlides({
   //   * notDetermined → prompt + "Enable" button.
   //   * denied → info card guiding the user to unblock in site settings
   //              (browsers won't let us re-prompt once denied).
-  final notifEligible = isWeb && !(isIos && !isPwaInstalled);
+  final notifEligible = !isWeb || !(isIos && !isPwaInstalled);
   final needsPrompt = pushStatus == AuthorizationStatus.notDetermined ||
       pushStatus == AuthorizationStatus.denied;
   if (notifEligible && !pushDismissed && needsPrompt) {
@@ -107,9 +108,10 @@ class _HomeBannerCarouselState extends ConsumerState<HomeBannerCarousel> {
     final tutorialService = ref.read(tutorialServiceProvider);
     final pushDismissed = tutorialService.hasDismissedPushPrompt;
 
-    // iOS outside of a PWA can't surface the permission prompt, so don't
-    // even call into the service there (it would throw on some browsers).
-    final notifEligible = kIsWebFlag && !(ios && !installed);
+    // On web, iOS outside of a PWA can't surface the permission prompt, so
+    // don't even call into the service there (it would throw on some
+    // browsers). Native builds always can.
+    final notifEligible = !kIsWebFlag || !(ios && !installed);
     AuthorizationStatus? pushStatus;
     if (notifEligible && !pushDismissed) {
       try {
@@ -353,7 +355,9 @@ class _HomeBannerCarouselState extends ConsumerState<HomeBannerCarousel> {
         ? l10n.notificationsBlockedTitle
         : l10n.enableNotificationsTitle;
     final body = isBlocked
-        ? l10n.notificationsBlockedBody
+        ? (kIsWeb
+            ? l10n.notificationsBlockedBody
+            : l10n.notificationsBlockedBodyNative)
         : l10n.enableNotificationsBody;
     final icon = isBlocked
         ? Icons.notifications_off_outlined

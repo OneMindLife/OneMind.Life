@@ -1,8 +1,17 @@
 name: Deploy
 
+# Auto-deploy on push is DISABLED. Re-enable by uncommenting the
+# `push:` block below — every push to main will then trigger this
+# workflow again.
+#
+# Manual triggering still works via the GitHub UI:
+#   Actions tab → "Deploy" workflow → "Run workflow" dropdown →
+#   pick environment + force flag → Run.
+#
+# Or via CLI: `gh workflow run deploy.yml -f environment=production`.
 on:
-  push:
-    branches: [main]
+  # push:
+  #   branches: [main]
   workflow_dispatch:
     inputs:
       environment:
@@ -166,6 +175,13 @@ jobs:
             --dart-define=SUPABASE_URL=${{ secrets.SUPABASE_URL }} \
             --dart-define=SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }} \
             --dart-define=ENVIRONMENT=${{ github.event.inputs.environment || 'production' }}
+          # REQUIRED: regenerate per-route SEO landing pages into build/web/.
+          # Without this, every deploy serves the generic homepage for all SEO
+          # routes (wrong canonical → onemind.life/, no per-route meta/hero), so
+          # the 12 SEO pages become invisible-to-Google homepage duplicates and
+          # lose the instant hero. (This step was missing — a manual prerender
+          # deploy on 2026-06-01 got clobbered by a CI deploy that skipped it.)
+          node tools/prerender.js
 
       - name: Upload web build artifact
         uses: actions/upload-artifact@v4

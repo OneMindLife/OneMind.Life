@@ -1,6 +1,6 @@
 -- Tests for auto-pause when round completes with only agent activity
 BEGIN;
-SELECT plan(9);
+SELECT plan(12);
 
 -- ============================================================================
 -- TEST SETUP
@@ -390,6 +390,165 @@ SELECT is(
     (SELECT is_chat_paused(current_setting('test.chat_id')::INT)),
     TRUE,
     'is_chat_paused() returns true for auto-paused chat'
+);
+
+-- ============================================================================
+-- TEST 8: Human RATED via GRID (no propose, no skip) → should NOT auto-pause
+-- ============================================================================
+-- Regression for the 2026-06-05 fix: rating IS participation. A human who only
+-- rated (didn't propose) must not be treated as an absent/abandoned chat.
+
+DO $$
+DECLARE
+    v_host_id UUID := (SELECT creator_id FROM public.chats WHERE id = current_setting('test.chat_id')::INT);
+    v_chat_id INT; v_cycle_id INT; v_round_id INT;
+    v_host_part_id INT; v_agent_part_id INT; v_prop_id INT;
+BEGIN
+    INSERT INTO public.chats (
+        name, initial_message, creator_id, start_mode,
+        proposing_duration_seconds, rating_duration_seconds,
+        enable_agents, proposing_agent_count, rating_agent_count, confirmation_rounds_required
+    ) VALUES (
+        'Human Grid-Rate Test', 'Test', v_host_id, 'manual', 300, 300, true, 5, 5, 2
+    ) RETURNING id INTO v_chat_id;
+
+    INSERT INTO public.participants (chat_id, user_id, display_name, is_host, status, is_agent)
+    VALUES (v_chat_id, v_host_id, 'Host', TRUE, 'active', false) RETURNING id INTO v_host_part_id;
+
+    SELECT id INTO v_agent_part_id FROM public.participants
+    WHERE chat_id = v_chat_id AND is_agent = true LIMIT 1;
+
+    INSERT INTO public.cycles (chat_id) VALUES (v_chat_id) RETURNING id INTO v_cycle_id;
+    INSERT INTO public.rounds (cycle_id, custom_id, phase) VALUES (v_cycle_id, 1, 'rating') RETURNING id INTO v_round_id;
+
+    -- Agent proposes; human does NOT propose or proposing-skip — but RATES (grid).
+    INSERT INTO public.propositions (round_id, participant_id, content)
+    VALUES (v_round_id, v_agent_part_id, 'Agent proposal') RETURNING id INTO v_prop_id;
+
+    INSERT INTO public.grid_rankings (round_id, participant_id, proposition_id, grid_position)
+    VALUES (v_round_id, v_host_part_id, v_prop_id, 80.0);
+
+    INSERT INTO public.round_winners (round_id, proposition_id, rank, global_score)
+    VALUES (v_round_id, v_prop_id, 1, 100.0);
+
+    UPDATE public.rounds SET winning_proposition_id = v_prop_id, is_sole_winner = true WHERE id = v_round_id;
+
+    PERFORM set_config('test.chat6_id', v_chat_id::TEXT, TRUE);
+END $$;
+
+SELECT is(
+    (SELECT host_paused FROM public.chats WHERE id = current_setting('test.chat6_id')::INT),
+    FALSE,
+    'Chat should NOT auto-pause when human only GRID-rated (rating = participation)'
+);
+
+-- ============================================================================
+-- TEST 9: Human RATED via PAIRWISE/MATCHES (no propose) → should NOT auto-pause
+-- ============================================================================
+-- The exact scenario found live: a matches-mode chat where the human cast a
+-- pairwise vote each round but never proposed.
+
+DO $$
+DECLARE
+    v_host_id UUID := (SELECT creator_id FROM public.chats WHERE id = current_setting('test.chat_id')::INT);
+    v_chat_id INT; v_cycle_id INT; v_round_id INT;
+    v_host_part_id INT; v_agent_part_id INT; v_agent2_part_id INT; v_prop_a INT; v_prop_b INT;
+BEGIN
+    INSERT INTO public.chats (
+        name, initial_message, creator_id, start_mode,
+        proposing_duration_seconds, rating_duration_seconds,
+        enable_agents, proposing_agent_count, rating_agent_count, confirmation_rounds_required,
+        rating_mode, match_objective
+    ) VALUES (
+        'Human Pairwise-Rate Test', 'Test', v_host_id, 'manual', 300, 300, true, 5, 5, 2,
+        'matches', 'winner_only'
+    ) RETURNING id INTO v_chat_id;
+
+    INSERT INTO public.participants (chat_id, user_id, display_name, is_host, status, is_agent)
+    VALUES (v_chat_id, v_host_id, 'Host', TRUE, 'active', false) RETURNING id INTO v_host_part_id;
+
+    -- Two DISTINCT agent participants own the two propositions (one new prop per
+    -- participant per round).
+    SELECT id INTO v_agent_part_id FROM public.participants
+    WHERE chat_id = v_chat_id AND is_agent = true ORDER BY id LIMIT 1;
+    SELECT id INTO v_agent2_part_id FROM public.participants
+    WHERE chat_id = v_chat_id AND is_agent = true AND id <> v_agent_part_id ORDER BY id LIMIT 1;
+
+    INSERT INTO public.cycles (chat_id) VALUES (v_chat_id) RETURNING id INTO v_cycle_id;
+    INSERT INTO public.rounds (cycle_id, custom_id, phase) VALUES (v_cycle_id, 1, 'rating') RETURNING id INTO v_round_id;
+
+    -- Two agent propositions; human casts a pairwise vote between them (no propose/skip).
+    INSERT INTO public.propositions (round_id, participant_id, content)
+    VALUES (v_round_id, v_agent_part_id, 'Agent proposal A') RETURNING id INTO v_prop_a;
+    INSERT INTO public.propositions (round_id, participant_id, content)
+    VALUES (v_round_id, v_agent2_part_id, 'Agent proposal B') RETURNING id INTO v_prop_b;
+
+    INSERT INTO public.pairwise_comparisons (round_id, participant_id, winner_proposition_id, loser_proposition_id)
+    VALUES (v_round_id, v_host_part_id, v_prop_a, v_prop_b);
+
+    INSERT INTO public.round_winners (round_id, proposition_id, rank, global_score)
+    VALUES (v_round_id, v_prop_a, 1, 100.0);
+
+    UPDATE public.rounds SET winning_proposition_id = v_prop_a, is_sole_winner = true WHERE id = v_round_id;
+
+    PERFORM set_config('test.chat7_id', v_chat_id::TEXT, TRUE);
+END $$;
+
+SELECT is(
+    (SELECT host_paused FROM public.chats WHERE id = current_setting('test.chat7_id')::INT),
+    FALSE,
+    'Chat should NOT auto-pause when human only PAIRWISE-rated (matches mode)'
+);
+
+-- ============================================================================
+-- TEST 11: REGRESSION — agents propose AND agents grid-rate, NO human anything
+--          → MUST still auto-pause (agent rating must not count as human)
+-- ============================================================================
+
+DO $$
+DECLARE
+    v_host_id UUID := (SELECT creator_id FROM public.chats WHERE id = current_setting('test.chat_id')::INT);
+    v_chat_id INT; v_cycle_id INT; v_round_id INT;
+    v_host_part_id INT; v_agent_part_id INT; v_agent2_part_id INT; v_prop_id INT;
+BEGIN
+    INSERT INTO public.chats (
+        name, initial_message, creator_id, start_mode,
+        proposing_duration_seconds, rating_duration_seconds,
+        enable_agents, proposing_agent_count, rating_agent_count, confirmation_rounds_required
+    ) VALUES (
+        'Agent Propose+Rate Test', 'Test', v_host_id, 'manual', 300, 300, true, 5, 5, 2
+    ) RETURNING id INTO v_chat_id;
+
+    INSERT INTO public.participants (chat_id, user_id, display_name, is_host, status, is_agent)
+    VALUES (v_chat_id, v_host_id, 'Host', TRUE, 'active', false) RETURNING id INTO v_host_part_id;
+
+    SELECT id INTO v_agent_part_id FROM public.participants
+    WHERE chat_id = v_chat_id AND is_agent = true ORDER BY id LIMIT 1;
+    SELECT id INTO v_agent2_part_id FROM public.participants
+    WHERE chat_id = v_chat_id AND is_agent = true AND id <> v_agent_part_id ORDER BY id LIMIT 1;
+
+    INSERT INTO public.cycles (chat_id) VALUES (v_chat_id) RETURNING id INTO v_cycle_id;
+    INSERT INTO public.rounds (cycle_id, custom_id, phase) VALUES (v_cycle_id, 1, 'rating') RETURNING id INTO v_round_id;
+
+    -- Agent proposes; the OTHER agent grid-rates it. No human activity at all.
+    INSERT INTO public.propositions (round_id, participant_id, content)
+    VALUES (v_round_id, v_agent_part_id, 'Agent proposal') RETURNING id INTO v_prop_id;
+
+    INSERT INTO public.grid_rankings (round_id, participant_id, proposition_id, grid_position)
+    VALUES (v_round_id, v_agent2_part_id, v_prop_id, 90.0);
+
+    INSERT INTO public.round_winners (round_id, proposition_id, rank, global_score)
+    VALUES (v_round_id, v_prop_id, 1, 100.0);
+
+    UPDATE public.rounds SET winning_proposition_id = v_prop_id, is_sole_winner = true WHERE id = v_round_id;
+
+    PERFORM set_config('test.chat9_id', v_chat_id::TEXT, TRUE);
+END $$;
+
+SELECT is(
+    (SELECT host_paused FROM public.chats WHERE id = current_setting('test.chat9_id')::INT),
+    TRUE,
+    'Chat MUST still auto-pause when ONLY agents proposed and rated (agent rating != human)'
 );
 
 SELECT * FROM finish();

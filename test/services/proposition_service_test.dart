@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:onemind_app/models/models.dart';
@@ -8,6 +10,31 @@ import '../mocks/mock_supabase_client.dart';
 
 /// Mock FunctionResponse for testing Edge Function calls
 class MockFunctionResponse extends Mock implements FunctionResponse {}
+
+/// Awaitable fake for `from(...).insert(...)` (a PostgrestFilterBuilder that is
+/// awaited directly). Delegates to a real [Future] so success/error paths are
+/// exercised without fragile `then` stubbing (which leaks mocktail matchers).
+class _FakeInsertBuilder extends Fake implements PostgrestFilterBuilder<dynamic> {
+  _FakeInsertBuilder(this._future);
+  final Future<dynamic> _future;
+
+  @override
+  Future<S> then<S>(FutureOr<S> Function(dynamic) onValue, {Function? onError}) =>
+      _future.then(onValue, onError: onError);
+}
+
+/// Awaitable fake for a `select().eq().eq()` chain that resolves to a row list.
+class _FakeListBuilder extends Fake
+    implements PostgrestFilterBuilder<List<Map<String, dynamic>>> {
+  _FakeListBuilder(this._rows);
+  final List<Map<String, dynamic>> _rows;
+
+  @override
+  Future<S> then<S>(
+          FutureOr<S> Function(List<Map<String, dynamic>>) onValue,
+          {Function? onError}) =>
+      Future<List<Map<String, dynamic>>>.value(_rows).then(onValue, onError: onError);
+}
 
 void main() {
   late MockSupabaseClient mockClient;
@@ -51,7 +78,7 @@ void main() {
         when(() => mockChannel.subscribe(any())).thenReturn(mockChannel);
 
         // Act
-        final channel = propositionService.subscribeToPropositions(10, () {});
+        final channel = propositionService.subscribeToPropositions(10, (_, __, ___) {});
 
         // Assert
         expect(channel, isNotNull);
@@ -80,7 +107,7 @@ void main() {
         when(() => mockChannel.subscribe(any())).thenReturn(mockChannel);
 
         // Act
-        propositionService.subscribeToPropositions(5, () {});
+        propositionService.subscribeToPropositions(5, (_, __, ___) {});
 
         // Assert
         // Changed from insert-only to all events to support delete notifications
@@ -107,12 +134,115 @@ void main() {
         when(() => mockChannel.subscribe(any())).thenReturn(mockChannel);
 
         // Act
-        propositionService.subscribeToPropositions(99, () {});
+        propositionService.subscribeToPropositions(99, (_, __, ___) {});
 
         // Assert
         expect(capturedFilter, isNotNull);
         expect(capturedFilter!.column, 'round_id');
         expect(capturedFilter!.value, 99);
+      });
+    });
+
+    group('subscribeToRatingCompletions', () {
+      test('subscribes to all rating_completions events filtered by round',
+          () {
+        // Arrange
+        final mockChannel = MockRealtimeChannel();
+        PostgresChangeEvent? capturedEvent;
+        String? capturedTable;
+        PostgresChangeFilter? capturedFilter;
+
+        when(() => mockClient.channel('rating_completions:10'))
+            .thenReturn(mockChannel);
+        when(() => mockChannel.onPostgresChanges(
+              event: any(named: 'event'),
+              schema: any(named: 'schema'),
+              table: any(named: 'table'),
+              filter: any(named: 'filter'),
+              callback: any(named: 'callback'),
+            )).thenAnswer((invocation) {
+          capturedEvent = invocation.namedArguments[#event];
+          capturedTable = invocation.namedArguments[#table];
+          capturedFilter = invocation.namedArguments[#filter];
+          return mockChannel;
+        });
+        when(() => mockChannel.subscribe(any())).thenReturn(mockChannel);
+
+        // Act
+        final channel = propositionService.subscribeToRatingCompletions(
+            10, (_, __, ___) {});
+
+        // Assert
+        expect(channel, isNotNull);
+        verify(() => mockClient.channel('rating_completions:10')).called(1);
+        expect(capturedEvent, PostgresChangeEvent.all);
+        expect(capturedTable, 'rating_completions');
+        expect(capturedFilter!.column, 'round_id');
+        expect(capturedFilter!.value, 10);
+      });
+
+      test('passes event type and records through to the callback', () {
+        // Arrange: capture the raw Supabase callback so we can feed it
+        // synthetic payloads and assert the (event, new, old) mapping the
+        // notifier's targeted patch handler depends on.
+        final mockChannel = MockRealtimeChannel();
+        void Function(PostgresChangePayload)? rawCallback;
+
+        when(() => mockClient.channel('rating_completions:7'))
+            .thenReturn(mockChannel);
+        when(() => mockChannel.onPostgresChanges(
+              event: any(named: 'event'),
+              schema: any(named: 'schema'),
+              table: any(named: 'table'),
+              filter: any(named: 'filter'),
+              callback: any(named: 'callback'),
+            )).thenAnswer((invocation) {
+          rawCallback = invocation.namedArguments[#callback];
+          return mockChannel;
+        });
+        when(() => mockChannel.subscribe(any())).thenReturn(mockChannel);
+
+        final received = <(PostgresChangeEvent, Map<String, dynamic>?,
+            Map<String, dynamic>?)>[];
+        propositionService.subscribeToRatingCompletions(
+          7,
+          (event, newRecord, oldRecord) =>
+              received.add((event, newRecord, oldRecord)),
+        );
+
+        PostgresChangePayload payload({
+          required PostgresChangeEvent eventType,
+          Map<String, dynamic> newRecord = const {},
+          Map<String, dynamic> oldRecord = const {},
+        }) =>
+            PostgresChangePayload(
+              schema: 'public',
+              table: 'rating_completions',
+              commitTimestamp: DateTime.parse('2026-07-05T00:00:00Z'),
+              eventType: eventType,
+              newRecord: newRecord,
+              oldRecord: oldRecord,
+              errors: null,
+            );
+
+        // Act
+        rawCallback!(payload(
+          eventType: PostgresChangeEvent.insert,
+          newRecord: {'id': 1, 'round_id': 7, 'participant_id': 42},
+        ));
+        rawCallback!(payload(
+          eventType: PostgresChangeEvent.delete,
+          oldRecord: {'id': 1, 'round_id': 7, 'participant_id': 42},
+        ));
+
+        // Assert: empty maps arrive as null, populated ones pass through.
+        expect(received, hasLength(2));
+        expect(received[0].$1, PostgresChangeEvent.insert);
+        expect(received[0].$2?['participant_id'], 42);
+        expect(received[0].$3, isNull);
+        expect(received[1].$1, PostgresChangeEvent.delete);
+        expect(received[1].$2, isNull);
+        expect(received[1].$3?['participant_id'], 42);
       });
     });
 
@@ -306,6 +436,159 @@ void main() {
                 'content': 'My idea',
               },
             )).called(1);
+      });
+    });
+
+    group('pairwise (matches mode)', () {
+      test('submitPairwiseComparison inserts a vote with is_skip=false', () async {
+        final mockBuilder = MockSupabaseQueryBuilder();
+        Map<String, dynamic>? captured;
+        final insert = _FakeInsertBuilder(Future.value(null));
+
+        when(() => mockClient.from('pairwise_comparisons'))
+            .thenAnswer((_) => mockBuilder);
+        when(() => mockBuilder.insert(any())).thenAnswer((invocation) {
+          captured = invocation.positionalArguments.first as Map<String, dynamic>;
+          return insert;
+        });
+
+        await propositionService.submitPairwiseComparison(
+          roundId: 7,
+          participantId: 3,
+          winnerPropositionId: 11,
+          loserPropositionId: 22,
+        );
+
+        expect(captured, isNotNull);
+        expect(captured!['round_id'], 7);
+        expect(captured!['participant_id'], 3);
+        expect(captured!['winner_proposition_id'], 11);
+        expect(captured!['loser_proposition_id'], 22);
+        expect(captured!['is_tie'], false);
+        expect(captured!['is_skip'], false);
+      });
+
+      test('submitPairwiseSkip inserts with is_skip=true and is_tie=false', () async {
+        final mockBuilder = MockSupabaseQueryBuilder();
+        Map<String, dynamic>? captured;
+        final insert = _FakeInsertBuilder(Future.value(null));
+
+        when(() => mockClient.from('pairwise_comparisons'))
+            .thenAnswer((_) => mockBuilder);
+        when(() => mockBuilder.insert(any())).thenAnswer((invocation) {
+          captured = invocation.positionalArguments.first as Map<String, dynamic>;
+          return insert;
+        });
+
+        await propositionService.submitPairwiseSkip(
+          roundId: 7,
+          participantId: 3,
+          propAId: 11,
+          propBId: 22,
+        );
+
+        expect(captured, isNotNull);
+        expect(captured!['round_id'], 7);
+        expect(captured!['participant_id'], 3);
+        expect(captured!['winner_proposition_id'], 11);
+        expect(captured!['loser_proposition_id'], 22);
+        expect(captured!['is_tie'], false);
+        expect(captured!['is_skip'], true);
+      });
+
+      test('submitPairwiseSkip swallows 23505 unique_violation (pair already recorded)',
+          () async {
+        final mockBuilder = MockSupabaseQueryBuilder();
+        final insert = _FakeInsertBuilder(Future.error(
+            const PostgrestException(message: 'duplicate key value', code: '23505')));
+
+        when(() => mockClient.from('pairwise_comparisons'))
+            .thenAnswer((_) => mockBuilder);
+        when(() => mockBuilder.insert(any())).thenAnswer((_) => insert);
+
+        // Must NOT throw.
+        await expectLater(
+          propositionService.submitPairwiseSkip(
+            roundId: 1,
+            participantId: 1,
+            propAId: 1,
+            propBId: 2,
+          ),
+          completes,
+        );
+      });
+
+      test('submitPairwiseSkip rethrows non-23505 PostgrestException', () async {
+        final mockBuilder = MockSupabaseQueryBuilder();
+        final insert = _FakeInsertBuilder(Future.error(
+            const PostgrestException(message: 'permission denied', code: '42501')));
+
+        when(() => mockClient.from('pairwise_comparisons'))
+            .thenAnswer((_) => mockBuilder);
+        when(() => mockBuilder.insert(any())).thenAnswer((_) => insert);
+
+        await expectLater(
+          propositionService.submitPairwiseSkip(
+            roundId: 1,
+            participantId: 1,
+            propAId: 1,
+            propBId: 2,
+          ),
+          throwsA(isA<PostgrestException>()),
+        );
+      });
+
+      test('getPriorPairwiseVotes maps vote, tie, and skip rows to PriorVote', () async {
+        final mockBuilder = MockSupabaseQueryBuilder();
+        final mockSelect = MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();
+        final mockEq1 = MockPostgrestFilterBuilder<List<Map<String, dynamic>>>();
+
+        final rows = <Map<String, dynamic>>[
+          {
+            'winner_proposition_id': 1,
+            'loser_proposition_id': 2,
+            'is_tie': false,
+            'is_skip': false,
+          },
+          {
+            'winner_proposition_id': 3,
+            'loser_proposition_id': 4,
+            'is_tie': true,
+            'is_skip': false,
+          },
+          {
+            'winner_proposition_id': 5,
+            'loser_proposition_id': 6,
+            'is_tie': false,
+            'is_skip': true,
+          },
+        ];
+        final mockEq2 = _FakeListBuilder(rows);
+
+        when(() => mockClient.from('pairwise_comparisons'))
+            .thenAnswer((_) => mockBuilder);
+        when(() => mockBuilder.select(any())).thenAnswer((_) => mockSelect);
+        when(() => mockSelect.eq('round_id', any())).thenAnswer((_) => mockEq1);
+        when(() => mockEq1.eq('participant_id', any())).thenAnswer((_) => mockEq2);
+
+        final votes = await propositionService.getPriorPairwiseVotes(
+          roundId: 9,
+          participantId: 4,
+        );
+
+        expect(votes, hasLength(3));
+        expect(votes[0].winnerId, 1);
+        expect(votes[0].loserId, 2);
+        expect(votes[0].isTie, false);
+        expect(votes[0].isSkip, false);
+
+        expect(votes[1].isTie, true);
+        expect(votes[1].isSkip, false);
+
+        expect(votes[2].winnerId, 5);
+        expect(votes[2].loserId, 6);
+        expect(votes[2].isTie, false);
+        expect(votes[2].isSkip, true);
       });
     });
   });

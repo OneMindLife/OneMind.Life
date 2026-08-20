@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
 import '../screens/chat/widgets/previous_round_display.dart';
+import 'tts_button.dart';
 
 /// A round winner card for cycle history screens.
 /// Supports multiple tied winners with chevron navigation.
@@ -11,12 +12,27 @@ class RoundWinnerItem extends StatefulWidget {
   final bool isConvergence;
   final VoidCallback onTap;
 
+  /// When true, a read-aloud [TtsButton] is shown under the winner text,
+  /// speaking the currently-displayed winner. Off by default so existing
+  /// usages are unaffected.
+  final bool showTts;
+
+  /// Analytics context for the read-aloud button. When both [chatId] and the
+  /// button's source are set, tapping logs `chat_audio_played`.
+  final String? chatId;
+
+  /// Cycle id, threaded into the read-aloud analytics event.
+  final int? cycleId;
+
   const RoundWinnerItem({
     super.key,
     required this.winnerTexts,
     required this.label,
     this.isConvergence = false,
     required this.onTap,
+    this.showTts = false,
+    this.chatId,
+    this.cycleId,
   });
 
   @override
@@ -139,6 +155,13 @@ class _RoundWinnerItemState extends State<RoundWinnerItem> {
             style: theme.textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
+          if (widget.showTts)
+            TtsButton(
+              text: text,
+              source: 'cycle_winner',
+              chatId: widget.chatId,
+              cycleId: widget.cycleId,
+            ),
         ],
       ),
     );

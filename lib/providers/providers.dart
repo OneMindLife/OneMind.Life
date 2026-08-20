@@ -19,13 +19,14 @@ final authServiceProvider = Provider<AuthService>((ref) {
 });
 
 /// Current user ID provider - ensures user is signed in (anonymously if needed)
-/// Also ensures user has a display name (generates random one if missing).
+///
+/// Deliberately does NOT provision a display name: a user's name stays null
+/// until they type one at a join/create gate (see NameSection). The old
+/// silent random-name assignment ("Brave Fox") meant no flow ever asked, so
+/// nobody knew names were editable.
 final currentUserIdProvider = FutureProvider<String>((ref) async {
   final authService = ref.watch(authServiceProvider);
-  final userId = await authService.ensureSignedIn();
-  // Ensure every user has a display name (e.g. "Brave Fox")
-  await authService.ensureDisplayName();
-  return userId;
+  return authService.ensureSignedIn();
 });
 
 /// Display name from auth metadata

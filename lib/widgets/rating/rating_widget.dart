@@ -193,6 +193,13 @@ class RatingWidgetState extends State<RatingWidget>
       onSaveRankings: widget.onSaveRankings,
       lazyLoadingMode: widget.lazyLoadingMode,
       isResuming: widget.isResuming,
+      // readOnly = results-display: groups near-tied cards (bucket 1.0)
+      // and picks the highest-rated card as the visible stack default.
+      // Without this the UI silently falls back to drag-mode tolerance
+      // (0.1) and "most-recently-placed wins" — which is what the
+      // 2026-05-01 NCDD demo bug was. Tested in
+      // test/screens/rating/read_only_results_screen_test.dart.
+      resultsMode: widget.readOnly,
     );
     _model.addListener(_onModelChange);
     _lastPropositionCount = _model.rankedPropositions.length;
@@ -599,10 +606,21 @@ class RatingWidgetState extends State<RatingWidget>
           ? Duration.zero
           : const Duration(milliseconds: 400);
 
-      // Wrap active cards with drag gesture for touch-based positioning
-      Widget cardContent = Opacity(
-        opacity: shouldHide ? 0.0 : 1.0,
-        child: cardWidget,
+      // Wrap active cards with drag gesture for touch-based positioning.
+      //
+      // IgnorePointer is essential when hiding: hidden cards are still
+      // in the widget tree and (in stacked-near-tie scenarios) sit at
+      // nearly the same Y as the visible StackedPropositionCard, painted
+      // ON TOP of it because they appear later in the iteration. Without
+      // IgnorePointer, the hidden sibling intercepts taps that should
+      // reach the StackedPropositionCard's chevrons — surfaced by Joel
+      // 2026-05-02 in the read-only results screen for chat 309 R1.
+      Widget cardContent = IgnorePointer(
+        ignoring: shouldHide,
+        child: Opacity(
+          opacity: shouldHide ? 0.0 : 1.0,
+          child: cardWidget,
+        ),
       );
 
       // Tap either card during binary phase to swap

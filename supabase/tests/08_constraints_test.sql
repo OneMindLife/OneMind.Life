@@ -130,10 +130,13 @@ SELECT is(
 );
 
 -- Test 9: Proposition cannot reference invalid round
+-- (errcode is NULL = "throws any error": the set_proposition_chat_id trigger
+--  resolves chat_id from the round first, so a non-existent round trips the
+--  chat_id NOT NULL (23502) before the round_id FK (23503) — either way the
+--  insert is correctly rejected. See 20260602140000_propositions_chat_id_realtime_rls.)
 SELECT throws_ok(
   $$INSERT INTO propositions (round_id, participant_id, content)
     VALUES (999999, $$ || current_setting('test.participant_id') || $$, 'Bad Prop')$$,
-  '23503',
   NULL,
   'Proposition cannot reference non-existent round'
 );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../l10n/generated/app_localizations.dart';
 import 'basic_info_section.dart';
-import 'form_inputs.dart';
+import 'wizard_common.dart';
 
 /// Step 1 of the create chat wizard: The Question
 /// Focuses purely on chat name and optional initial message/question.
@@ -25,10 +25,9 @@ class WizardStepQuestion extends StatefulWidget {
 }
 
 class _WizardStepQuestionState extends State<WizardStepQuestion> {
-  // Default the initial-message toggle on. Showing the field by default
-  // nudges hosts to actually frame a question — chats with a clear prompt
-  // pull stronger participation than ones that drop people in cold.
-  bool _showMessage = true;
+  // Default OFF: an ongoing group chat is a standing space, not a single poll —
+  // it shouldn't open with a fixed question. Hosts can still toggle one on.
+  bool _showMessage = false;
 
   bool _validate() {
     return widget.formKey.currentState?.validate() ?? false;
@@ -36,116 +35,69 @@ class _WizardStepQuestionState extends State<WizardStepQuestion> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
+    return Form(
+      key: widget.formKey,
+      child: WizardStepLayout(
+        icon: Icons.lightbulb_outline,
+        title: l10n.wizardStep1Title,
+        onContinue: () {
+          if (_validate()) {
+            widget.onContinue();
+          }
+        },
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Form(
-                key: widget.formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Large icon as visual anchor
-                    Icon(
-                      Icons.lightbulb_outline,
-                      size: 64,
-                      color: theme.colorScheme.primary,
-                    ),
-                    const SizedBox(height: 16),
+          // Chat name field
+          TextFormField(
+            controller: widget.nameController,
+            maxLength: kChatNameMaxLength,
+            decoration: InputDecoration(
+              labelText: l10n.chatName,
+              hintText: l10n.chatNameHint,
+              floatingLabelBehavior: FloatingLabelBehavior.always,
+              filled: true,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            textCapitalization: TextCapitalization.sentences,
+            validator: (v) =>
+                v == null || v.trim().isEmpty ? l10n.required : null,
+          ),
+          const SizedBox(height: 8),
 
-                    // Title
-                    Text(
-                      l10n.wizardStep1Title,
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    const SizedBox(height: 24),
+          // Toggle for initial message
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.setFirstMessage),
+            value: _showMessage,
+            onChanged: (v) {
+              setState(() => _showMessage = v);
+              if (!v) widget.messageController.clear();
+            },
+          ),
 
-                    // Chat name field
-                    TextFormField(
-                      controller: widget.nameController,
-                      maxLength: kChatNameMaxLength,
-                      decoration: InputDecoration(
-                        labelText: l10n.chatName,
-                        hintText: l10n.chatNameHint,
-                        floatingLabelBehavior: FloatingLabelBehavior.always,
-                        filled: true,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                      textCapitalization: TextCapitalization.sentences,
-                      validator: (v) => v == null || v.trim().isEmpty
-                          ? l10n.required
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Toggle for initial message
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text(l10n.setFirstMessage),
-                      value: _showMessage,
-                      onChanged: (v) {
-                        setState(() => _showMessage = v);
-                        if (!v) widget.messageController.clear();
-                      },
-                    ),
-
-                    // Initial message field (shown when toggled on)
-                    if (_showMessage) ...[
-                      const SizedBox(height: 8),
-                      TextFormField(
-                        controller: widget.messageController,
-                        decoration: InputDecoration(
-                          labelText: l10n.initialMessageLabel,
-                          hintText: l10n.initialMessageHint,
-                          floatingLabelBehavior: FloatingLabelBehavior.always,
-                          filled: true,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        maxLines: 3,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                    ],
-                  ],
+          // Initial message field (shown when toggled on)
+          if (_showMessage) ...[
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: widget.messageController,
+              decoration: InputDecoration(
+                labelText: l10n.initialMessageLabel,
+                hintText: l10n.initialMessageHint,
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                filled: true,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
               ),
+              maxLines: 3,
+              textCapitalization: TextCapitalization.sentences,
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Continue button
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () {
-                if (_validate()) {
-                  widget.onContinue();
-                }
-              },
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(l10n.continue_),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.arrow_forward, size: 18),
-                ],
-              ),
-            ),
-          ),
+          ],
         ],
       ),
     );

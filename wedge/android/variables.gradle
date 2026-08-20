@@ -1,0 +1,19 @@
+ext {
+    minSdkVersion = 22
+    // API 36 (Android 16), not Capacitor 6's default 35: from 2026-08-31 Play
+    // rejects updates that target below 36. A webview shell has no API-surface
+    // to migrate, so taking it now means this app never needs touching again.
+    compileSdkVersion = 36
+    targetSdkVersion = 36
+    androidxActivityVersion = '1.8.0'
+    androidxAppCompatVersion = '1.6.1'
+    androidxCoordinatorLayoutVersion = '1.2.0'
+    androidxCoreVersion = '1.12.0'
+    androidxFragmentVersion = '1.6.2'
+    coreSplashScreenVersion = '1.0.1'
+    androidxWebkitVersion = '1.9.0'
+    junitVersion = '4.13.2'
+    androidxJunitVersion = '1.1.5'
+    androidxEspressoCoreVersion = '3.5.1'
+    cordovaAndroidVersion = '10.1.1'
+}

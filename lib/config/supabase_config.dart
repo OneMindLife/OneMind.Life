@@ -20,10 +20,10 @@ class SupabaseConfig {
   SupabaseConfig._();
 
   /// Remote Supabase URL
-  static const String _remoteUrl = 'https://ccyuxrtrklgpkzcryzpj.supabase.co';
+  static const String _remoteUrl = 'https://YOUR_SUPABASE_PROJECT_REF.supabase.co';
 
   /// Remote Supabase anon key
-  static const String _remoteAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNjeXV4cnRya2xncGt6Y3J5enBqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc5ODkzOTksImV4cCI6MjA4MzU2NTM5OX0.RR7W2SZD7BS9y3-I1YpyfB550fb0ZckduN-814RqycE';
+  static const String _remoteAnonKey = 'YOUR_SUPABASE_ANON_KEY';
 
   /// Local Supabase URL for development
   static const String _localUrl = 'http://127.0.0.1:54321';
@@ -54,14 +54,20 @@ class SupabaseConfig {
   /// Whether configuration is properly set for non-local environments
   static bool get isConfigured => EnvConfig.isValid;
 
-  /// Validate configuration for production builds
-  /// Throws if required environment variables are missing in production
+  /// Validate configuration for production builds.
+  ///
+  /// Deliberately does NOT throw. OneMind ships with hardcoded remote prod
+  /// defaults (_remoteUrl/_remoteAnonKey), so a build that sets
+  /// ENVIRONMENT=production WITHOUT the SUPABASE_* dart-defines still connects
+  /// to prod correctly via those defaults. The old `throw StateError` here ran in
+  /// main() before runApp and white-screened the entire app the moment
+  /// ENVIRONMENT=production was set without the dart-defines (2026-05-31 outage).
+  /// Never crash boot over this — log a warning and carry on with the defaults.
   static void validateForProduction() {
     if (EnvConfig.isProduction && !EnvConfig.isValid) {
-      throw StateError(
-        'Production build requires environment configuration. '
-        '${EnvConfig.validationError}',
-      );
+      // ignore: avoid_print
+      print('[config] ENVIRONMENT=production but SUPABASE_* dart-defines are '
+          'unset — using built-in remote defaults. ${EnvConfig.validationError}');
     }
   }
 }

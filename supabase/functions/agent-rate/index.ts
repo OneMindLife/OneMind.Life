@@ -30,6 +30,7 @@ import {
   AgentRateLimits,
 } from "../_shared/agent-auth.ts";
 import { RateLimiter, rateLimitResponse } from "../_shared/rate-limiter.ts";
+import { scoresToPairwiseRows } from "../_shared/pairwise.ts";
 
 // Request body schema
 const RequestSchema = z.object({
@@ -120,6 +121,26 @@ Deno.serve(async (req: Request) => {
     console.log(
       `[AGENT-RATE] Agent ${authResult.agentName} rating in chat ${chat_id}`
     );
+
+    // Rating mode decides HOW the scores are recorded: grid mode upserts
+    // grid_rankings; matches mode converts scores into pairwise votes — the
+    // same match-by-match rows humans cast.
+    const { data: chatRow, error: chatError } = await supabase
+      .from("chats")
+      .select("rating_mode")
+      .eq("id", chat_id)
+      .single();
+
+    if (chatError) {
+      console.error("[AGENT-RATE] Error getting chat:", chatError);
+      return corsErrorResponse(
+        "Database error",
+        req,
+        500,
+        AgentErrorCodes.DB_ERROR
+      );
+    }
+    const isMatchesMode = chatRow?.rating_mode === "matches";
 
     // Get current cycle and round
     const { data: currentCycle, error: cycleError } = await supabase
@@ -225,6 +246,14 @@ Deno.serve(async (req: Request) => {
       propositionMap.set(p.id, p.participant_id);
     }
 
+    // Conditional self-inclusion: a rater normally can't rate their own
+    // proposition, EXCEPT when excluding it would leave them under 2 votable
+    // props (<= 2-prop rounds). Mirrors get_least_rated_propositions.
+    const nonOwnCount = propositions.filter(
+      (p) => p.participant_id !== authResult.participantId
+    ).length;
+    const selfRatingAllowed = nonOwnCount < 2;
+
     // Validate each rating
     const ratingsToInsert: Array<{
       proposition_id: number;
@@ -254,9 +283,10 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      // Check if trying to rate own proposition
+      // Check if trying to rate own proposition (allowed in conditional
+      // self-inclusion rounds, where everyone rates everything)
       const propParticipantId = propositionMap.get(propId);
-      if (propParticipantId === authResult.participantId) {
+      if (propParticipantId === authResult.participantId && !selfRatingAllowed) {
         return corsErrorResponse(
           `Cannot rate your own proposition (ID: ${propId})`,
           req,
@@ -273,7 +303,86 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Upsert ratings (update if exists, insert if not)
+    // Votable set = non-own props, or ALL props in conditional-self-inclusion
+    // rounds. Used for progress in both modes.
+    const otherPropositions = selfRatingAllowed
+      ? propositions
+      : propositions.filter(
+          (p) => p.participant_id !== authResult.participantId
+        );
+
+    if (isMatchesMode) {
+      // Matches mode: record match-by-match votes, exactly like a human —
+      // one pairwise_comparisons row per unordered pair (winner = the
+      // higher-scored prop, equal = tie) plus a rating_completions row.
+      // The 0-100 request contract is unchanged for callers; only the
+      // recording differs. Grid rows are NOT written (they'd only feed the
+      // grid-based advance math, which matches rounds don't use).
+      const pairRows = scoresToPairwiseRows(
+        ratingsToInsert.map((r) => ({
+          propositionId: r.proposition_id,
+          score: r.grid_position,
+        })),
+        currentRound.id,
+        authResult.participantId!
+      );
+
+      if (pairRows.length > 0) {
+        const { error: pairError } = await supabase
+          .from("pairwise_comparisons")
+          .insert(pairRows);
+        // 23505 = this agent already voted these pairs (idempotent re-run).
+        if (pairError && pairError.code !== "23505") {
+          console.error("[AGENT-RATE] Error inserting pairwise votes:", pairError);
+          return corsErrorResponse(
+            "Failed to save votes",
+            req,
+            500,
+            AgentErrorCodes.DB_ERROR
+          );
+        }
+      }
+
+      // Completion marker — drives matches progress, finalize triggers, and
+      // the "who's done" UI. Only once the agent has scored its full votable
+      // set (a partial SDK submission must not read as "done"). Idempotent.
+      const coveredAll = ratingsToInsert.length >= otherPropositions.length;
+      if (coveredAll) {
+        const { error: completionError } = await supabase
+          .from("rating_completions")
+          .insert({
+            round_id: currentRound.id,
+            participant_id: authResult.participantId,
+            chat_id,
+          });
+        if (completionError && completionError.code !== "23505") {
+          console.error("[AGENT-RATE] Error inserting completion:", completionError);
+          return corsErrorResponse(
+            "Failed to save completion",
+            req,
+            500,
+            AgentErrorCodes.DB_ERROR
+          );
+        }
+      }
+
+      console.log(
+        `[AGENT-RATE] Agent ${authResult.agentName} cast ${pairRows.length} pairwise votes (matches mode)${coveredAll ? " and completed" : ""}`
+      );
+
+      return corsJsonResponse(
+        {
+          success: true,
+          rated_count: ratingsToInsert.length,
+          total_to_rate: otherPropositions.length,
+          is_complete: coveredAll,
+        },
+        req,
+        200
+      );
+    }
+
+    // Grid mode: upsert ratings (update if exists, insert if not)
     const { error: upsertError } = await supabase.from("grid_rankings").upsert(
       ratingsToInsert,
       {
@@ -291,11 +400,6 @@ Deno.serve(async (req: Request) => {
         AgentErrorCodes.DB_ERROR
       );
     }
-
-    // Calculate rating progress
-    const otherPropositions = propositions.filter(
-      (p) => p.participant_id !== authResult.participantId
-    );
 
     // Get total ratings submitted by this agent
     const { count: totalRated, error: countError } = await supabase

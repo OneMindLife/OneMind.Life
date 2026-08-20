@@ -322,6 +322,35 @@ class ChatService {
     await _client.from('chats').delete().eq('id', chatId);
   }
 
+  /// Single-trip snapshot of all chat-detail state.
+  ///
+  /// Returns one [ChatDetailBootstrap] containing chat + cycle + round +
+  /// propositions + participants + skip/affirm/rating counters + previous
+  /// round winners + consensus items in a single round-trip. Replaces 18
+  /// parallel queries the notifier used to fire on each refresh — that
+  /// pattern bottlenecked at NCDD demo scale (15+ users, cascading
+  /// subscription events, 13s connection-pool drain on a single click).
+  ///
+  /// Returns `null` if the chat does not exist or the caller cannot view
+  /// it (mirrors the RLS-filtered `getChatById` behaviour).
+  Future<ChatDetailBootstrap?> getChatDetailBootstrap(
+    int chatId, {
+    String? languageCode,
+    bool includePreviousResults = false,
+  }) async {
+    final response = await _client.rpc(
+      'get_chat_detail_bootstrap',
+      params: {
+        'p_chat_id': chatId,
+        'p_language_code': languageCode,
+        'p_include_previous_results': includePreviousResults,
+      },
+    );
+    if (response == null) return null;
+    return ChatDetailBootstrap.fromJson(
+        (response as Map).cast<String, dynamic>());
+  }
+
   /// Create a new chat
   /// Uses auth.uid() for creator identification
   Future<Chat> createChat({
@@ -352,6 +381,8 @@ class ChatService {
     required int confirmationRoundsRequired,
     required bool showPreviousResults,
     required int propositionsPerUser,
+    String ratingMode = 'grid',
+    String matchObjective = 'winner_only',
     // Adaptive duration settings (uses early advance thresholds)
     bool adaptiveDurationEnabled = false,
     int adaptiveAdjustmentPercent = 10,
@@ -370,6 +401,15 @@ class ChatService {
     // Translation settings (set at creation, not editable after)
     bool translationsEnabled = false,
     List<String> translationLanguages = const ['en', 'es', 'pt', 'fr', 'de'],
+    // Quick-create flow: cap cycles (null = continuous) + mark ephemeral preview chats.
+    int? maxCycles,
+    bool isPreview = false,
+    // Cadence anchor: the user-chosen end of the FIRST phase. The backend
+    // derives the repeating wall-clock grid from its time-of-day in
+    // scheduleTimezone (see snap_phase_end_to_cadence trigger). null = no
+    // cadence, plain duration chaining. Callers setting this must also pass
+    // scheduleTimezone (the auto-detected device timezone).
+    DateTime? cadenceAnchorAt,
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
@@ -431,6 +471,8 @@ class ChatService {
       'confirmation_rounds_required': confirmationRoundsRequired,
       'show_previous_results': showPreviousResults,
       'propositions_per_user': propositionsPerUser,
+      'rating_mode': ratingMode,
+      'match_objective': matchObjective,
       'adaptive_duration_enabled': adaptiveDurationEnabled,
       'adaptive_adjustment_percent': adaptiveAdjustmentPercent,
       'min_phase_duration_seconds': minPhaseDurationSeconds,
@@ -439,6 +481,8 @@ class ChatService {
       'allow_skip_rating': allowSkipRating,
       'translations_enabled': translationsEnabled,
       'translation_languages': translationLanguages,
+      'max_cycles': maxCycles,
+      'is_preview': isPreview,
     };
 
     // Add optional initial message if provided
@@ -462,6 +506,20 @@ class ChatService {
       }
     }
 
+    // Cadence anchor: explicit user data — the end of the first phase, from
+    // which the backend derives the repeating grid. Absent (not null-valued)
+    // when unset so plain chats keep the column's NULL default.
+    if (cadenceAnchorAt != null) {
+      insertData['cadence_anchor_at'] = cadenceAnchorAt.toUtc().toIso8601String();
+    }
+
+    // Always-Active chats have no scheduleType but still send the detected
+    // device timezone: it's the reference zone for the cadence grid (and
+    // harmless without an anchor).
+    if (scheduleTimezone != null && !insertData.containsKey('schedule_timezone')) {
+      insertData['schedule_timezone'] = scheduleTimezone;
+    }
+
     final response = await _client.from('chats').insert(insertData).select().single();
     final chat = Chat.fromJson(response);
 
@@ -470,6 +528,85 @@ class ChatService {
     // This is more reliable than fire-and-forget from client.
 
     return chat;
+  }
+
+  /// Quick-create (prioritization): seed a single matches/full_rank rating round with a
+  /// predefined list of [options] as ownerless propositions (participant_id NULL), so the
+  /// host — and any invitees — rank the whole list. Returns the new round id.
+  ///
+  /// The chat must already exist (created via [createChat] with rating_mode 'matches',
+  /// match_objective 'full_rank', confirmationRoundsRequired 1, maxCycles 1) and the caller
+  /// must be its active host. Needs >= 2 options.
+  ///
+  /// Pass [ratingDurationSeconds] = null to seed a round with NO timer (phase_ends_at
+  /// NULL): the real shared chat shows no countdown and finalizes via [hostEndVoting].
+  Future<int> seedPrioritizationRound({
+    required int chatId,
+    required List<String> options,
+    int? ratingDurationSeconds = 86400,
+  }) async {
+    final roundId = await _client.rpc('seed_prioritization_round', params: {
+      'p_chat_id': chatId,
+      'p_options': options,
+      'p_rating_duration_seconds': ratingDurationSeconds,
+    });
+    return roundId as int;
+  }
+
+  /// Quick-create real chats: end the rating phase NOW, tally votes as they stand, and
+  /// lock in the winner (which ends the chat, since maxCycles == 1). Host-only, enforced
+  /// server-side by `host_end_voting`. Idempotent if the round already finalized.
+  Future<void> hostEndVoting(int chatId) async {
+    await _client.rpc('host_end_voting', params: {'p_chat_id': chatId});
+  }
+
+  /// Quick-create (generate path): ask the LLM for a small batch of candidate options for
+  /// [question], used to populate a solo PREVIEW of the "gather ideas" flow (clearly labeled
+  /// as AI-generated in the UI). Returns up to [count] short option strings (clamped 2..6
+  /// server-side). Returns an EMPTY list on any LLM/parse failure — callers should fall back
+  /// to letting the creator type their own.
+  Future<List<String>> generateOptions({
+    required String question,
+    int count = 5,
+  }) async {
+    try {
+      final response = await _client.functions.invoke(
+        'generate-options',
+        body: {'question': question, 'count': count},
+      );
+      final data = response.data as Map<String, dynamic>?;
+      final raw = (data?['options'] as List?) ?? const [];
+      return raw.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  /// Latest round (id + customId) for a chat, across all cycles. Used by the ended/instant
+  /// ranking flow to resolve the completed round for the results screen when the chat-detail
+  /// bootstrap returns nothing (an ended chat has no active cycle). Returns null if none.
+  Future<({int id, int customId})?> getLatestRoundForChat(int chatId) async {
+    final rows = await _client
+        .from('rounds')
+        .select('id, custom_id, cycles!inner(chat_id)')
+        .eq('cycles.chat_id', chatId)
+        .order('id', ascending: false)
+        .limit(1);
+    if ((rows as List).isEmpty) return null;
+    final r = rows.first as Map<String, dynamic>;
+    return (id: r['id'] as int, customId: (r['custom_id'] as int?) ?? 1);
+  }
+
+  /// Nudge the process-timers edge function to run immediately (same path as the cron).
+  /// Used so a solo prioritization preview finalizes its result instantly instead of
+  /// waiting for the next cron tick. Fire-and-forget; failures are non-fatal (cron still
+  /// advances within a minute).
+  Future<void> triggerProcessTimers() async {
+    try {
+      await _client.rpc('trigger_process_timers');
+    } catch (_) {
+      // Non-fatal: the every-minute cron will still advance the round.
+    }
   }
 
   /// Get current cycle for a chat
@@ -686,6 +823,31 @@ class ChatService {
   /// This is called when the host clicks "Start Phase" on a chat with no existing cycle/round.
   /// Returns the created round ID.
   Future<int> startChat(int chatId, Chat chat) async {
+    // Idempotency guard: a double-fire of Start (e.g. a second tap before the
+    // client state reflected the first start) would otherwise create a SECOND
+    // cycle + round-1 — leaving the chat with two active cycles, which breaks
+    // the model (which round is "live"? winner calc, etc.). If a cycle+round
+    // already exists for this chat, reuse it instead of creating another.
+    final existingCycle = await _client
+        .from('cycles')
+        .select('id')
+        .eq('chat_id', chatId)
+        .order('created_at', ascending: true)
+        .limit(1)
+        .maybeSingle();
+    if (existingCycle != null) {
+      final existingRound = await _client
+          .from('rounds')
+          .select('id')
+          .eq('cycle_id', existingCycle['id'] as int)
+          .order('custom_id', ascending: true)
+          .limit(1)
+          .maybeSingle();
+      if (existingRound != null) {
+        return existingRound['id'] as int; // already started — reuse it
+      }
+    }
+
     // Create the initial cycle
     final cycleResponse = await _client
         .from('cycles')
@@ -1177,5 +1339,28 @@ class ChatService {
       params: {'p_chat_id': chatId},
     );
     return (response as List).cast<Map<String, dynamic>>();
+  }
+
+  // ── C15 tree mode (docs/ONEMIND_CONCEPT.md C15) ───────────────────────────
+
+  /// One-call snapshot for a node screen: the parent proposition, the chat's
+  /// current window phase, and the (possibly unmaterialized) child subround.
+  Future<Map<String, dynamic>> getNodeBootstrap(int propositionId) async {
+    final response = await _client.rpc(
+      'get_node_bootstrap',
+      params: {'p_proposition_id': propositionId},
+    );
+    return Map<String, dynamic>.from(response as Map);
+  }
+
+  /// Lazily materialize a proposition's follow-up subround (idempotent).
+  /// Returns the child cycle id. Throws when the proposing window is closed
+  /// or branching is disabled for the chat.
+  Future<int> spawnNodeCycle(int propositionId) async {
+    final response = await _client.rpc(
+      'get_or_create_node_cycle',
+      params: {'p_proposition_id': propositionId},
+    );
+    return (response as num).toInt();
   }
 }

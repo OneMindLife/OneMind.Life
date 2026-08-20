@@ -14,6 +14,13 @@ class Round extends Equatable {
   final bool? isSoleWinner; // TRUE = counts toward consensus, FALSE = tied (doesn't count)
   final DateTime createdAt;
   final DateTime? completedAt;
+  /// Server-computed completion of the current phase, 0-100, or null
+  /// for phases without a meaningful percent (waiting / completed).
+  /// Maintained by triggers in
+  /// 20260502170000_denormalize_round_participation_percent.sql; the
+  /// round-status bar reads this directly rather than computing the
+  /// value locally from N independent realtime streams.
+  final int? participationPercent;
 
   const Round({
     required this.id,
@@ -26,6 +33,7 @@ class Round extends Equatable {
     this.isSoleWinner,
     required this.createdAt,
     this.completedAt,
+    this.participationPercent,
   });
 
   bool get isComplete => completedAt != null;
@@ -41,6 +49,7 @@ class Round extends Equatable {
     bool? isSoleWinner,
     DateTime? createdAt,
     DateTime? completedAt,
+    int? participationPercent,
   }) {
     return Round(
       id: id ?? this.id,
@@ -53,6 +62,7 @@ class Round extends Equatable {
       isSoleWinner: isSoleWinner ?? this.isSoleWinner,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
+      participationPercent: participationPercent ?? this.participationPercent,
     );
   }
 
@@ -80,6 +90,7 @@ class Round extends Equatable {
       completedAt: json['completed_at'] != null
           ? DateTime.parse(json['completed_at'] as String)
           : null,
+      participationPercent: (json['participation_percent'] as num?)?.toInt(),
     );
   }
 
@@ -112,5 +123,6 @@ class Round extends Equatable {
         isSoleWinner,
         createdAt,
         completedAt,
+        participationPercent,
       ];
 }

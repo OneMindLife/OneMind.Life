@@ -545,18 +545,37 @@ class ProposingStatePanel extends StatelessWidget {
             ),
           ],
 
-          // Host advance button - hidden for MVP
-          // if (isHost && onAdvancePhase != null) ...[
-          //   const SizedBox(height: 16),
-          //   const Divider(),
-          //   const SizedBox(height: 8),
-          //   OutlinedButton.icon(
-          //     key: const Key('advance-to-rating-button'),
-          //     onPressed: onAdvancePhase,
-          //     icon: const Icon(Icons.close),
-          //     label: Text(l10n.endProposingStartRating),
-          //   ),
-          // ],
+          // Host (manual mode): advance proposing → voting when ready. The parent
+          // passes onAdvancePhase only for a manual-mode host, so this never
+          // appears for auto/timer chats. Disabled until there are >=2 ideas —
+          // matches voting needs at least one pair. The participation line is the
+          // host's "everyone's in?" hint (no auto-advance, so it's their call).
+          if (isHost && onAdvancePhase != null) ...[
+            const SizedBox(height: 16),
+            const Divider(),
+            const SizedBox(height: 8),
+            if (participationPercent != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  '$participationPercent% of people here have proposed',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.tonalIcon(
+                key: const Key('advance-to-rating-button'),
+                onPressed:
+                    allPropositionsCount >= 2 ? onAdvancePhase : null,
+                icon: const Icon(Icons.how_to_vote),
+                label: Text(l10n.endProposingStartRating),
+              ),
+            ),
+          ],
             ],
           ),
         ),

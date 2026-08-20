@@ -1,1 +1,74 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"onemindsaas","appId":"1:87402995206:android:a82601ce3fb59bc3fdad87","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"onemind-bfba5","configurations":{"web":"1:772415659270:web:d7e397a8fd8d5af7dfd287"}}}}},"hosting":{"public":"build/web","ignore":["firebase.json","**/.*","**/node_modules/**"],"rewrites":[{"source":"/sitemap.xml","destination":"/sitemap.xml"},{"source":"/robots.txt","destination":"/robots.txt"},{"source":"**","destination":"/index.html"}],"headers":[{"source":"/sitemap.xml","headers":[{"key":"Content-Type","value":"application/xml"}]},{"source":"/robots.txt","headers":[{"key":"Content-Type","value":"text/plain"}]}]}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "onemindsaas",
+          "appId": "1:87402995206:android:a82601ce3fb59bc3fdad87",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "onemind-bfba5",
+          "configurations": {
+            "web": "1:772415659270:web:d7e397a8fd8d5af7dfd287"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "wedge/out",
+    "ignore": ["firebase.json", "**/node_modules/**"],
+    "redirects": [
+      { "source": "/upwork", "destination": "/c/GLOBAL?utm_source=upwork", "type": 302 },
+      { "source": "/join/GLOBAL", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/join/:code", "destination": "/g/:code", "type": 302 },
+      { "source": "/join/:code/**", "destination": "/g/:code", "type": 302 },
+      { "source": "/g/GLOBAL", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/g/GLOBAL/**", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/home", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/home/**", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/create", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/create/**", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/game", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/game/**", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/instant", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/try", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/demo", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/discover", "destination": "/", "type": 302 },
+      { "source": "/discover/**", "destination": "/", "type": 302 },
+      { "source": "/actions", "destination": "/c/GLOBAL", "type": 302 },
+      { "source": "/tutorial", "destination": "/", "type": 302 },
+      { "source": "/tutorial/**", "destination": "/", "type": 302 },
+      { "source": "/home-tour", "destination": "/", "type": 302 },
+      { "source": "/home-tour/**", "destination": "/", "type": 302 }
+    ],
+    "rewrites": [
+      { "source": "/c/**", "destination": "/c/_/index.html" },
+      { "source": "/g/**", "destination": "/g/_/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "**/*.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      },
+      {
+        "comment": "Client-shell routes are served via rewrite (extensionless URLs) so the **/*.html rule above misses them; without this they cache for an hour and users get stale JS after every deploy.",
+        "source": "/g/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      },
+      {
+        "source": "/flutter_service_worker.js",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      }
+    ]
+  }
+}

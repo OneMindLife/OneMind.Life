@@ -17,10 +17,71 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+
+  <!-- First-touch attribution capture. Records WHERE a visitor came from on
+       their first page load (before the /home→/try redirect below changes the
+       path), persists it for the session, and derives a clean visitor_source
+       bucket. The bridge (_onemindLogEvent) then stamps it onto every event so
+       a chat creation is traceable to a keyword/landing-page AND separable into
+       cold-paid vs cold-organic vs invite/direct. This is the gate-1 readout:
+       cold create rate = quick_create_chat_created where visitor_source='google_ads'.
+       Stored in sessionStorage (first-touch wins, survives the redirect + SPA nav). -->
+  <script>
+    (function () {
+      try {
+        var KEY = '_om_attr';
+        if (sessionStorage.getItem(KEY)) return; // first-touch wins
+        var qp = new URLSearchParams(window.location.search || '');
+        var gclid = qp.get('gclid') || qp.get('gbraid') || qp.get('wbraid') || '';
+        var gadSrc = qp.get('gad_source') || '';
+        var utmSource = qp.get('utm_source') || '';
+        var landing = window.location.pathname || '/';
+        var ref = (document.referrer || '');
+        var refHost = '';
+        try { refHost = ref ? new URL(ref).hostname.toLowerCase() : ''; } catch (_) {}
+        var sameSite = refHost && /(^|\.)onemind\.life$/.test(refHost);
+        var source;
+        if (gclid || gadSrc) source = 'google_ads';
+        else if (landing.indexOf('/join') === 0) source = 'invite';
+        else if (utmSource) source = 'utm_' + utmSource;
+        else if (refHost && !sameSite && /google\.|bing\.|duckduckgo\.|yahoo\.|ecosia\.|search\./.test(refHost)) source = 'organic_search';
+        else if (refHost && !sameSite) source = 'referral';
+        else source = 'direct';
+        sessionStorage.setItem(KEY, JSON.stringify({
+          visitor_source: source,
+          gclid: gclid ? gclid.slice(0, 80) : '',
+          utm_campaign: qp.get('utm_campaign') || '',
+          utm_term: qp.get('utm_term') || '',
+          utm_content: qp.get('utm_content') || '',
+          landing_path: landing,
+          referrer_host: refHost
+        }));
+      } catch (_) {}
+    })();
+  </script>
+
+  <!-- Ad-traffic routing. Google Ads sends clicks to /home, but the value-first
+       demo is at /try. Send paid clicks (Google click IDs present) from
+       /home → /try, preserving the query string so GA4/PostHog attribution
+       (gclid/utm) survives. Runs first, before anything loads, so there's no flash
+       of /home and no wasted load. Organic /home (no click ID) is untouched. -->
+  <script>
+    (function () {
+      try {
+        var p = window.location.pathname;
+        var q = window.location.search;
+        if ((p === '/home' || p === '/home/') &&
+            /[?&](gclid|gbraid|wbraid|gad_source)=/.test(q)) {
+          window.location.replace('/try' + q + window.location.hash);
+        }
+      } catch (_) {}
+    })();
+  </script>
+
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-visual">
-  <meta name="description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
-  <meta name="keywords" content="group decision making tool, team consensus app, anonymous voting, async decision making, meeting alternative, consensus without meetings, Loomio alternative, facilitation tool, decision making software, group consensus, team alignment">
+  <meta name="description" content="Get real group decisions in minutes — not meetings. OneMind runs anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically. Free decision-making tool for teams.">
+  <meta name="keywords" content="group decision making, team decision tool, decision making software, anonymous voting, group consensus, team alignment, meeting alternative, consensus building, decision facilitator, structured decision making, brainstorming and voting, team prioritization">
   <meta name="author" content="OneMind.Life LLC">
 
   <!-- Theme Color -->
@@ -31,17 +92,72 @@
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://onemind.life/">
-  <meta property="og:title" content="OneMind - Direction Without Division">
-  <meta property="og:description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
+  <meta property="og:title" content="OneMind – Group Decision Making Tool, Without the Meeting">
+  <meta property="og:description" content="Stop letting the loudest voice win. OneMind runs anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically. Free.">
   <meta property="og:image" content="https://onemind.life/OMLogo.png">
   <meta property="og:site_name" content="OneMind">
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary">
   <meta name="twitter:url" content="https://onemind.life/">
-  <meta name="twitter:title" content="OneMind - Direction Without Division">
-  <meta name="twitter:description" content="OneMind is a group consensus and decision making software for teams. Use as a facilitation tool for anonymous voting, async decision making, and team alignment. A Loomio alternative.">
+  <meta name="twitter:title" content="OneMind – Group Decision Making Tool, Without the Meeting">
+  <meta name="twitter:description" content="Stop letting the loudest voice win. OneMind runs anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically. Free.">
   <meta name="twitter:image" content="https://onemind.life/OMLogo.png">
+
+  <!-- Schema.org Structured Data for SEO -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "OneMind",
+    "description": "Group decision-making tool. Anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically.",
+    "url": "https://onemind.life/",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web, iOS, Android",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "image": "https://onemind.life/OMLogo.png",
+    "author": {
+      "@type": "Organization",
+      "name": "OneMind.Life LLC",
+      "url": "https://onemind.life/"
+    },
+    "featureList": [
+      "Anonymous idea submission — no anchoring, no groupthink",
+      "Structured proposing and rating rounds",
+      "Automatic convergence on the strongest idea",
+      "Every voice counts equally — no loudest-voice-wins",
+      "Asynchronous — no meeting required"
+    ]
+  }
+  </script>
+
+  <!-- Organization Schema -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "OneMind",
+    "url": "https://onemind.life/",
+    "logo": "https://onemind.life/OMLogo.png",
+    "description": "Group decision-making tool for teams. Anonymous structured rounds replace endless meetings with clear, defensible answers.",
+    "sameAs": [
+      "https://twitter.com/onemindlife",
+      "https://www.youtube.com/watch?v=zzq2TPhuVSg"
+    ],
+    "knowsAbout": [
+      "Group decision making",
+      "Team consensus",
+      "Anonymous voting",
+      "Decision facilitation",
+      "Meeting alternatives",
+      "Team prioritization"
+    ]
+  }
+  </script>
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -55,15 +171,51 @@
   <!-- Canonical URL -->
   <link rel="canonical" href="https://onemind.life/">
 
-  <title>OneMind - Group Consensus in 10 Minutes | Free Decision-Making Tool</title>
+  <title>OneMind – Group Decision Making Tool | Stop Endless Meetings</title>
   <link rel="manifest" href="manifest.json">
 
   <!-- Preload Flutter assets so the browser starts downloading immediately -->
   <link rel="preload" href="flutter_bootstrap.js" as="script">
   <link rel="preload" href="main.dart.js" as="script">
 
+  <!-- Firebase SDK (modular) — enables Firebase Analytics for custom events -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
+
+    const firebaseConfig = {
+      apiKey: 'YOUR_FIREBASE_API_KEY',
+      appId: 'YOUR_FIREBASE_APP_ID',
+      messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
+      projectId: 'YOUR_FIREBASE_PROJECT_ID',
+      authDomain: 'YOUR_FIREBASE_PROJECT_ID.firebaseapp.com',
+      storageBucket: 'YOUR_FIREBASE_PROJECT_ID.firebasestorage.app',
+      measurementId: 'G-BMGWEGECWY',
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
+    window._firebaseAnalytics = analytics;
+  </script>
+
   <!-- Google Analytics (gtag.js) — loads before Flutter for splash tracking -->
+  <!-- Google Ads conversions are imported from GA4 (no AW- pixel needed). -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-BMGWEGECWY"></script>
+
+  <!-- PostHog (product analytics + session replay). Web must load posthog-js here:
+       the Flutter posthog_flutter plugin does NOT init posthog-js on web, so
+       Posthog().capture() in Dart delegates to this window.posthog instance.
+       The phc_ token is a public client key ("safe to use in public apps").
+       Session replay + Canvas capture (Flutter renders to a canvas) are toggled
+       on in PostHog project settings. -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="capture identify alias people.set people.set_once set_config register register_once unregister opt_out_capturing has_opted_out_capturing opt_in_capturing reset isFeatureEnabled onFeatureFlags getFeatureFlag getFeatureFlagPayload reloadFeatureFlags group updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures getActiveMatchingSurveys getSurveys getNextSurveyStep onSessionId".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_CZ6p4kscxuBJVB33j29ccRYNwKraezDuN6C5h2ifYiTa', {
+      api_host: 'https://us.i.posthog.com',
+      person_profiles: 'always',
+    });
+  </script>
+
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -77,6 +229,13 @@
     // Engagement heartbeat — fixes 0% engagement in in-app browsers (Instagram,
     // Facebook) that kill the WebView without firing visibilitychange/pagehide,
     // preventing gtag's automatic user_engagement event from flushing.
+    //
+    // Fires `user_engagement` (GA4's canonical engagement-time event), NOT
+    // `page_view`. A path-less `page_view` here used to (a) inflate page_view
+    // counts every 15s and (b) corrupt the "Landing page" dimension — GA4
+    // attributed the path-less view to whatever URL was current. See memory
+    // ga4_analytics_gotchas. user_engagement credits engagement_time_msec
+    // without touching page_view/landing-page attribution.
     (function() {
       var lastFlush = Date.now();
       function flush() {
@@ -85,7 +244,7 @@
         var delta = now - lastFlush;
         if (delta < 1000) return;
         lastFlush = now;
-        gtag('event', 'page_view', { engagement_time_msec: delta });
+        gtag('event', 'user_engagement', { engagement_time_msec: delta });
       }
       // Flush every 15 s while the tab is visible
       setInterval(function() { if (!document.hidden) flush(); }, 15000);
@@ -103,6 +262,82 @@
         page_path: path,
         page_title: title || document.title
       });
+    };
+
+    // Called from Flutter via JS interop for every custom analytics event.
+    // We route through gtag.js (not the Firebase Analytics web plugin)
+    // because the plugin silently dropped chat/proposition/rating events
+    // after a Firebase JS SDK update in early May. gtag.js is the same
+    // pipeline that powers splash_shown / flutter_loaded — proven to flow.
+    //
+    // transport_type: 'beacon' forces sendBeacon for delivery — the
+    // request is queued in the browser and guaranteed to flush even if
+    // the SPA immediately navigates to a different route. Without this,
+    // events fired right before a Navigator.pop / GoRouter.go (e.g.
+    // chat_created in the wizard) were dropped on the floor — observed
+    // as 0 chat_created events in GA4 since 2026-05-02 despite real
+    // chats being created via the wizard (verified DB-side).
+    window._onemindLogEvent = function(name, paramsJson) {
+      var params = {};
+      try {
+        var parsed = paramsJson ? JSON.parse(paramsJson) : {};
+        for (var k in parsed) {
+          if (Object.prototype.hasOwnProperty.call(parsed, k)) {
+            params[k] = parsed[k];
+          }
+        }
+      } catch (_) {}
+      // Stamp first-touch attribution onto EVERY event (set in the capture
+      // script in <head>). Lets GA4/PostHog/DB segment any funnel step —
+      // especially quick_create_chat_created — by where the visitor came from,
+      // and isolate the cold-paid cohort (visitor_source='google_ads'). Event
+      // params never override an explicit value already on the event.
+      try {
+        var attrRaw = sessionStorage.getItem('_om_attr');
+        if (attrRaw) {
+          var a = JSON.parse(attrRaw);
+          if (params.visitor_source === undefined && a.visitor_source) params.visitor_source = a.visitor_source;
+          if (params.landing_path === undefined && a.landing_path) params.landing_path = a.landing_path;
+          if (params.utm_campaign === undefined && a.utm_campaign) params.utm_campaign = a.utm_campaign;
+          if (params.utm_term === undefined && a.utm_term) params.utm_term = a.utm_term;
+          if (params.gclid === undefined && a.gclid) params.gclid = a.gclid;
+        }
+      } catch (_) {}
+      // PostHog (product analytics + funnels). Independent of gtag.
+      // transport: 'sendBeacon' mirrors the gtag beacon below. WITHOUT it,
+      // events fired immediately before a Navigator.pop / GoRouter.go were
+      // batched by posthog-js and dropped on SPA navigation — so the deep
+      // funnel events (chat_created, quick_create_fork_picked,
+      // quick_create_chat_created, proposition_submitted, rating_completed)
+      // reached GA4 (which already beacons) but showed 0 in PostHog for 90+
+      // days. Beacon delivers the event synchronously, surviving the route
+      // change. Verified: the option is accepted (capture.length === 3) and
+      // lands. Shallow events (quick_create_opened, landing_*) were unaffected
+      // because the user sits on the screen long enough for the batch to flush.
+      try { if (window.posthog) { window.posthog.capture(name, params, { transport: 'sendBeacon' }); } } catch (_) {}
+      // GA4 via gtag.
+      if (typeof gtag === 'function') {
+        var gparams = { transport_type: 'beacon' };
+        for (var k2 in params) {
+          if (Object.prototype.hasOwnProperty.call(params, k2)) {
+            gparams[k2] = params[k2];
+          }
+        }
+        gtag('event', name, gparams);
+      }
+    };
+
+    // Flutter/Dart error → PostHog error tracking. Builds a real Error so
+    // posthog-js parses it into a proper $exception (linked to the session
+    // replay). Called from Dart's ErrorHandler via sendWebException.
+    window._onemindCaptureException = function(type, message, stack) {
+      try {
+        if (!window.posthog || typeof window.posthog.captureException !== 'function') return;
+        var e = new Error(message || type || 'error');
+        if (type) { e.name = type; }
+        if (stack) { e.stack = stack; }
+        window.posthog.captureException(e);
+      } catch (_) {}
     };
 
     // ── PWA install detection ──
@@ -159,7 +394,71 @@
   </script>
 </head>
 <body>
+  <!--
+    SEO content for crawlers and AI Overviews. Sits underneath the splash
+    (z-index: 999) and Flutter's flt-glass-pane (z-index higher), so it is
+    in the DOM and indexable but never visible to interactive users.
+    Per Google's AI optimization guide (May 2026): pages should ship
+    substantive, semantic HTML with headings, paragraphs, and embedded
+    media so generative AI features have content to surface.
+
+    The marker comments below delimit content that `tools/prerender.js`
+    replaces with route-specific copy when generating per-route index.html
+    files for SEO landing pages. The homepage uses the default below.
+  -->
+  <!-- PRERENDER:SEO_CONTENT_START -->
+  <main id="seo-content">
+    <h1>OneMind — Group Decision Making Tool, Without the Meeting</h1>
+    <p>Stop letting the loudest voice win. OneMind runs anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically — without endless meetings, surveys that go nowhere, or steamrolled team members.</p>
+
+    <section>
+      <h2>See OneMind in 60 seconds</h2>
+      <iframe
+        src="https://www.youtube-nocookie.com/embed/zzq2TPhuVSg"
+        title="OneMind demo: how a group of strangers reaches consensus in minutes"
+        width="560" height="315"
+        loading="lazy"
+        allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
+    </section>
+
+    <section>
+      <h2>How OneMind works</h2>
+      <ol>
+        <li><strong>Submit ideas anonymously.</strong> Every participant proposes privately — no anchoring, no groupthink, no social pressure. Ideas stand on their own merit, not on who said them.</li>
+        <li><strong>Rate every other idea on a structured grid.</strong> Compare proposals against each other instead of debating them. The grid forces clear preferences and surfaces the strongest ideas without facilitator bias.</li>
+        <li><strong>Watch convergence happen.</strong> When the same idea wins multiple rounds in a row, that's genuine group consensus — a decision your team can stand behind, with a transparent record of exactly how you got there.</li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Why teams use OneMind instead of meetings</h2>
+      <ul>
+        <li>Real decisions in minutes, not hour-long meetings</li>
+        <li>Every voice counts equally — the loudest voice no longer wins by default</li>
+        <li>Fully asynchronous — participants contribute on their own schedule, no calendar coordination</li>
+        <li>Anonymous proposing eliminates anchoring and groupthink</li>
+        <li>Transparent record of how the decision was reached, defensible after the fact</li>
+        <li>Free to start — no account required, runs in any browser</li>
+      </ul>
+    </section>
+  </main>
+  <!-- PRERENDER:SEO_CONTENT_END -->
+
   <style>
+    /* SEO content is in DOM for crawlers but covered by the splash and
+       Flutter's render layer. Position it absolutely so it does not push
+       Flutter's view down. */
+    #seo-content {
+      position: absolute; inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      padding: 24px;
+      color: rgba(255,255,255,0.85);
+      background: #0d1f26;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      pointer-events: none;
+    }
     body { margin: 0; overflow: hidden; }
     /* Shared overlay base */
     #splash, #play-screen {
@@ -233,27 +532,395 @@
     #play-legal a {
       color: #0D7377; text-decoration: underline; cursor: pointer;
     }
-    #play-skip {
-      margin-top: 12px; background: none; border: none; cursor: pointer;
-      font-family: inherit; font-size: 14px; color: rgba(255,255,255,0.5);
-      padding: 8px 16px;
+    /* ── HTML Hero (shown on / before Flutter renders) ── */
+    #splash-hero {
+      position: fixed; inset: 0; z-index: 998;
+      display: flex; align-items: flex-start; justify-content: center;
+      background: linear-gradient(145deg, #1a2e35 0%, #0d1f26 50%, #162a32 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow-y: auto; padding: 32px 16px;
     }
-    #play-skip:active { opacity: 0.7; }
+    #hero-inner {
+      max-width: 880px; width: 100%; margin: 0 auto;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #hero-brand {
+      font-size: 22px; font-weight: 700; color: #5DD3D6;
+      letter-spacing: 1px; margin-bottom: 24px;
+    }
+    #hero-headline {
+      font-size: 28px; font-weight: 700; color: #ffffff;
+      line-height: 1.2; text-align: center; margin: 0 0 14px;
+      letter-spacing: -0.4px;
+    }
+    #hero-sub {
+      font-size: 16px; color: rgba(255,255,255,0.72);
+      text-align: center; line-height: 1.5; margin: 0 0 28px;
+      max-width: 540px;
+    }
+    /* ── Stories-style storyboard carousel ──────────────────────────────
+       One screenshot at a time (readable on phones), auto-advancing with a
+       segmented fill-bar, slide transition, and a pulsing "next" chevron.
+       Width is tied to viewport HEIGHT (vh) so the shot height stays ~44vh
+       on any screen — keeps the CTA above the fold without per-device tuning. */
+    #hero-carousel {
+      width: clamp(180px, 26vh, 264px); margin: 30px 0 24px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    #hero-bars {
+      display: flex; gap: 5px; width: 100%; margin-bottom: 14px;
+    }
+    #hero-bars .hb {
+      flex: 1; height: 3px; border-radius: 3px;
+      background: rgba(255,255,255,0.18); overflow: hidden; cursor: pointer;
+    }
+    #hero-bars .hb i {
+      display: block; height: 100%; width: 0; border-radius: 3px;
+      background: #5DD3D6;
+    }
+    #hero-stage {
+      position: relative; width: 100%; overflow: hidden; border-radius: 16px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    #hero-track {
+      display: flex; width: 100%;
+      transition: transform 0.42s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    #hero-track figure {
+      margin: 0; flex: 0 0 100%; display: flex; justify-content: center;
+    }
+    #hero-track img {
+      width: 100%; height: auto; display: block; cursor: zoom-in;
+    }
+    .hero-nav {
+      position: absolute; top: 50%; transform: translateY(-50%); z-index: 3;
+      width: 38px; height: 38px; border-radius: 50%; border: none;
+      background: rgba(8,20,24,0.55); color: #fff; font-size: 22px;
+      line-height: 1; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      transition: background 0.2s, opacity 0.2s; padding: 0;
+    }
+    .hero-nav:hover { background: rgba(13,115,119,0.92); }
+    #hero-prev { left: 8px; }
+    #hero-prev.hidden { opacity: 0; pointer-events: none; }
+    #hero-next {
+      right: 8px;
+      animation: heroPulse 1.5s ease-in-out infinite;
+    }
+    @keyframes heroPulse {
+      0%, 100% { transform: translateY(-50%) scale(1);
+                 box-shadow: 0 0 0 0 rgba(93,211,214,0.5); }
+      50%      { transform: translateY(-50%) scale(1.09);
+                 box-shadow: 0 0 0 11px rgba(93,211,214,0); }
+    }
+    #hero-caption {
+      margin-top: 16px; font-size: 15px; line-height: 1.4;
+      color: rgba(255,255,255,0.82); text-align: center; min-height: 2.8em;
+      transition: opacity 0.18s; max-width: 300px;
+    }
+    #hero-caption strong { color: #5DD3D6; margin-right: 5px; }
+    @media (prefers-reduced-motion: reduce) {
+      #hero-next { animation: none; }
+      #hero-track { transition: none; }
+    }
+    .hero-cta {
+      background: #0D7377; color: #ffffff; border: none;
+      padding: 16px 40px; border-radius: 999px;
+      font-size: 18px; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(13,115,119,0.45);
+      transition: background 0.2s, transform 0.1s;
+    }
+    .hero-cta:active { transform: scale(0.98); }
+    .hero-cta:hover { background: #0F8388; }
+    .hero-cta-2 { margin-top: 2px; }
+    #hero-micro {
+      margin-top: 14px; font-size: 13px; color: rgba(255,255,255,0.5);
+      text-align: center;
+    }
+    #hero-zoom-hint {
+      margin-top: 12px; font-size: 12px; color: rgba(255,255,255,0.42);
+      text-align: center;
+    }
+    /* Tap-to-enlarge gallery lightbox: each shot is readable at full size, and
+       the visitor can page through all 5 steps in sequence (a readable full-size
+       tour) with prev/next, a position counter, and the step caption. Manual
+       only — no auto-advance, since this is a deliberate "let me read this" mode. */
+    #hero-lightbox {
+      display: none; position: fixed; inset: 0; z-index: 1000;
+      background: rgba(0,0,0,0.94);
+      align-items: center; justify-content: center;
+    }
+    #lb-figure {
+      margin: 0; display: flex; flex-direction: column; align-items: center;
+      gap: 14px; max-width: 94vw;
+    }
+    #hero-lightbox img {
+      max-width: 90vw; max-height: 78vh;
+      border-radius: 12px; box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+    #lb-caption {
+      color: rgba(255,255,255,0.85); font-size: 15px; line-height: 1.4;
+      text-align: center; max-width: 88vw;
+    }
+    #lb-caption strong { color: #5DD3D6; margin-right: 8px; }
+    .lb-btn {
+      position: absolute; z-index: 2; border: none; cursor: pointer;
+      background: rgba(255,255,255,0.12); color: #fff; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; padding: 0;
+      -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .lb-btn:hover { background: rgba(13,115,119,0.92); }
+    #lb-close { top: 16px; right: 16px; width: 44px; height: 44px; font-size: 19px; }
+    .lb-nav { top: 50%; transform: translateY(-50%); width: 48px; height: 48px; font-size: 27px; }
+    #lb-prev { left: max(12px, 3vw); }
+    #lb-next { right: max(12px, 3vw); }
+    .lb-btn.hidden { opacity: 0; pointer-events: none; }
+    @media (max-width: 540px) {
+      #hero-headline { font-size: 23px; }
+      #hero-sub { font-size: 15px; margin-bottom: 18px; }
+      #hero-caption { font-size: 14px; }
+    }
   </style>
 
-  <!-- Loading splash (hidden by default, shown for returning users) -->
+  <!-- Loading splash (hidden by default, shown for returning users / non-landing routes while Flutter loads) -->
   <div id="splash" style="display:none">
     <div id="splash-brand">OneMind</div>
-    <div id="splash-text">The anonymous idea game</div>
-    <div id="splash-tagline">Submit. Rank. Win.</div>
+    <div id="splash-text">Group Decision Making</div>
+    <div id="splash-tagline">Stop Endless Meetings</div>
     <div id="splash-dots"><span></span><span></span><span></span></div>
+    <!-- Shown only if Flutter hasn't painted after the timeout — never drop to a
+         bare white screen on a slow/failed load; offer a reload instead. -->
+    <div id="splash-slow" style="display:none; margin-top:28px; text-align:center;">
+      <div style="color:#9fb3c8; font-size:14px; margin-bottom:14px;">Taking longer than usual to load…</div>
+      <button onclick="location.reload()" style="background:#12A3A8; color:#fff; border:none; border-radius:10px; padding:11px 22px; font-size:15px; font-weight:600; cursor:pointer;">Reload</button>
+    </div>
   </div>
+
+  <!-- HTML Hero (shown on / route — real landing page that renders before Flutter loads) -->
+  <div id="splash-hero" style="display:none">
+    <div id="hero-inner">
+      <div id="hero-brand">OneMind</div>
+      <h1 id="hero-headline">Get a real group decision in minutes — not meetings.</h1>
+      <p id="hero-sub">Submit ideas anonymously. Rate everyone fairly. Watch the strongest idea win.</p>
+      <button class="hero-cta" onclick="window._onHeroCta()">Try It Free &nbsp;→</button>
+      <div id="hero-micro">Free · No account · 30 seconds</div>
+      <div id="hero-carousel">
+        <div id="hero-bars">
+          <div class="hb" data-i="0"><i></i></div>
+          <div class="hb" data-i="1"><i></i></div>
+          <div class="hb" data-i="2"><i></i></div>
+          <div class="hb" data-i="3"><i></i></div>
+          <div class="hb" data-i="4"><i></i></div>
+        </div>
+        <div id="hero-stage">
+          <div id="hero-track">
+            <figure><img src="hero-create.jpg" alt="Ask your group a question on OneMind" width="150" height="255" loading="eager"></figure>
+            <figure><img src="hero-invite.jpg" alt="Invite your group with a shareable link" width="150" height="255" loading="eager"></figure>
+            <figure><img src="hero-submit.jpg" alt="Everyone adds their idea anonymously" width="150" height="255" loading="eager"></figure>
+            <figure><img src="hero-vote.jpg" alt="The group ranks the ideas fairly" width="150" height="255" loading="eager"></figure>
+            <figure><img src="hero-result.jpg" alt="The winning idea the group chose" width="150" height="255" loading="eager"></figure>
+          </div>
+          <button id="hero-prev" class="hero-nav hidden" aria-label="Previous step">&#8249;</button>
+          <button id="hero-next" class="hero-nav" aria-label="Next step">&#8250;</button>
+        </div>
+        <div id="hero-caption"></div>
+      </div>
+      <!-- Secondary CTA: repeated after the storyboard so a visitor who just
+           watched all 5 steps (peak intent) can act without scrolling back up. -->
+      <button class="hero-cta hero-cta-2" onclick="window._onHeroCta()">Try It Free &nbsp;→</button>
+    </div>
+  </div>
+  <!-- Tap-to-enlarge overlay for the hero storyboard shots -->
+  <div id="hero-lightbox">
+    <button id="lb-close" class="lb-btn" aria-label="Close fullscreen">&#10005;</button>
+    <button id="lb-prev" class="lb-btn lb-nav" aria-label="Previous step">&#8249;</button>
+    <button id="lb-next" class="lb-btn lb-nav" aria-label="Next step">&#8250;</button>
+    <figure id="lb-figure">
+      <img id="hero-lightbox-img" src="" alt="">
+      <figcaption id="lb-caption"></figcaption>
+    </figure>
+  </div>
+  <script>
+  (function(){
+    var STEPS = 5;
+    var DUR = 2800; // ms each step is shown before auto-advancing
+    var CAPTIONS = [
+      ['1', 'Ask your group a question'],
+      ['2', 'Share a link — everyone joins'],
+      ['3', 'Everyone adds an idea, anonymously'],
+      ['4', 'The group rates every idea fairly'],
+      ['5', 'The strongest idea wins'],
+    ];
+    var idx = 0, paused = false, timer = null;
+    var track, fills, capEl, prevBtn, lb, lbImg;
+    var lbIdx = 0, lbCap, lbPrev, lbNext, lbClose;
+
+    function setBars(active){
+      // past = full, future = empty, active = animate 0 -> 100% over DUR
+      fills.forEach(function(f, i){
+        f.style.transition = 'none';
+        f.style.width = (i < active) ? '100%' : '0%';
+      });
+      if (paused) return;
+      var cur = fills[active];
+      void cur.offsetWidth;               // reflow so the transition fires
+      cur.style.transition = 'width ' + DUR + 'ms linear';
+      cur.style.width = '100%';
+    }
+
+    function render(){
+      track.style.transform = 'translateX(' + (-idx * 100) + '%)';
+      var c = CAPTIONS[idx];
+      capEl.style.opacity = '0';
+      setTimeout(function(){
+        capEl.innerHTML = '<strong>' + c[0] + '.</strong>' + c[1];
+        capEl.style.opacity = '1';
+      }, 120);
+      prevBtn.classList.toggle('hidden', idx === 0);
+      setBars(idx);
+    }
+
+    function go(i){
+      clearTimeout(timer);
+      idx = (i + STEPS) % STEPS;
+      render();
+      if (!paused) timer = setTimeout(function(){ go(idx + 1); }, DUR);
+    }
+
+    function freeze(){
+      clearTimeout(timer);
+      var cur = fills[idx];
+      var w = getComputedStyle(cur).width;       // pin the fill where it is
+      cur.style.transition = 'none';
+      cur.style.width = w;
+    }
+
+    // Fire ONCE on the first manual interaction (chevron / dot / enlarge). This
+    // is the "did the visitor take control of the storyboard" signal — the thing
+    // we want to correlate with landing_cta_clicked. Deliberately NOT fired on
+    // auto-advance (that would be 5+ junk events per landing view). Routes through
+    // _onemindLogEvent so it lands in BOTH GA4 and PostHog with attribution.
+    var engaged = false;
+    function logEngage(control){
+      if (engaged) return;
+      engaged = true;
+      try {
+        if (typeof window._onemindLogEvent === 'function') {
+          window._onemindLogEvent('hero_slideshow_engaged',
+            JSON.stringify({ control: control, step: idx + 1 }));
+        }
+      } catch (_) {}
+    }
+
+    // ── Fullscreen gallery (manual; no auto-advance) ──
+    function lbGo(i){
+      lbIdx = Math.max(0, Math.min(STEPS - 1, i)); // clamp: ends are bounded
+      var imgs = track.querySelectorAll('img');
+      lbImg.src = imgs[lbIdx].src; lbImg.alt = imgs[lbIdx].alt;
+      var c = CAPTIONS[lbIdx];
+      lbCap.innerHTML = '<strong>' + (lbIdx + 1) + ' / ' + STEPS + '</strong>' + c[1];
+      lbPrev.classList.toggle('hidden', lbIdx === 0);
+      lbNext.classList.toggle('hidden', lbIdx === STEPS - 1);
+    }
+    function lbOpen(i){
+      paused = true; freeze();            // pause the mini carousel while reading
+      lbGo(i);
+      lb.style.display = 'flex';
+    }
+    function lbDismiss(){
+      lb.style.display = 'none';
+      idx = lbIdx;                         // resume the mini carousel where they left off
+      paused = false; go(idx);
+    }
+
+    function attach(){
+      track   = document.getElementById('hero-track');
+      capEl   = document.getElementById('hero-caption');
+      prevBtn = document.getElementById('hero-prev');
+      if (!track) return;
+      fills = Array.prototype.slice.call(
+        document.querySelectorAll('#hero-bars .hb i'));
+      lb      = document.getElementById('hero-lightbox');
+      lbImg   = document.getElementById('hero-lightbox-img');
+      lbCap   = document.getElementById('lb-caption');
+      lbPrev  = document.getElementById('lb-prev');
+      lbNext  = document.getElementById('lb-next');
+      lbClose = document.getElementById('lb-close');
+
+      document.getElementById('hero-next').addEventListener('click', function(){ logEngage('next'); go(idx + 1); });
+      prevBtn.addEventListener('click', function(){ logEngage('prev'); go(idx - 1); });
+      document.querySelectorAll('#hero-bars .hb').forEach(function(b){
+        b.addEventListener('click', function(){ logEngage('dot'); go(parseInt(b.getAttribute('data-i'), 10)); });
+      });
+
+      // Pause autoplay while the visitor is hovering (desktop) so they can read.
+      var stage = document.getElementById('hero-stage');
+      stage.addEventListener('mouseenter', function(){ paused = true; freeze(); });
+      stage.addEventListener('mouseleave', function(){ paused = false; go(idx); });
+
+      // Swipe the storyboard itself to page through (same gesture as fullscreen).
+      // `swiped` suppresses the synthetic tap so a swipe doesn't also open the
+      // lightbox; reset on each new touch.
+      var ssx = 0, ssy = 0, swiped = false;
+      stage.addEventListener('touchstart', function(e){
+        ssx = e.touches[0].clientX; ssy = e.touches[0].clientY; swiped = false;
+      }, { passive: true });
+      stage.addEventListener('touchend', function(e){
+        var dx = e.changedTouches[0].clientX - ssx;
+        var dy = e.changedTouches[0].clientY - ssy;
+        if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+          swiped = true; logEngage('swipe'); go(idx + (dx < 0 ? 1 : -1));
+        }
+      }, { passive: true });
+
+      // Tap the shot to open the fullscreen gallery at that step (a swipe is not a tap).
+      track.querySelectorAll('img').forEach(function(im, i){
+        im.addEventListener('click', function(){
+          if (swiped) { swiped = false; return; }
+          logEngage('enlarge'); lbOpen(i);
+        });
+      });
+      if (lb){
+        lbNext.addEventListener('click', function(){ lbGo(lbIdx + 1); });
+        lbPrev.addEventListener('click', function(){ lbGo(lbIdx - 1); });
+        lbClose.addEventListener('click', lbDismiss);
+        // Backdrop click closes; clicks on the image/controls do not bubble here.
+        lb.addEventListener('click', function(e){ if (e.target === lb) lbDismiss(); });
+        document.addEventListener('keydown', function(e){
+          if (lb.style.display !== 'flex') return;
+          if (e.key === 'Escape') lbDismiss();
+          else if (e.key === 'ArrowRight') lbGo(lbIdx + 1);
+          else if (e.key === 'ArrowLeft') lbGo(lbIdx - 1);
+        });
+        // Swipe left/right to page through (mobile's natural gallery gesture).
+        // Horizontal-dominant swipe past 40px navigates; ignore vertical scrolls.
+        var sx = 0, sy = 0;
+        lb.addEventListener('touchstart', function(e){
+          sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+        }, { passive: true });
+        lb.addEventListener('touchend', function(e){
+          var dx = e.changedTouches[0].clientX - sx;
+          var dy = e.changedTouches[0].clientY - sy;
+          if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+            lbGo(lbIdx + (dx < 0 ? 1 : -1));   // swipe left → next, right → prev
+          }
+        }, { passive: true });
+      }
+
+      go(0);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+    else attach();
+  })();
+  </script>
 
   <!-- HTML Play Screen (hidden by default, shown for new users at /) -->
   <div id="play-screen" style="display:none">
     <div id="play-brand">OneMind</div>
-    <div id="play-title">The anonymous idea game</div>
-    <div id="play-subtitle">Submit your best idea. Rank others. Watch one win.</div>
+    <div id="play-title">Get a real group decision</div>
+    <div id="play-subtitle">Submit ideas anonymously. Rate others. Reach real consensus.</div>
     <button id="play-btn" onclick="window._onPlayTap()">
       <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
       <div class="spinner"></div>
@@ -265,34 +932,179 @@
       and
       <a onclick="window._onLegalTap('privacy')">Privacy Policy</a>.
     </div>
-    <button id="play-skip" onclick="window._onSkipTap()">Skip</button>
   </div>
 
   <script>
     // ── Decide which screen to show ──
     (function() {
+      window._showingPlayScreen = false;
       var path = window.location.pathname;
-      var tutorialDone = localStorage.getItem('flutter.tutorial_completed') === 'true';
-      var isSpecialRoute = path.startsWith('/join') || path.startsWith('/blog') ||
-          path === '/privacy' || path === '/terms' ||
-          path === '/demo' || path === '/discover';
-      // Also skip for SEO landing pages (any path that isn't / or /tutorial)
-      var isRootOrTutorial = (path === '/' || path === '/tutorial');
-      var showPlayScreen = !tutorialDone && !isSpecialRoute && isRootOrTutorial;
+      // `window._isLandingRoute` is injected by prerender.js for each SEO
+      // landing page so the HTML hero shows on those routes too. The main
+      // `/` falls back to a path check.
+      var isLandingRoute = (path === '/' || path === '')
+        || window._isLandingRoute === true;
 
-      window._showingPlayScreen = showPlayScreen;
-      if (showPlayScreen) {
-        document.getElementById('play-screen').style.display = 'flex';
-        window._playScreenStart = Date.now();
-        gtag('event', 'play_screen_viewed', {
-          event_category: 'onboarding',
-          referrer: document.referrer || '(none)'
+      // Fire the session's FIRST page_view immediately on load, with the real
+      // URL, so GA4's "Landing page" dimension records the actual entry page.
+      // send_page_view:false suppresses the automatic page_view, so the first
+      // one used to fire only when Flutter mounted — by which time a fast
+      // CTA-clicker had already navigated to /home, and GA4 mis-recorded /home
+      // as their landing page. Firing here (before any navigation can happen)
+      // fixes that. See memory ga4_analytics_gotchas.
+      gtag('event', 'page_view', {
+        page_location: window.location.href,
+        page_title: document.title,
+      });
+
+      if (isLandingRoute) {
+        // Show the HTML hero — real landing UX that renders before Flutter loads
+        document.getElementById('splash-hero').style.display = 'flex';
+        window._showingSplashHero = true;
+        gtag('event', 'landing_viewed', {
+          event_category: 'landing',
+          variant: 'html_hero',
+          landing_route: (window.location.pathname || '/'),
         });
       } else {
+        // Non-landing route (/home, /create, …) — show the loading splash until
+        // Flutter signals its first painted frame (window._onFlutterFirstFrame,
+        // from a post-frame callback in main.dart). We deliberately do NOT drop
+        // it the moment Flutter's <flutter-view> element appears: that element is
+        // inserted during engine init, before any frame paints.
+        //
+        // ALSO hide #seo-content here. It's a marketing/SEO backdrop (it embeds
+        // the demo video + "how it works") meant only to sit behind the LANDING
+        // hero. On app routes it must never be exposed — if the splash is removed
+        // before Flutter paints (slow first load), the user otherwise lands on the
+        // video page and bounces. Observed via PostHog: a Google-Ads click hit
+        // /home → ~8s splash → video backdrop → left at 19s. Hiding it means a
+        // removed splash reveals the page background, not marketing content.
+        var seo = document.getElementById('seo-content');
+        if (seo) seo.style.display = 'none';
         document.getElementById('splash').style.display = 'flex';
         gtag('event', 'splash_shown', { event_category: 'loading' });
+        // Slow/failed-load fallback: if Flutter still hasn't painted after 30s,
+        // DON'T drop to a bare white screen (the marketing backdrop is hidden on
+        // app routes). Keep the branded splash and reveal a Reload button. The
+        // heavy Flutter web bundle (CanvasKit/wasm) can be slow on a cold cache;
+        // a reload affordance beats a blank page. _onFlutterFirstFrame removes the
+        // splash the instant Flutter paints, so normally this never fires.
+        setTimeout(function() {
+          if (window._flutterFirstFrame) return;
+          var dots = document.getElementById('splash-dots');
+          if (dots) dots.style.display = 'none';
+          var slow = document.getElementById('splash-slow');
+          if (slow) slow.style.display = 'block';
+        }, 30000);
       }
     })();
+
+    // Removes the loading splash once Flutter has painted. Defined here so it
+    // exists before flutter_bootstrap.js (loaded async) runs. Only ever touches
+    // #splash, which is hidden (display:none) in hero/play modes, so it's a
+    // no-op there.
+    window._onFlutterFirstFrame = function() {
+      window._flutterFirstFrame = true;
+      var splash = document.getElementById('splash');
+      if (splash) splash.remove();
+    };
+
+    // ── HTML hero CTA tap (the only way out of the hero) ──
+    // Uses gtag's event_callback so we navigate AFTER the beacon flushes.
+    // Without this, the page navigates before gtag finishes sending and the
+    // landing_cta_clicked event arrives at GA4 without its cpc session
+    // attribution — observed on May 19–21 as a stream of cpc-driven
+    // official_chat_auto_joined events with no preceding cpc CTA click.
+    window._onHeroCta = function() {
+      if (window._heroCtaTapped) return;
+      window._heroCtaTapped = true;
+      var search = window.location.search || '';
+      var routeNow = (window.location.pathname || '/');
+      // Routing split by ENTRY PAGE (2026-06-03):
+      //  • homepage ('/') + the Delphi page (whose whole pitch is iterate-to-
+      //    convergence, which the one-shot quick chat can't deliver) → /home, the
+      //    REAL multi-round OneMind. onemind.life is never an ad final URL, so this
+      //    is warm/brand/organic traffic — give it the full converging product.
+      //  • every other SEO landing page (the ad final URLs = cold paid traffic) →
+      //    the value-first /try demo → quick one-shot create. Low friction.
+      var norm = routeNow.replace(/\/+$/, '') || '/';
+      //  • CREATE-intent pages (2026-06-06): searchers on these have "do it
+      //    now" intent — e.g. "anonymous voting tool" = "let me run a vote for
+      //    my group", NOT "watch a demo." Session replays showed 7/8 demo
+      //    bounces came from this one keyword (0–1 votes, 0 creates), so send
+      //    them straight to the poll-maker. Add a route here to send it to
+      //    /create.
+      // The homepage now points to the quick-chat wedge too (2026-06-07): the
+      // deep /home dashboard was the untested original vision and may be
+      // replaced wholesale, so every marketing entry funnels to the proven
+      // quick-create path. (Decisions D38.) /delphi-method still → /home for now
+      // since its pitch is multi-round convergence, which the one-shot quick
+      // chat can't yet deliver.
+      var CREATE_INTENT_ROUTES = ['/anonymous-voting-tool', '/idea-generator', '/'];
+      var toCreate = CREATE_INTENT_ROUTES.indexOf(norm) !== -1;
+      var toRealApp = (norm === '/delphi-method');
+      var target =
+        (toCreate ? '/create' : (toRealApp ? '/home' : '/try')) + search;
+
+      // ── SPA-reveal path ──
+      // Flutter has been booting behind the hero the whole time the user read it.
+      // If it's ready, navigate go_router straight to /create and just UNCOVER
+      // the already-rendered app — no page reload, no second cold start, no
+      // loading splash. (This is the whole point of booting Flutter behind the
+      // hero; a full reload threw that work away.)
+      if (window._flutterReady && typeof window._flutterGoCreate === 'function') {
+        // Fire-and-forget analytics — nothing will navigate away to cut it off.
+        try {
+          gtag('event', 'landing_cta_clicked', {
+            event_category: 'conversion', variant: 'html_hero',
+            landing_route: routeNow, transport_type: 'beacon', spa_reveal: true,
+          });
+        } catch (_) {}
+        try {
+          window._flutterGoCreate(target);          // go_router → /create (query preserved)
+          window._showingSplashHero = false;
+          var seo = document.getElementById('seo-content');
+          if (seo) seo.style.display = 'none';
+          // Let go_router build + cross-fade /create UNDER the hero, then reveal
+          // it. ~350ms covers the 300ms page transition so the user never sees
+          // the old landing screen flash through.
+          setTimeout(function() {
+            var hero = document.getElementById('splash-hero');
+            if (hero) hero.remove();
+          }, 350);
+          return;
+        } catch (e) { /* fall through to full navigation */ }
+      }
+
+      // ── Fallback: full navigation (Flutter not ready yet) ──
+      // Delay the nav until the gtag beacon flushes so cpc attribution isn't
+      // lost when the page unloads.
+      var navigated = false;
+      function go() {
+        if (navigated) return;
+        navigated = true;
+        window.location.href = target;
+      }
+      gtag('event', 'landing_cta_clicked', {
+        event_category: 'conversion',
+        variant: 'html_hero',
+        // Which landing page the CTA was clicked on ('/' = hero, '/consensus-building'
+        // etc. = SEO pages). Lets us split CTA conversion per page in GA4.
+        landing_route: routeNow,
+        spa_reveal: false,
+        // Use the sendBeacon transport so the request survives navigation
+        // even if the callback never fires.
+        transport_type: 'beacon',
+        // Fire the navigation as soon as gtag confirms the event is queued.
+        event_callback: go,
+        // Hard timeout: if callback hasn't fired in 800ms, nav anyway so
+        // the user isn't stuck on the hero.
+        event_timeout: 800,
+      });
+      // Safety net in case event_callback never resolves at all.
+      setTimeout(go, 1000);
+    };
 
     // ── Helper: remove overlay (play screen or splash) ──
     function _removeOverlay() {
@@ -349,33 +1161,11 @@
       } catch (e) { /* overlay already removed — don't block UX */ }
     };
 
-    // ── Skip button tapped ──
-    window._onSkipTap = function() {
-      if (window._htmlSkipTapped) return; // prevent double-tap
-      window._htmlSkipTapped = true;
-      var elapsed = Date.now() - (window._playScreenStart || Date.now());
-      gtag('event', 'play_screen_skip_tapped', {
-        event_category: 'onboarding',
-        time_on_play_screen_ms: elapsed,
-        flutter_was_ready: window._flutterReady
-      });
-      // Set tutorial + home tour as complete so Flutter goes to home on
-      // its first SharedPreferences read.
-      localStorage.setItem('flutter.tutorial_completed', 'true');
-      localStorage.setItem('flutter.home_tour_completed', 'true');
-      // Show spinner while Flutter loads — avoids a jarring white flash
-      // on slow networks. 20s safety timeout in _transitionToFlutter
-      // ensures the overlay can never stick forever.
-      _transitionToFlutter('skip');
-      // If Flutter is already loaded, its registered skip callback will
-      // invalidate providers + navigate. If not, Flutter's fresh boot
-      // picks up tutorial_completed=true and routes to home on its own.
-      try {
-        if (typeof window._flutterAutoSkip === 'function') {
-          window._flutterAutoSkip();
-        }
-      } catch (e) { /* overlay will be removed by observer/timeout */ }
-    };
+    // (Skip button + handler removed — tutorial is no longer reachable
+    // from user-facing flows, so the only-way-out-other-than-Play
+    // shortcut is no longer needed. Flutter still registers
+    // _flutterAutoSkip via web_timing.dart in case it's needed for
+    // internal/programmatic use; just nothing in the HTML calls it.)
 
     // ── Legal link tapped ──
     window._onLegalTap = function(page) {
@@ -413,10 +1203,19 @@
             event_category: 'loading',
             load_time_ms: loadMs,
           });
-          gtag('event', 'page_view');
+          // (Removed a path-less page_view that fired here on Flutter mount —
+          // for fast CTA-clickers it fired after navigation and mis-stamped
+          // their landing page as /home. The initial page_view now fires on
+          // load with the real URL instead. See memory ga4_analytics_gotchas.)
         }
 
-        if (window._showingPlayScreen) {
+        if (window._showingSplashHero) {
+          // HTML hero stays visible until the user taps the CTA. Flutter
+          // renders underneath but is hidden behind the hero. This protects
+          // ad-clickers from the Flutter load delay — they see real product
+          // proof immediately and only leave when they click "Try It Free".
+          // No-op here.
+        } else if (window._showingPlayScreen) {
           // Play screen mode: only remove overlay if user already acted
           if (window._htmlPlayTapped || window._htmlSkipTapped ||
               window._pendingAction) {
@@ -424,9 +1223,16 @@
           }
           // Otherwise keep play screen on top — user hasn't tapped yet
         } else {
-          // Splash mode (returning user): remove immediately
-          var splash = document.getElementById('splash');
-          if (splash) splash.remove();
+          // Splash mode (returning user): the <flutter-view> element appears
+          // during engine init, BEFORE the first frame paints — removing the
+          // splash here flashed the #seo-content backdrop (demo video) through
+          // the gap. We now wait for window._onFlutterFirstFrame instead. Only
+          // remove here in the race where Flutter already signalled first paint
+          // before this observer fired.
+          if (window._flutterFirstFrame) {
+            var splash = document.getElementById('splash');
+            if (splash) splash.remove();
+          }
         }
         observer.disconnect();
       }

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../models/models.dart';
 import '../../screens/home_tour/widgets/spotlight_overlay.dart';
-import '../../widgets/rating/rating_model.dart';
 import '../../widgets/rating/rating_widget.dart';
+import 'matches_results_view.dart';
 
 /// Read-only results screen showing propositions with their final ratings.
 /// Used for viewing round results after rating completes.
@@ -12,6 +12,10 @@ class ReadOnlyResultsScreen extends StatefulWidget {
   final int roundNumber;
   final int? roundId;
   final int? myParticipantId;
+
+  /// Chat's rating mode. 'matches' → show the ranked leaderboard (same payoff
+  /// as the /try demo); anything else ('grid', the default) → the 0–100 grid.
+  final String ratingMode;
 
   /// Distinct rater count for this round. When non-null, shown as a subtitle
   /// under the AppBar title. Omitted in tutorial contexts where there are no
@@ -43,6 +47,7 @@ class ReadOnlyResultsScreen extends StatefulWidget {
     required this.roundNumber,
     this.roundId,
     this.myParticipantId,
+    this.ratingMode = 'grid',
     this.raterCount,
     this.showTutorialHint = false,
     this.tutorialWinnerName,
@@ -59,7 +64,6 @@ class ReadOnlyResultsScreen extends StatefulWidget {
 
 class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
     with TickerProviderStateMixin {
-  late RatingModel _model;
   late final AnimationController _fadeController;
   double? _hintTop;
 
@@ -98,7 +102,6 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
   @override
   void initState() {
     super.initState();
-    _initializeModel();
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -139,22 +142,11 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
     });
   }
 
-  void _initializeModel() {
-    final propositionMaps = widget.propositions.map((p) => {
-      'id': p.id,
-      'content': p.displayContent,
-      'finalRating': p.finalRating ?? 50.0,
-    }).toList();
-
-    _model = RatingModel.fromResults(propositionMaps);
-  }
-
   @override
   void dispose() {
     // Don't stop TTS — next screen's dialog may already be speaking
     _fadeController.dispose();
     _fingerController.dispose();
-    _model.dispose();
     super.dispose();
   }
 
@@ -201,6 +193,13 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       );
+    }
+
+    // Matches mode → ranked, scored result cards (best-first), each with a
+    // read-aloud button. Propositions arrive pre-sorted desc by finalRating,
+    // so list order IS the ranking.
+    if (widget.ratingMode == 'matches') {
+      return MatchesResultsView(propositions: widget.propositions);
     }
 
     return RatingWidget(
@@ -366,7 +365,7 @@ class _ReadOnlyResultsScreenState extends State<ReadOnlyResultsScreen>
                 ),
                 if (widget.raterCount != null)
                   Text(
-                    'Raters: ${widget.raterCount}',
+                    l10n.ratersWithCount(widget.raterCount!),
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
               ],

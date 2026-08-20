@@ -32,42 +32,29 @@ class LanguageService {
     return 'en'; // Default to English if device language not supported
   }
 
-  /// Initialize language preference.
-  /// Priority: stored preference > device language > English
+  /// Initialize language preference on app open.
+  ///
+  /// The app always opens in the device's current language (i.e. the OS /
+  /// browser locale), falling back to English when that language isn't
+  /// supported. The device locale takes priority over any previously stored
+  /// or database preference, so a user who switches their phone/browser
+  /// language sees OneMind follow it on the next open.
+  ///
+  /// A manual in-app language change still applies for the current session
+  /// (see [updateLanguage]); it just doesn't survive a restart — the next
+  /// open snaps back to the device language.
   Future<String> initializeLanguage() async {
-    // 1. Check local storage first
-    final stored = _prefs.getString(_localeKey);
-    if (stored != null && supportedLanguageCodes.contains(stored)) {
-      return stored;
-    }
-
-    // 2. Use device language if supported
     final deviceLang = deviceLanguage;
+
+    // Persist locally so the rest of the app — which reads the stored
+    // preference synchronously via [getCurrentLanguage] — stays consistent
+    // with the active locale.
     await _prefs.setString(_localeKey, deviceLang);
 
-    // 3. If user is logged in, sync with database
+    // Keep the database in sync when logged in (used for content translation
+    // and cross-surface consistency).
     if (_supabase.auth.currentUser != null) {
-      try {
-        final response = await _supabase
-            .from('users')
-            .select('language_code')
-            .eq('id', _supabase.auth.currentUser!.id)
-            .maybeSingle();
-
-        if (response != null && response['language_code'] != null) {
-          // Database has a preference - use it
-          final dbLang = response['language_code'] as String;
-          if (supportedLanguageCodes.contains(dbLang)) {
-            await _prefs.setString(_localeKey, dbLang);
-            return dbLang;
-          }
-        } else {
-          // Backfill - user logged in but no database preference yet
-          await _updateDatabaseLanguage(deviceLang);
-        }
-      } catch (e) {
-        // On error, continue with device language
-      }
+      await _updateDatabaseLanguage(deviceLang);
     }
 
     return deviceLang;

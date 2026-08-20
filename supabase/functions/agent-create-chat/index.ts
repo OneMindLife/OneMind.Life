@@ -13,7 +13,7 @@
  *   proposing_duration_seconds?: number (default: 1800 = 30 min),
  *   rating_duration_seconds?: number (default: 1800 = 30 min),
  *   propositions_per_user?: number (default: 3),
- *   confirmation_rounds?: number (default: 2),
+ *   confirmation_rounds?: number (1 or 2; default: 2 — 1 = instant, 2 = convergence),
  *   start_mode?: "manual" | "auto" (default: "auto"),
  *   auto_start_participant_count?: number (default: 3)
  * }
@@ -73,11 +73,13 @@ const RequestSchema = z.object({
     .min(1, "Minimum 1 proposition")
     .max(10, "Maximum 10 propositions")
     .default(3),
+  // 1 = instant (first winner locked in immediately),
+  // 2 = convergence (an idea must win 2 rounds in a row). DB constraint is 1-2.
   confirmation_rounds: z
     .number()
     .int()
     .min(1, "Minimum 1 round")
-    .max(10, "Maximum 10 rounds")
+    .max(2, "Maximum 2 rounds")
     .default(2),
   start_mode: z.enum(["manual", "auto"]).default("auto"),
   auto_start_participant_count: z
@@ -213,7 +215,7 @@ Deno.serve(async (req: Request) => {
         proposing_duration_seconds: data.proposing_duration_seconds,
         rating_duration_seconds: data.rating_duration_seconds,
         propositions_per_user: data.propositions_per_user,
-        confirmation_rounds: data.confirmation_rounds,
+        confirmation_rounds_required: data.confirmation_rounds,
         // Don't enable AI participant - let agents participate directly
         enable_ai_participant: false,
       })

@@ -94,6 +94,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get done => 'Listo';
 
   @override
+  String get pendingTag => 'Pendiente';
+
+  @override
   String get save => 'Guardar';
 
   @override
@@ -159,6 +162,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get notificationsBlockedBody =>
       'Desbloquéalas en la configuración del sitio de tu navegador para recibirlas.';
+
+  @override
+  String get notificationsBlockedBodyNative =>
+      'Actívalas en los ajustes de notificaciones de tu dispositivo para recibirlas.';
 
   @override
   String get gotIt => 'Entendido';
@@ -495,6 +502,16 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String convergenceNumber(int number) {
     return 'Convergence #$number';
+  }
+
+  @override
+  String winnerNumber(int number) {
+    return 'Ganador #$number';
+  }
+
+  @override
+  String winnerHistory(int number) {
+    return 'Historial del Ganador $number';
   }
 
   @override
@@ -1054,6 +1071,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get gateMicrocopy => 'Afirma esto u ofrece una alternativa.';
 
   @override
+  String get gateBetterQuestion => 'Can you think of something better?';
+
+  @override
   String get gateBack => 'Atrás';
 
   @override
@@ -1361,8 +1381,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get confirmationRounds => 'Rondas de confirmacion';
 
   @override
-  String get firstWinnerConsensus =>
-      'El primer ganador alcanza convergencia inmediatamente';
+  String get convergenceStepSubtitle =>
+      '¿Cómo se fija una idea ganadora en el chat?';
+
+  @override
+  String get instantMode => 'Instantáneo';
+
+  @override
+  String get firstWinnerConsensus => 'El primer ganador se añade de inmediato';
 
   @override
   String mustWinConsecutive(int count) {
@@ -2264,6 +2290,11 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String deleteWinnerTitle(int number) {
+    return '¿Eliminar Ganador #$number?';
+  }
+
+  @override
   String get deleteConsensusMessage =>
       'Esto reiniciará el ciclo actual con una ronda nueva.';
 
@@ -2708,7 +2739,193 @@ class AppLocalizationsEs extends AppLocalizations {
       'Usa tu cámara para escanear un código QR de invitación';
 
   @override
+  String get wizardAutoAdvanceTitle => '¿Avanzar las fases antes de tiempo?';
+
+  @override
+  String get wizardAutoAdvanceDesc =>
+      'Elige si una fase termina en cuanto todos hayan participado o si siempre dura su tiempo completo.';
+
+  @override
+  String get wizardAutoAdvanceProposingTitle => 'Terminar propuestas antes';
+
+  @override
+  String get wizardAutoAdvanceProposingOnDesc =>
+      'La fase de propuestas termina en cuanto todos hayan enviado u omitido';
+
+  @override
+  String get wizardAutoAdvanceProposingOffDesc =>
+      'La fase de propuestas siempre dura su tiempo completo';
+
+  @override
+  String get wizardAutoAdvanceRatingTitle => 'Terminar calificación antes';
+
+  @override
+  String get wizardAutoAdvanceRatingOnDesc =>
+      'La calificación termina en cuanto todos hayan calificado';
+
+  @override
+  String get wizardAutoAdvanceRatingOffDesc =>
+      'La calificación siempre dura su tiempo completo';
+
+  @override
   String get wizardScheduleTitle => '¿Establecer un horario?';
+
+  @override
+  String get wizardScheduleConfigTitle => 'Schedule details';
+
+  @override
+  String get wizardFirstDeadlineStartsNow =>
+      'Tu chat comienza en cuanto lo creas.';
+
+  @override
+  String get wizardFirstDeadlineUnavailable =>
+      'Un ritmo diario necesita fases de igual duración de 1, 2, 3, 4, 6, 8, 12 o 24 horas. Con el ritmo actual, la primera fase simplemente dura su duración completa.';
+
+  @override
+  String get wizardFirstDeadlineLabel => 'Primera fecha límite';
+
+  @override
+  String get wizardFirstDeadlineQuestion =>
+      '¿Cuándo debe terminar la primera fase?';
+
+  @override
+  String get wizardChipFullDuration => 'Duración completa';
+
+  @override
+  String get wizardChipAmPmRhythm => 'Ritmo de 3 AM / 3 PM';
+
+  @override
+  String get wizardChipDailyTime => 'Misma hora cada día…';
+
+  @override
+  String get wizardChipOnTheHour => 'En punto';
+
+  @override
+  String wizardCadencePreviewTwo(String t1, String t2, String tz) {
+    return 'Las fases cambiarán a las $t1 / $t2 ($tz) todos los días.';
+  }
+
+  @override
+  String wizardCadencePreviewOne(String t1, String tz) {
+    return 'Las fases cambiarán a las $t1 ($tz) todos los días.';
+  }
+
+  @override
+  String wizardCadenceShorterNotice(String rel) {
+    return 'La primera fase será más corta: termina en $rel.';
+  }
+
+  @override
+  String wizardCadenceTimeUnavailable(String min, String max) {
+    return 'Esa hora no encaja con este ritmo: elige una hora entre $min y $max.';
+  }
+
+  @override
+  String wizardCadenceFullDurationDesc(String duration) {
+    return 'La primera fase dura su tiempo completo ($duration), sin ritmo diario fijo';
+  }
+
+  @override
+  String wizardCadenceFirstDeadlineAt(String time) {
+    return 'Primer plazo: $time';
+  }
+
+  @override
+  String get wizardCadenceCustomTime => 'Hora personalizada…';
+
+  @override
+  String get wizardCadencePickExactly =>
+      'Elige exactamente cuándo debe terminar la primera fase';
+
+  @override
+  String get wizardVotingStyleLabel => 'Estilo de votación';
+
+  @override
+  String get wizardVotingGridTitle => 'Cuadrícula';
+
+  @override
+  String get wizardVotingGridDesc =>
+      'Coloca cada idea en una escala de 0 a 100';
+
+  @override
+  String get wizardVotingMatchesTitle => 'Duelos';
+
+  @override
+  String get wizardVotingMatchesDesc =>
+      'Elige la mejor de dos ideas, par por par';
+
+  @override
+  String get wizardMatchObjectiveLabel => 'Qué determinar';
+
+  @override
+  String get wizardMatchWinnerTitle => 'Solo el ganador';
+
+  @override
+  String get wizardMatchWinnerDesc =>
+      'Menos comparaciones: una eliminatoria rápida para encontrar la mejor idea';
+
+  @override
+  String get wizardMatchFullRankTitle => 'Ver todos los puestos';
+
+  @override
+  String get wizardMatchFullRankDesc =>
+      'Más comparaciones por persona: clasifica todas las ideas, no solo la ganadora';
+
+  @override
+  String get wizardParticipationTitle => 'Participación';
+
+  @override
+  String get wizardParticipationSubtitle =>
+      'Elige si los participantes pueden omitir fases';
+
+  @override
+  String get wizardAllowSkipProposingTitle => 'Permitir omitir propuestas';
+
+  @override
+  String get wizardAllowSkipProposingOnDesc =>
+      'Los participantes pueden omitir enviar una idea';
+
+  @override
+  String get wizardAllowSkipProposingOffDesc => 'Todos deben enviar una idea';
+
+  @override
+  String get wizardAllowSkipRatingTitle => 'Permitir omitir calificación';
+
+  @override
+  String get wizardAllowSkipRatingOnDesc =>
+      'Los participantes pueden omitir calificar';
+
+  @override
+  String get wizardAllowSkipRatingOffDesc => 'Todos deben calificar las ideas';
+
+  @override
+  String get wizardTimingProposingQuestion => '¿Cuánto tiempo para proponer?';
+
+  @override
+  String wizardTimingCurrently(String duration) {
+    return 'Actual: $duration';
+  }
+
+  @override
+  String get wizardTimingSameDurationQuestion =>
+      '¿Misma duración para la fase de calificación?';
+
+  @override
+  String get wizardTimingSameDurationYes =>
+      'Sí, la calificación usa el mismo tiempo';
+
+  @override
+  String get wizardTimingSameDurationNo =>
+      'No, la calificación tiene otra duración';
+
+  @override
+  String get wizardTimingRatingQuestion => '¿Cuánto tiempo para calificar?';
+
+  @override
+  String get wizardAgentsTitle => '¿Añadir agentes de IA?';
+
+  @override
+  String get chatSettingsRhythmLabel => 'Ritmo';
 
   @override
   String get wizardScheduleAlwaysTitle => 'Siempre Activo';
@@ -2743,6 +2960,28 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get scheduleClearEndTime => 'Quitar hora de finalización';
+
+  @override
+  String get setYourName => 'Elige tu nombre';
+
+  @override
+  String get whatsYourName => '¿Cómo te llamas?';
+
+  @override
+  String get nameShownToOthers => 'Visible para los demás participantes';
+
+  @override
+  String get pleaseEnterName => 'Escribe tu nombre';
+
+  @override
+  String joiningAs(String name) {
+    return 'Unirse como $name';
+  }
+
+  @override
+  String creatingAs(String name) {
+    return 'Crear como $name';
+  }
 
   @override
   String welcomeName(String name) {
@@ -2944,4 +3183,36 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get maybeLater => 'Quizás luego';
+
+  @override
+  String get equal => 'Igual';
+
+  @override
+  String get whichIsBetterTapOne => '¿Cuál es mejor? Toca una.';
+
+  @override
+  String matchNumber(int number) {
+    return 'Comparación $number';
+  }
+
+  @override
+  String get doneWaitingForRound => 'Listo: esperando a que termine la ronda.';
+
+  @override
+  String get doneRatingQuestion => '¿Terminaste de calificar?';
+
+  @override
+  String get doneRatingBody => 'No podrás calificar más ideas en esta ronda.';
+
+  @override
+  String get couldNotSaveChoice =>
+      'No se pudo guardar tu elección: inténtalo de nuevo';
+
+  @override
+  String get couldNotSkip => 'No se pudo omitir: inténtalo de nuevo';
+
+  @override
+  String ratersWithCount(int count) {
+    return 'Evaluadores: $count';
+  }
 }

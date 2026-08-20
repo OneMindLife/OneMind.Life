@@ -65,6 +65,8 @@ class BlogDiagram extends BlogSection {
 
 /// All published blog posts, newest first.
 final blogPosts = <BlogPost>[
+  _citiesCollectiveIntelligence,
+  _participatoryDemocracyDigital,
   _asyncDecisionMaking,
   _anonymousDecisionMaking,
   _votingVsConsensus,
@@ -72,25 +74,256 @@ final blogPosts = <BlogPost>[
 ];
 
 // ---------------------------------------------------------------------------
+// Post 6: Philosophical Alignment
+// ---------------------------------------------------------------------------
+
+const _participatoryDemocracyDigital = BlogPost(
+  slug: 'philosophical-alignment-converge-meaning',
+  title: 'Philosophical Alignment: How Strangers Converge on Meaning',
+  metaDescription:
+      'The hardest conversations aren\'t about logistics—they\'re about values and vision. Discover how structured convergence helps groups find genuine alignment on complex, open-ended questions.',
+  date: '2026-05-09',
+  author: 'Joel Castro',
+  keywords: [
+    'collective intelligence',
+    'group consensus building',
+    'philosophical discussion',
+    'values alignment',
+    'meaning-making',
+    'existential questions',
+    'community convergence',
+  ],
+  sections: [
+    BlogHeading('The Hardest Decisions Aren\'t Binary'),
+    BlogParagraph(
+      'Every organization faces moments when the real question isn\'t "Which option should we pick?" but "Who are we becoming?" and "What do we actually believe?"',
+    ),
+    BlogParagraph(
+      'A startup deciding whether to pivot. A community group wrestling with values. A team asking what success actually means. These conversations resist traditional decision-making tools because there\'s no binary choice, no clear winner, no spreadsheet that resolves the tension.',
+    ),
+    BlogParagraph(
+      'Yet these are the conversations that matter most. And they\'re also the ones where structured convergence shines—not because it forces agreement, but because it allows real thinking to happen.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Why Philosophical Alignment Is Different'),
+    BlogParagraph(
+      'Most decision-making frameworks assume a fixed menu of options. You rank them, vote on them, debate their trade-offs. But open-ended questions—"What should we become?" "What matters most?" "How do we navigate this ethical dilemma?"—don\'t work that way.',
+    ),
+    BlogSubheading('The problem with discussion'),
+    BlogParagraph(
+      'In a room full of smart people, whoever speaks first anchors the conversation. The loudest voice shapes the frame. Quiet people think deeper but speak less. By the end, you don\'t have genuine alignment—you have whoever talked the most framing it as alignment.',
+    ),
+    BlogSubheading('The problem with voting'),
+    BlogParagraph(
+      'Voting assumes you know what you\'re choosing between. But in philosophical conversations, you\'re often figuring out the options *as you think*. Someone else\'s proposal might illuminate something you hadn\'t considered. Early voting locks in half-formed positions.',
+    ),
+    BlogSubheading('The problem with consensus-seeking'),
+    BlogParagraph(
+      'Waiting for everyone to agree on abstract values can take forever. And "consensus" often means "we stopped disagreeing because we\'re tired," not "we actually converged."',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Real Examples: How Convergence Surfaces Alignment'),
+    BlogParagraph(
+      'The most powerful OneMind conversations aren\'t about logistics. They\'re about meaning.',
+    ),
+    BlogSubheading('"Do you believe AI can replace human beings?"'),
+    BlogParagraph(
+      'Seven people, no clear stakes, pure intellectual exploration. The question forces participants to examine what they think is irreplaceable about humans. Across rounds, ideas refine. Early proposals might emphasize emotion or creativity. Later proposals synthesize: "AI can replace tasks, but consciousness and intention are different." By the end, the group has moved together toward a shared understanding.',
+    ),
+    BlogSubheading('"What should OneMind become?"'),
+    BlogParagraph(
+      '1,273 people. Seventeen rounds. No executives, no predetermined answer. The group submitted 155+ propositions. Through structured convergence, three consensus winners emerged—all emphasizing collective wisdom, merit over hierarchy, and honest dialogue. The process didn\'t impose those values. It *surfaced* them.',
+    ),
+    BlogSubheading('"Make the universe friend"'),
+    BlogParagraph(
+      'Nineteen people exploring existential connection. The title is deliberately abstract. Participants propose their interpretation—community as antidote to loneliness, universal empathy, shared purpose. No one "wins." Instead, the group converges toward a shared vision of belonging.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Why Structured Convergence Works for Philosophy'),
+    BlogSubheading('Ideas evolve across rounds'),
+    BlogParagraph(
+      'In a single meeting, you defend your initial position. In structured convergence, you see how others rated your idea. You read refinements. Round two, you can propose something stronger—not because you were wrong, but because you learned something. Philosophy is collaborative thinking, not debate.',
+    ),
+    BlogSubheading('Anonymous proposals remove ego'),
+    BlogParagraph(
+      'When you\'re thinking about consciousness, meaning, or ethics, you want to engage with the idea, not the person. Anonymity lets a junior team member\'s insight compete equally with a CEO\'s perspective. It lets shy people think out loud without social risk.',
+    ),
+    BlogSubheading('Rating captures nuance'),
+    BlogParagraph(
+      'An idea might not win overall, but it might be everyone\'s second choice. Or everyone rates it 7/10 while the "winner" gets 8s and 3s. The group can see that the "consensus" actually reflects a distribution of values, not uniformity.',
+    ),
+    BlogSubheading('Convergence means real alignment'),
+    BlogParagraph(
+      'When the same vision wins back-to-back rounds, people feel it. They didn\'t settle. They didn\'t get talked into it. They genuinely came to the same place through their own thinking, refined by exposure to others.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('When to Use Convergence for Meaning-Making'),
+    BlogParagraph('Structured convergence is ideal for:'),
+    BlogBulletList([
+      'Defining organizational values or mission (What do we actually stand for?)',
+      'Navigating ethical dilemmas (What\'s the right call here?)',
+      'Exploring existential or philosophical questions (Who are we? What matters?)',
+      'Building shared vision during transformation (What are we becoming?)',
+      'Cross-cultural or cross-generational understanding (How do we bridge this divide?)',
+      'Community identity work (What does this community value?)',
+    ]),
+    BlogDivider(),
+
+    BlogHeading('The Gift of Convergence: Alignment Without Uniformity'),
+    BlogParagraph(
+      'Philosophical alignment doesn\'t mean everyone ends up identical. It means everyone has been genuinely heard, everyone has thought carefully, and everyone recognizes the final direction as *legitimate*—even if it\'s not their first choice.',
+    ),
+    BlogParagraph(
+      'That\'s rare. That\'s powerful. And it\'s what happens when you give a group the right structure for collective thinking.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Explore Philosophical Convergence with OneMind'),
+    BlogParagraph(
+      'Start a conversation about something that matters to your community. No right answers. No predetermined options. Just people thinking together until alignment emerges.',
+    ),
+    BlogCta(
+      text: 'If you\'ve ever struggled to build genuine alignment on values, vision, or meaning—where people\'s actual thinking matters—OneMind is built for that conversation.',
+      buttonLabel: 'Start a Conversation',
+      route: '/tutorial',
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Post 5: Communities Solving Real Problems
+// ---------------------------------------------------------------------------
+
+const _citiesCollectiveIntelligence = BlogPost(
+  slug: 'communities-solve-real-problems-together',
+  title: 'From Bullying Prevention to Urban Planning: How Communities Solve Real Problems Together',
+  metaDescription:
+      'OneMind isn\'t for formal government—it\'s for real people solving problems they care about. See how communities are using collective intelligence to tackle bullying, urban challenges, education, and more.',
+  date: '2026-05-09',
+  author: 'Joel Castro',
+  keywords: [
+    'community problem solving',
+    'collective intelligence',
+    'civic engagement',
+    'grassroots solutions',
+    'community consensus',
+    'participatory decision making',
+    'social problem solving',
+  ],
+  sections: [
+    BlogHeading('The Real Problems Don\'t Wait for Permission'),
+    BlogParagraph(
+      'A person struggling with bullying doesn\'t schedule a city council meeting. They look for people who understand. A neighborhood annoyed by car traffic in their downtown doesn\'t file a formal petition. They start a conversation with neighbors. A student wondering how universities could use collective intelligence doesn\'t wait for administration approval. They invite others to think alongside them.',
+    ),
+    BlogParagraph(
+      'This is how real communities solve problems: people who care, thinking together, until they converge on something better.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Real Problems OneMind Communities Are Tackling'),
+    BlogSubheading('Personal & Social'),
+    BlogParagraph(
+      '"Best way to survive bullying" — five people working through one of the loneliest experiences, sharing wisdom. Not a support group, not therapy. Collective problem-solving on how to actually survive and move forward. Ideas evolve through rounds. By the end, the group has built something stronger than any one person could have alone.',
+    ),
+    BlogSubheading('Urban & Environmental'),
+    BlogParagraph(
+      '"Should downtown areas ban car traffic to improve quality of life and reduce accidents?" Eight people debating the real trade-offs. City planners don\'t need to ask permission—they can surface what actual residents would converge on.',
+    ),
+    BlogSubheading('Educational'),
+    BlogParagraph(
+      '"How do you imagine OneMind being used in universities?" Nine people—likely some students, some educators—collectively designing what civic engagement could look like on campus. No committee. No budget approval. Just thinking together about what\'s possible.',
+    ),
+    BlogSubheading('Cultural & Information'),
+    BlogParagraph(
+      '"How can media literacy be improved?" Six people exploring why people believe misinformation and what actually helps. "How can music artists fight the algorithm?" People thinking through real creative problems. These aren\'t theoretical exercises—they\'re practical thinking on issues people actually care about.',
+    ),
+    BlogSubheading('Existential & Philosophical'),
+    BlogParagraph(
+      '"Do you believe AI can replace human beings?" Not an academic debate. Seven people genuinely wrestling with what makes us irreplaceable. "What\'s the #1 problem facing society today?" The group collectively surfaces what they think matters most.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Why Grassroots Problem-Solving Works'),
+    BlogSubheading('Everyone who shows up actually cares'),
+    BlogParagraph(
+      'You don\'t get people joining a OneMind conversation to fulfill an obligation. They show up because the problem matters to them. That self-selection creates a different kind of participation—authentic, engaged, inventive.',
+    ),
+    BlogSubheading('Ideas evolve through real thinking'),
+    BlogParagraph(
+      'Across multiple rounds, people refine their thinking. The first proposal on bullying survival might focus on emotional resilience. By round two, after seeing others\' ideas, it evolves to practical steps + community + self-compassion. The problem-solving *deepens*.',
+    ),
+    BlogSubheading('Consensus on solutions is real'),
+    BlogParagraph(
+      'When round two and round three proposals on car traffic both emphasize "protected pedestrian zones + transit investment," the group has genuinely converged. Not because an authority decided it. Because the community\' thinking led there.',
+    ),
+    BlogSubheading('The solution is locally informed'),
+    BlogParagraph(
+      'A bullying survivor knows something a psychologist might not. A downtown resident knows traffic patterns a planner doesn\'t. Structured convergence surfaces that embodied knowledge and weighs it equally with other perspectives.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('What This Means for Communities'),
+    BlogParagraph(
+      'You don\'t need a formal process to solve problems together. You don\'t need committee approval or budget lines. You need:',
+    ),
+    BlogBulletList([
+      'A problem that matters to a group of people',
+      'A way for everyone to propose solutions anonymously',
+      'A fair way to evaluate all ideas',
+      'Multiple rounds so thinking can evolve',
+      'A clear endpoint so the group actually converges',
+    ]),
+    BlogParagraph(
+      'OneMind provides that structure. You provide the people and the problem.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Start Where You Are'),
+    BlogParagraph(
+      'You don\'t need to wait for the right infrastructure, the right committee, or the right permission. If you\'re facing a problem and you know others who care, you can start thinking together right now.',
+    ),
+    BlogParagraph(
+      'A bullying survivor can create a chat. A neighborhood can converge on traffic solutions. Students can reimagine university culture. Communities can define their own solutions.',
+    ),
+    BlogDivider(),
+
+    BlogHeading('Solve Real Problems with Your Community'),
+    BlogParagraph(
+      'Start a OneMind conversation about a problem you care about. Invite people who understand it. Let structured convergence surface the solutions your community actually aligns on.',
+    ),
+    BlogCta(
+      text: 'If you\'ve ever thought "we could solve this if everyone just contributed their real thinking," OneMind is built for that moment.',
+      buttonLabel: 'Start a Chat',
+      route: '/tutorial',
+    ),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // Post 4: Async Decision Making for Remote Teams
 // ---------------------------------------------------------------------------
 
 const _asyncDecisionMaking = BlogPost(
   slug: 'async-decision-making-remote-teams',
-  title: 'Async Decision Making for Remote Teams: '
-      'How to Align Without Meetings',
+  title: 'Think Together Honestly: Async Decision Making for '
+      'Distributed Communities',
   metaDescription:
-      'Remote teams waste hours in sync meetings that could be async. '
-      'Learn why asynchronous decision making produces better alignment '
-      'and how structured convergence makes it practical.',
+      'Discover better solutions than any one person could create alone. '
+      'Learn how asynchronous decision making enables people from different backgrounds '
+      'to refine each other\'s ideas and reach genuine collective consensus.',
   date: '2026-03-27',
   author: 'Joel Castro',
   keywords: [
-    'async decision making tools for remote teams',
+    'async decision making tools for communities',
     'asynchronous decision making',
-    'remote team decisions',
-    'async collaboration tools',
-    'distributed team alignment',
+    'distributed community decisions',
+    'participatory democracy tools',
+    'global participation platform',
+    'civic engagement decision making',
   ],
   sections: [
     BlogHeading('The Meeting That Could Have Been an Email '
@@ -343,19 +576,22 @@ const _asyncDecisionMaking = BlogPost(
 
 const _anonymousDecisionMaking = BlogPost(
   slug: 'anonymous-decision-making',
-  title: 'Anonymous Decision Making: Why Removing Names '
-      'Leads to Better Group Decisions',
+  title: 'Quality Matters More Than Source: Why Anonymous Decision Making '
+      'Ensures the Best Solutions Win',
   metaDescription:
-      'When ideas are tied to names, bias wins. Learn why anonymous '
-      'decision making produces better outcomes and how structured '
-      'convergence makes it practical for any team.',
+      'When you think together honestly, the quality of a vision matters more than its source. '
+      'Learn how anonymous decision making removes hierarchy and bias, enabling genuine '
+      'collective wisdom in communities, organizations, and democratic processes.',
   date: '2026-03-27',
   author: 'Joel Castro',
   keywords: [
-    'anonymous decision making tool for teams',
-    'anonymous group decisions',
-    'anonymous voting tool',
-    'bias-free decision making',
+    'anonymous decision making tool',
+    'civic decision making process',
+    'anonymous voting platform',
+    'bias-free democratic decisions',
+    'participatory democracy tool',
+    'collective intelligence',
+    'community consensus building',
   ],
   sections: [
     // Intro
@@ -681,19 +917,20 @@ const _anonymousDecisionMaking = BlogPost(
 
 const _votingVsConsensus = BlogPost(
   slug: 'voting-vs-consensus',
-  title: 'Voting vs. Consensus: Why Your Team Gets Stuck '
-      'and How to Actually Align',
+  title: 'Refine Each Other\'s Ideas: Democratic Decision-Making Beyond Voting and Consensus',
   metaDescription:
-      'Voting creates winners and losers. Traditional consensus takes '
-      'forever. Learn why both fail teams and discover a third approach '
-      'that finds real alignment \u2014 fast.',
+      'Voting creates winners and losers. Traditional consensus takes forever. '
+      'Discover structured convergence\u2014where people from different backgrounds '
+      'think together honestly to find true alignment and better solutions.',
   date: '2026-03-24',
   author: 'Joel Castro',
   keywords: [
     'voting vs consensus',
-    'consensus vs voting',
-    'consensus decision making',
-    'how to build consensus in a team',
+    'democratic decision making',
+    'consensus building',
+    'participatory democracy',
+    'civic decision making',
+    'community consensus',
     'alternatives to majority voting',
   ],
   sections: [
@@ -862,20 +1099,21 @@ const _votingVsConsensus = BlogPost(
 
 const _groupDecisionMakingMethods = BlogPost(
   slug: 'group-decision-making-methods',
-  title: '5 Group Decision-Making Methods That Actually Work '
-      '(And When to Use Each)',
+  title: '5 Decision-Making Methods Where the Best Solutions Win—No Matter Who Proposes Them',
   metaDescription:
-      'Compare 5 proven group decision-making techniques — from majority '
-      'voting to structured consensus. Learn which method fits your team '
-      'and when to use each one.',
+      'Compare 5 decision-making techniques for communities and organizations. '
+      'Discover the approach that ensures quality matters more than hierarchy, '
+      'where people from different backgrounds contribute to collective intelligence.',
   date: '2026-03-24',
   author: 'Joel Castro',
   keywords: [
-    'group decision making techniques',
-    'group decision making methods',
-    'team decision making process',
-    'how to make group decisions',
-    'consensus building techniques',
+    'civic decision making methods',
+    'community decision making techniques',
+    'participatory democracy',
+    'consensus building for communities',
+    'group problem solving',
+    'democratic governance tools',
+    'collective decision making',
   ],
   sections: [
     BlogParagraph(

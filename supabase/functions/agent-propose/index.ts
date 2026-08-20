@@ -41,6 +41,11 @@ const RequestSchema = z.object({
   chat_id: z.number().int().positive("Chat ID must be a positive integer"),
   content: z.string().min(1, "Content is required"),
   category: z.string().nullable().optional(),
+  // Target round. REQUIRED for correctness in tree/branching chats where many
+  // proposing rounds are open at once — without it we fall back to the chat's
+  // newest active round, so every agent proposal collides into one branch.
+  // Optional for backward compat (single-active-round chats).
+  round_id: z.number().int().positive().optional(),
 });
 
 Deno.serve(async (req: Request) => {
@@ -80,7 +85,8 @@ Deno.serve(async (req: Request) => {
     );
   }
 
-  const { chat_id, content: rawContent, category } = validationResult.data;
+  const { chat_id, content: rawContent, category, round_id: targetRoundId } =
+    validationResult.data;
 
   // Sanitize content - remove control characters, normalize whitespace
   const content = sanitizeString(rawContent);
@@ -166,44 +172,68 @@ Deno.serve(async (req: Request) => {
 
     const propositionsPerUser = chat.propositions_per_user ?? 3;
 
-    // Get current cycle and round
-    const { data: currentCycle, error: cycleError } = await supabase
-      .from("cycles")
-      .select("id")
-      .eq("chat_id", chat_id)
-      .is("completed_at", null)
-      .order("id", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    // Resolve the target round. If the caller named a specific round_id (the
+    // orchestrator does for tree branches), use THAT round — after confirming it
+    // belongs to this chat — so proposals land in the branch they were meant for.
+    // Otherwise fall back to the chat's newest active cycle/round (single-round
+    // chats). Without this, every agent proposal collides into one branch.
+    let currentRound:
+      | { id: number; phase: string; phase_ends_at: string | null }
+      | null = null;
+    let roundError: { message: string } | null = null;
 
-    if (cycleError) {
-      console.error("[AGENT-PROPOSE] Error getting cycle:", cycleError);
-      return corsErrorResponse(
-        "Database error",
-        req,
-        500,
-        AgentErrorCodes.DB_ERROR
-      );
+    if (targetRoundId) {
+      const { data, error } = await supabase
+        .from("rounds")
+        .select("id, phase, phase_ends_at, cycles!inner(chat_id)")
+        .eq("id", targetRoundId)
+        .eq("cycles.chat_id", chat_id)
+        .is("completed_at", null)
+        .maybeSingle();
+      roundError = error;
+      currentRound = data
+        ? { id: data.id, phase: data.phase, phase_ends_at: data.phase_ends_at }
+        : null;
+    } else {
+      const { data: currentCycle, error: cycleError } = await supabase
+        .from("cycles")
+        .select("id")
+        .eq("chat_id", chat_id)
+        .is("completed_at", null)
+        .order("id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (cycleError) {
+        console.error("[AGENT-PROPOSE] Error getting cycle:", cycleError);
+        return corsErrorResponse(
+          "Database error",
+          req,
+          500,
+          AgentErrorCodes.DB_ERROR
+        );
+      }
+
+      if (!currentCycle) {
+        return corsErrorResponse(
+          "No active cycle in this chat",
+          req,
+          400,
+          AgentErrorCodes.WRONG_PHASE
+        );
+      }
+
+      const { data, error } = await supabase
+        .from("rounds")
+        .select("id, phase, phase_ends_at")
+        .eq("cycle_id", currentCycle.id)
+        .is("completed_at", null)
+        .order("custom_id", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      roundError = error;
+      currentRound = data;
     }
-
-    if (!currentCycle) {
-      return corsErrorResponse(
-        "No active cycle in this chat",
-        req,
-        400,
-        AgentErrorCodes.WRONG_PHASE
-      );
-    }
-
-    // Get current round
-    const { data: currentRound, error: roundError } = await supabase
-      .from("rounds")
-      .select("id, phase, phase_ends_at")
-      .eq("cycle_id", currentCycle.id)
-      .is("completed_at", null)
-      .order("custom_id", { ascending: false })
-      .limit(1)
-      .maybeSingle();
 
     if (roundError) {
       console.error("[AGENT-PROPOSE] Error getting round:", roundError);

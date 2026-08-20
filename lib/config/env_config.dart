@@ -35,8 +35,12 @@ class EnvConfig {
     defaultValue: 'development',
   );
 
-  /// Web app base URL for deep links and QR codes
-  /// Set via: --dart-define=WEB_APP_URL=https://onemind.life
+  /// Web app base URL for share/join deep links and QR codes.
+  /// As of 2026-07-04 onemind.life serves this Flutter app again (the
+  /// Next.js wedge cutover was reversed), so share links point at the
+  /// canonical domain. onemind-instant.web.app serves the same build for
+  /// backwards compatibility with older links.
+  /// Override via: --dart-define=WEB_APP_URL=https://onemind.life
   static const String webAppUrl = String.fromEnvironment(
     'WEB_APP_URL',
     defaultValue: 'https://onemind.life',

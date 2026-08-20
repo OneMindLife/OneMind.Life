@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
     // Get chat settings
     const { data: chat, error: chatError } = await supabase
       .from("chats")
-      .select("id, name, confirmation_rounds")
+      .select("id, name, confirmation_rounds:confirmation_rounds_required")
       .eq("id", chatId)
       .single();
 

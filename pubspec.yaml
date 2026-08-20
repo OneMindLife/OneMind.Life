@@ -16,7 +16,11 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 1.0.0+1
+# Build number must stay above the App Store's last upload (build 196) or
+# App Store Connect rejects the binary. Marketing version continues from the
+# previously-published 20.1.x line. Adjust the marketing part as you like;
+# keep the +NNN build number strictly increasing across uploads.
+version: 20.3.0+206
 
 environment:
   sdk: ^3.10.4
@@ -60,7 +64,7 @@ dependencies:
   url_launcher: ^6.2.0
   intl: ^0.20.2
   equatable: ^2.0.7
-  flutter_timezone: ^1.0.8
+  flutter_timezone: ^5.1.0
 
   # QR Code
   qr_flutter: ^4.1.0
@@ -75,7 +79,12 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_analytics: ^11.4.1
   firebase_messaging: ^15.1.6
-  sentry_flutter: ^9.9.2
+  # Observability is PostHog-only (web posthog-js snippet in web/index.html +
+  # the _onemind* bridges): product analytics, session replay, AND error tracking
+  # (errors link to replays). NO sentry_flutter / posthog_flutter Flutter packages
+  # — both broke Flutter web rendering (Sentry's init throws on web; posthog's web
+  # plugin registrant throws). If a native mobile build is ever shipped, add the
+  # SDK back guarded behind a mobile-only check.
 
   # YouTube embed
   youtube_player_iframe: ^5.1.7

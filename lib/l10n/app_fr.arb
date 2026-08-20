@@ -28,6 +28,7 @@
   "remove": "Retirer",
   "clear": "Effacer",
   "done": "Termine",
+  "pendingTag": "En attente",
   "save": "Enregistrer",
   "official": "OFFICIEL",
   "pending": "EN ATTENTE",
@@ -67,6 +68,7 @@
   "enableNotificationsCta": "Activer",
   "notificationsBlockedTitle": "Les notifications sont bloquées",
   "notificationsBlockedBody": "Débloquez-les dans les paramètres du site de votre navigateur.",
+  "notificationsBlockedBodyNative": "Activez-les dans les paramètres de notifications de votre appareil.",
   "gotIt": "Compris",
   "notNow": "Plus tard",
   "installOneMindTitle": "Installer OneMind",
@@ -749,7 +751,9 @@
   },
   "consensusSettings": "Parametres de Convergence",
   "confirmationRounds": "Tours de confirmation",
-  "firstWinnerConsensus": "Le premier gagnant atteint la convergence immediatement",
+  "convergenceStepSubtitle": "Comment une idée gagnante est-elle ajoutée définitivement au chat ?",
+  "instantMode": "Instantané",
+  "firstWinnerConsensus": "Le premier gagnant est ajouté immédiatement",
   "mustWinConsecutive": "La meme proposition doit gagner {count} tours consecutifs",
   "@mustWinConsecutive": {
     "placeholders": {
@@ -1157,6 +1161,7 @@
   "back": "Retour",
 
   "deleteConsensusTitle": "Supprimer la Convergence #{number}?",
+  "deleteWinnerTitle": "Supprimer le gagnant #{number} ?",
   "@deleteConsensusTitle": {
     "placeholders": {
       "number": {"type": "int"}
@@ -1260,6 +1265,12 @@
 
   "chatAutoTranslated": "Traduit automatiquement",
 
+  "setYourName": "Choisissez votre nom",
+  "whatsYourName": "Comment vous appelez-vous ?",
+  "nameShownToOthers": "Visible par les autres participants",
+  "pleaseEnterName": "Veuillez saisir votre nom",
+  "joiningAs": "Rejoindre en tant que {name}",
+  "creatingAs": "Créer en tant que {name}",
   "welcomeName": "Bienvenue, {name}",
   "editName": "Modifier le nom",
   "primaryLanguage": "Langue principale",
@@ -1316,6 +1327,8 @@
   "codeStatusReserved": "Réservé",
   "contact": "Contact",
   "convergenceHistory": "Historique de Convergence {number}",
+  "winnerNumber": "Gagnant #{number}",
+  "winnerHistory": "Historique du gagnant {number}",
   "creditBalance": "Solde : {balance} crédits",
   "creditPausedTitle": "En pause — Crédits Insuffisants",
   "creditsNeeded": "{count} crédits nécessaires pour démarrer le tour",
@@ -1395,6 +1408,56 @@
   "tutorialShareTapDesc": "Appuyez sur le bouton de partage pour continuer.",
   "waitingForHostCredits": "En attente que l'hôte ajoute des crédits",
   "winnerIndexOfTotal": "{current} sur {total}",
+  "chatSettingsRhythmLabel": "Rythme",
+  "wizardFirstDeadlineStartsNow": "Votre discussion démarre dès sa création.",
+  "wizardFirstDeadlineUnavailable": "Un rythme quotidien nécessite des phases de durée égale de 1, 2, 3, 4, 6, 8, 12 ou 24 heures. Avec le rythme actuel, la première phase dure simplement sa durée complète.",
+  "wizardFirstDeadlineLabel": "Première échéance",
+  "wizardFirstDeadlineQuestion": "Quand la première phase doit-elle se terminer ?",
+  "wizardChipFullDuration": "Durée complète",
+  "wizardChipAmPmRhythm": "Rythme 3 h / 15 h",
+  "wizardChipDailyTime": "Même heure chaque jour…",
+  "wizardChipOnTheHour": "À l'heure pile",
+  "wizardCadencePreviewTwo": "Les phases basculeront à {t1} / {t2} ({tz}) chaque jour.",
+  "wizardCadencePreviewOne": "Les phases basculeront à {t1} ({tz}) chaque jour.",
+  "wizardCadenceShorterNotice": "La première phase sera plus courte : se termine dans {rel}.",
+  "wizardCadenceTimeUnavailable": "Cette heure ne correspond pas à ce rythme — choisissez une heure entre {min} et {max}.",
+  "wizardAutoAdvanceTitle": "Avancer les phases plus tôt ?",
+  "wizardAutoAdvanceDesc": "Choisissez si une phase se termine dès que tout le monde a participé, ou si elle dure toujours son temps complet.",
+  "wizardAutoAdvanceProposingTitle": "Terminer les propositions plus tôt",
+  "wizardAutoAdvanceProposingOnDesc": "La phase de propositions se termine dès que tout le monde a soumis ou passé",
+  "wizardAutoAdvanceProposingOffDesc": "La phase de propositions dure toujours son temps complet",
+  "wizardAutoAdvanceRatingTitle": "Terminer l'évaluation plus tôt",
+  "wizardAutoAdvanceRatingOnDesc": "L'évaluation se termine dès que tout le monde a évalué",
+  "wizardAutoAdvanceRatingOffDesc": "L'évaluation dure toujours son temps complet",
+  "wizardCadenceFullDurationDesc": "La première phase dure son temps complet ({duration}), sans rythme quotidien fixe",
+  "wizardCadenceFirstDeadlineAt": "Première échéance : {time}",
+  "wizardCadenceCustomTime": "Heure personnalisée…",
+  "wizardCadencePickExactly": "Choisissez exactement quand la première phase doit se terminer",
+  "wizardVotingStyleLabel": "Style de vote",
+  "wizardVotingGridTitle": "Grille",
+  "wizardVotingGridDesc": "Placez chaque idée sur une échelle de 0 à 100",
+  "wizardVotingMatchesTitle": "Duels",
+  "wizardVotingMatchesDesc": "Choisissez la meilleure de deux idées, paire par paire",
+  "wizardMatchObjectiveLabel": "Que déterminer",
+  "wizardMatchWinnerTitle": "Seulement le gagnant",
+  "wizardMatchWinnerDesc": "Moins de comparaisons — un tournoi rapide pour trouver la meilleure idée",
+  "wizardMatchFullRankTitle": "Voir tout le classement",
+  "wizardMatchFullRankDesc": "Plus de comparaisons par personne — classe toutes les idées, pas seulement la gagnante",
+  "wizardParticipationTitle": "Participation",
+  "wizardParticipationSubtitle": "Choisissez si les participants peuvent passer des phases",
+  "wizardAllowSkipProposingTitle": "Autoriser à passer les propositions",
+  "wizardAllowSkipProposingOnDesc": "Les participants peuvent passer l'envoi d'une idée",
+  "wizardAllowSkipProposingOffDesc": "Tout le monde doit soumettre une idée",
+  "wizardAllowSkipRatingTitle": "Autoriser à passer l'évaluation",
+  "wizardAllowSkipRatingOnDesc": "Les participants peuvent passer l'évaluation",
+  "wizardAllowSkipRatingOffDesc": "Tout le monde doit évaluer les idées",
+  "wizardTimingProposingQuestion": "Combien de temps pour proposer ?",
+  "wizardTimingCurrently": "Actuellement : {duration}",
+  "wizardTimingSameDurationQuestion": "Même durée pour la phase d'évaluation ?",
+  "wizardTimingSameDurationYes": "Oui, l'évaluation utilise le même temps",
+  "wizardTimingSameDurationNo": "Non, l'évaluation a une durée différente",
+  "wizardTimingRatingQuestion": "Combien de temps pour évaluer ?",
+  "wizardAgentsTitle": "Ajouter des agents IA ?",
   "wizardScheduleAlwaysDesc": "Le chat fonctionne 24h/24, 7j/7, sans restriction de temps",
   "wizardScheduleAlwaysTitle": "Toujours Actif",
   "wizardScheduleOnceDesc": "Le chat commence à une date et heure que vous choisissez",
@@ -1422,5 +1485,25 @@
   "ratingMicrocopyNoSkip": "Évaluez les propositions pour choisir le gagnant.",
   "waitingForNextPhase": "En attente de la prochaine phase",
   "yourAffirmation": "Votre affirmation",
-  "participantsRankingExplainer": "Classés selon l'alignement de leurs évaluations et idées avec le groupe"
+  "participantsRankingExplainer": "Classés selon l'alignement de leurs évaluations et idées avec le groupe",
+
+  "equal": "Égalité",
+  "whichIsBetterTapOne": "Laquelle est la meilleure ? Touchez-en une.",
+  "matchNumber": "Comparaison {number}",
+  "@matchNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "doneWaitingForRound": "Terminé : en attente de la fin du round.",
+  "doneRatingQuestion": "Terminer l'évaluation ?",
+  "doneRatingBody": "Vous ne pourrez plus évaluer d'idées pendant ce round.",
+  "couldNotSaveChoice": "Impossible d'enregistrer votre choix : réessayez",
+  "couldNotSkip": "Impossible de passer : réessayez",
+  "ratersWithCount": "Évaluateurs : {count}",
+  "@ratersWithCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  }
 }

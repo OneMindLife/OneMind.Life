@@ -1,11 +1,11 @@
 {
     "name": "OneMind",
     "short_name": "OneMind",
-    "start_url": ".",
+    "start_url": "/home",
     "display": "standalone",
     "background_color": "#FFFFFF",
     "theme_color": "#6366F1",
-    "description": "OneMind - Collective Alignment Platform. Find shared direction together.",
+    "description": "OneMind – Group Decision Making Tool. Stop endless meetings. Get a real group decision in minutes.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "related_applications": [

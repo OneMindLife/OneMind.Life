@@ -1,0 +1,5 @@
+- generic [active] [ref=f2e1]:
+  - main [ref=f2e2]:
+    - generic [ref=f2e3]: OneMind
+    - generic [ref=f2e10]: Loading…
+  - alert [ref=f2e12]

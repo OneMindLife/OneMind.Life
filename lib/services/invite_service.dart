@@ -159,19 +159,6 @@ class InviteService {
     return result == true;
   }
 
-  /// Check if a chat requires invite validation.
-  ///
-  /// Returns true if the chat uses invite-only access method.
-  Future<bool> isInviteOnly(int chatId) async {
-    final result = await _supabase
-        .from('chats')
-        .select('access_method')
-        .eq('id', chatId)
-        .single();
-
-    return result['access_method'] == 'invite_only';
-  }
-
   /// Validate an invite by token (from direct link).
   ///
   /// Returns invite details including chat info, or null if invalid/expired.

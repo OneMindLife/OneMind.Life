@@ -1,0 +1,2887 @@
+@import "tailwindcss";
+
+/* =============================================================================
+   OneMind design system — ported from app/Decision Prototype.html
+   Dark "cosmic" theme: Instrument Serif (questions/answers), Geist (body),
+   Geist Mono (labels/meta). The prototype rendered inside a 380px iPhone frame;
+   here the same interior is applied to a real responsive mobile-first web shell.
+   ========================================================================== */
+
+:root {
+  /* "The Record" — warm-paper datahouse palette, matched to the live chat
+     (app/g/[code]/TreeChat.module.css): warm stone paper, pine accent, ink text,
+     mono data labels. Retheme 2026-07-15 so the landing + SEO pages read as the
+     SAME product as the chat. Contrast semantics preserved: --ink-0 is the
+     highest-contrast text, --ink-3 the faintest. */
+  --bg-0: #ece9e2;      /* paper */
+  --surface: #f4f2ec;   /* card — a touch brighter than the paper */
+  --ink-0: #211f1b;     /* primary text (near-black ink) */
+  --ink-1: #46423a;     /* secondary */
+  --ink-2: #837d70;     /* muted */
+  --ink-3: #b0a794;     /* faint */
+  --line: rgba(33, 31, 27, 0.1);
+  --line-strong: rgba(33, 31, 27, 0.17);
+  --accent: #0f5c4d;    /* pine */
+  --winner: #0f5c4d;
+  --converged: #9e6b1f; /* warm gold */
+  --halo: rgba(15, 92, 77, 0.1);
+
+  --serif: var(--font-instrument-serif), Georgia, serif;
+  --sans: var(--font-geist-sans), -apple-system, system-ui, sans-serif;
+  --mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg-0);
+}
+
+body {
+  background: var(--bg-0);
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100dvh;
+}
+
+/* ── Shared backdrop layers (fixed behind all content) ── */
+.ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(
+      ellipse 60% 50% at 50% 20%,
+      rgba(15, 92, 77, 0.06),
+      transparent 68%
+    ),
+    radial-gradient(
+      ellipse 45% 40% at 78% 80%,
+      rgba(158, 107, 31, 0.04),
+      transparent 72%
+    );
+  animation: breathe 14s ease-in-out infinite;
+}
+body.warm .ambient::before {
+  background: radial-gradient(
+      ellipse 55% 45% at 50% 32%,
+      rgba(216, 194, 138, 0.1),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 40% 35% at 30% 60%,
+      rgba(107, 157, 255, 0.04),
+      transparent 70%
+    );
+}
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(1.05);
+  }
+}
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/></svg>");
+}
+
+/* ── App shell (the prototype's .stage, responsive) ── */
+.app {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 26px) 22px
+    calc(env(safe-area-inset-bottom, 0px) + 30px);
+}
+/* Phase screens with a pinned bottom bar: lock to exactly one viewport so an
+   inner list scrolls instead of the whole page (which would scroll the foot-bar
+   off-screen). box-sizing keeps the padding inside the 100dvh; overflow:hidden
+   is the safety net — the inner list (.locked-list / .chall-list) does the
+   actual scrolling. */
+.app.pinned {
+  height: 100dvh;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+/* Lock the document itself (not just .app) whenever a pinned screen is on, so the
+   body/html can't rubber-band or scroll on mobile, where dvh and the address bar
+   shift the layout a few px. Scoped with :has() so the marketing pages (no
+   .app.pinned) keep their normal whole-page scroll. */
+html:has(.app.pinned),
+body:has(.app.pinned) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* ── Chrome ── */
+.rail {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 2px;
+  margin-bottom: 16px;
+  min-height: 24px;
+}
+.logotype {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+}
+.logomark {
+  width: 18px;
+  height: 18px;
+  position: relative;
+}
+.logomark .ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--accent);
+  opacity: 0.55;
+}
+.logomark .ring.inner {
+  inset: 4px;
+  opacity: 0.25;
+}
+.logomark .dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 10px var(--accent);
+}
+.back {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  cursor: pointer;
+  background: none;
+  border: none;
+  /* Bigger tap target — the back affordance was too small to hit on mobile. */
+  padding: 6px 10px 6px 0;
+  margin: -6px 0;
+}
+.back svg {
+  width: 13px;
+  height: 13px;
+}
+/* The write step's explicit "don't replace, keep instead" escape — was a tiny
+   9.5px link; promote it to a clear, full-width tappable button. */
+.keep-instead {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 13px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.prop .pick .spin {
+  width: 11px;
+  height: 11px;
+  border-width: 1.5px;
+}
+.group-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: rgba(137, 180, 255, 0.04);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.group-pill .value {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+/* live presence ("who's here now") — top rail */
+.presence {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.presence .pdot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex-shrink: 0;
+}
+.presence.live {
+  color: var(--ink-2);
+}
+.presence.live .pdot {
+  background: #6fe3a8;
+  box-shadow: 0 0 7px #6fe3a8;
+  animation: ppulse 2.4s ease-in-out infinite;
+}
+.presence .pcount {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+/* join-bump: one-time pop + brighter dot when someone new arrives */
+.presence.bump {
+  animation: pjoin 0.7s ease-out;
+}
+.presence.bump .pdot {
+  box-shadow: 0 0 15px #6fe3a8;
+}
+@keyframes pjoin {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes ppulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.8);
+  }
+}
+
+.host-pill {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid rgba(107, 157, 255, 0.28);
+  background: rgba(107, 157, 255, 0.06);
+  border-radius: 999px;
+  padding: 5px 10px;
+}
+
+.chat-q {
+  padding: 2px 2px 14px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 14px;
+}
+.chat-q.plain {
+  border: none;
+  padding-bottom: 4px;
+}
+.chat-q .room-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 8px;
+}
+.chat-q .q {
+  font-family: var(--serif);
+  /* The question is the heart of the game — a real, readable headline: upright
+     (not italic), slightly heavier, and never shrunk (the voting/challenge
+     screens used to drop it to 16px). */
+  font-weight: 500;
+  font-style: normal;
+  font-size: 25px;
+  line-height: 1.3;
+  color: var(--ink-0);
+  letter-spacing: -0.005em;
+}
+.phase-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.phase-tag .live {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+/* center / inputs (create) */
+.center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 22px;
+}
+.ask-eyebrow {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 12px;
+}
+.ask-q {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+}
+.ask-help {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-top: 12px;
+}
+.ask {
+  position: relative;
+  background: linear-gradient(
+    180deg,
+    rgba(18, 26, 46, 0.7),
+    rgba(8, 12, 24, 0.85)
+  );
+  border: 1px solid rgba(107, 157, 255, 0.28);
+  border-radius: 20px;
+  padding: 16px 16px 12px;
+  box-shadow: 0 0 40px rgba(107, 157, 255, 0.06);
+}
+textarea,
+input.txt {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 17px;
+  line-height: 1.45;
+  letter-spacing: -0.01em;
+  resize: none;
+}
+textarea::placeholder,
+input.txt::placeholder {
+  color: var(--ink-3);
+}
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 14px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #f4f2ec;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 6px 22px rgba(15, 92, 77, 0.22);
+  width: 100%;
+}
+.btn svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+}
+.btn.idle {
+  background: rgba(33, 31, 27, 0.05);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+.fine {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* legal footer (landing layer: root + SEO pages) — same micro-type as .fine,
+   links must stay visible enough to satisfy ads/legal discoverability */
+.legal-foot {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 26px;
+  padding-bottom: 14px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.legal-foot a {
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.legal-foot a:hover {
+  color: var(--ink-1);
+  text-decoration: underline;
+}
+
+/* share */
+/* Invite-card glow — a soft halo on the on-screen "invite your group" card so
+   the whole nudge stands out. The invite BUTTONS (app-bar trigger, the card's
+   Share button, the dialog's Share action) carry the .beckon-w traveling light. */
+.invite-card {
+  box-shadow: 0 0 22px rgba(107, 157, 255, 0.11);
+}
+.share {
+  border: 1px solid rgba(107, 157, 255, 0.22);
+  background: rgba(107, 157, 255, 0.04);
+  border-radius: 16px;
+  padding: 14px 15px;
+  margin-bottom: 16px;
+}
+.share .lbl {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.share .lbl svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+.share .row {
+  display: flex;
+  gap: 8px;
+}
+.share .link {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgba(2, 3, 8, 0.4);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-1);
+  overflow: hidden;
+  white-space: nowrap;
+}
+.share .copy {
+  flex-shrink: 0;
+  padding: 11px 16px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #08111f;
+  border: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* propose */
+.propose .field {
+  background: linear-gradient(
+    180deg,
+    rgba(18, 26, 46, 0.55),
+    rgba(8, 12, 24, 0.75)
+  );
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  padding: 14px 16px;
+  min-height: 84px;
+}
+.propose .field textarea {
+  font-size: 14.5px;
+  min-height: 56px;
+}
+.propose .submit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 11px;
+}
+.propose .count {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+.propose .submit {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-0);
+  background: rgba(107, 157, 255, 0.16);
+  border: 1px solid rgba(107, 157, 255, 0.4);
+  border-radius: 10px;
+  padding: 11px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.propose .submit svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+.propose .submit:disabled:not(.done) {
+  background: rgba(107, 157, 255, 0.05);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  cursor: default;
+}
+.propose .submit.done {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.ticker {
+  /* No top border: the question already has a border-bottom, so a second line
+     here just reads as a redundant divider in the gap below the question. */
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  /* Fill the space between the (fixed) propose box and the (pinned) foot-bar so
+     the proposition list — and ONLY the list — scrolls. min-height:0 lets this
+     flex child shrink so its inner overflow can kick in instead of growing the
+     page and pushing the foot-bar off-screen. Same pattern as `.duel`. */
+  flex: 1;
+  min-height: 0;
+}
+.ticker .head {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ticker .head .lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ticker .head .lock svg {
+  width: 10px;
+  height: 10px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+}
+.locked-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  /* Only the propositions scroll — the "N responses" head and the hidden-note
+     stay fixed above/below. Shrinks within `.ticker` and scrolls when the ideas
+     overflow; a hair of right padding keeps cards off the scrollbar. */
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+/* NOTE: do NOT name these `blur`/`hidden` — those collide with Tailwind
+   utilities (`.blur` = filter, `.hidden` = display:none), which silently
+   removed the masked proposition from layout instead of blurring it. */
+.peek {
+  font-size: 13px;
+  color: var(--ink-1);
+  letter-spacing: -0.005em;
+  /* Wrap the full idea in BOTH masked and revealed states, so revealing only
+     toggles the blur — it no longer jumps the layout from a one-line teaser to
+     multi-line. Break any long unbroken token so it can't run off the edge. */
+  white-space: normal;
+  overflow-wrap: anywhere;
+  /* Each idea is its own card — clearly separated, not a wall of text. */
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(168, 178, 200, 0.03);
+  transition: filter 0.5s, color 0.5s, border-color 0.3s;
+}
+.peek.mine {
+  border-color: rgba(107, 157, 255, 0.4);
+  background: rgba(107, 157, 255, 0.06);
+}
+.peek.masked {
+  filter: blur(4.5px);
+  user-select: none;
+}
+.peek.revealed {
+  filter: none;
+}
+.ticker-note {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.idea-in {
+  border: 1px solid rgba(107, 157, 255, 0.28);
+  background: rgba(107, 157, 255, 0.06);
+  border-radius: 14px;
+  padding: 13px 15px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.you-tag {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+}
+
+/* advance / wait */
+.foot-bar {
+  margin-top: auto;
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.host-note,
+.wait-note {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  line-height: 1.6;
+}
+.gate-reason {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gate-reason svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+}
+.wait-box {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 13px;
+  text-align: center;
+  background: rgba(137, 180, 255, 0.02);
+}
+.spin {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid rgba(168, 178, 200, 0.18);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+.wait-box .spin {
+  margin: 0 auto 8px;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* duel */
+.prompt {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.duel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+.prop {
+  flex: 1;
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 26, 46, 0.55),
+    rgba(8, 12, 24, 0.75)
+  );
+  border-radius: 18px;
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.15s, transform 0.12s;
+  text-align: left;
+  width: 100%;
+}
+.prop:active {
+  transform: scale(0.985);
+}
+.prop:hover {
+  border-color: rgba(107, 157, 255, 0.4);
+}
+.prop.leader-prop {
+  border-color: rgba(216, 194, 138, 0.4);
+  background: radial-gradient(
+      ellipse 120% 80% at 50% 0%,
+      rgba(216, 194, 138, 0.06),
+      transparent 70%
+    ),
+    linear-gradient(180deg, rgba(18, 26, 46, 0.55), rgba(8, 12, 24, 0.75));
+}
+.prop-tag {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+.prop.leader-prop .prop-tag {
+  color: var(--converged);
+}
+.prop-tag.chall {
+  color: var(--accent);
+}
+.prop .text {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.22;
+  color: var(--ink-0);
+  flex: 1;
+  /* Long propositions (now up to 300 chars) scroll WITHIN the card instead of
+     overflowing it / pushing the layout off-screen. `min-height:0` lets the
+     flex child shrink so overflow-y can kick in; `safe center` keeps short
+     ideas vertically centered but never clips the top of a long one. */
+  min-height: 0;
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+}
+.prop .pick {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.prop .pick svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.4;
+}
+/* A passive separator between the two cards — NOT a button. Kept deliberately
+   dim and non-interactive so it never reads as a tappable action. */
+.equal {
+  margin-top: 12px;
+  text-align: center;
+  padding: 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 11px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  cursor: pointer;
+  background: rgba(168, 178, 200, 0.045);
+  width: 100%;
+  transition: border-color 0.15s, color 0.15s, background 0.15s, transform 0.12s;
+}
+.equal:hover {
+  border-color: rgba(107, 157, 255, 0.45);
+  color: var(--ink-0);
+  background: rgba(107, 157, 255, 0.07);
+}
+.equal:active {
+  transform: scale(0.98);
+}
+.pair-meter {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.pair-meter .track {
+  height: 2px;
+  background: var(--line-strong);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pair-meter .fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.3s;
+}
+.pair-meter .soft {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+/* leader + challenge */
+.result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+/* Gate ("keep or replace?") — keep the round-1-result card anchored at the TOP
+   (the converged answer is the focus); just stop the host foot-bar from pinning
+   to the very bottom (its default margin-top:auto), which left a void under the
+   result card. Content flows top-down; any slack sits below the foot. */
+.result.gate .foot-bar {
+  margin-top: 24px;
+}
+.leader {
+  border: 1px solid rgba(216, 194, 138, 0.28);
+  background: radial-gradient(
+      ellipse 120% 80% at 50% 0%,
+      rgba(216, 194, 138, 0.05),
+      transparent 70%
+    ),
+    rgba(216, 194, 138, 0.012);
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 20px;
+  /* Gold glow matching the border — the round winner is the important bit. */
+  box-shadow: 0 0 18px rgba(216, 194, 138, 0.15);
+}
+.leader .ll {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--converged);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 10px;
+}
+.seal {
+  width: 13px;
+  height: 13px;
+  position: relative;
+  display: inline-block;
+}
+.seal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px solid var(--converged);
+  opacity: 0.5;
+}
+.seal::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--converged);
+  box-shadow: 0 0 7px var(--converged);
+}
+.leader .la {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--ink-0);
+}
+.leader .lmeta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid rgba(216, 194, 138, 0.14);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.leader .lmeta .see {
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 10.5px;
+  padding: 8px 16px;
+  border: 1px solid rgba(107, 157, 255, 0.45);
+  border-radius: 999px;
+  background: none;
+}
+.leader .lmeta .see svg {
+  width: 11px;
+  height: 11px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  flex-shrink: 0;
+}
+.challenge-q {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-style: italic;
+  font-size: 23px;
+  line-height: 1.2;
+  color: var(--ink-0);
+  text-align: center;
+  margin-bottom: 18px;
+}
+.yesno {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.yes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  border-radius: 13px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #08111f;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 0 30px rgba(107, 157, 255, 0.18);
+  width: 100%;
+}
+.yes svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+}
+.no {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  border-radius: 13px;
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-1);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  width: 100%;
+}
+.no svg {
+  width: 13px;
+  height: 13px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.7;
+  flex-shrink: 0;
+}
+.cnote {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 16px;
+  line-height: 1.6;
+}
+
+/* standing (challenge screen) */
+.standing-answer {
+  border: 1px solid rgba(216, 194, 138, 0.28);
+  background: radial-gradient(
+      ellipse 120% 100% at 50% 0%,
+      rgba(216, 194, 138, 0.05),
+      transparent 70%
+    ),
+    rgba(216, 194, 138, 0.012);
+  border-radius: 14px;
+  padding: 14px 16px;
+}
+.sa-label {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--converged);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sa-text {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.2;
+  color: var(--ink-0);
+}
+.ranked-head {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.idea-note {
+  margin-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+.chall-list {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  margin-top: 8px;
+  /* Only the alternatives scroll — the leader card, head and notes stay put, and
+     the host foot-bar below `.result` stays pinned. `.result` is already
+     flex:1/min-height:0, so this child just shrinks + scrolls when the list is
+     long. Matches the proposing list. */
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+.chall-row {
+  /* Sectioned card — matches the proposing ideas list (.peek). */
+  font-size: 13px;
+  color: var(--ink-1);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(168, 178, 200, 0.03);
+}
+.chall-row.mine {
+  color: var(--ink-0);
+  border-color: rgba(107, 157, 255, 0.4);
+  background: rgba(107, 157, 255, 0.06);
+}
+.chall-row .you {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.12em;
+  margin-left: 8px;
+}
+
+/* converged */
+.round-chip {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--converged);
+  border: 1px solid rgba(216, 194, 138, 0.35);
+  background: rgba(216, 194, 138, 0.05);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-bottom: 16px;
+}
+.converged {
+  border: 1px solid rgba(216, 194, 138, 0.35);
+  background: radial-gradient(
+      ellipse 120% 80% at 50% 0%,
+      rgba(216, 194, 138, 0.07),
+      transparent 70%
+    ),
+    rgba(216, 194, 138, 0.015);
+  border-radius: 18px;
+  padding: 20px 18px;
+  margin-bottom: 16px;
+}
+.converged .cl {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--converged);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.converged .ca {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 25px;
+  line-height: 1.2;
+  color: var(--ink-0);
+  padding-bottom: 10px;
+}
+/* Authorship of the winning idea (game mode) */
+.converged .ca-by {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  padding-bottom: 8px;
+}
+.converged .cs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  padding-top: 12px;
+  border-top: 1px solid rgba(216, 194, 138, 0.14);
+}
+.converged .cs .dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--ink-3);
+}
+.rank-list {
+  display: flex;
+  flex-direction: column;
+}
+.rank-row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 13px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.rank-row:last-child {
+  border-bottom: none;
+}
+.rank-row .rk {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+}
+.rank-row.lead {
+  background: linear-gradient(90deg, rgba(216, 194, 138, 0.06), transparent 72%);
+  border-radius: 12px;
+  margin: 0 -8px 4px;
+  padding: 14px 8px;
+  border-bottom: 1px solid rgba(216, 194, 138, 0.16);
+}
+.rank-row.lead .rk {
+  color: var(--converged);
+}
+.rank-row .rt {
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-1);
+}
+.rank-row.lead .rt {
+  color: var(--ink-0);
+}
+
+/* ── Game mode ─────────────────────────────────────────────────────────── */
+/* In-chat name gate */
+.name-field {
+  position: relative;
+  width: 100%;
+  max-width: 260px;
+  border-radius: 12px;
+}
+.name-field .name-input {
+  max-width: none;
+}
+.name-input {
+  width: 100%;
+  max-width: 260px;
+  font-family: var(--sans);
+  font-size: 16px;
+  color: var(--ink-0);
+  background: rgba(168, 178, 200, 0.05);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.name-input::placeholder {
+  color: var(--ink-3);
+}
+.name-input:focus {
+  outline: none;
+  border-color: var(--ink-2);
+  background: rgba(168, 178, 200, 0.08);
+}
+/* Authorship reveal under a ranked idea (game mode only) */
+.rank-row .author {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  margin-top: 3px;
+}
+/* Per-game player leaderboard */
+.lb {
+  margin: 18px 0 4px;
+}
+.lb-head {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 6px;
+}
+.lb-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--line);
+}
+.lb-row:last-child {
+  border-bottom: none;
+}
+.lb-row .lb-rk {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-3);
+  text-align: center;
+}
+.lb-row .lb-name {
+  font-size: 14px;
+  color: var(--ink-1);
+}
+.lb-row.me .lb-name {
+  color: var(--ink-0);
+  font-weight: 600;
+}
+.lb-row .lb-score {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.lb-row.top .lb-rk,
+.lb-row.top .lb-score {
+  color: var(--converged);
+}
+/* Play-again (host): a new question + start button */
+.newgame {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.newgame-note {
+  font-size: 12px;
+  color: var(--ink-2);
+  text-align: center;
+}
+
+/* Game-mode rail: roster (who's here) + standings sheet */
+.gs-trophy {
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--ink-1);
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.gs-presence {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.gs-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 3, 8, 0.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+.gs-sheet {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-0);
+  border: 1px solid var(--line-strong);
+  border-bottom: none;
+  border-radius: 16px 16px 0 0;
+  padding: 18px 18px 28px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.gs-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.gs-close {
+  background: none;
+  border: none;
+  color: var(--ink-2);
+  font-size: 15px;
+  cursor: pointer;
+}
+.gs-roster {
+  display: flex;
+  flex-direction: column;
+}
+.gs-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 4px;
+  border-bottom: 1px solid var(--line);
+}
+.gs-row.me .gs-name {
+  color: var(--accent);
+}
+.gs-name {
+  font-size: 15px;
+  color: var(--ink-0);
+}
+.gs-host {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gs-empty {
+  font-size: 13px;
+  color: var(--ink-2);
+  text-align: center;
+  padding: 20px 0;
+}
+.newgame input {
+  width: 100%;
+  font-family: var(--sans);
+  font-size: 15px;
+  color: var(--ink-0);
+  background: rgba(168, 178, 200, 0.05);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  padding: 11px 13px;
+}
+.newgame input::placeholder {
+  color: var(--ink-3);
+}
+.newgame input:focus {
+  outline: none;
+  border-color: var(--ink-2);
+  background: rgba(168, 178, 200, 0.08);
+}
+
+.actions {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.again {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  background: none;
+  border: none;
+  transition: color 0.15s;
+}
+.again:hover {
+  color: var(--ink-0);
+  text-decoration: underline;
+}
+
+/* seed sheet */
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgba(2, 3, 8, 0.62);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+}
+.sheet {
+  width: 100%;
+  max-width: 420px;
+  background: linear-gradient(
+    180deg,
+    rgba(20, 28, 48, 0.96),
+    rgba(10, 15, 30, 0.98)
+  );
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  padding: 22px 20px 20px;
+}
+.sheet h3 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.14;
+  color: var(--ink-0);
+  margin-bottom: 8px;
+}
+.sheet .sub {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.sheet .primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  border-radius: 13px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #08111f;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+}
+.sheet .primary svg {
+  width: 15px;
+  height: 15px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+.sheet .secondary {
+  margin-top: 12px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  background: none;
+  border: none;
+  width: 100%;
+}
+.sheet .secondary u {
+  text-underline-offset: 3px;
+}
+
+/* invite dialog QR */
+.invite-qr-wrap {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.invite-qr-or {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.invite-qr {
+  background: #fff;
+  padding: 14px;
+  border-radius: 16px;
+  line-height: 0;
+}
+
+/* landing */
+.land {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 28px;
+}
+.land h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 42px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+  text-align: center;
+}
+.land h1 em {
+  font-style: italic;
+  color: var(--accent); /* pine emphasis, matching the chat's accent */
+}
+.land .sub {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-1);
+  text-align: center;
+}
+.land .eyebrow {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  text-align: center;
+  margin-bottom: 16px;
+}
+/* The mission line (sits between .sub and the CTA). Serif at a size between the
+   hero and the sub so it reads as a statement rather than more body copy, and it
+   reuses the hero's italic-accent emphasis so the two feel like one voice. */
+.land .mission {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+  color: var(--ink-0);
+  text-align: center;
+}
+.land .mission em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+/* ── Dark "threshold of the room" landing (2026-07-20) ───────────────────────
+   The front door now opens into the dark anonymous group chat (/c/GLOBAL), so
+   the landing wears the SAME palette — near-black w/ a blue accent — instead of
+   the retired paper/pine. It's token-driven: redefining the vars on the shell
+   re-skins the whole page (wordmark ring, serif hero, CTA, footer) in one move.
+   A fixed full-viewport backdrop carries a soft blue glow, like a light source
+   inside the room. */
+.app.landing {
+  --bg-0: #020308;
+  --surface: #0a1122;
+  --ink-0: #e8ecf4;
+  --ink-1: #a8b2c8;
+  --ink-2: #6a7590;
+  --ink-3: #3f485e;
+  --line: rgba(168, 178, 200, 0.08);
+  --line-strong: rgba(168, 178, 200, 0.14);
+  --accent: #6b9dff;
+  --winner: #b4d1ff;
+  --converged: #d8c28a;
+  --halo: rgba(107, 157, 255, 0.12);
+}
+.app.landing::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 72% 42% at 50% 36%, rgba(107, 157, 255, 0.14), transparent 66%),
+    radial-gradient(ellipse 100% 60% at 50% 108%, rgba(107, 157, 255, 0.05), transparent 72%),
+    #020308;
+}
+/* The micro-copy under the CTA reads too dim at --ink-3 on near-black — nudge it
+   up one step so "anonymous · no account" and "read the room" stay legible. */
+.app.landing .land .fine {
+  color: var(--ink-2);
+}
+/* CTA: a deep, confident blue on the dark ground — white text needs the contrast
+   the light accent fill can't provide. The white "beckon" beam still sweeps it. */
+.app.landing .btn {
+  background: linear-gradient(180deg, #5a8cf5, #315fc8);
+  border-color: rgba(107, 157, 255, 0.45);
+  color: #f2f6ff;
+  box-shadow: 0 12px 34px rgba(47, 95, 206, 0.34);
+}
+
+/* poll option editor */
+.opt-row {
+  margin-bottom: 9px;
+}
+.opt-input {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: rgba(2, 3, 8, 0.4);
+  color: var(--ink-0);
+  font-family: var(--sans);
+  font-weight: 300;
+  font-size: 13.5px;
+  outline: none;
+}
+.opt-input:focus {
+  border-color: rgba(107, 157, 255, 0.4);
+}
+.opt-input::placeholder {
+  color: var(--ink-3);
+}
+.opt-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 4px 0 18px;
+}
+.opt-tools .tool {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.actions-row .ghost {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+.actions-row .start-voting {
+  padding: 13px 20px;
+  border-radius: 11px;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  color: #08111f;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* history timeline */
+.tl-item {
+  position: relative;
+  padding-left: 26px;
+  padding-bottom: 22px;
+}
+.tl-item::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: 0;
+  width: 1px;
+  background: var(--line-strong);
+}
+.tl-item:last-child::before {
+  display: none;
+}
+.tl-item .node {
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--converged);
+  background: var(--bg-0);
+}
+.tl-item .node::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--converged);
+  box-shadow: 0 0 6px var(--converged);
+}
+.tl-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.tl-round {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  white-space: nowrap;
+}
+.tl-status {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--converged);
+  white-space: nowrap;
+}
+.tl-winner {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--ink-0);
+  margin-bottom: 9px;
+}
+.tl-meta {
+  font-family: var(--mono);
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.tl-conv {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--converged);
+  line-height: 1.5;
+}
+.convlink {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-1);
+  margin-top: 14px;
+  cursor: pointer;
+  width: 100%;
+  background: none;
+}
+.convlink span {
+  color: var(--accent);
+}
+
+/* ── SEO / keyword landing pages ── */
+.seo-hero {
+  padding: 28px 0 8px;
+}
+.seo-hero .eyebrow {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 14px;
+}
+.seo-h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+}
+.seo-sub {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--ink-1);
+  margin: 16px 0 22px;
+}
+.seo-hero .btn {
+  width: 100%;
+}
+.seo-hero .fine {
+  margin-top: 12px;
+}
+.seo-section {
+  padding: 26px 0;
+  border-top: 1px solid var(--line);
+}
+.seo-h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 24px;
+  line-height: 1.18;
+  color: var(--ink-0);
+  margin-bottom: 12px;
+}
+.seo-body {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+.seo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.seo-card {
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(
+    180deg,
+    rgba(18, 26, 46, 0.5),
+    rgba(8, 12, 24, 0.6)
+  );
+  border-radius: 14px;
+  padding: 16px;
+}
+.seo-card .ct {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 7px;
+}
+.seo-card .cd {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+.seo-proof {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  text-align: center;
+  padding: 22px 0;
+  line-height: 1.7;
+}
+.faq-item {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.faq-item:last-child {
+  border-bottom: none;
+}
+.faq-q {
+  font-size: 14.5px;
+  font-weight: 400;
+  color: var(--ink-0);
+  margin-bottom: 6px;
+}
+.faq-a {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+.seo-closing {
+  padding: 30px 0 10px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+}
+
+/* generic centered status (loading / done / error) */
+.center-status {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  text-align: center;
+  padding: 0 10px;
+}
+.center-status .big {
+  font-family: var(--serif);
+  font-size: 24px;
+  color: var(--ink-0);
+}
+.center-status .small {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.err-text {
+  color: #ff8b8b;
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ── inline consent (sign-in-wrap) under the Create button ── */
+.consent {
+  margin-top: 12px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+  text-align: center;
+}
+.consent a {
+  color: var(--ink-2);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.consent a:hover {
+  color: var(--accent);
+}
+
+/* ── legal pages (privacy / terms) — rendered from docs/legal/*.md ── */
+.legal {
+  padding: 24px 0 48px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink-1);
+}
+.legal h1 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.12;
+  color: var(--ink-0);
+  margin-bottom: 14px;
+}
+.legal h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 21px;
+  color: var(--ink-0);
+  margin: 28px 0 10px;
+}
+.legal h3 {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-0);
+  margin: 18px 0 8px;
+}
+.legal p {
+  margin: 10px 0;
+  color: var(--ink-1);
+}
+.legal strong {
+  color: var(--ink-0);
+  font-weight: 500;
+}
+.legal a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+.legal ul,
+.legal ol {
+  margin: 10px 0;
+  padding-left: 20px;
+}
+.legal li {
+  margin: 5px 0;
+  color: var(--ink-1);
+}
+.legal hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 24px 0;
+}
+.legal em {
+  color: var(--ink-2);
+}
+.legal table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 14px 0;
+  font-size: 12.5px;
+  display: block;
+  overflow-x: auto;
+}
+.legal th,
+.legal td {
+  border: 1px solid var(--line-strong);
+  padding: 8px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+.legal th {
+  color: var(--ink-0);
+  font-weight: 500;
+  background: rgba(18, 26, 46, 0.5);
+}
+.legal td {
+  color: var(--ink-2);
+}
+.legal code {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-0);
+}
+
+/* ── blog index ── */
+.blog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.blog-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.blog-row:last-child {
+  border-bottom: none;
+}
+.blog-row svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: var(--ink-3);
+  stroke-width: 1.5;
+}
+.blog-row:hover svg {
+  stroke: var(--accent);
+}
+.blog-row-main {
+  flex: 1;
+  min-width: 0;
+}
+.blog-row-title {
+  font-size: 15px;
+  line-height: 1.3;
+  color: var(--ink-0);
+  margin-bottom: 5px;
+}
+.blog-row-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin-bottom: 6px;
+}
+.blog-row-meta {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ── blog post ── */
+.blog-post {
+  padding: 16px 0 48px;
+}
+.blog-back {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  margin-bottom: 18px;
+}
+.blog-back:hover {
+  color: var(--accent);
+}
+.blog-title {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  color: var(--ink-0);
+}
+.blog-byline {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 12px 0 20px;
+}
+.blog-h2 {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 23px;
+  line-height: 1.18;
+  color: var(--ink-0);
+  margin: 28px 0 10px;
+}
+.blog-h3 {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink-0);
+  margin: 20px 0 8px;
+}
+.blog-p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink-1);
+  margin: 12px 0;
+}
+.blog-ul {
+  margin: 12px 0;
+  padding-left: 20px;
+}
+.blog-ul li {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--ink-1);
+  margin: 6px 0;
+}
+/* Answer-first opinion page: the ranked "group's top take" callout + the ranked
+   list. Leads with the extractable answer (for humans, search snippets, and AI
+   answer-engines) before the full ranking. */
+.seo-answer {
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--accent);
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+  margin: 20px 0 4px;
+  background: var(--surface);
+}
+.seo-answer .lbl {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.seo-answer blockquote {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.3;
+  color: var(--ink-0);
+}
+.seo-answer .fine {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+/* Warm feed cards — the same look as the chat's LIVE RANKING (a #N rank badge
+   beside each take), so the SEO page reads as a static twin of the room. */
+.seo-ranked {
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+  counter-reset: rank;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.seo-ranked li {
+  counter-increment: rank;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-0);
+}
+.seo-ranked li::before {
+  content: "#" counter(rank);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  min-width: 2.3em;
+  flex: none;
+}
+/* Hub → spoke: the list of sub-threads on /opinions/<code>, each a link to its
+   own per-thread page. */
+.seo-threads {
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.seo-threads a {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-0);
+  text-decoration: none;
+  transition: border-color 120ms, background 120ms;
+}
+.seo-threads a:hover {
+  border-color: var(--accent);
+  background: var(--surface-2, var(--surface));
+}
+.seo-thread-count {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.blog-hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 26px 0;
+}
+.blog-diagram {
+  height: 1px;
+  background: var(--line);
+  margin: 22px 0;
+}
+.blog-cta {
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.5), rgba(8, 12, 24, 0.6));
+  border-radius: 14px;
+  padding: 18px;
+  margin: 22px 0;
+  text-align: center;
+}
+.blog-cta .blog-p {
+  margin-top: 0;
+  color: var(--ink-0);
+}
+.blog-cta .btn {
+  width: 100%;
+}
+.blog-foot {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+}
+.blog-foot .btn {
+  width: 100%;
+}
+
+/* ── interactive seed chips (hero of the paid landing pages) ── */
+.seed-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 18px;
+}
+/* Create-screen suggestion chips: collapse smoothly (fade + height shrink to
+   zero together via grid-rows 1fr→0fr) when the user starts typing, so the
+   Create button glides up instead of the layout jumping. The chips' margin
+   lives on the wrapper so it collapses with no leftover gap. */
+.seed-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  margin: 4px 0 18px;
+  transition: grid-template-rows 0.3s ease, opacity 0.22s ease, margin 0.3s ease;
+}
+.seed-collapse > .seed-chips {
+  overflow: hidden;
+  min-height: 0;
+  margin: 0;
+}
+.seed-collapse.collapsed {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin: 0;
+}
+.seed-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(18, 26, 46, 0.45), rgba(8, 12, 24, 0.55));
+  color: var(--ink-0);
+  font-size: 14.5px;
+  line-height: 1.3;
+  text-align: left;
+  transition: border-color 0.15s ease, transform 0.05s ease;
+}
+.seed-chip::after {
+  content: "→";
+  color: var(--ink-3);
+  font-size: 14px;
+}
+.seed-chip:hover {
+  border-color: var(--accent);
+}
+.seed-chip:hover::after {
+  color: var(--accent);
+}
+.seed-chip:active {
+  transform: scale(0.99);
+}
+
+/* ── persistent rail Invite (all phases incl. mid-voting) ── */
+.rail-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.rail-invite {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--ink-1);
+  font-size: 12px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.rail-invite svg {
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+}
+.rail-invite:hover {
+  border-color: var(--accent);
+  color: var(--ink-0);
+}
+.rail-invite:active {
+  transform: scale(0.97);
+}
+
+/* ── EN | ES language toggle (app-flow rail) ── */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.lang-opt {
+  padding: 4px 9px;
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+.lang-opt.on {
+  background: var(--accent);
+  color: #08111f;
+}
+.lang-opt:not(.on):hover {
+  color: var(--ink-1);
+}
+
+/* Safety net: long proposition text (now up to 300 chars) breaks instead of
+   overflowing horizontally on every surface it's shown. Vertical overflow is
+   handled per-surface (voting card scrolls; results/leader screens scroll with
+   the page). */
+.converged .ca,
+.rank-row .rt,
+.leader .la,
+.sa-text {
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   Motion — functional micro-interactions only (confirm an action,
+   guide the eye, reward the payoff). Subtle, 200–500ms, and killed
+   under prefers-reduced-motion. Deliberately NOT ambient decoration.
+   ============================================================ */
+
+/* Tactile press: every primary action "gives" when tapped. */
+.btn,
+.propose .submit {
+  transition: transform 0.12s ease, box-shadow 0.25s ease, background 0.2s ease;
+}
+.btn:active:not(:disabled),
+.propose .submit:active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* Vote options already transition; deepen the press a touch. */
+.prop:active {
+  transform: scale(0.965);
+}
+
+/* A gated advance CTA the moment it unlocks (host can now start/end a
+   phase): a clockwise beam sweeps the border + a soft breathing glow —
+   "this just became tappable." Guiding the eye = purposeful, not decor. */
+/* The light travels by sweeping the conic-gradient's ANGLE around a FIXED
+   border ring — not by rotating the ring element (which would spin the whole
+   rounded-rect like clock hands). Needs @property so the angle interpolates. */
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+@keyframes om-beam-spin {
+  to {
+    --beam-angle: 360deg;
+  }
+}
+@keyframes om-ready-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 28px rgba(107, 157, 255, 0.22);
+  }
+  50% {
+    box-shadow: 0 0 46px rgba(107, 157, 255, 0.44);
+  }
+}
+.btn.ready {
+  position: relative;
+  animation: om-ready-breathe 2.4s ease-in-out infinite;
+}
+.btn.ready::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.9) 302deg,
+    var(--accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: om-beam-spin 2.6s linear infinite;
+  pointer-events: none;
+}
+
+/* Proposition submitted: the confirmation pops in — you feel it land. */
+@keyframes om-pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(4px);
+  }
+  60% {
+    transform: scale(1.012) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.idea-in {
+  animation: om-pop-in 0.34s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Convergence payoff — the shareable peak: the winning card rises in with
+   a gold glow and a single clockwise shine sweeps its border, then settles. */
+@keyframes om-converge-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.975);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes om-converge-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(216, 194, 138, 0);
+  }
+  35% {
+    box-shadow: 0 0 42px rgba(216, 194, 138, 0.45);
+  }
+  100% {
+    box-shadow: 0 0 24px rgba(216, 194, 138, 0.22);
+  }
+}
+@keyframes om-winner-shine {
+  0% {
+    opacity: 0;
+    --beam-angle: 0deg;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    --beam-angle: 360deg;
+  }
+}
+.converged {
+  position: relative;
+  animation: om-converge-in 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both,
+    om-converge-glow 1.7s ease-out 0.15s both;
+}
+.converged::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.85) 302deg,
+    var(--converged) 336deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: om-winner-shine 1.4s ease-out 0.25s both;
+  pointer-events: none;
+}
+
+/* Landing: a calm staggered entrance on first paint + a gentle breathing glow
+   on the single CTA to draw the eye to the one action. Functional (first
+   impression + conversion), not ambient decoration. */
+@keyframes om-cta-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 36px rgba(107, 157, 255, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 56px rgba(107, 157, 255, 0.5);
+  }
+}
+@keyframes om-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.land > div:first-child {
+  animation: om-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.land .sub {
+  animation: om-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.08s both;
+}
+/* Between .sub (0.08s) and .btn (0.16s) — the stagger walks down the page in
+   reading order, so the mission arrives just before the CTA it sets up. */
+.land .mission {
+  animation: om-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.12s both;
+}
+.land .fine {
+  animation: om-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.24s both;
+}
+.land .btn {
+  position: relative;
+  animation: om-rise 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) 0.16s both;
+}
+
+/* "Beckon" — the clockwise border-beam used as a single, moving "do this next"
+   cue. Each screen puts it (via state) on whichever element is the next action:
+   an empty field beckons → once you type it hands off to the button → then to
+   the next action. The landing CTA always beckons (one action on the page). */
+.beckon {
+  position: relative;
+}
+.beckon-w,
+.prop {
+  position: relative;
+}
+/* Button beam = WHITE light (the action to take). Vote cards beam too —
+   picking one IS the action. */
+.land .btn::before,
+.beckon-w::before,
+.prop::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 250deg,
+    rgba(255, 255, 255, 0.92) 302deg,
+    var(--accent) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: om-beam-spin 2.6s linear infinite;
+  pointer-events: none;
+}
+/* Textfield beam = BLUE light, persistent ("you can type here"). */
+.beckon::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: conic-gradient(
+    from var(--beam-angle),
+    transparent 0deg 248deg,
+    var(--accent) 304deg,
+    var(--winner) 330deg,
+    transparent 360deg
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: om-beam-spin 2.6s linear infinite;
+  pointer-events: none;
+}
+
+/* ---- App-wide functional entrances: each screen's content settles in on
+   arrival; the share dialog and the standings get proper reveals. All
+   om-rise-based, subtle, reduced-motion-safe. ---- */
+
+/* Create screen: staggered entrance (its Create button gets the ready-beam
+   via .btn.ready, wired in the component). */
+.center > div:first-child {
+  animation: om-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.center .ask {
+  animation: om-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) 0.07s both;
+}
+.center .seed-chips {
+  animation: om-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) 0.32s both;
+}
+.center .consent {
+  animation: om-rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) 0.22s both;
+}
+
+/* Name gate: gentle staggered entrance. */
+.center-status > * {
+  animation: om-rise 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.center-status > *:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.center-status > *:nth-child(3) {
+  animation-delay: 0.14s;
+}
+
+/* Leaderboard / round standings: rows reveal in a quick stagger. */
+.rank-row,
+.lb-row {
+  animation: om-rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.rank-row:nth-child(2),
+.lb-row:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.rank-row:nth-child(3),
+.lb-row:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.rank-row:nth-child(4),
+.lb-row:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.rank-row:nth-child(n + 5),
+.lb-row:nth-child(n + 5) {
+  animation-delay: 0.2s;
+}
+
+/* Share dialog: backdrop fades, the sheet rises up from the bottom. */
+@keyframes om-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes om-sheet-up {
+  0% {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+.scrim {
+  animation: om-fade-in 0.2s ease both;
+}
+.sheet {
+  animation: om-sheet-up 0.32s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn.ready,
+  .btn.ready::before,
+  .converged,
+  .converged::before,
+  .idea-in,
+  .land > div:first-child,
+  .land .sub,
+  .land .mission,
+  .land .fine,
+  .land .btn,
+  .center > div:first-child,
+  .center .ask,
+  .center .seed-chips,
+  .center .consent,
+  .center-status > *,
+  .rank-row,
+  .lb-row,
+  .land .btn::before,
+  .beckon,
+  .beckon::before,
+  .beckon-w,
+  .beckon-w::before,
+  .prop::before,
+  .scrim,
+  .sheet {
+    animation: none;
+  }
+  .seed-collapse {
+    transition: none;
+  }
+}

@@ -15,3 +15,9 @@ void unregisterHtmlSkipCallback() {}
 void registerHtmlLegalCallback(void Function(String page) onLegal) {}
 
 void unregisterHtmlLegalCallback() {}
+
+void registerHtmlCreateCallback(void Function(String target) onCreate) {}
+
+void unregisterHtmlCreateCallback() {}
+
+void signalFlutterFirstFrame() {}

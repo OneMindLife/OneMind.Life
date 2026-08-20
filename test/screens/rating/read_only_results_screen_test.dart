@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:onemind_app/l10n/generated/app_localizations.dart';
 import 'package:onemind_app/models/proposition.dart';
+import 'package:onemind_app/screens/rating/matches_results_view.dart';
 import 'package:onemind_app/screens/rating/read_only_results_screen.dart';
+import 'package:onemind_app/widgets/rating/proposition_card.dart';
 import 'package:onemind_app/widgets/rating/rating_widget.dart';
+import 'package:onemind_app/widgets/rating/stacked_proposition_card.dart';
 
 void main() {
   group('ReadOnlyResultsScreen', () {
@@ -128,6 +131,54 @@ void main() {
       expect(find.text('Proposition 2'), findsOneWidget);
     });
 
+    testWidgets('matches mode renders the ranked results view, not the grid',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          ReadOnlyResultsScreen(
+            // Pre-sorted desc by finalRating (winner first), as the service returns.
+            propositions: [
+              Proposition(
+                id: 1,
+                roundId: 1,
+                content: 'Winner idea',
+                createdAt: DateTime.now(),
+                finalRating: 88.0,
+              ),
+              Proposition(
+                id: 2,
+                roundId: 1,
+                content: 'Runner up',
+                createdAt: DateTime.now(),
+                finalRating: 60.0,
+              ),
+              Proposition(
+                id: 3,
+                roundId: 1,
+                content: 'Third idea',
+                createdAt: DateTime.now(),
+                finalRating: 30.0,
+              ),
+            ],
+            roundNumber: 1,
+            ratingMode: 'matches',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The ranked results view, not the 0–100 grid.
+      expect(find.byType(MatchesResultsView), findsOneWidget);
+      expect(find.byType(RatingWidget), findsNothing);
+      // Every idea ranked, with positions shown.
+      expect(find.text('Winner idea'), findsOneWidget);
+      expect(find.text('Runner up'), findsOneWidget);
+      expect(find.text('Third idea'), findsOneWidget);
+      expect(find.text('1'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+    });
+
     testWidgets('handles null finalRating by defaulting to 50', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -206,28 +257,34 @@ void main() {
     // other where the visible card is decided by paint order.
     group('near-tie stacking (NCDD R1 regression)', () {
       testWidgets(
-        'two propositions <1 point apart render only the higher-rated as '
-        'the visible card text',
+        'PRODUCTION DATA FLOW (proposition_service sort: winner first): '
+        'visible card in near-tie stack is the higher-rated one',
         (tester) async {
+          // Mirrors the actual prod flow — proposition_service.dart
+          // returns propositions sorted by rating desc (winner first).
+          // The original 2026-05-01 NCDD demo bug: this test (with text-
+          // findability assertion) used to pass even when the bug was
+          // present, because BOTH cards exist in the widget tree (one
+          // hidden via opacity 0). Strengthened to inspect the actual
+          // visible card via StackedPropositionCard's inner
+          // PropositionCard.
           await tester.pumpWidget(
             createTestWidget(
               ReadOnlyResultsScreen(
                 propositions: [
-                  // Listed in non-rating order to confirm placement
-                  // order does not influence visibility
                   Proposition(
-                    id: 1,
-                    roundId: 1,
+                    id: 13209,
+                    roundId: 2405,
+                    content: 'ingrained patterns',
+                    createdAt: DateTime.now(),
+                    finalRating: 100.0,
+                  ),
+                  Proposition(
+                    id: 13197,
+                    roundId: 2405,
                     content: 'DEI question',
                     createdAt: DateTime.now(),
                     finalRating: 99.91,
-                  ),
-                  Proposition(
-                    id: 2,
-                    roundId: 1,
-                    content: 'ingrained patterns',
-                    createdAt: DateTime.now(),
-                    finalRating: 100.00,
                   ),
                 ],
                 roundNumber: 1,
@@ -236,14 +293,136 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          // The higher-rated card's content must be visible. The
-          // runner-up may or may not have its content visible depending
-          // on whether the StackedPropositionCard exposes both —
-          // the load-bearing assertion is that the WINNER is the
-          // surface card.
-          expect(find.text('ingrained patterns'), findsOneWidget,
-              reason: 'higher-rated proposition must be visibly on top in '
-                  'the stack');
+          // Exactly one StackedPropositionCard for the near-tied pair.
+          final stacked = find.byType(StackedPropositionCard);
+          expect(stacked, findsOneWidget,
+              reason: 'the two near-tied props must render as a single '
+                  'stacked card (not two cards painted on top of each '
+                  'other)');
+
+          // Inspect the StackedPropositionCard's inner PropositionCard
+          // — this is the actually-visible card, distinct from any
+          // hidden (opacity-0) PropositionCard sibling.
+          final innerVisible = tester.widget<PropositionCard>(
+            find.descendant(
+              of: stacked,
+              matching: find.byType(PropositionCard),
+            ),
+          );
+          expect(innerVisible.proposition.content, 'ingrained patterns',
+              reason: 'higher-rated proposition must be the visible card '
+                  'inside the stacked card; this is the regression that '
+                  'broke at the NCDD demo');
+
+          // Also confirm the StackedPropositionCard.defaultCard prop —
+          // belt-and-suspenders, in case the inner-card check ever moves.
+          final stackedWidget =
+              tester.widget<StackedPropositionCard>(stacked);
+          expect(stackedWidget.defaultCard.content, 'ingrained patterns');
+        },
+      );
+
+      testWidgets(
+        'right chevron cycles from winner to runner-up; left cycles back',
+        (tester) async {
+          // Hidden (opacity-0) sibling cards from non-default
+          // iterations sit at nearly the same Y as the visible
+          // StackedPropositionCard in near-tie scenarios. Without
+          // IgnorePointer wrapping, those siblings intercept taps
+          // before they reach the chevrons. Surfaced 2026-05-02:
+          // chevron taps did nothing on the read-only results screen.
+          await tester.pumpWidget(
+            createTestWidget(
+              ReadOnlyResultsScreen(
+                propositions: [
+                  Proposition(
+                    id: 1,
+                    roundId: 1,
+                    content: 'WINNER',
+                    createdAt: DateTime.now(),
+                    finalRating: 100.0,
+                  ),
+                  Proposition(
+                    id: 2,
+                    roundId: 1,
+                    content: 'RUNNER_UP',
+                    createdAt: DateTime.now(),
+                    finalRating: 99.91,
+                  ),
+                ],
+                roundNumber: 1,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          PropositionCard innerCard() => tester.widget<PropositionCard>(
+                find.descendant(
+                  of: find.byType(StackedPropositionCard),
+                  matching: find.byType(PropositionCard),
+                ),
+              );
+
+          expect(innerCard().proposition.content, 'WINNER',
+              reason: 'starts on the higher-rated card');
+
+          // Tap right chevron → should cycle to runner-up
+          await tester.tap(find.byIcon(Icons.chevron_right));
+          await tester.pumpAndSettle();
+          expect(innerCard().proposition.content, 'RUNNER_UP',
+              reason: 'right chevron must cycle past hidden sibling '
+                  'taps to the next card');
+
+          // Tap left chevron → should cycle back to winner
+          await tester.tap(find.byIcon(Icons.chevron_left));
+          await tester.pumpAndSettle();
+          expect(innerCard().proposition.content, 'WINNER',
+              reason: 'left chevron must cycle backward');
+        },
+      );
+
+      testWidgets(
+        'visible card holds whether props are passed in either order',
+        (tester) async {
+          // Reverse insertion order — winner comes second. The
+          // visible card must STILL be the winner.
+          await tester.pumpWidget(
+            createTestWidget(
+              ReadOnlyResultsScreen(
+                propositions: [
+                  Proposition(
+                    id: 1,
+                    roundId: 1,
+                    content: 'lower',
+                    createdAt: DateTime.now(),
+                    finalRating: 99.91,
+                  ),
+                  Proposition(
+                    id: 2,
+                    roundId: 1,
+                    content: 'higher',
+                    createdAt: DateTime.now(),
+                    finalRating: 100.0,
+                  ),
+                ],
+                roundNumber: 1,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          final stacked = find.byType(StackedPropositionCard);
+          expect(stacked, findsOneWidget);
+
+          final innerVisible = tester.widget<PropositionCard>(
+            find.descendant(
+              of: stacked,
+              matching: find.byType(PropositionCard),
+            ),
+          );
+          expect(innerVisible.proposition.content, 'higher',
+              reason: 'insertion order must not influence which card is '
+                  'visible — the higher-rated wins regardless');
         },
       );
 

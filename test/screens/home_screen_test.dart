@@ -9,6 +9,7 @@ import 'package:onemind_app/models/models.dart';
 import 'package:onemind_app/providers/providers.dart';
 import 'package:onemind_app/providers/chat_providers.dart';
 import 'package:onemind_app/screens/home/home_screen.dart';
+import 'package:onemind_app/screens/create/create_chat_wizard.dart';
 import 'package:onemind_app/services/chat_service.dart';
 import 'package:onemind_app/services/participant_service.dart';
 import 'package:onemind_app/services/auth_service.dart';
@@ -167,6 +168,7 @@ void main() {
     List<JoinRequest> pendingRequests = const [],
     Chat? officialChat,
     List<PublicChatSummary>? topPublicSuggestions,
+    bool autoCreate = false,
   }) {
     return ProviderScope(
       overrides: [
@@ -193,7 +195,7 @@ void main() {
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         locale: const Locale('en'),
-        home: const HomeScreen(),
+        home: HomeScreen(autoCreate: autoCreate),
       ),
     );
   }
@@ -234,6 +236,71 @@ void main() {
         expect(find.byType(FloatingActionButton), findsOneWidget);
       });
 
+    });
+
+    // The /create route (landing "Try It Free") renders HomeScreen(autoCreate:
+    // true), which must open the wizard ON TOP of Home so the wizard's
+    // pop-with-result is handled by Home (open chat + refresh) rather than
+    // popping into a blank stack. Regression guard for the blank-screen bug.
+    group('autoCreate (/create route)', () {
+      testWidgets('opens the Create Chat wizard on top of Home', (tester) async {
+        await tester.pumpWidget(createTestWidget(autoCreate: true));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CreateChatWizard), findsOneWidget);
+        // Home is still the base beneath the wizard's full-screen route (offstage)
+        // — so the wizard's pop returns to Home, not a blank stack.
+        expect(find.byType(HomeScreen, skipOffstage: false), findsOneWidget);
+      });
+
+      testWidgets('does NOT auto-open the wizard by default', (tester) async {
+        await tester.pumpWidget(createTestWidget());
+        await tester.pumpAndSettle();
+
+        expect(find.byType(CreateChatWizard), findsNothing);
+      });
+
+      testWidgets(
+          'wizard Always Active starts immediately (no start choice)',
+          (tester) async {
+        await tester.pumpWidget(createTestWidget(autoCreate: true));
+        await tester.pumpAndSettle();
+
+        // Step 1 (question): name it, then Continue.
+        await tester.enterText(find.byType(TextFormField).first, 'Test');
+        await tester.pump();
+        await tester.tap(find.text('Continue').hitTestable());
+        await tester.pumpAndSettle();
+
+        // Step 2 (visibility): Continue.
+        await tester.tap(find.text('Continue').hitTestable());
+        await tester.pumpAndSettle();
+
+        // Step 3 (schedule mode, Always Active default): Continue.
+        await tester.tap(find.text('Continue').hitTestable());
+        await tester.pumpAndSettle();
+
+        // Always Active SKIPS the schedule-details screen entirely (nothing
+        // to configure — the chat starts the moment it's created): the next
+        // step is timing ("How fast?"), no start-choice anywhere.
+        expect(find.text('How long for proposing?'), findsOneWidget);
+        expect(find.text('When should it start?'), findsNothing);
+        expect(find.text('Right away'), findsNothing);
+        expect(find.text('At a fixed time'), findsNothing);
+        expect(find.text('Start Date & Time'), findsNothing);
+
+        // Step 5: the dedicated First-deadline step follows timing, so the
+        // cadence question always knows the chosen duration.
+        await tester.tap(find.text('Continue').hitTestable());
+        await tester.pumpAndSettle();
+        expect(find.text('First deadline'), findsOneWidget);
+        expect(find.text('Your chat starts as soon as you create it.'),
+            findsOneWidget);
+        expect(find.text('When should the first phase end?'), findsOneWidget);
+        // Default 12h durations -> the am/pm rhythm chip; Full duration is
+        // the default (no cadence).
+        expect(find.text('3 AM / 3 PM rhythm'), findsOneWidget);
+      });
     });
 
     // The redesigned empty state replaces the old "Looking for more" card

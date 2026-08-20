@@ -1,0 +1,36 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e12]
+  - generic [ref=e13]:
+    - banner [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img "OneMind" [ref=e17]
+          - generic [ref=e18]: OneMind
+          - generic [ref=e19]: ·
+          - generic [ref=e20]: Global
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e24]: "2"
+            - generic [ref=e25]: here
+          - button "Invite" [ref=e26] [cursor=pointer]
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - text: The record · winners kept
+        - generic [ref=e32]: "0"
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - generic [ref=e36]: Narrowing to one
+          - generic [ref=e38]: 1 of 6 matches
+        - generic [ref=e39]:
+          - button "Mental health awareness sessions in schools and universities is important Back this" [ref=e62] [cursor=pointer]:
+            - generic [ref=e41]: Mental health awareness sessions in schools and universities is important
+            - generic [ref=e42]: Back this
+          - button "Social media is rising all over the world and so is most people's ego's. Back this" [ref=e63] [cursor=pointer]:
+            - generic [ref=e44]: Social media is rising all over the world and so is most people's ego's.
+            - generic [ref=e45]: Back this
+        - generic [ref=e46]:
+          - button "Too close" [ref=e47] [cursor=pointer]
+          - button "Skip" [ref=e48] [cursor=pointer]
+    - generic [ref=e59]:
+      - generic [ref=e60]: Voting
+      - generic [ref=e61]: Round ends in 38:33

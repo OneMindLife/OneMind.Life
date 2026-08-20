@@ -4,6 +4,7 @@ import 'package:onemind_app/providers/notifiers/chat_detail_notifier.dart';
 
 import '../../fixtures/chat_fixtures.dart';
 import '../../fixtures/participant_fixtures.dart';
+import '../../fixtures/proposition_fixtures.dart';
 
 void main() {
   group('RatingSkip model', () {
@@ -955,6 +956,80 @@ void main() {
 
       expect(state1, isNot(equals(state2)));
       expect(state1, equals(state3));
+    });
+  });
+
+  group('Matches progress bar (ratingProgressPercent)', () {
+    Chat matchesChat() =>
+        Chat.fromJson({...ChatFixtures.json(), 'rating_mode': 'matches'});
+
+    test('matches mode uses done / eligible raters', () {
+      final state = ChatDetailState(
+        chat: matchesChat(),
+        matchesDoneRaters: 2,
+        matchesEligibleRaters: 3,
+      );
+      expect(state.ratingProgressPercent, 67); // round(2/3 * 100)
+    });
+
+    test('matches mode is 0 when there are no eligible raters', () {
+      final state = ChatDetailState(
+        chat: matchesChat(),
+        matchesDoneRaters: 0,
+        matchesEligibleRaters: 0,
+      );
+      expect(state.ratingProgressPercent, 0);
+    });
+
+    test('matches mode is 100 when all eligible raters are done', () {
+      final state = ChatDetailState(
+        chat: matchesChat(),
+        matchesDoneRaters: 4,
+        matchesEligibleRaters: 4,
+      );
+      expect(state.ratingProgressPercent, 100);
+    });
+
+    test('grid mode ignores matches counters (uses per-proposition coverage)',
+        () {
+      final gridChat = Chat.fromJson(ChatFixtures.json()); // default = grid
+      final state = ChatDetailState(
+        chat: gridChat,
+        participants: [
+          ParticipantFixtures.model(id: 1),
+          ParticipantFixtures.model(id: 2),
+          ParticipantFixtures.model(id: 3),
+          ParticipantFixtures.model(id: 4),
+        ],
+        // 3+ props → normal self-exclusion (threshold = raters − 1). With
+        // <= 2 props conditional self-inclusion would make the threshold 4.
+        propositions: [
+          PropositionFixtures.model(id: 1),
+          PropositionFixtures.model(id: 2),
+          PropositionFixtures.model(id: 3),
+        ],
+        minRatingsPerProp: 1, // grid: 1 / threshold(3) = 33%
+        matchesDoneRaters: 1, // would be 100% if the matches branch leaked in
+        matchesEligibleRaters: 1,
+      );
+      expect(state.ratingProgressPercent, 33);
+    });
+
+    test('grid mode 2-prop round uses the CSI threshold (raters − 0)', () {
+      final gridChat = Chat.fromJson(ChatFixtures.json());
+      final state = ChatDetailState(
+        chat: gridChat,
+        participants: [
+          ParticipantFixtures.model(id: 1),
+          ParticipantFixtures.model(id: 2),
+        ],
+        propositions: [
+          PropositionFixtures.model(id: 1),
+          PropositionFixtures.model(id: 2),
+        ],
+        minRatingsPerProp: 1, // 1 / threshold(2) = 50%, not 1/1 = 100%
+      );
+      expect(state.ratingProgressPercent, 50);
     });
   });
 }

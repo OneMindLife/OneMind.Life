@@ -13,6 +13,11 @@ The high-stakes places where this has burned past sessions:
 
 A 30-second grep beats an uninformed answer. If the user pushes back on something runtime-ish, default to "let me check" and pull up the actual code.
 
+**Thresholds/constraints questions** (minimums, advance thresholds, caps,
+denominators, deadline rules): read `docs/CONSENSUS_THRESHOLDS.md` FIRST — it
+maps every numeric rule to its formula, location, and rationale (compiled from
+a full audit 2026-07-04). Update it whenever you change one.
+
 ## Build & Test Commands
 
 ```bash
@@ -70,7 +75,7 @@ final myChatsProvider = StateNotifierProvider<MyChatsNotifier, AsyncValue<MyChat
 
 **State Management**: Riverpod with `AsyncValue<T>` for loading/error/data states. Notifiers extend `StateNotifier<AsyncValue<State>>`.
 
-**Realtime Updates**: Postgres Change subscriptions filtered by user_id. Notifiers debounce refreshes to handle race conditions where events fire before transactions commit.
+**Realtime Updates**: Postgres Change subscriptions filtered by user_id. Notifiers debounce refreshes to handle race conditions where events fire before transactions commit. See "Performance & Realtime Patterns" below for the patching architecture.
 
 **Optimistic Updates**: Update local state immediately, revert on API failure:
 ```dart
@@ -131,6 +136,134 @@ setUpAll(() => registerFallbackValues());
 - Realtime subscriptions use `PostgresChangeFilter` on user_id or chat_id
 - Services return domain models, not raw JSON
 - Migrations live in `supabase/` with 799 pgtap tests
+
+## Performance & Realtime Patterns
+
+These patterns absorb the multi-user cascade load. Don't undo them without
+re-running the load simulator (`tools/load-sim/simulator.js`) and watching
+`perf_logs` — the original 18-query fan-out turned a single host pause
+into 13s of state-drain at 4-device scale.
+
+**Doing perf work?** Read `docs/PERFORMANCE_TESTING.md` first. It has the
+full per-run protocol, the box's RAM ceiling (60 bots), the `RAISE LOG`
+instrumentation pattern that survives `statement_timeout` rollback, and
+the worked example from the L1 cascade fix. That doc exists specifically
+so a new Claude Code session can be productive in 5 minutes instead of
+re-deriving everything from logs.
+
+**Writing a trigger that mutates another table?** It MUST be
+`SECURITY DEFINER SET search_path = public, pg_temp`. Without DEFINER,
+when the trigger fires from user-initiated DML, the cross-table
+INSERT/UPDATE/DELETE runs as `authenticated`/`anon` and gets silently
+filtered to zero rows by RLS (no error, no log). We hit this twice on
+2026-05-02 (L1 denorm trigger; activity triggers).
+`supabase/tests/107_trigger_security_audit_test.sql` enforces this as a
+build-time lint — any new non-DEFINER trigger function with cross-table
+DML fails the suite. If your trigger genuinely doesn't write to other
+tables (RAISE-only validators, BEFORE-row triggers that just modify
+NEW), add the function name to the allowlist in that test with a
+one-line reason.
+
+**Bootstrap RPC (`get_chat_detail_bootstrap`)** — `ChatDetailNotifier._loadData`
+makes one RPC call returning a full JSONB snapshot of every field the chat
+detail screen needs (chat, cycle, round, propositions, participants,
+counters, previous winners, etc.). The mapping into typed models lives in
+`lib/models/chat_detail_bootstrap.dart`. When you add a new field to the
+chat detail UI, add it here too — don't fan out to a separate query.
+
+⚠️ **The roster is CAPPED (migration `20260811141931`).** `participants` is
+only returned when a chat has ≤ **500** active participants; above that the
+array is empty and you must use **`participants_count`**. Why: the global
+room accumulated 2,987 active participants (nobody ever leaves), which made
+this response **1.2 MB — 97.5% of it the roster** — and the wedge polls this
+RPC **every 3s**, so each open tab pulled ~24 MB/min for a list `GlobalChat`
+never reads. Measured 1,198,757 B → 30,090 B. `session_token` is also
+stripped from the emitted rows (it's a credential; `my_participant` still
+carries the viewer's own). If you add UI that needs a big room's roster,
+paginate it in a separate query — do NOT raise the cap.
+
+**Targeted Realtime Patching** — most realtime subscriptions in
+`ChatDetailNotifier` parse the payload and merge state in place rather than
+refetching. The handlers are private:
+- `_onChatUpdate` — merges via `Chat.mergeRealtimePayload`, preserves
+  translated_* fields (Realtime payloads don't carry them); refetches only
+  when source text for a translated column changed
+- `_onPropositionRealtime` — splices the propositions list (INSERT/UPDATE/DELETE)
+- `_onRoundSkipRealtime` / `_onRatingSkipRealtime` / `_onAffirmationRealtime`
+  — adjust counts + flags + participant sets in place
+- `_onRoundChange` — patches phase/timer in place, refetches on new-round
+  INSERT
+- `grid_rankings` still calls `_scheduleRefresh()` because the
+  participants_who_rated set depends on a per-user cap that's hard to derive
+  incrementally. **NOT a bug:** `grid_rankings` is deliberately ABSENT from the
+  `supabase_realtime` publication, so this subscription never actually fires —
+  grid participation updates ride lower-frequency events (rounds / propositions
+  / rating_skips → `_scheduleRefresh`). This is intentional: its callback is a
+  full bootstrap refetch, so broadcasting every grid placement (up to 7/rater ×
+  every viewer) would re-create the original cascade. Do NOT add `grid_rankings`
+  to the publication without first converting the callback to a cheap targeted
+  handler AND re-running the load simulator. (`rating_completions` IS in the
+  publication — safe because completions fire at most once per rater per round,
+  not per placement. Since 2026-07-05 grid raters write the marker too (in
+  `RatingNotifier.submitRankings`, best-effort — bootstrap cap-derivation stays
+  the fallback), and the callback `_onRatingCompletionRealtime` patches
+  `participantsWhoRated` in place for all modes — that's what flips the
+  participants-sheet Done tags live during rating — plus the cheap
+  `_refreshMatchesProgress` RPC in matches mode only.)
+
+If you add a new realtime source, default to a payload-merging handler.
+Refetching on every event was the root cause of the original cascade.
+
+**Per-cycle home subscriptions** — `MyChatsNotifier` opens one filtered
+`rounds` channel per cycle the user is in (key: `dashboard_rounds:<cycleId>`),
+reconciled from `state.dashboardChats` after every refresh. Do NOT replace
+this with a single global subscription — that's what we removed; every
+round change platform-wide woke every Home-mounted client.
+
+**LRP rating-cascade — denormalized `propositions.rating_count`** — when
+phase flips to rating, every viewer's UI fires
+`get_least_rated_propositions` (LRP) in the same instant. The original
+LRP did `LEFT JOIN (SELECT proposition_id, COUNT(*) ... FROM
+grid_rankings WHERE round_id = X GROUP BY proposition_id)` — an inline
+aggregate over a table being concurrently INSERTed into, with RLS
+planning per row. Under 14-way concurrency it slowed 60-100ms → 1500ms;
+under 50-way concurrency it tipped past 8s and a chunk of bots got
+sqlstate 57014. We replaced the aggregate with a denormalized
+`propositions.rating_count` column maintained by
+`sync_proposition_rating_count_trg` on `grid_rankings` AFTER
+INSERT/DELETE. LRP now does a single index scan on `propositions(round_id)`,
+no JOIN. Verified at 50-bot scale: baseline avg 22 timeouts → 0
+across 3 runs, max LRP 7.9s → 1.2s. See migration
+`20260502120000_denormalize_rating_count.sql`. **Do not** restore the
+inline aggregate — and if you add new aggregations to LRP, denormalize
+them too.
+
+**Concurrent-load mutex** — `_isLoading` + `_pendingRefresh` on
+`ChatDetailNotifier` collapses overlapping `_loadData` calls within a
+single client. Only one bootstrap RPC runs at a time; if more events
+arrive during the load, one drain happens after. Don't add a parallel
+load path that bypasses this.
+
+**PerfLogger observability**
+
+- Defaults to `kDebugMode` (silent in production)
+- Opt-in via URL param: append `?perflog=1` to any path. The flag sticks
+  in SharedPreferences for the rest of the tab session — append `?perflog=0`
+  to turn it off
+- Used by the load simulator (`--perflog=true`) to capture per-bot timing
+  during stress runs without billing every real user for log writes
+- `correlation_id` threads through `PerfLogger.start/end` on the client
+  and matching `log_perf` calls inside `host_resume_chat` /
+  `skip_rating_with_cleanup` so a cross-tier timeline is reconstructable
+  from `SELECT * FROM perf_logs WHERE correlation_id = X ORDER BY created_at`
+
+**Load simulator** — `tools/load-sim/simulator.js` spawns N headless
+Playwright Chromium contexts, each a fresh anonymous Supabase user.
+Joins, optionally proposes, optionally rates (via direct PostgREST upsert
+since the canvas-rendered grid is impractical to drive with gestures).
+Use `--perflog=true` plus `--users=20 --propose=true --rate=true
+--chat-id=<n>` for a full cascade test. The simulator captures every
+non-2xx response with URL + body preview.
 
 ## Models
 
@@ -390,7 +523,7 @@ psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "
     WHEN command LIKE '%get_edge_function_url%' THEN 'VAULT-BASED ✓'
     ELSE 'HARDCODED ✗'
   END as target
-  FROM cron.job WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats');"
+  FROM cron.job WHERE jobname IN ('process-timers', 'process-auto-refills', 'cleanup-inactive-chats', 'moltbook-agent-heartbeat');"
 
 # Verify vault secret points to local
 psql "postgresql://postgres:postgres@localhost:54322/postgres" -c "

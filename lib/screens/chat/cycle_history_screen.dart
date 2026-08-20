@@ -22,12 +22,28 @@ class CycleHistoryScreen extends ConsumerStatefulWidget {
   final int convergenceNumber;
   final bool showOngoingPlaceholder;
 
+  /// How many consecutive round wins lock in a permanent winner for this chat.
+  /// 1 = Instant mode (single round), 2 = Convergence mode. Controls both the
+  /// screen title (Winner vs Convergence) and which trailing rounds are
+  /// highlighted as the locked-in winner.
+  final int confirmationRoundsRequired;
+
+  /// Chat's rating mode — forwarded to [ReadOnlyResultsScreen] so a matches
+  /// chat's past rounds render the ranked leaderboard, not the 0–100 grid.
+  final String ratingMode;
+
+  /// Owning chat id — threaded into the per-winner read-aloud analytics event.
+  final int? chatId;
+
   const CycleHistoryScreen({
     super.key,
     required this.cycleId,
     required this.convergenceContent,
     required this.convergenceNumber,
     this.showOngoingPlaceholder = false,
+    this.confirmationRoundsRequired = 2,
+    this.ratingMode = 'grid',
+    this.chatId,
   });
 
   @override
@@ -90,6 +106,7 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
           propositions: propositions,
           roundNumber: round.customId,
           roundId: round.id,
+          ratingMode: widget.ratingMode,
           raterCount: raterCount,
         ),
       ),
@@ -103,7 +120,9 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.convergenceHistory(widget.convergenceNumber)),
+        title: Text(widget.confirmationRoundsRequired == 1
+            ? l10n.winnerHistory(widget.convergenceNumber)
+            : l10n.convergenceHistory(widget.convergenceNumber)),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -121,23 +140,35 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
       return Center(child: Text(l10n.noPropositionsToDisplay));
     }
 
-    // Determine if the last 2 rounds converged (same winner content)
-    bool lastTwoConverged = false;
-    if (!widget.showOngoingPlaceholder && rounds.length >= 2) {
-      final lastWinners = rounds[rounds.length - 1]['winners'] as List<RoundWinner>;
-      final prevWinners = rounds[rounds.length - 2]['winners'] as List<RoundWinner>;
-      if (lastWinners.length == 1 && prevWinners.length == 1) {
-        lastTwoConverged = lastWinners.first.content == prevWinners.first.content;
+    // Highlight the trailing rounds that locked in the winner. For a completed
+    // cycle that's the last `confirmationRoundsRequired` rounds, provided they
+    // share the same sole winner. Instant mode (1) highlights the final round;
+    // Convergence mode (2) highlights the final two matching rounds. A tie
+    // breaks the run, so it won't be counted.
+    int convergedRounds = 0;
+    if (!widget.showOngoingPlaceholder && rounds.isNotEmpty) {
+      final need = widget.confirmationRoundsRequired;
+      String? winnerContent;
+      for (var i = rounds.length - 1; i >= 0 && convergedRounds < need; i--) {
+        final w = rounds[i]['winners'] as List<RoundWinner>;
+        if (w.length != 1) break;
+        if (winnerContent == null) {
+          winnerContent = w.first.content;
+        } else if (w.first.content != winnerContent) {
+          break;
+        }
+        convergedRounds++;
       }
+      if (convergedRounds < need) convergedRounds = 0;
     }
 
     final items = <Widget>[];
     for (var index = 0; index < rounds.length; index++) {
       final round = rounds[index]['round'] as Round;
       final winners = rounds[index]['winners'] as List<RoundWinner>;
-      // Blue only if the last 2 rounds have the same sole winner (convergence)
-      final isConvergenceWinner = lastTwoConverged &&
-          index >= rounds.length - 2;
+      // Blue for the trailing locked-in run (size depends on the chat's mode).
+      final isConvergenceWinner =
+          convergedRounds > 0 && index >= rounds.length - convergedRounds;
       final winnerTexts = winners.isNotEmpty
           ? winners.map((w) => w.displayContent ?? '?').toList()
           : ['—'];
@@ -150,6 +181,9 @@ class _CycleHistoryScreenState extends ConsumerState<CycleHistoryScreen> {
             : l10n.roundWinner(round.customId),
         isConvergence: isConvergenceWinner,
         onTap: () => _openRoundResults(round),
+        showTts: true,
+        chatId: widget.chatId?.toString(),
+        cycleId: widget.cycleId,
       ));
     }
 

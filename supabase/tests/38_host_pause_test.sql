@@ -273,12 +273,13 @@ SELECT is(
     'phase_ends_at should end at :00 seconds (minute aligned)'
 );
 
--- Verify the time is approximately correct (should be 2+ minutes from now due to rounding up)
--- 90 seconds + rounding up to next minute = at least 90 seconds, at most ~150 seconds
+-- Verify the time is approximately correct (minute-aligned around the 90s remaining)
+-- 90 seconds snapped to the NEAREST minute boundary (20260811160000): as little
+-- as 90-15=75 seconds when it floors, up to ~150 when it rounds up.
 SELECT ok(
     (SELECT EXTRACT(EPOCH FROM (phase_ends_at - NOW())) FROM public.rounds
-     WHERE id = current_setting('test.round_id')::INT) BETWEEN 90 AND 180,
-    'phase_ends_at should be 90-180 seconds from now (minute aligned)'
+     WHERE id = current_setting('test.round_id')::INT) BETWEEN 75 AND 180,
+    'phase_ends_at should be 75-180 seconds from now (minute aligned)'
 );
 
 -- Verify phase_time_remaining_seconds was cleared

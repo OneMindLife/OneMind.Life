@@ -13,6 +13,11 @@ export interface ThresholdConfig {
 export interface ParticipationData {
   totalParticipants: number;
   participatedCount: number;
+  // Round proposition count, used by shouldAutoAdvanceRating to detect
+  // conditional-self-inclusion rounds (<= 2 props: authors rate their own
+  // too, so the (participants - 1) cap doesn't apply). Optional so
+  // proposing-phase callers don't need it.
+  propositionCount?: number;
 }
 
 export interface SkipAwareParticipationData extends ParticipationData {
@@ -92,9 +97,13 @@ export function shouldAutoAdvanceRating(
     return false;
   }
 
-  // Cap to what's maximally possible: (participants - 1)
-  // Users can't rate their own propositions
-  const maxPossible = Math.max(1, data.totalParticipants - 1);
+  // Cap to what's maximally possible: (participants - 1) because users can't
+  // rate their own propositions — EXCEPT in conditional-self-inclusion rounds
+  // (<= 2 props), where authors do rate their own and every prop's audience is
+  // the full rater set. Keep in sync with check_early_advance_on_rating (DB).
+  const selfExclusion =
+    data.propositionCount !== undefined && data.propositionCount <= 2 ? 0 : 1;
+  const maxPossible = Math.max(1, data.totalParticipants - selfExclusion);
   const effectiveRequired = Math.min(rawRequired, maxPossible);
 
   // Check if average ratings per proposition meets the requirement

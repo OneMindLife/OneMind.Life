@@ -55,7 +55,11 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
 
   RealtimeChannel? _participantChannel;
   RealtimeChannel? _joinRequestChannel;
-  RealtimeChannel? _roundsChannel;
+  // Map of cycle_id -> channel. Replaces the single unfiltered global
+  // rounds subscription that woke every Home-mounted client on every
+  // round change platform-wide. We now hold one filtered channel per
+  // cycle the user actually cares about and reconcile on refresh.
+  final Map<int, RealtimeChannel> _roundsChannelsByCycleId = {};
   StreamSubscription<AuthState>? _authSubscription;
   Timer? _debounceTimer;
   Timer? _periodicRefreshTimer;
@@ -118,6 +122,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         dashboardChats: results[0] as List<ChatDashboardInfo>,
         pendingRequests: results[1] as List<JoinRequest>,
       ));
+      _reconcileRoundsSubscriptions();
     } catch (e) {
       // Revert translating state on failure
       state = AsyncData(currentState);
@@ -131,7 +136,10 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
     _authSubscription?.cancel();
     _participantChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
-    _roundsChannel?.unsubscribe();
+    for (final ch in _roundsChannelsByCycleId.values) {
+      ch.unsubscribe();
+    }
+    _roundsChannelsByCycleId.clear();
     _approvedChatController.close();
     disposeLanguageSupport();
     super.dispose();
@@ -153,6 +161,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
       ));
 
       _setupSubscriptions();
+      _reconcileRoundsSubscriptions();
     } catch (e, st) {
       state = AsyncError(e, st);
     }
@@ -161,7 +170,8 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
   void _setupSubscriptions() {
     _participantChannel?.unsubscribe();
     _joinRequestChannel?.unsubscribe();
-    _roundsChannel?.unsubscribe();
+    // Per-cycle channels are torn down + rebuilt by
+    // _reconcileRoundsSubscriptions; no global teardown needed here.
 
     final userId = _supabaseClient.auth.currentUser?.id;
     if (userId == null) return;
@@ -202,18 +212,50 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         )
         .subscribe();
 
-    // Subscribe to global rounds changes for dashboard phase updates
-    _roundsChannel = _supabaseClient
-        .channel('dashboard_rounds')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.all,
-          schema: 'public',
-          table: 'rounds',
-          callback: (payload) {
-            _scheduleRefresh();
-          },
-        )
-        .subscribe();
+    // Per-cycle rounds subscriptions are reconciled lazily — once we
+    // know which cycles the user is in (after the first dashboard load
+    // populates state), `_reconcileRoundsSubscriptions` opens one
+    // filtered channel per cycle. This replaces the prior unfiltered
+    // global subscription that fanned out to every Home-mounted client.
+  }
+
+  /// Open / close `rounds` channels so we have exactly one filtered
+  /// subscription per cycle the user is in. Called after every dashboard
+  /// refresh; idempotent and cheap when nothing changed.
+  void _reconcileRoundsSubscriptions() {
+    final target = <int>{};
+    for (final d in state.valueOrNull?.dashboardChats ?? const []) {
+      final id = d.currentCycleId;
+      if (id != null) target.add(id);
+    }
+
+    // Drop channels for cycles we no longer care about (chat left,
+    // converged into a new cycle, etc.). Use a copy of keys because
+    // we mutate the map while iterating.
+    for (final cycleId in _roundsChannelsByCycleId.keys.toList()) {
+      if (!target.contains(cycleId)) {
+        _roundsChannelsByCycleId.remove(cycleId)?.unsubscribe();
+      }
+    }
+
+    // Add channels for new cycles.
+    for (final cycleId in target) {
+      if (_roundsChannelsByCycleId.containsKey(cycleId)) continue;
+      _roundsChannelsByCycleId[cycleId] = _supabaseClient
+          .channel('dashboard_rounds:$cycleId')
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'rounds',
+            filter: PostgresChangeFilter(
+              type: PostgresChangeFilterType.eq,
+              column: 'cycle_id',
+              value: cycleId,
+            ),
+            callback: (_) => _scheduleRefresh(),
+          )
+          .subscribe();
+    }
   }
 
   /// Start periodic refresh as safety net for missed realtime events
@@ -275,6 +317,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
         dashboardChats: newDashboardChats,
         pendingRequests: newPendingRequests,
       ));
+      _reconcileRoundsSubscriptions();
     } catch (e) {
       // Silent failure - keep existing data on refresh error
     }
@@ -320,6 +363,7 @@ class MyChatsNotifier extends StateNotifier<AsyncValue<MyChatsState>>
       ));
 
       _setupSubscriptions();
+      _reconcileRoundsSubscriptions();
     } catch (e, st) {
       state = AsyncError(e, st);
     }

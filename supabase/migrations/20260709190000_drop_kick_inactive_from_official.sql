@@ -1,0 +1,31 @@
+-- Drop the official-chat inactivity-kick trigger.
+--
+-- 2026-07-09: this trigger (from 20260419010911) fired on EVERY round completion
+-- and set `status='kicked'` for any active, non-host participant of the official
+-- chat who didn't propose/skip/grid-rate/rating-skip in that round. It was built
+-- for the OLD official chat (246, retired) with 12h phases, where kicking truly-
+-- dead ghosts kept the roster clean.
+--
+-- The global chat (1216) is now the official chat, runs a ~2-MINUTE loop, and is
+-- explicitly a lurk-then-contribute room recruited from a cold IG ad. This trigger
+-- was catastrophic there:
+--   * it kicked anyone who merely WATCHED one 2-min round → they then got a 403
+--     "Participant not active" on submit-proposition → "couldn't post that";
+--   * its participation check reads `grid_rankings`, so in MATCHES mode (which the
+--     global chat uses) it didn't even count VOTES as participation — voters got
+--     kicked too;
+--   * observed impact: 2,074 of ~2,100 humans kicked, ~0% propose. It was a
+--     primary cause of the dead propose rate.
+--
+-- Fix: drop it entirely. Kicking is wrong for a high-churn anonymous global room
+-- (churn is expected; a kicked participant can never come back to contribute).
+-- If a future SLOW official chat ever wants inactivity pruning, re-introduce it
+-- with (a) matches-awareness (count pairwise_comparisons, not just grid_rankings)
+-- and (b) a guard so it never runs on short-phase chats.
+--
+-- The live prod fix (drop trigger + un-kick 1216 participants + remove the credit
+-- gate) was applied manually on 2026-07-09; this migration makes the trigger drop
+-- durable across `db reset` / `db push`. Idempotent.
+
+DROP TRIGGER IF EXISTS trg_kick_inactive_from_official ON public.rounds;
+DROP FUNCTION IF EXISTS public.kick_inactive_from_official_on_round_completion();

@@ -372,6 +372,7 @@ class _TimerPresetsState extends State<TimerPresets> {
         ],
         Wrap(
           spacing: 8,
+          runSpacing: 8,
           children: TimerPresets.presets.keys.map((preset) {
             final isSelected = widget.selected == preset;
             return ChoiceChip(

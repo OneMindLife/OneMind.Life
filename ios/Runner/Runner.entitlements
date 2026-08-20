@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Universal Links: open https://onemind.life/join/CODE (and the legacy
+	     onemind-instant.web.app links) in the app. Backed by
+	     apple-app-site-association at each domain's /.well-known/.
+	     Add the "Associated Domains" + "Push Notifications" capabilities in Xcode
+	     (Signing & Capabilities) on a Mac so the project references this file. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:onemind.life</string>
+		<string>applinks:onemind-instant.web.app</string>
+	</array>
+	<!-- iOS push (APNs) for firebase_messaging. App Store / TestFlight
+	     builds require 'production'; the App Store provisioning profile
+	     only carries the production value. -->
+	<key>aps-environment</key>
+	<string>production</string>
+</dict>
+</plist>

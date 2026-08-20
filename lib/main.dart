@@ -7,18 +7,20 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:sentry_flutter/sentry_flutter.dart';
 import 'firebase_options_stub.dart';
 import 'config/app_colors.dart';
 import 'config/supabase_config.dart';
-import 'config/sentry_config.dart';
 import 'config/router.dart';
+import 'services/analytics_web_stub.dart'
+    if (dart.library.html) 'services/analytics_web.dart';
 import 'core/errors/error_handler.dart';
 import 'core/errors/app_exception.dart';
 import 'core/l10n/locale_provider.dart';
 import 'l10n/generated/app_localizations.dart';
 import 'providers/providers.dart';
 import 'utils/perf_logger.dart';
+import 'utils/web_timing_stub.dart'
+    if (dart.library.html) 'utils/web_timing.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,32 +37,18 @@ Future<void> main() async {
     // Continue without Analytics - not critical for app function
   }
 
-  // Wire ErrorHandler to Sentry for error tracking
+  // Wire ErrorHandler to PostHog error tracking. On web, Flutter errors are
+  // forwarded to window.posthog.captureException via the index.html bridge, so
+  // each error links to the user's session replay. (Replaced Sentry, whose
+  // SentryFlutter.init white-screened Flutter web.)
   ErrorHandler(
     reportCallback: (AppException error, StackTrace? stackTrace) async {
       if (kDebugMode) return;
-
-      await Sentry.captureException(
-        error,
-        stackTrace: stackTrace,
-        withScope: (scope) {
-          scope.setTag('error_code', error.codeString);
-          if (error.context != null) {
-            for (final entry in error.context!.entries) {
-              scope.setExtra(entry.key, entry.value);
-            }
-          }
-        },
+      sendWebException(
+        error.codeString,
+        error.toString(),
+        stackTrace?.toString(),
       );
-    },
-    logCallback: (String level, String message, Map<String, dynamic>? data) {
-      if (!kDebugMode) {
-        Sentry.addBreadcrumb(Breadcrumb(
-          message: message,
-          level: _sentryLevelFromString(level),
-          data: data,
-        ));
-      }
     },
   );
 
@@ -73,34 +61,23 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  // Perf logger: emit timing events to remote `perf_logs` for diagnosis.
-  // Defaults to `kDebugMode` so prod builds stay quiet. Toggle off via
-  // `PerfLogger.enabled = false;` if a debug session shouldn't write.
-  PerfLogger.enabled = kDebugMode;
-
   // Initialize SharedPreferences for localization
   final sharedPreferences = await SharedPreferences.getInstance();
 
-  // Initialize Sentry and run the app
-  if (SentryConfig.isConfigured) {
-    await SentryFlutter.init(
-      (options) {
-        options.dsn = SentryConfig.dsn;
-        options.environment = SentryConfig.environment;
-        options.tracesSampleRate = SentryConfig.tracesSampleRate;
-        options.sampleRate = SentryConfig.sampleRate;
-        options.sendDefaultPii = false;
-        options.enableAutoSessionTracking = true;
+  // Perf logger: emit timing events to remote `perf_logs` for diagnosis.
+  // Default-on in debug builds. In release builds (production web at
+  // onemind.life), opt-in via `?perflog=1` query param OR a sticky
+  // `flutter.perflog` SharedPreferences flag — the param sets the flag,
+  // so a single annotated link enables logging for the whole tab
+  // session. This lets stress tests / load simulators emit telemetry
+  // without billing every real user for the log writes.
+  PerfLogger.enabled =
+      kDebugMode || _shouldEnablePerfLog(sharedPreferences);
 
-        if (kDebugMode) {
-          options.debug = true;
-        }
-      },
-      appRunner: () => _runApp(sharedPreferences),
-    );
-  } else {
-    _runApp(sharedPreferences);
-  }
+  // Analytics + error tracking are handled by PostHog (web posthog-js snippet in
+  // index.html) + GA4 gtag. No Sentry — it broke Flutter web rendering and PostHog
+  // covers error tracking (with session-replay linkage).
+  _runApp(sharedPreferences);
 }
 
 void _runApp(SharedPreferences sharedPreferences) {
@@ -114,20 +91,34 @@ void _runApp(SharedPreferences sharedPreferences) {
   );
 }
 
-/// Convert log level string to Sentry level
-SentryLevel _sentryLevelFromString(String level) {
-  switch (level.toLowerCase()) {
-    case 'error':
-      return SentryLevel.error;
-    case 'warning':
-      return SentryLevel.warning;
-    case 'info':
-      return SentryLevel.info;
-    case 'debug':
-      return SentryLevel.debug;
-    default:
-      return SentryLevel.info;
+/// Decide whether to enable [PerfLogger] in release builds.
+///
+/// Two equivalent triggers — either turns it on for the rest of the tab:
+///   1. URL contains `?perflog=1` (or `&perflog=1`). The flag is stored
+///      in SharedPreferences so a refresh / SPA navigation doesn't lose
+///      it. To turn it off again, append `?perflog=0`.
+///   2. SharedPreferences key `perflog` is `true` (set previously by #1
+///      or manually by a debug tool).
+///
+/// Any other state — including the absence of the URL param — leaves
+/// the flag at whatever the previous session set, which is what we
+/// want: an annotated bot link only needs to be hit once.
+bool _shouldEnablePerfLog(SharedPreferences prefs) {
+  // kIsWeb gate keeps us off the dart:html dependency on mobile builds
+  // where PerfLogger is already on (kDebugMode usually).
+  if (kIsWeb) {
+    final uri = Uri.tryParse(Uri.base.toString());
+    final qp = uri?.queryParameters['perflog'];
+    if (qp == '1' || qp == 'true') {
+      prefs.setBool('perflog', true);
+      return true;
+    }
+    if (qp == '0' || qp == 'false') {
+      prefs.setBool('perflog', false);
+      return false;
+    }
   }
+  return prefs.getBool('perflog') ?? false;
 }
 
 const _fadeTransitions = PageTransitionsTheme(
@@ -338,6 +329,30 @@ class _OneMindAppState extends ConsumerState<OneMindApp> {
     Future.microtask(() {
       ref.read(localeProvider.notifier).initialize();
     });
+    // Let the HTML hero "Try It Free" CTA enter the app WITHOUT a full page
+    // reload. Flutter boots behind the hero while the user reads it; on tap the
+    // shell calls this to navigate go_router straight to the target (e.g.
+    // /create) and then uncovers the already-rendered app — no second cold
+    // start, no loading splash. Falls back to a full navigation in index.html
+    // if Flutter isn't ready yet.
+    registerHtmlCreateCallback((target) {
+      try {
+        ref.read(routerProvider).go(target);
+      } catch (_) {}
+    });
+    // Tell the HTML shell to drop its loading splash now that Flutter has
+    // rendered. The splash covers the SEO-content backdrop (demo video) that
+    // would otherwise flash through during the gap between engine init and
+    // first paint — most visibly on PWA launches that start at /home.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      signalFlutterFirstFrame();
+    });
+  }
+
+  @override
+  void dispose() {
+    unregisterHtmlCreateCallback();
+    super.dispose();
   }
 
   @override

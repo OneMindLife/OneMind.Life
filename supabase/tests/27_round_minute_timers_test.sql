@@ -3,7 +3,7 @@
 
 BEGIN;
 
-SELECT plan(6);
+SELECT plan(7);
 
 -- =============================================================================
 -- Test 1: Helper function exists
@@ -36,11 +36,15 @@ SELECT ok(
 );
 
 -- =============================================================================
--- Test 4: Result is at least duration seconds from now
+-- Test 4: Result is within the alignment tolerance of duration seconds from now
 -- =============================================================================
+-- Since 20260811160000 the end time snaps to the NEAREST minute boundary, not
+-- always the next one, so it may sit up to 15s (the tolerance) SHORT of the
+-- nominal duration. That's the point: a phase can only end on a cron tick, and
+-- always rounding up doubled every 1-minute phase.
 SELECT ok(
-    calculate_round_minute_end(300) >= NOW() + INTERVAL '300 seconds',
-    'Round minute end is at least duration from now (300s)'
+    calculate_round_minute_end(300) >= NOW() + INTERVAL '285 seconds',
+    'Round minute end is at least duration minus alignment tolerance (300s - 15s)'
 );
 
 -- =============================================================================
@@ -128,6 +132,24 @@ SELECT is(
     )),
     0::NUMERIC,
     'Auto-start creates round with phase_ends_at at :00 seconds'
+);
+
+-- =============================================================================
+-- Test 7: Nearest-minute rule (20260811160000)
+-- =============================================================================
+-- NOW() is stable within the transaction, so this pins the exact rule: snap to
+-- the EARLIER boundary when the overshoot is within the 15s tolerance (and that
+-- boundary is still in the future), otherwise round up.
+SELECT is(
+    calculate_round_minute_end(60),
+    (SELECT CASE
+        WHEN EXTRACT(SECOND FROM m) = 0 THEN m
+        WHEN EXTRACT(SECOND FROM m) <= 15 AND date_trunc('minute', m) > NOW()
+            THEN date_trunc('minute', m)
+        ELSE date_trunc('minute', m) + INTERVAL '1 minute'
+     END
+     FROM (SELECT date_trunc('second', NOW()) + INTERVAL '60 seconds' AS m) s),
+    'Snaps to nearest minute: floors within 15s tolerance, else rounds up'
 );
 
 SELECT * FROM finish();

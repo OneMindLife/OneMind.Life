@@ -76,3 +76,45 @@ void unregisterHtmlLegalCallback() {
     globalContext.setProperty('_flutterAutoLegal'.toJS, null);
   } catch (_) {}
 }
+
+/// Register a Dart callback the HTML hero "Try It Free" CTA invokes to enter
+/// the app WITHOUT a full page reload.
+///
+/// Flutter boots behind the HTML hero while the user reads it. On tap, the
+/// shell calls `window._flutterGoCreate(target)` so go_router navigates
+/// straight to [target] (e.g. `/create?gclid=…`, query string preserved for
+/// attribution) and the already-rendered app is simply uncovered — no second
+/// cold start, no loading splash.
+void registerHtmlCreateCallback(void Function(String target) onCreate) {
+  globalContext.setProperty(
+    '_flutterGoCreate'.toJS,
+    ((JSString target) {
+      onCreate(target.toDart);
+    }).toJS,
+  );
+}
+
+/// Remove the registered create callback (cleanup on dispose).
+void unregisterHtmlCreateCallback() {
+  try {
+    globalContext.setProperty('_flutterGoCreate'.toJS, null);
+  } catch (_) {}
+}
+
+/// Tell the HTML shell that Flutter has painted its first frame.
+///
+/// `index.html` keeps the loading splash up until this fires. The splash used
+/// to be torn down the moment Flutter's `flutter-view` element appeared, but
+/// that element is inserted during *engine init* — before any frame paints —
+/// so the SEO-content backdrop (which embeds the demo video) flashed through
+/// the gap, especially on PWA launches that start at `/home`. Signalling from
+/// a post-frame callback closes that gap. Safe to call in any launch mode:
+/// the JS handler only removes `#splash`, which is hidden in hero/play modes.
+void signalFlutterFirstFrame() {
+  try {
+    final fn = globalContext.getProperty('_onFlutterFirstFrame'.toJS);
+    if (fn.isA<JSFunction>()) {
+      (fn as JSFunction).callAsFunction();
+    }
+  } catch (_) {}
+}

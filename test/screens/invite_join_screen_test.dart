@@ -28,6 +28,8 @@ Chat _createTestChat({
   required AccessMethod accessMethod,
   required bool requireApproval,
   String? inviteCode,
+  int? maxCycles,
+  bool isOfficial = false,
 }) {
   return Chat(
     id: id,
@@ -37,7 +39,7 @@ Chat _createTestChat({
     requireAuth: false,
     requireApproval: requireApproval,
     isActive: true,
-    isOfficial: false,
+    isOfficial: isOfficial,
     startMode: StartMode.manual,
     proposingDurationSeconds: 300,
     ratingDurationSeconds: 300,
@@ -49,6 +51,7 @@ Chat _createTestChat({
     propositionsPerUser: 1,
     createdAt: DateTime.now(),
     inviteCode: inviteCode,
+    maxCycles: maxCycles,
   );
 }
 
@@ -128,8 +131,19 @@ void main() {
     mockSharedPreferences = MockSharedPreferences();
     mockMyChatsNotifier = MockMyChatsNotifier();
 
-    // Default stubs
+    // Default stubs — a fresh visitor: no display name yet (names are never
+    // auto-generated; the join form's name field is the gate).
     when(() => mockAuthService.displayName).thenReturn(null);
+    // hasDisplayName derives from whatever displayName is stubbed to, so
+    // per-test displayName overrides stay consistent automatically.
+    when(() => mockAuthService.hasDisplayName).thenAnswer((_) {
+      final n = mockAuthService.displayName;
+      return n != null && n.isNotEmpty;
+    });
+    when(() => mockAuthService.ensureSignedIn())
+        .thenAnswer((_) async => 'test-user-id');
+    when(() => mockAuthService.setDisplayName(any()))
+        .thenAnswer((_) async {});
 
     // Default participant service behavior - user is not a participant
     when(() => mockParticipantService.getMyParticipant(any()))
@@ -199,6 +213,33 @@ void main() {
                         'open chat $chatIdParam',
                         key: Key('home-chat-id-$chatIdParam'),
                       ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        // Post-join navigation targets /home?chat_id=N (the '/' route is the
+        // marketing landing page, which ignores chat_id). Mirror the home
+        // placeholder here so the chat_id auto-open intent is observable.
+        GoRoute(
+          path: '/home',
+          builder: (context, state) {
+            final chatIdParam = state.uri.queryParameters['chat_id'];
+            final instant = state.uri.queryParameters['instant'] == '1';
+            return Scaffold(
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('Home Page', key: _homePageKey),
+                    if (chatIdParam != null)
+                      Text(
+                        'open chat $chatIdParam',
+                        key: Key('home-chat-id-$chatIdParam'),
+                      ),
+                    if (instant)
+                      const Text('instant', key: Key('home-instant')),
                   ],
                 ),
               ),
@@ -322,11 +363,15 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // Name field should be hidden when name is already set
-        expect(find.byType(TextField), findsNothing);
+        // Named user: no name field — a "Joining as X" line with edit pencil.
+        expect(find.byKey(const Key('name-section-field')), findsNothing);
+        expect(find.text('Joining as Pre-filled Name'), findsOneWidget);
+        expect(find.byKey(const Key('name-section-edit')), findsOneWidget);
       });
 
-      testWidgets('does not display a name input field for valid token', (tester) async {
+      testWidgets(
+          'shows the name field and gates Join on it when the user has no name',
+          (tester) async {
         when(() => mockAuthService.displayName).thenReturn(null);
         when(() => mockInviteService.validateInviteToken('valid-token'))
             .thenAnswer((_) async => InviteTokenResult(
@@ -344,13 +389,19 @@ void main() {
         ));
         await tester.pumpAndSettle();
 
-        // No display-name-field key should exist anywhere on the screen.
-        expect(find.byKey(const Key('display-name-field')), findsNothing);
-        // No "Your Name" or "Display Name" label should be shown.
-        expect(find.text('Your Name'), findsNothing);
-        expect(find.text('Display Name'), findsNothing);
-        // No TextFormField should be used for name input.
-        expect(find.byType(TextFormField), findsNothing);
+        // Nameless user: the inline name gate is shown...
+        expect(find.byKey(const Key('name-section-field')), findsOneWidget);
+        // ...and Join stays disabled until a name is typed.
+        final joinButton = tester.widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Join Chat'));
+        expect(joinButton.onPressed, isNull);
+
+        await tester.enterText(
+            find.byKey(const Key('name-section-field')), 'Typed Name');
+        await tester.pump();
+        final enabledButton = tester.widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Join Chat'));
+        expect(enabledButton.onPressed, isNotNull);
       });
     });
 
@@ -380,8 +431,6 @@ void main() {
         );
         when(() => mockChatService.getChatByCode('ABCDEF'))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(1))
-            .thenAnswer((_) async => true);
 
         await tester.pumpWidget(createTestWidget(
           const InviteJoinScreen(code: 'ABCDEF'),
@@ -405,8 +454,6 @@ void main() {
         );
         when(() => mockChatService.getChatByCode('PUBLIC'))
             .thenAnswer((_) async => chat);
-        when(() => mockInviteService.isInviteOnly(1))
-            .thenAnswer((_) async => false);
 
         await tester.pumpWidget(createTestWidget(
           const InviteJoinScreen(code: 'PUBLIC'),
@@ -416,6 +463,308 @@ void main() {
         expect(find.text("You're invited to join"), findsOneWidget);
         expect(find.text('Public Chat'), findsOneWidget);
         expect(find.widgetWithText(FilledButton, 'Join Chat'), findsOneWidget);
+      });
+    });
+
+    group('quick-chat auto-join (maxCycles == 1)', () {
+      testWidgets(
+          'quick chat code link auto-joins on arrival — no confirmation screen',
+          (tester) async {
+        final chat = _createTestChat(
+          id: 7,
+          name: 'Quick Decision',
+          initialMessage: 'Where should we eat?',
+          accessMethod: AccessMethod.code,
+          requireApproval: false,
+          inviteCode: 'QUICK1',
+          maxCycles: 1,
+        );
+        final participant = Participant(
+          id: 70,
+          chatId: 7,
+          userId: 'test-user-id',
+          displayName: 'Test User',
+          isHost: false,
+          isAuthenticated: true,
+          status: ParticipantStatus.active,
+          createdAt: DateTime.now(),
+        );
+
+        when(() => mockAuthService.displayName).thenReturn('Test User');
+        when(() => mockChatService.getChatByCode('QUICK1'))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(7))
+            .thenAnswer((_) async => null);
+        when(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            )).thenAnswer((_) async => participant);
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'QUICK1'));
+        await tester.pumpAndSettle();
+
+        // The confirmation screen must NOT be shown — the link is the intent.
+        expect(find.text("You're invited to join"), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Join Chat'), findsNothing);
+
+        // It should have auto-joined and landed on home with the chat_id
+        // auto-open intent.
+        expect(find.byKey(_homePageKey), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(7))), findsOneWidget);
+        verify(() => mockParticipantService.joinChat(
+              chatId: 7,
+              displayName: 'Test User',
+              isHost: false,
+            )).called(1);
+      });
+
+      testWidgets(
+          'incognito visitor (no display name) gets the name gate, then joins',
+          (tester) async {
+        // A fresh tab landing straight on /join/CODE has no display name.
+        // Names are never auto-generated, so instead of silently joining as
+        // "Brave Fox" the quick chat falls through to the manual screen whose
+        // name field is the only thing between the link and the chat.
+        final chat = _createTestChat(
+          id: 9,
+          name: 'Incognito Quick',
+          initialMessage: 'No session yet',
+          accessMethod: AccessMethod.code,
+          requireApproval: false,
+          inviteCode: 'INCOG1',
+          maxCycles: 1,
+        );
+        final participant = Participant(
+          id: 90,
+          chatId: 9,
+          userId: 'test-user-id',
+          displayName: 'Typed Name',
+          isHost: false,
+          isAuthenticated: true,
+          status: ParticipantStatus.active,
+          createdAt: DateTime.now(),
+        );
+
+        // displayName stays NULL (the default stub) — the incognito case.
+        when(() => mockChatService.getChatByCode('INCOG1'))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(9))
+            .thenAnswer((_) async => null);
+        when(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            )).thenAnswer((_) async => participant);
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'INCOG1'));
+        await tester.pumpAndSettle();
+
+        // NOT auto-joined: the manual screen with the name gate is shown.
+        expect(find.byKey(const Key('name-section-field')), findsOneWidget);
+        final joinButton = tester.widget<FilledButton>(
+            find.widgetWithText(FilledButton, 'Join Chat'));
+        expect(joinButton.onPressed, isNull);
+
+        // Typing a name enables Join; tapping it saves the name and joins.
+        await tester.enterText(
+            find.byKey(const Key('name-section-field')), 'Typed Name');
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, 'Join Chat'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(_homePageKey), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(9))), findsOneWidget);
+        verify(() => mockAuthService.setDisplayName('Typed Name')).called(1);
+        verify(() => mockParticipantService.joinChat(
+              chatId: 9,
+              displayName: 'Typed Name',
+              isHost: false,
+            )).called(1);
+      });
+
+      testWidgets(
+          'quick chat that requires approval does NOT auto-join (shows screen)',
+          (tester) async {
+        final chat = _createTestChat(
+          id: 8,
+          name: 'Quick But Gated',
+          initialMessage: 'Approval needed',
+          accessMethod: AccessMethod.code,
+          requireApproval: true,
+          inviteCode: 'QGATE1',
+          maxCycles: 1,
+        );
+
+        when(() => mockAuthService.displayName).thenReturn('Test User');
+        when(() => mockChatService.getChatByCode('QGATE1'))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(8))
+            .thenAnswer((_) async => null);
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'QGATE1'));
+        await tester.pumpAndSettle();
+
+        // Approval gating wins over the quick-chat auto-join: the user must
+        // still take an explicit action (the host has to approve).
+        expect(find.byKey(_homePageKey), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Request to Join'),
+            findsOneWidget);
+        verifyNever(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            ));
+      });
+    });
+
+    group('official chat auto-join (zero-friction GLOBAL front door)', () {
+      Chat officialChat() => _createTestChat(
+            id: 1260,
+            name: 'OneMind Official Chat',
+            initialMessage: '',
+            accessMethod: AccessMethod.code,
+            requireApproval: false,
+            inviteCode: 'GLOBAL',
+            isOfficial: true,
+          );
+
+      Participant officialParticipant(String name) => Participant(
+            id: 991,
+            chatId: 1260,
+            userId: 'test-user-id',
+            displayName: name,
+            isHost: false,
+            isAuthenticated: true,
+            status: ParticipantStatus.active,
+            createdAt: DateTime.now(),
+          );
+
+      testWidgets(
+          'fresh visitor: NO name gate — random guest name assigned, straight in',
+          (tester) async {
+        // displayName stays NULL (the fresh-visitor default), but the mock
+        // must store what setDisplayName saves — the join path reads it back.
+        when(() => mockAuthService.setDisplayName(any()))
+            .thenAnswer((inv) async {
+          final n = inv.positionalArguments.first as String;
+          when(() => mockAuthService.displayName).thenReturn(n);
+        });
+        when(() => mockChatService.getChatByCode('GLOBAL'))
+            .thenAnswer((_) async => officialChat());
+        when(() => mockParticipantService.getMyParticipant(1260))
+            .thenAnswer((_) async => null);
+        when(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            )).thenAnswer(
+            (inv) async => officialParticipant(
+                inv.namedArguments[#displayName] as String));
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'GLOBAL'));
+        await tester.pump();
+        // While resolving: bare spinner, no "Join Chat" chrome.
+        expect(find.text('Join Chat'), findsNothing);
+        await tester.pumpAndSettle();
+
+        // No confirmation screen, no name field, no Join button.
+        expect(find.text("You're invited to join"), findsNothing);
+        expect(find.byKey(const Key('name-section-field')), findsNothing);
+        expect(find.widgetWithText(FilledButton, 'Join Chat'), findsNothing);
+
+        // Straight into the chat with a generated guest name — and the hop
+        // carries instant=1 so Home stays veiled until the chat pushes.
+        expect(find.byKey(_homePageKey), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1260))), findsOneWidget);
+        expect(find.byKey(const Key('home-instant')), findsOneWidget);
+        final savedName = verify(
+                () => mockAuthService.setDisplayName(captureAny()))
+            .captured
+            .single as String;
+        expect(RegExp(r'^Guest \d{4}$').hasMatch(savedName), isTrue,
+            reason: 'random guest name, got "$savedName"');
+        verify(() => mockParticipantService.joinChat(
+              chatId: 1260,
+              displayName: savedName,
+              isHost: false,
+            )).called(1);
+      });
+
+      testWidgets('named user: auto-joins with their own name, no screen',
+          (tester) async {
+        when(() => mockAuthService.displayName).thenReturn('Joel');
+        when(() => mockChatService.getChatByCode('GLOBAL'))
+            .thenAnswer((_) async => officialChat());
+        when(() => mockParticipantService.getMyParticipant(1260))
+            .thenAnswer((_) async => null);
+        when(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            )).thenAnswer((_) async => officialParticipant('Joel'));
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'GLOBAL'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(_homePageKey), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1260))), findsOneWidget);
+        // Their existing name is untouched — no random overwrite.
+        verifyNever(() => mockAuthService.setDisplayName(any()));
+        verify(() => mockParticipantService.joinChat(
+              chatId: 1260,
+              displayName: 'Joel',
+              isHost: false,
+            )).called(1);
+      });
+
+      testWidgets('returning member: re-entry redirect carries instant=1',
+          (tester) async {
+        when(() => mockAuthService.displayName).thenReturn('Joel');
+        when(() => mockChatService.getChatByCode('GLOBAL'))
+            .thenAnswer((_) async => officialChat());
+        when(() => mockParticipantService.getMyParticipant(1260))
+            .thenAnswer((_) async => officialParticipant('Joel'));
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'GLOBAL'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(_homePageKey), findsOneWidget);
+        expect(find.byKey(Key(_homeChatIdKeyValue(1260))), findsOneWidget);
+        expect(find.byKey(const Key('home-instant')), findsOneWidget);
+        verifyNever(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            ));
+      });
+
+      testWidgets('non-official chat still gets the name gate', (tester) async {
+        // Guard: the bypass is scoped to is_official — a regular public chat
+        // keeps the typed-name requirement (D-display-name-gate).
+        final chat = _createTestChat(
+          id: 55,
+          name: 'Regular Public',
+          initialMessage: 'hello',
+          accessMethod: AccessMethod.code,
+          requireApproval: false,
+          inviteCode: 'REG555',
+        );
+        when(() => mockChatService.getChatByCode('REG555'))
+            .thenAnswer((_) async => chat);
+        when(() => mockParticipantService.getMyParticipant(55))
+            .thenAnswer((_) async => null);
+
+        await tester.pumpWidget(createGoRouterTestWidget(code: 'REG555'));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(const Key('name-section-field')), findsOneWidget);
+        verifyNever(() => mockAuthService.setDisplayName(any()));
+        verifyNever(() => mockParticipantService.joinChat(
+              chatId: any(named: 'chatId'),
+              displayName: any(named: 'displayName'),
+              isHost: any(named: 'isHost'),
+            ));
       });
     });
 
@@ -447,8 +796,6 @@ void main() {
             .thenAnswer((_) async => chat);
         when(() => mockParticipantService.getMyParticipant(chat.id))
             .thenAnswer((_) async => null);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await tester.pumpWidget(createTestWidget(
           const InviteJoinScreen(code: 'NEWCHT'),
@@ -486,8 +833,6 @@ void main() {
             .thenAnswer((_) async => chat);
         when(() => mockParticipantService.getMyParticipant(chat.id))
             .thenAnswer((_) async => kickedParticipant);
-        when(() => mockInviteService.isInviteOnly(chat.id))
-            .thenAnswer((_) async => false);
 
         await tester.pumpWidget(createTestWidget(
           const InviteJoinScreen(code: 'KICKED'),
@@ -533,6 +878,10 @@ void main() {
         // Should navigate to home, not show the join form
         expect(find.byKey(_homePageKey), findsOneWidget);
         expect(find.text('Home Page'), findsOneWidget);
+        // D37 re-entry fix: an already-joined member re-clicking the invite must
+        // REOPEN the chat (chat_id in the URL), not get dumped on the marketing
+        // landing. The old `go('/')` had no chat_id → this would fail.
+        expect(find.byKey(const Key('home-chat-id-1')), findsOneWidget);
       });
 
       testWidgets('navigates to home when already active participant (code)',
@@ -569,6 +918,10 @@ void main() {
         // Should navigate to home, not show the join form
         expect(find.byKey(_homePageKey), findsOneWidget);
         expect(find.text('Home Page'), findsOneWidget);
+        // D37 re-entry fix: an already-joined member re-clicking the invite must
+        // REOPEN the chat (chat_id in the URL), not get dumped on the marketing
+        // landing. The old `go('/')` had no chat_id → this would fail.
+        expect(find.byKey(const Key('home-chat-id-1')), findsOneWidget);
       });
     });
 
@@ -599,8 +952,6 @@ void main() {
             .thenAnswer((_) async => chat);
         when(() => mockParticipantService.getMyParticipant(1))
             .thenAnswer((_) async => null);
-        when(() => mockInviteService.isInviteOnly(1))
-            .thenAnswer((_) async => false);
         when(() => mockParticipantService.joinChat(
               chatId: any(named: 'chatId'),
               displayName: any(named: 'displayName'),

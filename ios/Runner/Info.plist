@@ -6,6 +6,8 @@
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
 	<string>Onemind App</string>
+	<key>NSCameraUsageDescription</key>
+	<string>OneMind uses the camera to scan a QR code so you can join a group chat.</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -45,5 +47,10 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!-- Export compliance: the app uses only standard HTTPS/TLS (Supabase over
+	     HTTPS), which is exempt encryption. Declaring this here stops App Store
+	     Connect from flagging every upload as "Missing Compliance". -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

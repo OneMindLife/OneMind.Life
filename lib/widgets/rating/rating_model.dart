@@ -195,7 +195,15 @@ class RatingModel extends ChangeNotifier {
     this.onSaveRankings,
     this.lazyLoadingMode = false,
     this.isResuming = false,
+    bool resultsMode = false,
   }) : _inputPropositions = List.from(propositions) {
+    // Switches stack detection to the wider displayBucket tolerance
+    // (1.0) and picks the highest-rated card as the stack default.
+    // RatingWidget passes resultsMode = widget.readOnly so that the
+    // ReadOnlyResultsScreen path (which builds RatingWidget with
+    // readOnly: true) gets results-mode behavior.
+    _resultsMode = resultsMode;
+
     _morePropositionsExpected = lazyLoadingMode;
     if (isResuming) {
       _initializeFromSavedRankings();

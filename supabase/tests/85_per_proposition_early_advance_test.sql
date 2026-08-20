@@ -15,7 +15,7 @@
 --   7. Carry-forward author leaves mid-rating
 
 BEGIN;
-SELECT plan(23);
+SELECT plan(25);
 
 -- =============================================================================
 -- SCENARIO A: 3 participants + 1 carry-forward (authored by P1)
@@ -336,14 +336,30 @@ SELECT is(
     'Scenario C (2 users): After P1 rates (min=0 < 1): NOT completed'
 );
 
--- Test 10: P2 rates A. Per-prop: a=1, b=1 → min=1 >= 1. COMPLETED!
+-- Test 10: P2 rates A. Per-prop: a=1, b=1 → min=1 < 2. In a 2-prop round the
+-- CSI threshold is active_raters − 0 = 2 (authors rate their own too, see
+-- 20260704160000) — cross-ratings alone must NOT complete, else one voter
+-- decides a 2-person round.
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
 VALUES (current_setting('test.c_prop_a_id')::INT, current_setting('test.c_p2_id')::INT, current_setting('test.c_round_id')::INT, 60);
 
 SELECT is(
+    (SELECT completed_at IS NULL FROM public.rounds WHERE id = current_setting('test.c_round_id')::INT),
+    true,
+    'Scenario C (2 users): cross-ratings alone (min=1 < CSI threshold 2): NOT completed'
+);
+
+-- Test 10b: both authors also place their own (CSI serves it to them).
+-- Per-prop: a=2, b=2 → min=2 >= 2. COMPLETED!
+INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
+VALUES (current_setting('test.c_prop_a_id')::INT, current_setting('test.c_p1_id')::INT, current_setting('test.c_round_id')::INT, 90);
+INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
+VALUES (current_setting('test.c_prop_b_id')::INT, current_setting('test.c_p2_id')::INT, current_setting('test.c_round_id')::INT, 90);
+
+SELECT is(
     (SELECT completed_at IS NOT NULL FROM public.rounds WHERE id = current_setting('test.c_round_id')::INT),
     true,
-    'Scenario C (2 users): After P2 rates (min=1 >= 1): COMPLETED'
+    'Scenario C (2 users): COMPLETED once both raters rated both props'
 );
 
 -- =============================================================================
@@ -435,14 +451,28 @@ SELECT is(
     'Scenario D: After P1 rates B (min=0, prop_a unrated): NOT completed'
 );
 
--- Test 12b: P2 rates A. Per-prop: a=1, b=1 → min=1 >= 1. COMPLETED!
+-- Test 12b: P2 rates A. Per-prop: a=1, b=1 → min=1 < 2 (CSI threshold:
+-- 2-prop round → active_raters − 0 = 2). NOT completed on cross-ratings alone.
 INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
 VALUES (current_setting('test.d_prop_a_id')::INT, current_setting('test.d_p2_id')::INT, current_setting('test.d_round_id')::INT, 60);
 
 SELECT is(
+    (SELECT completed_at IS NULL FROM public.rounds WHERE id = current_setting('test.d_round_id')::INT),
+    true,
+    'Scenario D: cross-ratings alone (min=1 < CSI threshold 2): NOT completed'
+);
+
+-- Test 12c: the two active raters also place their own props (CSI).
+-- Per-prop: a=2, b=2 → min=2 >= 2. COMPLETED with 3 skippers!
+INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
+VALUES (current_setting('test.d_prop_a_id')::INT, current_setting('test.d_p1_id')::INT, current_setting('test.d_round_id')::INT, 85);
+INSERT INTO public.grid_rankings (proposition_id, participant_id, round_id, grid_position)
+VALUES (current_setting('test.d_prop_b_id')::INT, current_setting('test.d_p2_id')::INT, current_setting('test.d_round_id')::INT, 85);
+
+SELECT is(
     (SELECT completed_at IS NOT NULL FROM public.rounds WHERE id = current_setting('test.d_round_id')::INT),
     true,
-    'Scenario D: After P2 rates A (min=1 >= 1): COMPLETED with 3 skippers'
+    'Scenario D: COMPLETED once both active raters rated both props (3 skippers)'
 );
 
 -- =============================================================================
@@ -700,8 +730,9 @@ SELECT is(
     'RPC: get_least_rated_proposition returns NULL when no rateable props left'
 );
 
--- Test 23: get_least_rated_propositions returns available results (capped by rateable count)
--- P2 can only rate prop_a, so requesting 2 returns just 1
+-- Test 23: get_least_rated_propositions applies conditional self-inclusion:
+-- P2 authored 2 of the 3 props, so strict exclusion would leave them with 1
+-- (< 2) — their own props become votable and requesting 2 returns 2.
 SELECT is(
     (SELECT COUNT(*) FROM get_least_rated_propositions(
         current_setting('test.f_round_id')::BIGINT,
@@ -709,8 +740,8 @@ SELECT is(
         2,
         ARRAY[]::BIGINT[]
     )),
-    1::BIGINT,
-    'RPC: get_least_rated_propositions returns available count (1 rateable for P2)'
+    2::BIGINT,
+    'RPC: get_least_rated_propositions serves 2 via CSI (P2 has only 1 non-own)'
 );
 
 -- Also verify P1 can get 2 (prop_b=1 rating, prop_c=0 ratings, prop_a is P1's own)

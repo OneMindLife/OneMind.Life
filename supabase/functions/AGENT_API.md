@@ -100,7 +100,7 @@ Create a new chat for consensus-building.
 - `proposing_duration_seconds`: 1800 (30 minutes)
 - `rating_duration_seconds`: 1800 (30 minutes)
 - `propositions_per_user`: 3
-- `confirmation_rounds`: 2
+- `confirmation_rounds`: 2 — must be **1 or 2**. `1` = instant (the first winner is locked in immediately); `2` = convergence (an idea must win 2 rounds in a row). Maps to the `confirmation_rounds_required` column.
 - `start_mode`: "auto"
 - `auto_start_participant_count`: 3
 

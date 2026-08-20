@@ -343,7 +343,8 @@ const allTimezones = [
 /// otherwise returns the detected timezone anyway (IANA format).
 Future<String> detectUserTimezone() async {
   try {
-    final localTz = await FlutterTimezone.getLocalTimezone();
+    // flutter_timezone >=4 returns a TimezoneInfo; we want the IANA identifier.
+    final localTz = (await FlutterTimezone.getLocalTimezone()).identifier;
 
     // Return the detected timezone - it's always valid IANA format
     if (allTimezones.contains(localTz)) {

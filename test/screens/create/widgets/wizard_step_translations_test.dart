@@ -54,9 +54,7 @@ void main() {
         ),
       );
 
-      final switchWidget = tester.widget<SwitchListTile>(
-        find.byType(SwitchListTile),
-      );
+      final switchWidget = tester.widget<Switch>(find.byType(Switch));
       // Single language = !enabled = !false = true
       expect(switchWidget.value, true);
     });
@@ -106,7 +104,7 @@ void main() {
       );
 
       // Tap the switch to turn off single-language mode
-      await tester.tap(find.byType(SwitchListTile));
+      await tester.tap(find.byType(Switch));
       expect(captured?.enabled, true);
       expect(captured?.languages, {'en', 'es', 'pt', 'fr', 'de'});
     });

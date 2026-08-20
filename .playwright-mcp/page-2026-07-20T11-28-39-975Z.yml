@@ -1,0 +1,23 @@
+- generic [active] [ref=e1]:
+  - alert [ref=e12]
+  - generic [ref=e13]:
+    - banner [ref=e14]:
+      - generic [ref=e15]:
+        - generic [ref=e16]:
+          - img "OneMind" [ref=e17]
+          - generic [ref=e18]: OneMind
+          - generic [ref=e19]: ·
+          - generic [ref=e20]: Global
+        - generic [ref=e21]:
+          - generic [ref=e22]:
+            - generic [ref=e24]: "2"
+            - generic [ref=e25]: here
+          - button "Invite" [ref=e26] [cursor=pointer]
+    - generic [ref=e30]:
+      - generic [ref=e31]:
+        - textbox "What's on your mind?" [disabled] [ref=e44]
+        - button "Send" [disabled] [ref=e33]
+      - generic [ref=e36]: Anonymous · the room votes the best to the top
+    - generic [ref=e40]:
+      - generic [ref=e41]: Proposing · 12h phase
+      - generic [ref=e42]: Voting opens in 11:33:30

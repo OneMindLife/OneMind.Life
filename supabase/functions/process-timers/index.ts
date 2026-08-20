@@ -9,7 +9,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { shouldAutoAdvance, shouldAutoAdvanceRating } from "../_shared/auto-advance.ts";
-import { notifyPhaseChange } from "../_shared/fcm.ts";
+import {
+  autoAdvanceGateOpen,
+  distinctRaterCount,
+  matchesTimerMinimumMet,
+  shouldEarlyAdvanceMatches,
+} from "../_shared/matches-advance.ts";
+import {
+  treeIdleSeconds,
+  treeProposingAction,
+  treeRatingAction,
+} from "../_shared/tree-advance.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -32,6 +42,7 @@ interface Chat {
   proposing_threshold_count: number | null;
   rating_threshold_percent: number | null;
   rating_threshold_count: number | null;
+  rating_mode: string; // 'grid' or 'matches'
   start_mode: string;
   rating_start_mode: string; // 'auto' or 'manual' - controls how rating starts after proposing
   auto_start_participant_count: number;
@@ -43,6 +54,14 @@ interface Chat {
   // Pause state — process-timers must skip paused chats
   host_paused: boolean;
   schedule_paused: boolean;
+  // Never-empty AI-seat-filled arena: advance proposing on the timer once the
+  // agent board is votable (see checkMinimumMet), so a present human always gets
+  // the full proposing window and pure-agent/lurking rounds never stall.
+  is_arena: boolean;
+  // Repository mode: never seal. At rating-expiry we reopen proposing instead
+  // of completing the round, so the chat is always alive (Grow/Sort). See the
+  // never_seals column (20260715 repository_mode_never_seals).
+  never_seals: boolean;
 }
 
 function isChatPaused(chat: Chat): boolean {
@@ -69,10 +88,22 @@ interface ProcessResult {
 // =============================================================================
 // ROUND-MINUTE TIMER ALIGNMENT
 // =============================================================================
-// Calculate phase end time rounded up to next :00 seconds.
+// Calculate phase end time snapped to a :00 second boundary.
 // Aligns timer expiration with cron job schedule (every minute at :00).
-// Example: now=1:00:42, duration=60s → 1:02:00 (not 1:01:42)
+//
+// A phase can only END on a cron tick, so the achievable end times are the
+// minute boundaries either side of (now + duration). We snap to the NEARER
+// one when the overshoot is small: the cron invocation itself starts a second
+// or two after :00, so `now + 60s` lands at :01-ish and always rounding UP
+// silently doubled every 1-minute phase to ~2 minutes. Beyond the tolerance we
+// still round up, so genuine cron lag never truncates a phase to a sliver.
+// Example: now=1:00:01, duration=60s → 1:01:00 (59s), not 1:02:00 (119s)
+// Example: now=1:00:42, duration=60s → 1:02:00 (78s) — past tolerance, round up
+// Keep in sync with the SQL twin `calculate_round_minute_end()`.
 // =============================================================================
+
+// Max seconds we'll shave off a phase to land on the earlier boundary.
+const PHASE_END_ALIGN_TOLERANCE_SECONDS = 15;
 
 function calculateRoundMinuteEnd(now: Date, durationSeconds: number): Date {
   // Truncate milliseconds first to avoid extra rounding
@@ -80,13 +111,25 @@ function calculateRoundMinuteEnd(now: Date, durationSeconds: number): Date {
   nowTruncated.setMilliseconds(0);
 
   const minEnd = new Date(nowTruncated.getTime() + durationSeconds * 1000);
-  // If already at :00, use that; otherwise round up to next minute
+  // If already at :00, use that
   if (minEnd.getSeconds() === 0) {
     return minEnd;
   }
-  // Round up: set seconds and ms to 0, add 1 minute
-  const rounded = new Date(minEnd);
-  rounded.setSeconds(0, 0);
+
+  const floored = new Date(minEnd);
+  floored.setSeconds(0, 0);
+
+  // Within tolerance: snap back to the earlier boundary, but never to a time
+  // that's already past (short durations can floor into the past).
+  if (
+    minEnd.getSeconds() <= PHASE_END_ALIGN_TOLERANCE_SECONDS &&
+    floored.getTime() > now.getTime()
+  ) {
+    return floored;
+  }
+
+  // Otherwise round up: next minute boundary
+  const rounded = new Date(floored);
   rounded.setMinutes(rounded.getMinutes() + 1);
   return rounded;
 }
@@ -199,6 +242,108 @@ Deno.serve(async (req: Request) => {
 });
 
 // =============================================================================
+// C15 TREE-NODE ROUNDS (child cycles) — clock-only window flips
+// =============================================================================
+// A node round lives on the chat-wide 12h/12h clock (docs/ONEMIND_CONCEPT.md
+// C15). At its window end:
+//   proposing: >= 2 props -> open the vote (next window); fewer -> idle to the
+//     NEXT proposing window (skip over the voting window: + rating + proposing
+//     durations). Props persist; the AI's single prop alone can't advance it.
+//   rating: >= 1 real (non-skip) vote -> seal via complete_round_with_winner
+//     (child cycles seal quietly — on_cycle_winner_set is gated); no votes ->
+//     idle to the next voting window.
+
+async function processTreeNodeRound(
+  supabase: ReturnType<typeof createClient>,
+  // deno-lint-ignore no-explicit-any
+  round: any,
+  chat: Chat,
+  result: ProcessResult
+) {
+  const now = new Date();
+  const idleSecs = treeIdleSeconds(
+    chat.proposing_duration_seconds,
+    chat.rating_duration_seconds,
+  );
+
+  if (round.phase === "proposing") {
+    const { count: propCount } = await supabase
+      .from("propositions")
+      .select("id", { count: "exact", head: true })
+      .eq("round_id", round.id);
+
+    if (treeProposingAction(propCount ?? 0) === "open_vote") {
+      const ratingEnd = calculateRoundMinuteEnd(now, chat.rating_duration_seconds);
+      const { error } = await supabase
+        .from("rounds")
+        .update({
+          phase: "rating",
+          phase_started_at: now.toISOString(),
+          phase_ends_at: ratingEnd.toISOString(),
+        })
+        .eq("id", round.id)
+        .eq("phase", "proposing");
+      if (error) throw error;
+      result.phases_advanced++;
+    } else {
+      // Idle to the next proposing window (skip the voting window entirely).
+      const nextEnd = calculateRoundMinuteEnd(now, idleSecs);
+      const { error } = await supabase
+        .from("rounds")
+        .update({ phase_ends_at: nextEnd.toISOString() })
+        .eq("id", round.id);
+      if (error) throw error;
+      result.timers_extended++;
+    }
+    return;
+  }
+
+  if (round.phase === "rating") {
+    const { count: voteCount } = await supabase
+      .from("pairwise_comparisons")
+      .select("id", { count: "exact", head: true })
+      .eq("round_id", round.id)
+      .eq("is_skip", false);
+
+    if (treeRatingAction(voteCount ?? 0) === "seal") {
+      if (chat.never_seals) {
+        // Repository mode: never complete a thread. Reopen proposing so it keeps
+        // growing then re-ranking — the thread stays alive, no sealed winner.
+        const proposingEnd = calculateRoundMinuteEnd(
+          now,
+          chat.proposing_duration_seconds,
+        );
+        const { error } = await supabase
+          .from("rounds")
+          .update({
+            phase: "proposing",
+            phase_started_at: now.toISOString(),
+            phase_ends_at: proposingEnd.toISOString(),
+          })
+          .eq("id", round.id)
+          .eq("phase", "rating");
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.rpc("complete_round_with_winner", {
+          p_round_id: round.id,
+        });
+        if (error) throw error;
+      }
+      result.phases_advanced++;
+    } else {
+      // No attention this window — idle to the next voting window.
+      const nextEnd = calculateRoundMinuteEnd(now, idleSecs);
+      const { error } = await supabase
+        .from("rounds")
+        .update({ phase_ends_at: nextEnd.toISOString() })
+        .eq("id", round.id);
+      if (error) throw error;
+      result.timers_extended++;
+    }
+  }
+}
+
+// =============================================================================
 // PROCESS EXPIRED TIMERS
 // =============================================================================
 
@@ -220,6 +365,7 @@ async function processExpiredTimers(
       phase_ends_at,
       cycles!inner (
         chat_id,
+        parent_proposition_id,
         chats!inner (
           id,
           name,
@@ -229,12 +375,15 @@ async function processExpiredTimers(
           rating_duration_seconds,
           proposing_minimum,
           rating_minimum,
+          rating_mode,
           adaptive_duration_enabled,
           adaptive_adjustment_percent,
           min_phase_duration_seconds,
           max_phase_duration_seconds,
           host_paused,
-          schedule_paused
+          schedule_paused,
+          is_arena,
+          never_seals
         )
       )
     `
@@ -265,6 +414,15 @@ async function processExpiredTimers(
         continue;
       }
 
+      // C15 tree-node rounds (child cycles) are clock-only: they flip with
+      // the chat-wide window, need >= 2 props to open a vote and >= 1 real
+      // vote to seal — otherwise they idle to the next same-phase window.
+      // Chat-level minimums/thresholds/deadline rules don't apply to them.
+      if ((round as any).cycles.parent_proposition_id) {
+        await processTreeNodeRound(supabase, round, chat, result);
+        continue;
+      }
+
       // Skip auto-advance for manual mode - host controls everything
       if (chat.start_mode === "manual") {
         continue;
@@ -285,9 +443,34 @@ async function processExpiredTimers(
         await advancePhase(supabase, round, chat);
         result.phases_advanced++;
       } else {
-        // Extend timer
-        await extendTimer(supabase, round, chat, isProposing);
-        result.timers_extended++;
+        // Below minimum. For continuous-chat R2+ proposing, the deadline rules
+        // may still resolve the round (carried leader wins unchallenged, or
+        // rating opens on a sub-minimum votable set) instead of extending
+        // forever. Gates (grace window, quick-chat exclusion, R1 exclusion)
+        // live in the SQL function; 'none' means extend as before.
+        let resolved = false;
+        if (isProposing) {
+          const { data: outcome, error: resolveError } = await supabase.rpc(
+            "maybe_resolve_expired_proposing",
+            { p_round_id: round.id }
+          );
+          if (resolveError) {
+            console.error(
+              `Round ${round.id}: maybe_resolve_expired_proposing failed: ${resolveError.message}`
+            );
+          } else if (outcome === "converged" || outcome === "advanced") {
+            console.log(
+              `Round ${round.id}: deadline rule resolved proposing phase (${outcome})`
+            );
+            result.phases_advanced++;
+            resolved = true;
+          }
+        }
+        if (!resolved) {
+          // Extend timer
+          await extendTimer(supabase, round, chat, isProposing);
+          result.timers_extended++;
+        }
       }
     } catch (err) {
       result.errors.push(
@@ -300,6 +483,34 @@ async function processExpiredTimers(
 // =============================================================================
 // CHECK MINIMUM MET
 // =============================================================================
+
+// Matches (pairwise) mode: rating progress is measured PER-RATER, not per
+// proposition. A rater is "done" if they have a completion marker (finished
+// their matches), grid coverage (grid raters / agents grid-rate), or skipped.
+// Used for both the timer-expiry minimum and the early-advance threshold so
+// pure-human matches rounds advance (their votes go to pairwise_comparisons,
+// which the grid_rankings-based checks never see).
+async function getMatchesRatingProgress(
+  supabase: ReturnType<typeof createClient>,
+  roundId: number,
+  chatId: number
+): Promise<{ done: number; eligible: number }> {
+  const [comps, grids, skips, eligibleRpc] = await Promise.all([
+    supabase.from("rating_completions").select("participant_id").eq("round_id", roundId),
+    supabase.from("grid_rankings").select("participant_id").eq("round_id", roundId),
+    supabase.from("rating_skips").select("participant_id").eq("round_id", roundId),
+    supabase.rpc("get_rating_eligible_count", { p_chat_id: chatId }),
+  ]);
+  const done = distinctRaterCount(
+    (comps.data ?? []) as { participant_id: number | null }[],
+    (grids.data ?? []) as { participant_id: number | null }[],
+    (skips.data ?? []) as { participant_id: number | null }[],
+  );
+  const eligible = (eligibleRpc.error || eligibleRpc.data == null)
+    ? done
+    : (eligibleRpc.data as number);
+  return { done, eligible };
+}
 
 async function checkMinimumMet(
   supabase: ReturnType<typeof createClient>,
@@ -322,8 +533,44 @@ async function checkMinimumMet(
     // Always enforce proposing_minimum as the floor - no dynamic adjustment
     // This ensures meaningful consensus (at least 3 propositions to compare)
     // If not enough participants/propositions, timer extends until more join
-    return (propositionCount || 0) >= chat.proposing_minimum;
+    if ((propositionCount || 0) >= chat.proposing_minimum) return true;
+
+    // Arena rooms are kept alive by AI seat-fill. Their proposing early-advance is
+    // disabled (thresholds NULL) so a present human always gets the full proposing
+    // window instead of the phase flipping to rating the instant the agents fill it.
+    // But that means a pure-agent or lurking-human round would otherwise extend
+    // forever here (maybe_resolve_expired_proposing needs a human challenger/affirm).
+    // Advance on the timer once the agent-filled board is votable so the loop never
+    // stalls. Votable = >=2 NEW props (agent or human; carried excluded).
+    if (chat.is_arena) {
+      const { count: votableCount } = await supabase
+        .from("propositions")
+        .select("id", { count: "exact", head: true })
+        .eq("round_id", roundId)
+        .is("carried_from_id", null);
+      return (votableCount || 0) >= 2;
+    }
+    return false;
   } else {
+    // Matches mode: advance at timer expiry once at least one rater has
+    // finished (pairwise votes never touch grid_rankings, so the avg-raters
+    // check below would wrongly extend a pure-human matches round forever).
+    if (chat.rating_mode === "matches") {
+      // Timer-paced: seal once the timer expires as long as there is at least
+      // one vote to score. The configured scoring strategy (Bradley-Terry by
+      // default) yields a definitive winner from WHATEVER votes exist, so a
+      // round never hangs waiting for full coverage. No votes at all → extend
+      // (don't seal an empty round).
+      const { count, error: cErr } = await supabase
+        .from("pairwise_comparisons")
+        .select("id", { count: "exact", head: true })
+        .eq("round_id", roundId);
+      if (cErr) {
+        console.error(`Round ${roundId}: vote count failed: ${cErr.message}`);
+        return false;
+      }
+      return (count || 0) >= 1;
+    }
     // Rating phase: check average raters per proposition using grid_rankings
     const { data: propositions, error: propError } = await supabase
       .from("propositions")
@@ -389,11 +636,30 @@ async function advancePhase(
 
     if (error) throw error;
 
-    // Notify participants of phase change
-    await notifyPhaseChange(supabase, chat.id, chat.name, "rating");
+    // Push notification is sent by the notify_push_round DB trigger (fires on
+    // the phase UPDATE above, whichever driver performs it).
   } else if (round.phase === "rating") {
-    // Calculate winner and complete round
-    await calculateWinnerAndComplete(supabase, round);
+    if (chat.never_seals) {
+      // Repository mode: never complete. Reopen proposing so the list keeps
+      // growing then re-ranking — always alive, never a sealed winner.
+      const proposingEnd = calculateRoundMinuteEnd(
+        now,
+        chat.proposing_duration_seconds,
+      );
+      const { error } = await supabase
+        .from("rounds")
+        .update({
+          phase: "proposing",
+          phase_started_at: now.toISOString(),
+          phase_ends_at: proposingEnd.toISOString(),
+        })
+        .eq("id", round.id)
+        .eq("phase", "rating");
+      if (error) throw error;
+    } else {
+      // Calculate winner and complete round
+      await calculateWinnerAndComplete(supabase, round);
+    }
   }
 }
 
@@ -531,19 +797,9 @@ async function calculateWinnerAndComplete(
   // Apply adaptive duration adjustment for next round
   await applyAdaptiveDuration(supabase, round.id);
 
-  // Notify participants that a new proposing phase has started
-  // (the DB trigger on_round_winner_set creates the next round)
-  const chatId = (round as any).cycles?.chat_id;
-  if (chatId) {
-    const { data: chatData } = await supabase
-      .from("chats")
-      .select("name")
-      .eq("id", chatId)
-      .single();
-    if (chatData) {
-      await notifyPhaseChange(supabase, chatId, chatData.name, "proposing");
-    }
-  }
+  // Push notifications (winner / next round opening) are sent by the
+  // notify_push_round DB trigger, which fires on the round INSERT/UPDATE
+  // regardless of which driver performed it.
 }
 
 // =============================================================================
@@ -645,10 +901,13 @@ async function processAutoAdvance(
           proposing_threshold_count,
           rating_threshold_percent,
           rating_threshold_count,
+          rating_mode,
           rating_duration_seconds,
           rating_start_mode,
           host_paused,
-          schedule_paused
+          schedule_paused,
+          is_arena,
+          never_seals
         )
       )
     `
@@ -685,8 +944,18 @@ async function processAutoAdvance(
         ? chat.proposing_threshold_count
         : chat.rating_threshold_count;
 
-      // Skip if no thresholds configured
-      if (thresholdPercent === null && thresholdCount === null) {
+      // Skip if no auto-advance thresholds are configured (toggle OFF). Applies
+      // uniformly to grid AND matches rating: a matches chat with rating
+      // auto-advance turned off is timer-paced (the timer-expiry path still
+      // advances it once the phase ends — see checkMinimumMet/matchesTimerMinimumMet).
+      // When ON, checkThresholdsMet → shouldEarlyAdvanceMatches advances on full
+      // turnout. Matches the DB trigger matches_preview_maybe_finalize.
+      if (!autoAdvanceGateOpen({
+        isProposing,
+        ratingMode: chat.rating_mode,
+        thresholdPercent,
+        thresholdCount,
+      })) {
         continue;
       }
 
@@ -804,15 +1073,25 @@ async function checkThresholdsMet(
 
     // Check if thresholds met:
     // 1. Participated (submitters + skippers) >= percent requirement
-    // 2. Propositions (uniqueSubmitters) >= effective count threshold
+    // 2. Acted (submitters + skippers) >= effective count threshold — a skipper has
+    //    acted, so it counts toward the count threshold too (matches the DB triggers and
+    //    the percent check). The separate minimum gate still requires real propositions.
     const percentMet = participatedCount >= percentRequired;
-    const countMet = uniqueSubmitters >= effectiveCountThreshold;
+    const countMet = participatedCount >= effectiveCountThreshold;
 
     console.log(`[checkThresholdsMet] Round ${round.id}: ${uniqueSubmitters} submitters + ${skipCount} skips = ${participatedCount} participated. ` +
-                `Percent: ${participatedCount} >= ${percentRequired}? ${percentMet}. Count: ${uniqueSubmitters} >= ${effectiveCountThreshold}? ${countMet}`);
+                `Percent: ${participatedCount} >= ${percentRequired}? ${percentMet}. Count(acted): ${participatedCount} >= ${effectiveCountThreshold}? ${countMet}`);
 
     return percentMet && countMet;
   } else {
+    // Matches mode: early-advance once every eligible rater has finished their
+    // matches (per-rater completion, not per-proposition coverage).
+    if (chat.rating_mode === "matches") {
+      const { done, eligible } = await getMatchesRatingProgress(supabase, round.id, chatId);
+      const advance = shouldEarlyAdvanceMatches(done, eligible);
+      console.log(`[checkThresholdsMet] Matches round ${round.id}: ${done}/${eligible} raters done → ${advance}`);
+      return advance;
+    }
     // Count unique raters
     const { data: propositions, error: propError } = await supabase
       .from("propositions")
@@ -843,10 +1122,15 @@ async function checkThresholdsMet(
       : eligibleCount;
 
     // Use rating-specific helper that caps threshold to (participants - 1)
-    // since users can't rate their own propositions
+    // since users can't rate their own propositions — except in conditional
+    // self-inclusion rounds (<= 2 props), which propositionCount signals.
     return shouldAutoAdvanceRating(
       { thresholdPercent, thresholdCount },
-      { totalParticipants: ratingParticipantCount, participatedCount }
+      {
+        totalParticipants: ratingParticipantCount,
+        participatedCount,
+        propositionCount: propositions.length,
+      }
     );
   }
 }
@@ -874,7 +1158,9 @@ async function processAutoStart(
           auto_start_participant_count,
           proposing_duration_seconds,
           host_paused,
-          schedule_paused
+          schedule_paused,
+          is_arena,
+          never_seals
         )
       )
     `

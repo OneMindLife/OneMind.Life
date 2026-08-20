@@ -126,16 +126,17 @@ SELECT ok(
 
 -- Resume's auto-start delegates to create_round_for_cycle, which uses
 -- calculate_round_minute_end() for cron alignment. With a 60s phase the
--- end time rounds up to the next :00 minute boundary, so the actual
--- remaining time is in [60, 120) seconds.
+-- end time snaps to the NEAREST :00 minute boundary (20260811160000), so the
+-- actual remaining time is in [45, 120) seconds — up to the 15s tolerance
+-- short, or a full minute long when the overshoot exceeds it.
 SELECT ok(
-    (SELECT phase_ends_at >= NOW() + INTERVAL '60 seconds'
+    (SELECT phase_ends_at >= NOW() + INTERVAL '45 seconds'
             AND phase_ends_at <  NOW() + INTERVAL '120 seconds'
      FROM rounds r
      JOIN cycles c ON r.cycle_id = c.id
      WHERE c.chat_id = current_setting('test.chat_id')::INT
      ORDER BY r.id LIMIT 1),
-    'Resume auto-start sets minute-aligned phase_ends_at in [60s, 120s)'
+    'Resume auto-start sets minute-aligned phase_ends_at in [45s, 120s)'
 );
 
 SELECT ok(

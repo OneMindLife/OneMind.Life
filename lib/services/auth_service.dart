@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../core/errors/app_exception.dart';
-import '../utils/random_name_generator.dart';
 
 /// Service for authentication operations using Supabase Auth.
 /// Replaces the custom SessionService with proper JWT-based auth.
@@ -30,18 +30,46 @@ class AuthService {
 
   /// Sign in anonymously if not already signed in.
   /// Returns the user ID.
+  ///
+  /// New users are tagged with `source: 'web_app'` and the originating
+  /// platform in raw_user_meta_data so that backend queries can
+  /// distinguish real web/app users from API/SDK/skill traffic that
+  /// signs up via the public Supabase auth endpoint.
   Future<String> ensureSignedIn() async {
     if (_client.auth.currentUser != null) {
       return _client.auth.currentUser!.id;
     }
 
-    final response = await _client.auth.signInAnonymously();
+    final response = await _client.auth.signInAnonymously(
+      data: {
+        'source': 'web_app',
+        'platform': _platformLabel(),
+      },
+    );
     if (response.user == null) {
       throw AppException.authRequired(
         message: 'Failed to sign in anonymously',
       );
     }
     return response.user!.id;
+  }
+
+  String _platformLabel() {
+    if (kIsWeb) return 'web';
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.android:
+        return 'android';
+      case TargetPlatform.iOS:
+        return 'ios';
+      case TargetPlatform.macOS:
+        return 'macos';
+      case TargetPlatform.windows:
+        return 'windows';
+      case TargetPlatform.linux:
+        return 'linux';
+      default:
+        return 'unknown';
+    }
   }
 
   /// Update user's display name in metadata
@@ -51,17 +79,11 @@ class AuthService {
     );
   }
 
-  /// Check if user has a display name set
+  /// Check if user has a display name set.
+  ///
+  /// False until the user types a name at a join/create gate — there is no
+  /// automatic name generation anymore (see NameSection).
   bool get hasDisplayName => displayName != null && displayName!.isNotEmpty;
-
-  /// Ensure user has a display name, generating a random one if needed.
-  /// Returns the current or newly generated display name.
-  Future<String> ensureDisplayName() async {
-    if (hasDisplayName) return displayName!;
-    final name = RandomNameGenerator.generate();
-    await setDisplayName(name);
-    return name;
-  }
 
   /// Stream of auth state changes
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;

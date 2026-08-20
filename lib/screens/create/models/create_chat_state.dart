@@ -100,15 +100,17 @@ class AutoAdvanceSettings extends Equatable {
     required this.ratingThresholdCount,
   });
 
-  /// Smart defaults: end phases early when participation is complete.
+  /// Default: auto-advance OFF — phases run for their full configured time
+  /// (a fixed cadence, e.g. 12h). The user can turn it on in the wizard's
+  /// auto-advance step. When enabled, the threshold values below take effect:
   /// - Proposing: ends when 100% of participants have acted (submitted OR skipped)
   /// - Rating: ends when 100% of eligible raters have rated (capped to participants-1
   ///   since users can't rate their own propositions)
   factory AutoAdvanceSettings.defaults() => const AutoAdvanceSettings(
-        enableProposing: true,
+        enableProposing: false,
         proposingThresholdPercent: 100, // End when all participants have acted
         proposingThresholdCount: 3, // Minimum propositions (same as proposing_minimum)
-        enableRating: true,
+        enableRating: false,
         ratingThresholdPercent: 100, // End when all eligible raters have rated
         ratingThresholdCount: 2, // Minimum ratings per proposition
       );
@@ -373,8 +375,8 @@ class SkipSettings extends Equatable {
   });
 
   factory SkipSettings.defaults() => const SkipSettings(
-        allowSkipProposing: true,
-        allowSkipRating: true,
+        allowSkipProposing: false,
+        allowSkipRating: false,
       );
 
   SkipSettings copyWith({

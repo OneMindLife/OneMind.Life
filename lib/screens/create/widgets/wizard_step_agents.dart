@@ -3,15 +3,19 @@ import 'package:flutter/material.dart';
 import '../../../l10n/generated/app_localizations.dart';
 import '../models/create_chat_state.dart';
 import 'agent_section.dart';
+import 'wizard_common.dart';
 
-/// Step 3 of the create chat wizard: AI Agents.
-/// Allows users to configure AI agent participation.
+/// AI Agents step of the create chat wizard.
+///
+/// Normally the final step (Create Chat). When the creator has no display
+/// name yet, a dedicated host-name step follows instead — see
+/// [WizardStepHostName] — and this step's button becomes Continue.
 class WizardStepAgents extends StatelessWidget {
   final AgentSettings agentSettings;
   final void Function(AgentSettings) onAgentSettingsChanged;
   final VoidCallback onContinue;
   final VoidCallback onCreate;
-  final bool needsHostName;
+  final bool isFinalStep;
   final bool isLoading;
 
   const WizardStepAgents({
@@ -20,83 +24,27 @@ class WizardStepAgents extends StatelessWidget {
     required this.onAgentSettingsChanged,
     required this.onContinue,
     required this.onCreate,
-    required this.needsHostName,
+    required this.isFinalStep,
     required this.isLoading,
   });
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-    final theme = Theme.of(context);
-    final isFinalStep = !needsHostName;
+    final l10n = AppLocalizations.of(context);
 
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.smart_toy_outlined,
-                    size: 64,
-                    color: theme.colorScheme.primary,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Add AI agents?',
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-                  AgentSection(
-                    settings: agentSettings,
-                    onChanged: onAgentSettingsChanged,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: isLoading
-                  ? null
-                  : isFinalStep
-                      ? onCreate
-                      : onContinue,
-              child: isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(isFinalStep
-                            ? l10n.createChat
-                            : l10n.continue_),
-                        const SizedBox(width: 8),
-                        Icon(
-                          isFinalStep
-                              ? Icons.rocket_launch
-                              : Icons.arrow_forward,
-                          size: 18,
-                        ),
-                      ],
-                    ),
-            ),
-          ),
-        ],
-      ),
+    return WizardStepLayout(
+      icon: Icons.smart_toy_outlined,
+      title: l10n.wizardAgentsTitle,
+      onContinue: isFinalStep ? onCreate : onContinue,
+      continueLabel: isFinalStep ? l10n.createChat : null,
+      continueIcon: isFinalStep ? Icons.rocket_launch : Icons.arrow_forward,
+      isLoading: isLoading,
+      children: [
+        AgentSection(
+          settings: agentSettings,
+          onChanged: onAgentSettingsChanged,
+        ),
+      ],
     );
   }
 }

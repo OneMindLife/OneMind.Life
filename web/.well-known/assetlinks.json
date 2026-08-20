@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.onemind.onemind_app",
+      "sha256_cert_fingerprints": [
+        "9F:59:93:87:C9:7C:8A:45:07:A3:2A:01:0D:B9:CF:D4:DE:DB:14:3D:6F:B6:2C:5F:15:15:E9:46:76:ED:77:C5",
+        "32:90:69:10:DB:7B:4E:B5:A0:81:8C:84:3C:65:71:E8:9F:BC:46:7B:FE:F7:F8:68:E6:CA:DA:5C:E7:B4:45:79"
+      ]
+    }
+  }
+]

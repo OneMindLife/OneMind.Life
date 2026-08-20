@@ -4,7 +4,6 @@ import '../../../l10n/generated/app_localizations.dart';
 import '../../../models/models.dart';
 import '../../../widgets/proposition_content_card.dart';
 import '../../../widgets/tts_button.dart';
-import 'convergence_video_card.dart';
 
 /// Displays the previous round winner(s) with support for tied winners.
 /// Uses PropositionContentCard for consistent styling with other content displays.
@@ -23,6 +22,15 @@ class PreviousWinnerPanel extends StatelessWidget {
   /// Called when the card is tapped (parent handles navigation).
   final VoidCallback? onTap;
 
+  /// When non-null, renders a "See full rankings" button below the card.
+  /// Used by the quick-create instant-ranking flow to surface the full
+  /// results without requiring the user to tap the card itself.
+  final VoidCallback? onSeeRankings;
+
+  /// Quick chats hide the speak-aloud (TTS) button — lean one-shot decision,
+  /// no chat-era audio chrome.
+  final bool hideTts;
+
   const PreviousWinnerPanel({
     super.key,
     required this.previousRoundWinners,
@@ -31,6 +39,8 @@ class PreviousWinnerPanel extends StatelessWidget {
     this.roundNumber,
     this.labelOverride,
     this.onTap,
+    this.onSeeRankings,
+    this.hideTts = false,
   });
 
   @override
@@ -97,18 +107,15 @@ class PreviousWinnerPanel extends StatelessWidget {
                               label: cardLabel,
                               borderColor: AppColors.consensus,
                               glowColor: AppColors.consensus,
-                              mediaAbove: currentWinner.videoUrl != null
-                                  ? ConvergenceVideoCard(
-                                      key: ValueKey('round-video-${currentWinner.id}'),
-                                      videoUrl: currentWinner.videoUrl!,
-                                      scrubBarColor: AppColors.consensus,
-                                    )
-                                  : null,
-                              trailing: TtsButton(
-                                text: currentWinner.displayContent ?? '',
-                                audioUrl: currentWinner.audioUrl,
-                                color: AppColors.consensus,
-                              ),
+                              // Convergence videos removed from chat display.
+                              mediaAbove: null,
+                              trailing: hideTts
+                                  ? null
+                                  : TtsButton(
+                                      text: currentWinner.displayContent ?? '',
+                                      audioUrl: currentWinner.audioUrl,
+                                      color: AppColors.consensus,
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 4),
@@ -136,18 +143,15 @@ class PreviousWinnerPanel extends StatelessWidget {
                         label: cardLabel,
                         borderColor: AppColors.consensus,
                         glowColor: AppColors.consensus,
-                        mediaAbove: currentWinner.videoUrl != null
-                            ? ConvergenceVideoCard(
-                                key: ValueKey('round-video-${currentWinner.id}'),
-                                videoUrl: currentWinner.videoUrl!,
-                                scrubBarColor: AppColors.consensus,
-                              )
-                            : null,
-                        trailing: TtsButton(
-                          text: currentWinner.displayContent ?? '',
-                          audioUrl: currentWinner.audioUrl,
-                          color: AppColors.consensus,
-                        ),
+                        // Convergence videos removed from chat display.
+                        mediaAbove: null,
+                        trailing: hideTts
+                            ? null
+                            : TtsButton(
+                                text: currentWinner.displayContent ?? '',
+                                audioUrl: currentWinner.audioUrl,
+                                color: AppColors.consensus,
+                              ),
                       ),
 
                     // Page dots (only when multiple winners)
@@ -166,6 +170,15 @@ class PreviousWinnerPanel extends StatelessWidget {
             ),
           ),
         ),
+        // "See full rankings" CTA (quick-create instant-ranking flow only).
+        if (onSeeRankings != null) ...[
+          const SizedBox(height: 10),
+          FilledButton.tonalIcon(
+            onPressed: onSeeRankings,
+            icon: const Icon(Icons.leaderboard),
+            label: const Text('See full rankings'),
+          ),
+        ],
       ],
     );
   }

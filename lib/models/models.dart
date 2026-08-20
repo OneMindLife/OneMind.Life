@@ -1,6 +1,8 @@
 // Export all models
 export 'chat.dart';
+export 'chat_credits.dart';
 export 'chat_dashboard_info.dart';
+export 'chat_detail_bootstrap.dart';
 export 'consensus_item.dart';
 export 'cycle.dart';
 export 'join_request.dart';

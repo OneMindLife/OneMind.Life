@@ -111,7 +111,7 @@ Deno.serve(async (req: Request) => {
         proposing_duration_seconds,
         rating_duration_seconds,
         propositions_per_user,
-        confirmation_rounds,
+        confirmation_rounds:confirmation_rounds_required,
         start_mode,
         auto_start_participant_count,
         created_at,

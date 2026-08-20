@@ -98,11 +98,16 @@ class AffirmationService {
   }
 
   /// Realtime subscription to affirmation events for [roundId]. Mirrors
-  /// the round-skips subscription pattern. Caller cancels via the
-  /// returned channel's `unsubscribe()`.
+  /// the round-skips subscription pattern: callback receives the event
+  /// type plus new/old records so the consumer can patch state in place
+  /// instead of refetching on every event.
   RealtimeChannel subscribeToAffirmations(
     int roundId,
-    void Function() onUpdate,
+    void Function(
+      PostgresChangeEvent event,
+      Map<String, dynamic>? newRecord,
+      Map<String, dynamic>? oldRecord,
+    ) onUpdate,
   ) {
     return _client
         .channel('affirmations:$roundId')
@@ -115,7 +120,11 @@ class AffirmationService {
             column: 'round_id',
             value: roundId,
           ),
-          callback: (_) => onUpdate(),
+          callback: (payload) => onUpdate(
+            payload.eventType,
+            payload.newRecord.isEmpty ? null : payload.newRecord,
+            payload.oldRecord.isEmpty ? null : payload.oldRecord,
+          ),
         )
         .subscribe();
   }

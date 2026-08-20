@@ -73,11 +73,13 @@ void main() {
     test('defaults() returns correct default values', () {
       final settings = AutoAdvanceSettings.defaults();
 
-      // Smart defaults: 100% participation triggers early advance
-      expect(settings.enableProposing, true);
+      // Default: auto-advance OFF (phases run for their full time / fixed
+      // cadence). The user enables it in the wizard's auto-advance step, at
+      // which point the threshold values below take effect.
+      expect(settings.enableProposing, false);
       expect(settings.proposingThresholdPercent, 100);
       expect(settings.proposingThresholdCount, 3);
-      expect(settings.enableRating, true);
+      expect(settings.enableRating, false);
       expect(settings.ratingThresholdPercent, 100);
       expect(settings.ratingThresholdCount, 2);
     });

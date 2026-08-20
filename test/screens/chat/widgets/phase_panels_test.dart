@@ -463,6 +463,77 @@ void main() {
       await tester.tap(find.byKey(const Key('submit-proposition-button')));
       expect(submitCalled, isTrue);
     });
+
+    // Host manual-advance control (proposing → voting). Only renders when the
+    // parent passes onAdvancePhase (manual-mode host); enabled at >=2 ideas.
+    testWidgets('advance-to-voting button hidden when onAdvancePhase is null',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: const [],
+            allPropositionsCount: 3,
+            propositionController: TextEditingController(),
+            onSubmit: () {},
+            isHost: true,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('advance-to-rating-button')), findsNothing);
+    });
+
+    testWidgets('advance-to-voting button shows + ENABLED for host at >=2 ideas',
+        (tester) async {
+      var advanced = false;
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: const [],
+            allPropositionsCount: 2,
+            propositionController: TextEditingController(),
+            onSubmit: () {},
+            isHost: true,
+            onAdvancePhase: () => advanced = true,
+            participationPercent: 100,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final btn = find.byKey(const Key('advance-to-rating-button'));
+      expect(btn, findsOneWidget);
+      expect(find.text('100% of people here have proposed'), findsOneWidget);
+      await tester.tap(btn);
+      expect(advanced, isTrue);
+    });
+
+    testWidgets('advance-to-voting button DISABLED below 2 ideas',
+        (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          ProposingStatePanel(
+            roundCustomId: 1,
+            propositionsPerUser: 1,
+            myPropositions: const [],
+            allPropositionsCount: 1,
+            propositionController: TextEditingController(),
+            onSubmit: () {},
+            isHost: true,
+            onAdvancePhase: () {},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final btn = tester.widget<FilledButton>(
+          find.byKey(const Key('advance-to-rating-button')));
+      expect(btn.onPressed, isNull); // disabled until there are >=2 ideas
+    });
   });
 
   group('HostPausedBanner', () {

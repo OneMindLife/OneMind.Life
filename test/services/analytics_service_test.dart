@@ -220,18 +220,21 @@ void main() {
             )).called(1);
       });
 
-      test('logPurchaseCompleted uses Firebase purchase event', () async {
+      test('logPurchaseCompleted logs purchase event', () async {
         await analyticsService.logPurchaseCompleted(
           credits: 500,
           value: 5.00,
           transactionId: 'txn-abc123',
         );
 
-        verify(() => mockAnalytics.logPurchase(
-              currency: 'USD',
-              value: 5.00,
-              transactionId: 'txn-abc123',
-              items: any(named: 'items'),
+        verify(() => mockAnalytics.logEvent(
+              name: 'purchase',
+              parameters: {
+                'currency': 'USD',
+                'value': 5.00,
+                'transaction_id': 'txn-abc123',
+                'credits': 500,
+              },
             )).called(1);
       });
 
@@ -261,16 +264,43 @@ void main() {
     });
 
     group('Engagement Events', () {
-      test('logInviteShared uses Firebase share event', () async {
+      test('logInviteShared logs share event', () async {
         await analyticsService.logInviteShared(
           chatId: 'chat-123',
           shareMethod: 'copy',
         );
 
-        verify(() => mockAnalytics.logShare(
-              contentType: 'invite_code',
-              itemId: 'chat-123',
-              method: 'copy',
+        verify(() => mockAnalytics.logEvent(
+              name: 'share',
+              parameters: {
+                'content_type': 'invite_code',
+                'item_id': 'chat-123',
+                'method': 'copy',
+              },
+            )).called(1);
+      });
+
+      test('logInviteDialogShown logs auto flag as 1/0', () async {
+        await analyticsService.logInviteDialogShown(
+          chatId: 'chat-465',
+          auto: true,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'invite_dialog_shown',
+              parameters: {'item_id': 'chat-465', 'auto': 1},
+            )).called(1);
+      });
+
+      test('logInviteDialogDismissed logs had_shared as 1/0', () async {
+        await analyticsService.logInviteDialogDismissed(
+          chatId: 'chat-465',
+          hadShared: false,
+        );
+
+        verify(() => mockAnalytics.logEvent(
+              name: 'invite_dialog_dismissed',
+              parameters: {'item_id': 'chat-465', 'had_shared': 0},
             )).called(1);
       });
 
@@ -290,7 +320,7 @@ void main() {
 
         verify(() => mockAnalytics.logEvent(
               name: 'donate_clicked',
-              parameters: {'source': 'home_app_bar'},
+              parameters: {'event_source': 'home_app_bar'},
             )).called(1);
       });
     });
@@ -358,7 +388,7 @@ void main() {
               name: 'chat_video_impression',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
               },
             )).called(1);
@@ -374,7 +404,7 @@ void main() {
               name: 'chat_video_impression',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'initial_message',
+                'event_source': 'initial_message',
               },
             )).called(1);
       });
@@ -392,7 +422,7 @@ void main() {
               name: 'chat_video_started',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'autoplay': 1,
                 'duration_seconds': 80.0,
@@ -412,7 +442,7 @@ void main() {
               name: 'chat_video_progress',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'percent': 50,
               },
@@ -431,7 +461,7 @@ void main() {
               name: 'chat_video_completed',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'duration_seconds': 80.0,
               },
@@ -451,7 +481,7 @@ void main() {
               name: 'chat_video_abandoned',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'initial_message',
+                'event_source': 'initial_message',
                 'watch_time_seconds': 12.5,
                 'percent_watched': 42,
                 'duration_seconds': 30.0,
@@ -471,7 +501,7 @@ void main() {
               name: 'chat_video_unmuted',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'at_seconds': 4.2,
               },
@@ -490,7 +520,7 @@ void main() {
               name: 'chat_video_fullscreen',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'at_seconds': 10.0,
               },
@@ -508,7 +538,7 @@ void main() {
               name: 'chat_audio_played',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'cycle_winner',
+                'event_source': 'cycle_winner',
                 'cycle_id': 573,
                 'has_pre_recorded': 1,
               },
@@ -523,7 +553,7 @@ void main() {
               name: 'chat_audio_played',
               parameters: {
                 'chat_id': 'chat-246',
-                'source': 'initial_message',
+                'event_source': 'initial_message',
                 'has_pre_recorded': 0,
               },
             )).called(1);
@@ -574,6 +604,78 @@ void main() {
           () => analyticsService.logChatOpened(chatId: 'chat-123'),
           throwsException,
         );
+      });
+    });
+
+    group('Quick-chat funnel', () {
+      test('logQuickChatStarted', () async {
+        await analyticsService.logQuickChatStarted();
+        verify(() => mockAnalytics.logEvent(
+            name: 'quick_chat_started', parameters: {})).called(1);
+      });
+
+      test('logQuickChatAdvanced', () async {
+        await analyticsService.logQuickChatAdvanced();
+        verify(() => mockAnalytics.logEvent(
+            name: 'quick_chat_advanced', parameters: {})).called(1);
+      });
+
+      test('logQuickChatVoteDone', () async {
+        await analyticsService.logQuickChatVoteDone();
+        verify(() => mockAnalytics.logEvent(
+            name: 'quick_chat_vote_done', parameters: {})).called(1);
+      });
+
+      test('logQuickChatCreateAnother', () async {
+        await analyticsService.logQuickChatCreateAnother();
+        verify(() => mockAnalytics.logEvent(
+            name: 'quick_chat_create_another', parameters: {})).called(1);
+      });
+
+      test('logQuickChatShare logs the source', () async {
+        await analyticsService.logQuickChatShare(source: 'invite');
+        verify(() => mockAnalytics.logEvent(
+              name: 'quick_chat_share',
+              parameters: {'event_source': 'invite'},
+            )).called(1);
+      });
+
+      test('logResultsViewed logs mode, round and quick-chat flag as 1/0',
+          () async {
+        await analyticsService.logResultsViewed(
+          chatId: 'chat-771',
+          roundNumber: 2,
+          ratingMode: 'matches',
+          isQuickChat: true,
+        );
+        verify(() => mockAnalytics.logEvent(
+              name: 'results_viewed',
+              parameters: {
+                'chat_id': 'chat-771',
+                'round_number': 2,
+                'rating_mode': 'matches',
+                'is_quick_chat': 1,
+              },
+            )).called(1);
+      });
+
+      test('logResultsViewed flags a full-wizard grid view as is_quick_chat=0',
+          () async {
+        await analyticsService.logResultsViewed(
+          chatId: 'chat-772',
+          roundNumber: 1,
+          ratingMode: 'grid',
+          isQuickChat: false,
+        );
+        verify(() => mockAnalytics.logEvent(
+              name: 'results_viewed',
+              parameters: {
+                'chat_id': 'chat-772',
+                'round_number': 1,
+                'rating_mode': 'grid',
+                'is_quick_chat': 0,
+              },
+            )).called(1);
       });
     });
   });
