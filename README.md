@@ -20,6 +20,8 @@ Think Reddit — if replies nested forever, were sorted by head-to-head votes in
 4. **Every vote re-ranks the room** — the best ideas rise on merit (pairwise voting produces a global ranking, like Elo — not a like-count)
 5. **Reply to any opinion to open a thread** — threads rank the same way and nest without limit, so the conversation branches into a tree of the group's best thinking
 
+The global room runs in **minute phases**: roughly one minute to propose, one minute to vote, then the winning take is pinned and a fresh round begins.
+
 ## Who Is It For?
 
 **Anyone who wants to know what a group — or the world — actually thinks**, judged on the idea rather than who's loudest:
@@ -32,6 +34,7 @@ Think Reddit — if replies nested forever, were sorted by head-to-head votes in
 - **Anonymous** — nobody sees who wrote what; ideas compete on merit, not status
 - **Head-to-head ranking** — pairwise voting sorts every opinion by direct comparison, not likes or karma
 - **Infinite threads** — every reply opens its own ranked sub-conversation; the conversation is a tree, not a flat feed
+- **Minute phases** — the global room cycles in ~1-minute rounds: propose, vote, winner pinned, repeat
 - **No sign-up** — open the chat and start, anonymous by default
 - **Open-source** — this repository
 
