@@ -354,6 +354,13 @@ export default function GlobalChat({
         </div>
       </header>
 
+      {/* Persistent conversion bar: the global room is volume; this is the bridge
+          to the product (custom chats in the Flutter app). Always visible. */}
+      <a className={s.createBar} href="https://app.onemind.life">
+        <span className={s.createText}>Want this with your group?</span>
+        <span className={s.createCta}>Create your own →</span>
+      </a>
+
       {/* Retention nudge (Telegram, post-participation): follow the channel that
           pings the daily winner + each new round → pulls them back. */}
       {showFollow && (

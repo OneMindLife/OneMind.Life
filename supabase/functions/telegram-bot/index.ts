@@ -76,6 +76,20 @@ function miniAppButton(label: string, payload: string) {
   };
 }
 
+// The Flutter app (app.onemind.life) — the actual product where users create
+// their own chats. The bot is a funnel; this button is the bridge to the product.
+const APP_URL = "https://app.onemind.life";
+
+// Welcome keyboard: the global room (volume) + the product (custom chats).
+function welcomeButtons() {
+  return {
+    inline_keyboard: [
+      [{ text: "🌍 Open the room →", url: `https://t.me/${BOT_USERNAME}/play?startapp=${GLOBAL_CODE}` }],
+      [{ text: "➕ Create your own chat →", url: APP_URL }],
+    ],
+  };
+}
+
 const ack = () => new Response("ok", { status: 200 });
 
 function escapeHtml(s: string): string {
@@ -260,8 +274,9 @@ async function handleChatMember(u: any): Promise<void> {
       `One room the whole world is in. Post what's actually on your mind — ` +
       `<b>anonymously</b> — read what everyone else is saying, and vote the best ` +
       `line to the top. No names, no followers, no algorithm.\n\n` +
-      `Every round, the room's best line rises and is kept.`,
-    { reply_markup: miniAppButton("🌍 Open the room →", GLOBAL_CODE) },
+      `Every round, the room's best line rises and is kept.\n\n` +
+      `Or make a private chat just for your group.`,
+    { reply_markup: welcomeButtons() },
   );
 }
 
@@ -282,8 +297,9 @@ async function handleMessage(msg: any): Promise<void> {
         `One room the whole world is in. Say what you actually think, ` +
         `<b>anonymously</b>; the room votes the best line to the top and keeps it. ` +
         `No account, no followers, no algorithm.\n\n` +
-        `Add me to a group to put the room in front of your people.`,
-      { reply_markup: miniAppButton("🌍 Open the room →", GLOBAL_CODE) },
+        `Add me to a group to put the room in front of your people — or create ` +
+        `your own private chat for just your group.`,
+      { reply_markup: welcomeButtons() },
     );
     return;
   }

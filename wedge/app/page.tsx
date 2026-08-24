@@ -3,11 +3,11 @@ import { Logotype, LegalFooter } from "./components/ui";
 import { CtaButton, TrackLandingView } from "./components/track";
 
 export const metadata: Metadata = {
-  // Root landing — "next step" positioning: OneMind is the group's democratic
-  // next-step engine, not a meeting or an idea contest.
-  title: "OneMind — What should your group do next?",
+  // Root landing — "stuck → decided" arc: OneMind is the group's democratic
+  // next-step engine for the moment every group hits (opinions, but no motion).
+  title: "OneMind — Stop going in circles. Decide what's next.",
   description:
-    "OneMind answers the one question every group always has: what do we do next? Everyone proposes, everyone rates, and the next step rises to the top — democratically.",
+    "Everyone has an opinion. OneMind turns them into one clear next step — everyone proposes, everyone rates, decided democratically. No loudest-voice-wins, no endless meetings.",
   alternates: { canonical: "https://onemind.life/" },
 };
 
@@ -18,15 +18,15 @@ export default function Home() {
       <div className="wrap">
         <Logotype />
 
-        {/* ── Hero ── */}
-        <h1>What should your group do next?</h1>
+        {/* ── Hero (the "stuck" moment → the "decided" promise) ── */}
+        <h1>Everyone has an opinion. No one&apos;s moving.</h1>
         <p className="sub">
-          There&apos;s always a next — and OneMind decides it democratically.
-          Everyone proposes, everyone rates, and a clear next step rises to the
-          top. No loudest-voice-wins, no endless meetings.
+          Your group is stuck in the same debate. OneMind breaks the loop —
+          everyone proposes, everyone rates, and one clear next step rises to the
+          top. Democratically. No loudest-voice-wins, no endless meetings.
         </p>
         <CtaButton
-          label="Try It Free"
+          label="Decide what's next"
           route="/"
           href="https://app.onemind.life"
         />
@@ -38,14 +38,14 @@ export default function Home() {
         {/* ── How It Works ── */}
         <section className="section">
           <h2>How It Works</h2>
-          <p className="section-sub">Three steps to decide what&apos;s next</p>
+          <p className="section-sub">From stuck to decided, in three steps</p>
           <div className="steps">
             <div className="step">
               <span className="step-num">1</span>
               <h3>Propose</h3>
               <p>
-                Everyone says what they think should happen next — anonymously.
-                No bias, no groupthink — just honest takes.
+                Everyone says what should happen next — anonymously. No bias, no
+                groupthink — just honest takes.
               </p>
             </div>
             <div className="step">
@@ -60,7 +60,7 @@ export default function Home() {
               <span className="step-num">3</span>
               <h3>Next Step</h3>
               <p>
-                A clear next step emerges — your group&apos;s direction, decided
+                One clear next step emerges — your group&apos;s direction, decided
                 democratically and ready to act on.
               </p>
             </div>
@@ -80,29 +80,27 @@ export default function Home() {
 
         {/* ── Why OneMind? ── */}
         <section className="section">
-          <h2>Why OneMind?</h2>
+          <h2>Why groups stop going in circles</h2>
           <div className="steps">
             <div className="step">
               <h3>Anonymous Proposals</h3>
               <p>
-                Everyone submits ideas privately. No anchoring, no groupthink, no
-                social pressure. Ideas stand on their own merit — not on who said
-                them.
+                No anchoring, no groupthink — ideas stand on their own merit, not
+                on who said them.
               </p>
             </div>
             <div className="step">
               <h3>Structured Rounds</h3>
               <p>
-                Timed proposing and rating phases keep things moving. The
-                structure does the heavy lifting — no facilitator bias, no endless
-                discussion, no decision fatigue.
+                Timed proposing and rating keep it moving — no facilitator bias,
+                no endless discussion, no decision fatigue.
               </p>
             </div>
             <div className="step">
               <h3>Fast Results</h3>
               <p>
-                Run one quick round and lock in a winner in minutes — no meetings,
-                no back-and-forth. Go deeper when the decision really matters.
+                One quick round and you have your next step — no meetings, no
+                back-and-forth.
               </p>
             </div>
           </div>
@@ -122,12 +120,12 @@ export default function Home() {
 
         {/* ── Closing CTA ── */}
         <section className="section closing">
-          <h2>Ready to decide what&apos;s next?</h2>
+          <h2>Ready to stop going in circles?</h2>
           <p className="section-sub">
-            Try OneMind free — no account, start in 30 seconds.
+            Try OneMind free — no account, a clear next step in 30 seconds.
           </p>
           <CtaButton
-            label="Try It Free"
+            label="Decide what's next"
             route="/"
             href="https://app.onemind.life"
           />

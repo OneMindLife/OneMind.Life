@@ -57,6 +57,13 @@
         ]
       },
       {
+        "comment": "Root landing page is served extensionless, so **/*.html misses it; without this it caches for 1 hour (Firebase default) and landing changes show stale.",
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+        ]
+      },
+      {
         "comment": "Client-shell routes are served via rewrite (extensionless URLs) so the **/*.html rule above misses them; without this they cache for an hour and users get stale JS after every deploy.",
         "source": "/g/**",
         "headers": [
