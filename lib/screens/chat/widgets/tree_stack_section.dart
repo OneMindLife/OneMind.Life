@@ -1172,7 +1172,7 @@ class _TreeStackSectionState extends ConsumerState<TreeStackSection> {
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _submitToRound(roundId),
-                maxLength: 300,
+                maxLength: 600,
                 buildCounter:
                     (
                       _, {
@@ -1223,7 +1223,7 @@ class _TreeStackSectionState extends ConsumerState<TreeStackSection> {
                 ),
                 textInputAction: TextInputAction.send,
                 onSubmitted: (_) => _submit(targetPropositionId),
-                maxLength: 300,
+                maxLength: 600,
                 buildCounter:
                     (
                       _, {

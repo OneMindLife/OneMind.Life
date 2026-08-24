@@ -29,6 +29,8 @@ export function AppShell({
 export function LegalFooter() {
   return (
     <footer className="legal-foot">
+      <span>© {new Date().getFullYear()} onemind.life LLC</span>
+      <span aria-hidden="true">·</span>
       <a href="/terms/">Terms</a>
       <span aria-hidden="true">·</span>
       <a href="/privacy/">Privacy</a>

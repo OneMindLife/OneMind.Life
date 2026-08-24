@@ -300,7 +300,7 @@ class ChatValidators {
   static const int maxInitialMessageLength = 1000;
 
   /// Maximum proposition content length.
-  static const int maxPropositionLength = 500;
+  static const int maxPropositionLength = 600;
 
   /// Validate chat name.
   static ValidationResult chatName(String? value) {

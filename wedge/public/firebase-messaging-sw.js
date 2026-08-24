@@ -7,7 +7,7 @@
 // client half: it renders those background messages and routes a tap into the
 // chat.
 //
-// FCM project is `YOUR_FIREBASE_PROJECT_ID` (sender YOUR_MESSAGING_SENDER_ID) — the SAME project whose
+// FCM project is `onemind-bfba5` (sender 772415659270) — the SAME project whose
 // service account the sender uses. It is INDEPENDENT of where these files are
 // hosted (onemind-95fb2). Config is copied verbatim from the Flutter app's
 // web/firebase-messaging-sw.js; only the click-through URL and icon differ
@@ -16,12 +16,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js
 importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: 'YOUR_FIREBASE_API_KEY',
-  appId: 'YOUR_FIREBASE_APP_ID',
-  messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-  projectId: 'YOUR_FIREBASE_PROJECT_ID',
-  authDomain: 'YOUR_FIREBASE_PROJECT_ID.firebaseapp.com',
-  storageBucket: 'YOUR_FIREBASE_PROJECT_ID.firebasestorage.app',
+  apiKey: 'AIzaSyAdxcfvFN10TYeVGEmLzwhz1GSYfJqRmXA',
+  appId: '1:772415659270:web:d7e397a8fd8d5af7dfd287',
+  messagingSenderId: '772415659270',
+  projectId: 'onemind-bfba5',
+  authDomain: 'onemind-bfba5.firebaseapp.com',
+  storageBucket: 'onemind-bfba5.firebasestorage.app',
   measurementId: 'G-2XCF0J8BGQ',
 });
 

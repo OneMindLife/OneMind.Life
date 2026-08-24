@@ -39,7 +39,7 @@ export default function BlogIndex() {
         </p>
         <p className="fine">
           Or skip the theory —{" "}
-          <a href="/opinions/GLOBAL/">read what people actually think, ranked →</a>
+          <a href="/c/GLOBAL">read what people actually think, ranked →</a>
         </p>
       </header>
 

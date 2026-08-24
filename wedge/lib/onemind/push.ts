@@ -7,16 +7,16 @@ import { supabase, ensureSignedIn } from "@/lib/supabase/client";
 //
 // Firebase is loaded LAZILY from the gstatic CDN only when the user opts in, so
 // it never touches the wedge's cold-start bundle (fast mobile load is the whole
-// reason the wedge exists over Flutter). FCM project = YOUR_FIREBASE_PROJECT_ID, the same
+// reason the wedge exists over Flutter). FCM project = onemind-bfba5, the same
 // project whose service account the sender uses; independent of hosting.
 
 const FIREBASE_CONFIG = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
-  appId: "YOUR_FIREBASE_APP_ID",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  projectId: "YOUR_FIREBASE_PROJECT_ID",
-  authDomain: "YOUR_FIREBASE_PROJECT_ID.firebaseapp.com",
-  storageBucket: "YOUR_FIREBASE_PROJECT_ID.firebasestorage.app",
+  apiKey: "AIzaSyAdxcfvFN10TYeVGEmLzwhz1GSYfJqRmXA",
+  appId: "1:772415659270:web:d7e397a8fd8d5af7dfd287",
+  messagingSenderId: "772415659270",
+  projectId: "onemind-bfba5",
+  authDomain: "onemind-bfba5.firebaseapp.com",
+  storageBucket: "onemind-bfba5.firebasestorage.app",
   measurementId: "G-2XCF0J8BGQ",
 };
 

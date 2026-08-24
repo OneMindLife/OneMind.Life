@@ -290,12 +290,12 @@ export default function LeaderChallenge({
               onChange={(e) => setText(e.target.value)}
               placeholder={t("lc.altPlaceholder")}
               rows={2}
-              maxLength={300}
+              maxLength={600}
               autoFocus
             />
           </div>
           <div className="submit-row">
-            <div className="count">{text.length} / 300</div>
+            <div className="count">{text.length} / 600</div>
             <button
               className={`submit${text.trim() ? " beckon-w" : ""}`}
               onClick={submitChallenger}

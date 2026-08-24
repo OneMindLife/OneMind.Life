@@ -473,7 +473,7 @@ class ProposingStatePanel extends StatelessWidget {
                         ),
                         minLines: 1,
                         maxLines: 5,
-                        maxLength: 200,
+                        maxLength: 600,
                       );
                     },
                   ),

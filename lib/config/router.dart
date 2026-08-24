@@ -35,14 +35,10 @@ bool _tutorialCompletionInProgress = false;
 /// Whether a request for the marketing landing (`/`) should be redirected
 /// straight into the app (`/home`) instead of showing the hero.
 ///
-/// The landing is a WEB-ONLY acquisition surface (SEO + new-visitor funnel):
-///  * **Native app** (`isWeb == false`): always skip it. A user who installed
-///    the app already converted, and opening a native app to a "Try It Free"
-///    hero confused App Store review — the first screen matched no screenshot,
-///    causing repeated Guideline 2.3.3 rejections.
-///  * **Web** (`isWeb == true`): unchanged — installed PWA users skip it (this
-///    also catches the old PWA manifest's `start_url="."` → `/`), while new web
-///    visitors still see the marketing landing.
+/// The marketing landing moved to the WEDGE (onemind.life). This Flutter app is
+/// now purely the app surface (app.onemind.life), so `/` always opens `/home`
+/// on every platform (native, web, and installed PWA). The `LandingScreen`
+/// route is retained but no longer reached.
 ///
 /// Pure (no platform calls) so every branch is unit-testable.
 bool shouldSkipLandingForApp({
@@ -50,7 +46,7 @@ bool shouldSkipLandingForApp({
   required bool isWeb,
   required bool isStandalonePwa,
 }) =>
-    isLandingRoute && (!isWeb || isStandalonePwa);
+    isLandingRoute;
 
 /// App router configuration
 final routerProvider = Provider<GoRouter>((ref) {

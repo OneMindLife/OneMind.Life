@@ -51,12 +51,27 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   List<String> get _stepNames => [
     'question', 'visibility', 'schedule',
     if (_scheduleMode == ScheduleMode.always)
-      ...['timing', 'first_deadline']
+      ...['timing', if (_showFirstDeadlineStep) 'first_deadline']
     else
       ...['schedule_config', 'timing'],
-    'auto_advance', 'participation', 'convergence', 'translations', 'agents',
+    if (_startMode == StartMode.auto) 'auto_advance',
+    'participation', 'convergence', 'translations', 'agents',
     if (_needsHostName) 'host_name',
   ];
+
+  /// Whether the "First deadline" (cadence anchor) step should appear: only
+  /// for Always-Active, automatic (timed) chats whose phase durations can
+  /// actually carry a daily rhythm — equal phases, whole-hour, dividing 24h.
+  /// Manual mode has no timer, and incoherent durations (e.g. 5h, or unequal
+  /// phases) can't hold a rhythm, so the step is skipped in both cases.
+  bool get _showFirstDeadlineStep =>
+      _scheduleMode == ScheduleMode.always &&
+      _startMode == StartMode.auto &&
+      isCadenceCoherent(
+        _timerSettings.proposingDuration,
+        _timerSettings.ratingDuration,
+      );
+
   String _stepName(int i) {
     final names = _stepNames;
     return (i >= 0 && i < names.length) ? names[i] : 'step_$i';
@@ -81,8 +96,8 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   final List<String> _inviteEmails = [];
   final bool _requireAuth = false;
   bool _requireApproval = false;
-  final StartMode _startMode = StartMode.auto;
-  final StartMode _ratingStartMode = StartMode.auto;
+  StartMode _startMode = StartMode.auto;
+  StartMode _ratingStartMode = StartMode.auto;
   // Start as soon as the host joins (count == 1) so creators can participate
   // immediately — AI seat-fill provides ideas to vote on for a solo/sparse
   // group, and humans who join during the 12h proposing window take part too.
@@ -231,6 +246,18 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     });
   }
 
+  /// Manual vs automatic phase advancement. Manual sets BOTH start_mode and
+  /// rating_start_mode to manual (the host advances proposing → rating and
+  /// rating → next round by hand; no timers). Manual also clears the cadence
+  /// anchor — a "first deadline" presumes a timer, so it must not linger.
+  void _onManualModeChanged(bool manual) {
+    setState(() {
+      _startMode = manual ? StartMode.manual : StartMode.auto;
+      _ratingStartMode = manual ? StartMode.manual : StartMode.auto;
+      if (manual) _cadenceAnchorAt = null;
+    });
+  }
+
   void _goToStep(int step) {
     setState(() => _currentStep = step);
     _analytics.logCreateChatStepViewed(
@@ -244,7 +271,7 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
     );
   }
 
-  int get _totalSteps => _needsHostName ? 11 : 10;
+  int get _totalSteps => _stepNames.length;
 
   void _nextStep() {
     if (_currentStep < _totalSteps - 1) {
@@ -508,18 +535,23 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     WizardStepTiming(
                       timerSettings: _timerSettings,
                       onTimerSettingsChanged: _onTimerSettingsChanged,
+                      manualMode: _startMode == StartMode.manual,
+                      onManualModeChanged: _onManualModeChanged,
                       onContinue: _nextStep,
                     ),
-                    WizardStepFirstDeadline(
-                      timerSettings: _timerSettings,
-                      cadenceAnchorAt: _cadenceAnchorAt,
-                      onCadenceAnchorChanged: (anchor) {
-                        setState(() => _cadenceAnchorAt = anchor);
-                      },
-                      timezoneName: _scheduleSettings.timezone,
-                      adaptiveEnabled: _adaptiveSettings.enabled,
-                      onContinue: _nextStep,
-                    ),
+                    // Skip unless a cadence anchor ("daily rhythm") is possible:
+                    // timed, Always-Active, and a coherent (24h-dividing) duration.
+                    if (_showFirstDeadlineStep)
+                      WizardStepFirstDeadline(
+                        timerSettings: _timerSettings,
+                        cadenceAnchorAt: _cadenceAnchorAt,
+                        onCadenceAnchorChanged: (anchor) {
+                          setState(() => _cadenceAnchorAt = anchor);
+                        },
+                        timezoneName: _scheduleSettings.timezone,
+                        adaptiveEnabled: _adaptiveSettings.enabled,
+                        onContinue: _nextStep,
+                      ),
                   ] else ...[
                     WizardStepScheduleConfig(
                       scheduleMode: _scheduleMode,
@@ -532,18 +564,23 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
                     WizardStepTiming(
                       timerSettings: _timerSettings,
                       onTimerSettingsChanged: _onTimerSettingsChanged,
+                      manualMode: _startMode == StartMode.manual,
+                      onManualModeChanged: _onManualModeChanged,
                       onContinue: _nextStep,
                     ),
                   ],
 
-                  // Step 4: Auto-advance (early advance toggle)
-                  WizardStepAutoAdvance(
-                    autoAdvanceSettings: _autoAdvanceSettings,
-                    onAutoAdvanceSettingsChanged: (settings) {
-                      setState(() => _autoAdvanceSettings = settings);
-                    },
-                    onContinue: _nextStep,
-                  ),
+                  // Step 4: Auto-advance (early advance toggle) — only for
+                  // automatic (timed) chats; manual mode has no timer to
+                  // advance early, so this step is skipped entirely.
+                  if (_startMode == StartMode.auto)
+                    WizardStepAutoAdvance(
+                      autoAdvanceSettings: _autoAdvanceSettings,
+                      onAutoAdvanceSettingsChanged: (settings) {
+                        setState(() => _autoAdvanceSettings = settings);
+                      },
+                      onContinue: _nextStep,
+                    ),
 
                   // Step 5: Participation (skip settings)
                   WizardStepParticipation(

@@ -437,7 +437,7 @@ export function ProposingSection({
                 onChange={setDraft}
                 onSubmit={() => void send()}
                 placeholder="Search or add your opinion…"
-                maxLength={300}
+                maxLength={600}
                 disabled={sending}
               />
               <SendButton

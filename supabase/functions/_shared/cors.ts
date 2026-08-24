@@ -72,14 +72,15 @@ function isAllowedOrigin(origin: string | null): boolean {
   }
 
   // OneMind production origins — always allowed regardless of the
-  // ALLOWED_ORIGINS secret: the live domain (+www) and BOTH Firebase Hosting
-  // sites (onemind-95fb2 = the wedge on onemind.life; onemind-instant = the
-  // Flutter instant/self-test app). Without this, browser calls from
-  // onemind-instant.web.app fail CORS ("failed to fetch") because the secret
-  // only listed onemind.life.
+  // ALLOWED_ORIGINS secret: the live domain (www + app subdomains) and the
+  // Firebase Hosting sites (onemind-95fb2 = the wedge on onemind.life;
+  // onemind-app = the Flutter app on app.onemind.life; onemind-instant = the
+  // Flutter instant/self-test app). Without this, browser calls from these
+  // origins fail CORS ("failed to fetch") because the secret only listed
+  // onemind.life.
   if (
-    /^https:\/\/(www\.)?onemind\.life$/.test(origin) ||
-    /^https:\/\/onemind-(95fb2|instant)\.web\.app$/.test(origin)
+    /^https:\/\/(www\.|app\.)?onemind\.life$/.test(origin) ||
+    /^https:\/\/onemind-(95fb2|instant|app)\.web\.app$/.test(origin)
   ) {
     return true;
   }

@@ -60,6 +60,20 @@
     })();
   </script>
 
+  <!-- app.onemind.life is the app surface — no marketing landing at the root.
+       The marketing landing now lives on the wedge (onemind.life). Redirect
+       '/' straight to /home so a visitor lands in the app, not the hero. -->
+  <script>
+    (function () {
+      try {
+        var p = window.location.pathname;
+        if (p === '/' || p === '') {
+          window.location.replace('/home' + window.location.search + window.location.hash);
+        }
+      } catch (_) {}
+    })();
+  </script>
+
   <!-- Ad-traffic routing. Google Ads sends clicks to /home, but the value-first
        demo is at /try. Send paid clicks (Google click IDs present) from
        /home → /try, preserving the query string so GA4/PostHog attribution
@@ -184,12 +198,12 @@
     import { getAnalytics, logEvent } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
 
     const firebaseConfig = {
-      apiKey: 'YOUR_FIREBASE_API_KEY',
-      appId: 'YOUR_FIREBASE_APP_ID',
-      messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-      projectId: 'YOUR_FIREBASE_PROJECT_ID',
-      authDomain: 'YOUR_FIREBASE_PROJECT_ID.firebaseapp.com',
-      storageBucket: 'YOUR_FIREBASE_PROJECT_ID.firebasestorage.app',
+      apiKey: 'AIzaSyAdxcfvFN10TYeVGEmLzwhz1GSYfJqRmXA',
+      appId: '1:772415659270:web:d7e397a8fd8d5af7dfd287',
+      messagingSenderId: '772415659270',
+      projectId: 'onemind-bfba5',
+      authDomain: 'onemind-bfba5.firebaseapp.com',
+      storageBucket: 'onemind-bfba5.firebasestorage.app',
       measurementId: 'G-BMGWEGECWY',
     };
 

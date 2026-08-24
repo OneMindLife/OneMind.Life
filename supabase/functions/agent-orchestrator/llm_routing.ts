@@ -7,7 +7,7 @@
 
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export const DEFAULT_MODEL = "deepseek-chat";
+export const DEFAULT_MODEL = "deepseek-v4-pro";
 
 // Per-request store so callLLM can pick a backend without every call site
 // threading a model string through every function.

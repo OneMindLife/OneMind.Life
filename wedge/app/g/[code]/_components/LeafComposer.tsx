@@ -91,7 +91,7 @@ export function LeafComposer({
               onChange={setDraft}
               onSubmit={() => void send()}
               placeholder="Add your opinion…"
-              maxLength={300}
+              maxLength={600}
               disabled={sending}
             />
             <SendButton

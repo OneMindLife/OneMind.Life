@@ -20,7 +20,7 @@ import {
 
 Deno.test("activeModel: falls back to DEFAULT_MODEL with no context and no override", () => {
   assertEquals(activeModel(), DEFAULT_MODEL);
-  assertEquals(DEFAULT_MODEL, "deepseek-chat");
+  assertEquals(DEFAULT_MODEL, "deepseek-v4-pro");
 });
 
 Deno.test("activeModel: reads from AsyncLocalStorage when set", () => {

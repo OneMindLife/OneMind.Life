@@ -833,7 +833,7 @@ function Composer({
           placeholder={placeholders[phIdx]}
           value={draft}
           disabled={busy}
-          maxLength={300}
+          maxLength={600}
           onInput={grow}
           onFocus={() => {
             if (focusTracked.current) return;

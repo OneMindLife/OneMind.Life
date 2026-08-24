@@ -43,6 +43,6 @@ request-to-join for approval-required, reopen for existing members). No separate
 `/join` step. Routes: `/`, `/<seo-slug>`, `/create`, `/c/<code>`.
 
 ## Backend
-All RPCs / realtime / RLS reused as-is (Supabase project `YOUR_SUPABASE_PROJECT_REF`).
+All RPCs / realtime / RLS reused as-is (Supabase project `ccyuxrtrklgpkzcryzpj`).
 Contracts catalogued in `../docs/wedge-spec/04-data-contracts.md`. pgtap suite
 (in the parent repo) remains the backend's regression guard — unchanged.

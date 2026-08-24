@@ -1,6 +1,3 @@
-# Binary archives
-*.tar.gz
-
 # Environment files
 .env
 .env.*
@@ -82,4 +79,48 @@ e2e/playwright-report/
 e2e/blob-report/
 e2e/.env
 !e2e/.env.example
+
+# Load simulator (multi-client Playwright stress test) - local only
+tools/load-sim/node_modules/
+tools/load-sim/*.png
 onemind-bfba5-firebase-adminsdk-fbsvc-1f7d3feb27.json
+
+# Firebase Hosting deploy cache
+.firebase/
+
+# Build-time keys (Sentry DSN, PostHog key) — client keys, kept out of source
+dart_define.json
+store-assets/archive/
+
+# load-sim scratch scripts + local run artifacts (kept out of the repo)
+tools/load-sim/*.cjs
+tools/load-sim/*.mjs
+.playwright-mcp/
+.agents/
+/deeplink-*.png
+
+# AI-generated video assets (large binaries, not for commit)
+runway-assets/
+
+# Playwright browsers/ffmpeg cache
+.pw-browsers/
+
+# Transient reference screenshots / marketing drafts (not shipped)
+/hug.png
+/nocont.png
+/nofeed.png
+/norecord.png
+/nostats.png
+/one_state.png
+/order.png
+/repo_landing.png
+/room-closed.png
+/onemind_tiebreak_01.mp4
+/firebase.preview.json
+/.mcp.json.*.bak
+
+# Large marketing/store binaries + source video (kept out of git)
+/OneMind Updated Video.mp4
+/marketing/ads/
+/marketing/video-2026-08/
+/store-assets/play-2026-08/

@@ -122,11 +122,11 @@ export default function Proposing({
               placeholder={t("prop.placeholder")}
               rows={2}
               disabled={busy}
-              maxLength={300}
+              maxLength={600}
             />
           </div>
           <div className="submit-row">
-            <div className="count">{text.length} / 300</div>
+            <div className="count">{text.length} / 600</div>
             <button
               className={`submit${text.trim() ? " beckon-w" : ""}`}
               onClick={add}

@@ -108,6 +108,9 @@ async function callLLM(
   if (params.max_tokens !== undefined) openaiParams.max_tokens = params.max_tokens;
   if (params.temperature !== undefined) openaiParams.temperature = params.temperature;
   if (params.response_format !== undefined) openaiParams.response_format = params.response_format;
+  // TEST: deepseek-v4-pro reasoning (thinking mode ON — its default). We're
+  // deliberately NOT disabling thinking so we can time whether the edge
+  // function can finish a reasoned propose/rate within the gateway window.
   const response = await openai.chat.completions.create(openaiParams, requestOptions);
   const content = response.choices?.[0]?.message?.content ?? "";
   return { choices: [{ message: { content } }] };
@@ -117,7 +120,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const MAX_CONTENT_LENGTH = 200;
 const LOG_PREFIX = "[AGENT-ORCHESTRATOR]";
-const LLM_TIMEOUT_MS = 60_000;      // 60s per Claude call — typically responds in 5-30s
+const LLM_TIMEOUT_MS = 110_000;    // 110s per LLM call — headroom for v4-pro reasoning, under the 120s pg_net trigger timeout
 const TAVILY_TIMEOUT_MS = 15_000;   // 15s for Tavily search (raw results, no synthesis)
 const TAVILY_MAX_RESULTS = 10;      // Max search results per Tavily call
 const WORKER_WAIT_MS = 60_000;      // 60s max to wait for all workers (LLM ~5-15s)

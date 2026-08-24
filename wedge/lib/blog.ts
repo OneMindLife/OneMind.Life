@@ -21,6 +21,135 @@ export type BlogPost = {
 // matching the Dart `blogPosts` list order.
 export const blogPosts: BlogPost[] = [
   // -------------------------------------------------------------------------
+  // Post 7: What Is OneMind? One World, One Direction of Thought
+  // -------------------------------------------------------------------------
+  {
+    slug: "what-is-onemind",
+    title: "What Is OneMind? One World, One Direction of Thought",
+    metaDescription:
+      "OneMind's vision is to unite the world through its democratic nature — one shared conversation where, round after round, the best thinking rises and humanity aligns into a single direction.",
+    date: "2026-08-20",
+    author: "Joel Castro",
+    keywords: [
+      "what is OneMind",
+      "OneMind vision",
+      "global conversation",
+      "unite the world",
+      "collective thought",
+      "democratic alignment",
+      "chain of thought",
+    ],
+    sections: [
+      {
+        type: "paragraph",
+        text: "Humanity has never produced so many thoughts — and never shared so little direction.",
+      },
+      {
+        type: "paragraph",
+        text: "We're scattered. Some of us on one platform, others on another. Inside each platform, a thousand threads, a thousand posts, a thousand replies — none of them following a natural progression of thought. A conversation starts, fragments, and fades. Nothing ever converges.",
+      },
+      {
+        type: "paragraph",
+        text: "OneMind is not that.",
+      },
+      { type: "divider" },
+
+      {
+        type: "heading",
+        text: "The Problem: A World Without a Shared Direction",
+      },
+      {
+        type: "paragraph",
+        text: "The internet was meant to connect us. Instead it divided us into feeds. On one app, a thread asking what matters most. On another, a post asking the same question — with different people, different answers, and no connection between them. Even inside a single platform, the conversation splinters into replies and sub-replies and tangents that never fold back into the main idea.",
+      },
+      {
+        type: "paragraph",
+        text: "There is no shared progression. No single line of thought everyone is following, refining, and advancing together. We are all thinking in parallel — and mostly talking past one another.",
+      },
+      { type: "divider" },
+
+      { type: "heading", text: "What OneMind Is Instead" },
+      {
+        type: "paragraph",
+        text: "OneMind is one room. One conversation. One shared chain of thought that everyone, anywhere in the world, is building together.",
+      },
+      {
+        type: "paragraph",
+        text: "It doesn't look like a feed of disconnected posts. It looks like a single mind working on a single question — made of every person participating.",
+      },
+      { type: "divider" },
+
+      {
+        type: "heading",
+        text: "Iterative Rounds: Aligning a Little More Each Time",
+      },
+      {
+        type: "paragraph",
+        text: "OneMind works in rounds. Each round, everyone is invited to contribute their best thinking — anonymously. Then everyone rates the ideas head-to-head, and the strongest rises to the top. That idea becomes the foundation the next round builds on.",
+      },
+      {
+        type: "paragraph",
+        text: "Round after round, the thinking refines. What began as a thousand scattered directions narrows, sharpens, and converges. Each round, the world is a little more aligned than it was before.",
+      },
+      { type: "divider" },
+
+      { type: "heading", text: "Building a Chain of Thought" },
+      {
+        type: "paragraph",
+        text: "This is the heart of the vision. Every round is a link. Every round, the strongest idea from the last round is carried forward, and everyone thinks on top of it. Link by link, round by round, humanity's thinking builds into a single, unbroken chain — a direction of thought, as one.",
+      },
+      {
+        type: "paragraph",
+        text: "Not one person's direction. Not one platform's direction. A direction that emerges from everyone, democratically.",
+      },
+      { type: "divider" },
+
+      { type: "heading", text: "Democratic by Design" },
+      {
+        type: "paragraph",
+        text: "OneMind's democratic nature is not an afterthought — it is the very mechanism that makes alignment possible.",
+      },
+      {
+        type: "bullets",
+        items: [
+          "Anonymous proposals — ideas compete on merit, not on who said them.",
+          "Head-to-head rating — the strongest idea wins by direct comparison, judged by everyone.",
+          "No hierarchy — there is no loudest voice, no authority deciding for the room.",
+          "Merit rises — the direction is chosen by the group, never imposed on it.",
+        ],
+      },
+      { type: "divider" },
+
+      { type: "heading", text: "The Goal: One World, Thinking as One" },
+      {
+        type: "paragraph",
+        text: "OneMind's goal is to unite the world through its democratic nature. Not through force, not through a single leader, and not through one platform's algorithm — but through the process itself.",
+      },
+      {
+        type: "paragraph",
+        text: "When everyone thinks together, in one conversation, round after round, alignment is not something we have to fight for. It is something that emerges. Over time, the world becomes aligned — because every round, it becomes a little more aligned.",
+      },
+      {
+        type: "paragraph",
+        text: "That is the vision. A world that thinks as one, because it decided to.",
+      },
+      { type: "divider" },
+
+      { type: "heading", text: "Join the Conversation" },
+      {
+        type: "paragraph",
+        text: "OneMind is already live — a single global conversation where this is happening right now. Come add your thought to the chain.",
+      },
+      {
+        type: "cta",
+        text: "One thought, added to one conversation, becomes part of a direction the whole world is building.",
+        buttonLabel: "Join OneMind",
+        route: "/tutorial",
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
   // Post 5: Communities Solving Real Problems (_citiesCollectiveIntelligence)
   // -------------------------------------------------------------------------
   {

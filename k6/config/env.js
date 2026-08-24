@@ -1,7 +1,7 @@
 // k6 environment configuration
 // Usage: export SUPABASE_URL and SUPABASE_ANON_KEY before running
 
-export const SUPABASE_URL = __ENV.SUPABASE_URL || "https://YOUR_SUPABASE_PROJECT_REF.supabase.co";
+export const SUPABASE_URL = __ENV.SUPABASE_URL || "https://ccyuxrtrklgpkzcryzpj.supabase.co";
 export const SUPABASE_ANON_KEY = __ENV.SUPABASE_ANON_KEY || "";
 
 // Derived URLs

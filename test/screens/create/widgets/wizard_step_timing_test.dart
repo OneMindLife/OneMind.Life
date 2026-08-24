@@ -10,6 +10,7 @@ void main() {
     int proposingDuration = 43200,
     int? ratingDuration,
     void Function(state.TimerSettings)? onChanged,
+    bool manualMode = false,
   }) {
     return MaterialApp(
       localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -25,6 +26,8 @@ void main() {
             ratingDuration: ratingDuration ?? proposingDuration,
           ),
           onTimerSettingsChanged: onChanged ?? (_) {},
+          manualMode: manualMode,
+          onManualModeChanged: (_) {},
           onContinue: () {},
         ),
       ),
@@ -54,6 +57,19 @@ void main() {
       await tester.pumpWidget(
           harness(proposingDuration: 43200, ratingDuration: 86400));
       expect(find.text('How long for rating?'), findsOneWidget);
+    });
+
+    testWidgets('shows the automatic/manual choice', (tester) async {
+      await tester.pumpWidget(harness());
+      expect(find.text('Automatic'), findsOneWidget);
+      expect(find.text('Manual'), findsOneWidget);
+    });
+
+    testWidgets('manual mode hides the duration controls', (tester) async {
+      await tester.pumpWidget(harness(manualMode: true));
+      expect(find.text('How long for proposing?'), findsNothing);
+      expect(find.text('Same duration for rating phase?'), findsNothing);
+      expect(find.text('How long for rating?'), findsNothing);
     });
   });
 }

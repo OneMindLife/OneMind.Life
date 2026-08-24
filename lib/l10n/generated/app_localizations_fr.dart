@@ -2367,6 +2367,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get wizardStep2Subtitle => 'Combien de temps pour chaque phase?';
 
   @override
+  String get wizardStartModeQuestion =>
+      'Comment les phases doivent-elles avancer ?';
+
+  @override
+  String get wizardStartModeDesc =>
+      'Automatique exécute chaque phase avec une minuterie. Manuel laisse l\'hôte avancer chaque phase à la main.';
+
+  @override
+  String get wizardStartModeAuto => 'Automatique';
+
+  @override
+  String get wizardStartModeManual => 'Manuel';
+
+  @override
   String get wizardOneLastThing => 'Une derniere chose...';
 
   @override

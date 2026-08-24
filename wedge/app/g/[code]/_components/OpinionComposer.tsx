@@ -96,7 +96,7 @@ export function OpinionComposer({
           onChange={setDraft}
           onSubmit={() => void send()}
           placeholder="Speak freely — anonymously"
-          maxLength={300}
+          maxLength={600}
           disabled={sending}
         />
         <SendButton

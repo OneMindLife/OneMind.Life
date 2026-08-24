@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 /// Environment configuration for OneMind app
 ///
 /// Values are injected at compile time via --dart-define flags.
@@ -36,15 +38,24 @@ class EnvConfig {
   );
 
   /// Web app base URL for share/join deep links and QR codes.
-  /// As of 2026-07-04 onemind.life serves this Flutter app again (the
-  /// Next.js wedge cutover was reversed), so share links point at the
-  /// canonical domain. onemind-instant.web.app serves the same build for
-  /// backwards compatibility with older links.
-  /// Override via: --dart-define=WEB_APP_URL=https://onemind.life
-  static const String webAppUrl = String.fromEnvironment(
+  ///
+  /// On web this is resolved at RUNTIME from the current browser origin, so a
+  /// build served from a preview channel (e.g. onemind-95fb2--flutter-preview-
+  /// xxxxx.web.app) shares ITS OWN domain instead of the hardcoded canonical
+  /// onemind.life. On native (mobile) it falls back to the WEB_APP_URL
+  /// dart-define / the canonical domain.
+  static const String _webAppUrlFallback = String.fromEnvironment(
     'WEB_APP_URL',
     defaultValue: 'https://onemind.life',
   );
+
+  static String get webAppUrl {
+    if (kIsWeb) {
+      final base = Uri.base;
+      if (base.host.isNotEmpty) return base.origin;
+    }
+    return _webAppUrlFallback;
+  }
 
   /// Whether we're in production mode
   static bool get isProduction => environment == 'production';

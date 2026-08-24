@@ -2708,7 +2708,7 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                           ),
                           minLines: 1,
                           maxLines: 5,
-                          maxLength: 200,
+                          maxLength: 600,
                         );
                       },
                     ),

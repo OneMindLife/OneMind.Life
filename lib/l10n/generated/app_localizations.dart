@@ -4176,6 +4176,30 @@ abstract class AppLocalizations {
   /// **'How long for each phase?'**
   String get wizardStep2Subtitle;
 
+  /// No description provided for @wizardStartModeQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'How should phases advance?'**
+  String get wizardStartModeQuestion;
+
+  /// No description provided for @wizardStartModeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic runs each phase on a timer. Manual lets the host advance each phase by hand.'**
+  String get wizardStartModeDesc;
+
+  /// No description provided for @wizardStartModeAuto.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatic'**
+  String get wizardStartModeAuto;
+
+  /// No description provided for @wizardStartModeManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get wizardStartModeManual;
+
   /// No description provided for @wizardOneLastThing.
   ///
   /// In en, this message translates to:
