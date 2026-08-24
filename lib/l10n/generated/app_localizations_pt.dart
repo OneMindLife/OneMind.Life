@@ -12,6 +12,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get appTitle => 'OneMind';
 
   @override
+  String get defaultQuestion => 'O que devemos fazer a seguir?';
+
+  @override
   String get howItWorks => 'Como funciona';
 
   @override

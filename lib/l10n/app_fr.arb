@@ -1,6 +1,7 @@
 {
   "@@locale": "fr",
   "appTitle": "OneMind",
+  "defaultQuestion": "Que devrions-nous faire ensuite ?",
   "howItWorks": "Comment ca marche",
   "discover": "Decouvrir",
   "discoverPublicChats": "Decouvrir les chats publics",

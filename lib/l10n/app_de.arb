@@ -1,6 +1,7 @@
 {
   "@@locale": "de",
   "appTitle": "OneMind",
+  "defaultQuestion": "Was sollten wir als Nächstes tun?",
   "howItWorks": "So funktioniert es",
   "discover": "Entdecken",
   "discoverPublicChats": "Oeffentliche Chats entdecken",

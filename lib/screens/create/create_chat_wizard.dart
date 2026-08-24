@@ -83,7 +83,10 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
 
   // Controllers
   final _nameController = TextEditingController();
+  // Default question ("what do we do next?") is set from l10n in
+  // didChangeDependencies so it's localized per locale.
   final _messageController = TextEditingController();
+  bool _defaultQuestionSet = false;
   // Host name gate: creating auto-joins the creator as host, so a display
   // name is required before create. Users without one get a dedicated final
   // step ('host_name'); users with one never see it. Captured ONCE at wizard
@@ -167,6 +170,10 @@ class _CreateChatWizardState extends ConsumerState<CreateChatWizard> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_defaultQuestionSet) {
+      _defaultQuestionSet = true;
+      _messageController.text = AppLocalizations.of(context)!.defaultQuestion;
+    }
     if (!_translationLanguageInitialized) {
       _translationLanguageInitialized = true;
       final locale = Localizations.localeOf(context);

@@ -110,6 +110,12 @@ abstract class AppLocalizations {
   /// **'OneMind'**
   String get appTitle;
 
+  /// No description provided for @defaultQuestion.
+  ///
+  /// In en, this message translates to:
+  /// **'What should we do next?'**
+  String get defaultQuestion;
+
   /// No description provided for @howItWorks.
   ///
   /// In en, this message translates to:

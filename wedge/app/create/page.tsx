@@ -50,7 +50,10 @@ export default function CreatePage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const q = params.get("q");
-    if (taRef.current && q && !taRef.current.value) taRef.current.value = q;
+    // A seed (?q=…) is an explicit intent to use that question, so it overrides
+    // the default below. Without a seed, the default "What should we do next?"
+    // stays (and the user can edit it).
+    if (taRef.current && q) taRef.current.value = q;
     setIsGame(params.get("game") === "1");
     syncHasText();
   }, []);
@@ -109,7 +112,7 @@ export default function CreatePage() {
           <textarea
             ref={taRef}
             autoFocus
-            defaultValue=""
+            defaultValue="What should we do next?"
             onChange={syncHasText}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleCreate();

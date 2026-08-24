@@ -2,6 +2,7 @@
   "@@locale": "en",
 
   "appTitle": "OneMind",
+  "defaultQuestion": "What should we do next?",
   "howItWorks": "How it works",
 
   "discover": "Discover",

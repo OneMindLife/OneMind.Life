@@ -25,9 +25,9 @@ class WizardStepQuestion extends StatefulWidget {
 }
 
 class _WizardStepQuestionState extends State<WizardStepQuestion> {
-  // Default OFF: an ongoing group chat is a standing space, not a single poll —
-  // it shouldn't open with a fixed question. Hosts can still toggle one on.
-  bool _showMessage = false;
+  // Default ON: the question is pre-filled with "What should we do next?" so the
+  // host starts with the evergreen question instead of a blank optional field.
+  bool _showMessage = true;
 
   bool _validate() {
     return widget.formKey.currentState?.validate() ?? false;

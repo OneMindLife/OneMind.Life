@@ -3,18 +3,14 @@ import { Logotype, LegalFooter } from "./components/ui";
 import { CtaButton, TrackLandingView } from "./components/track";
 
 export const metadata: Metadata = {
-  // Root landing — rebuilt to match the Flutter app's landing (previously served
-  // at app.onemind.life), so the marketing funnel lives on the brand domain.
-  title: "OneMind — Get a real group decision in minutes, not meetings",
+  // Root landing — "next step" positioning: OneMind is the group's democratic
+  // next-step engine, not a meeting or an idea contest.
+  title: "OneMind — What should your group do next?",
   description:
-    "Stop letting the loudest voice win. OneMind runs anonymous, structured rounds where every voice counts equally and a clear answer emerges automatically.",
+    "OneMind answers the one question every group always has: what do we do next? Everyone proposes, everyone rates, and the next step rises to the top — democratically.",
   alternates: { canonical: "https://onemind.life/" },
 };
 
-// The brand home: full marketing landing (hero, how-it-works, video, benefits,
-// social proof, closing CTA) pointing at the Flutter app (app.onemind.life) —
-// where groups run their own decisions. The global room (/c/GLOBAL) stays as a
-// secondary "join the conversation" link for Telegram/bot users.
 export default function Home() {
   return (
     <main className="collective">
@@ -23,12 +19,11 @@ export default function Home() {
         <Logotype />
 
         {/* ── Hero ── */}
-        <h1>Get a real group decision in minutes — not meetings.</h1>
+        <h1>What should your group do next?</h1>
         <p className="sub">
-          Stop letting the loudest voice win. OneMind runs anonymous, structured
-          rounds where every voice counts equally and a clear answer emerges
-          automatically — without endless meetings, surveys that go nowhere, or
-          steamrolled team members.
+          There&apos;s always a next — and OneMind decides it democratically.
+          Everyone proposes, everyone rates, and a clear next step rises to the
+          top. No loudest-voice-wins, no endless meetings.
         </p>
         <CtaButton
           label="Try It Free"
@@ -43,30 +38,30 @@ export default function Home() {
         {/* ── How It Works ── */}
         <section className="section">
           <h2>How It Works</h2>
-          <p className="section-sub">Three simple steps to a clear decision</p>
+          <p className="section-sub">Three steps to decide what&apos;s next</p>
           <div className="steps">
             <div className="step">
               <span className="step-num">1</span>
               <h3>Propose</h3>
               <p>
-                Everyone submits ideas anonymously. No bias, no groupthink — just
-                honest contributions.
+                Everyone says what they think should happen next — anonymously.
+                No bias, no groupthink — just honest takes.
               </p>
             </div>
             <div className="step">
               <span className="step-num">2</span>
               <h3>Rate</h3>
               <p>
-                The group rates every idea on a simple scale. Fair, transparent,
-                and impossible to manipulate.
+                The group rates every idea fairly. The strongest direction rises
+                to the top — transparent and impossible to manipulate.
               </p>
             </div>
             <div className="step">
               <span className="step-num">3</span>
-              <h3>Decide</h3>
+              <h3>Next Step</h3>
               <p>
-                The strongest idea rises to the top — your group&apos;s answer,
-                ranked fairly and ready to act on.
+                A clear next step emerges — your group&apos;s direction, decided
+                democratically and ready to act on.
               </p>
             </div>
           </div>
@@ -127,7 +122,7 @@ export default function Home() {
 
         {/* ── Closing CTA ── */}
         <section className="section closing">
-          <h2>Ready to stop arguing and start deciding?</h2>
+          <h2>Ready to decide what&apos;s next?</h2>
           <p className="section-sub">
             Try OneMind free — no account, start in 30 seconds.
           </p>
